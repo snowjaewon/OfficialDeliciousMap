@@ -1,0 +1,21 @@
+# gitleaks 설정. 기본 규칙을 모두 쓰고 이 프로젝트의 키 이름을 덧붙인다.
+title = "OfficialDeliciousMap"
+
+[extend]
+useDefault = true
+
+# .env 형식의 대입에서 이 프로젝트가 쓰는 비밀 변수 이름을 잡는다.
+# (기본 규칙은 Gemini 키 AIza... 를 gcp-api-key 로 잡지만 네이버 검색 비밀키는 형식이 일반적이라 이름으로 잡는다)
+[[rules]]
+id = "project-secret-env-assignment"
+description = "프로젝트 비밀 변수에 값이 들어감 (.env 커밋 의심)"
+regex = '''(?i)\b(NAVER_SEARCH_CLIENT_SECRET|NAVER_SEARCH_CLIENT_ID|GEMINI_API_KEY)\s*[:=]\s*["']?([A-Za-z0-9_\-]{8,})["']?'''
+secretGroup = 2
+keywords = ["NAVER_SEARCH_CLIENT_SECRET", "NAVER_SEARCH_CLIENT_ID", "GEMINI_API_KEY"]
+
+[allowlist]
+description = "값이 비어 있는 예시 파일과 규칙 파일 자체"
+paths = [
+  '''\.env\.example$''',
+  '''\.gitleaks\.toml$''',
+]

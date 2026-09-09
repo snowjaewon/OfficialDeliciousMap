@@ -1,0 +1,17 @@
+#!/bin/sh
+# 스테이지된 변경에서 비밀을 찾으면 커밋을 막는다.
+# 활성화: git config core.hooksPath .githooks   (SECURITY.md 참고)
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "pre-commit: gitleaks 가 없습니다. 설치: winget install Gitleaks.Gitleaks  (macOS: brew install gitleaks)" >&2
+  echo "pre-commit: 설치 없이 커밋하지 않습니다. 이 저장소는 public 입니다." >&2
+  exit 1
+fi
+
+gitleaks git --pre-commit --staged --redact --no-banner --config .gitleaks.toml
+status=$?
+if [ $status -ne 0 ]; then
+  echo "pre-commit: 비밀로 보이는 값이 스테이지에 있습니다. 파일에서 값을 빼고 .env 로 옮기세요." >&2
+  echo "pre-commit: 오탐이면 .gitleaks.toml 의 allowlist 에 사유와 함께 추가하세요." >&2
+fi
+exit $status
