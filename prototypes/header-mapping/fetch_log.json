@@ -1,0 +1,964 @@
+[
+ {
+  "file": "daegu_city_0.xlsx",
+  "board": "daegu_city",
+  "title": "5232 2026년 2분기 업무추진비 집행내역(상수도사업본부 가창정수사업소) 가창정수사업소 2026-09-07 4",
+  "url": "https://www.daegu.go.kr/icms/cmm/fms/FileDown.do?atchFileId=FILE_000000000720169&fileSn=0",
+  "fmt": "xlsx",
+  "size": 19999,
+  "cd": "2026년 2분기 업무추진비 집행내역(상수도사업본부 가창정수사업소).xlsx",
+  "status": 200
+ },
+ {
+  "file": "daegu_city_1.xlsx",
+  "board": "daegu_city",
+  "title": "5231 2026년 1분기 업무추진비 집행내역(상수도사업본부 가창정수사업소) 가창정수사업소 2026-09-07 2",
+  "url": "https://www.daegu.go.kr/icms/cmm/fms/FileDown.do?atchFileId=FILE_000000000720188&fileSn=0",
+  "fmt": "xlsx",
+  "size": 20103,
+  "cd": "2026년 1분기 업무추진비 집행내역(상수도사업본부 가창정수사업소).xlsx",
+  "status": 200
+ },
+ {
+  "file": "daegu_city_2.xlsx",
+  "board": "daegu_city",
+  "title": "5227 2026년 2분기 업무추진비 집행내역(상수도사업본부 죽곡정수사업소) 죽곡정수사업소 2026-09-01 3",
+  "url": "https://www.daegu.go.kr/icms/cmm/fms/FileDown.do?atchFileId=FILE_000000000718693&fileSn=0",
+  "fmt": "xlsx",
+  "size": 20313,
+  "cd": "2026년 2분기 업무추진비 집행내역(상수도사업본부 죽곡정수사업소).xlsx",
+  "status": 200
+ },
+ {
+  "file": "daegu_buk_0.xlsx",
+  "board": "daegu_buk",
+  "title": "5196 2026년 8월 의회사무국 업무추진비 집행내역 공개 의회사무국 2026-09-01 12",
+  "url": "https://www.buk.daegu.kr/icms/cmm/fms/FileDown.do?atchFileId=1mPhGAroaWnrZ6yliyYSE8S4FBdN0Qa0zdn9hv-WyyI&fileSn=0",
+  "fmt": "xlsx",
+  "size": 46532,
+  "cd": "2026년 8월 의회사무국 업무추진비 집행내역.xlsx",
+  "status": 200
+ },
+ {
+  "file": "daegu_buk_1.pdf",
+  "board": "daegu_buk",
+  "title": "5195 2026년 8월 침산2동 업무추진비 집행내역 공개 침산2동 2026-09-01 12",
+  "url": "https://www.buk.daegu.kr/icms/cmm/fms/FileDown.do?atchFileId=1mPhGAroaWnrZ6yliyYSE7hfB1buCD3ONvzfhTHIPto&fileSn=0",
+  "fmt": "pdf",
+  "size": 65041,
+  "cd": "2026년 8월 업무추진비 정보공개(침산2동).pdf",
+  "status": 200
+ },
+ {
+  "file": "daegu_buk_2.xlsx",
+  "board": "daegu_buk",
+  "title": "5194 2026년 8월 관광과 업무추진비 집행내역 공개 관광과 2026-09-01 10",
+  "url": "https://www.buk.daegu.kr/icms/cmm/fms/FileDown.do?atchFileId=1mPhGAroaWnrZ6yliyYSE6jcUJaQzfNtfGUVG4uAkN4&fileSn=0",
+  "fmt": "xlsx",
+  "size": 12992,
+  "cd": "2026년 8월 관광과 업무추진비 집행내역.xlsx",
+  "status": 200
+ },
+ {
+  "file": "busan_haeundae_0.xlsx",
+  "board": "busan_haeundae",
+  "title": "4496 2026년 6월 토지정보과 업무추진비 집행내역 토지정보과 2026.09.07 6",
+  "url": "https://www.haeundae.go.kr/board/download.do?boardId=BBS_0000004&paging=ok&startPage=1&dataSid=3173467&command=update&fileSid=3135844",
+  "fmt": "xlsx",
+  "size": 26521,
+  "cd": "2026³â6¿ù¾÷¹«ÃßÁøºñÁýÇà³»¿ª(ÅäÁöÁ¤º¸°ú).xlsx",
+  "status": 200
+ },
+ {
+  "file": "busan_busanjin_0.xlsx",
+  "board": "busan_busanjin",
+  "title": "4830 2026년 8월 도로관리과 업무추진비 집행내역 도로관리과 26.09.09 3",
+  "url": "https://www.busanjin.go.kr/board/download.busanjin?boardId=BBS_0000023&menuCd=DOM_000000109001003000&paging=ok&startPage=1&dataSid=3976648&command=update&fileSid=194756",
+  "fmt": "xlsx",
+  "size": 15576,
+  "cd": "2026³â8¿ù¾÷¹«ÃßÁøºñÁýÇà³»¿ª(µµ·Î°ü¸®°ú).xlsx",
+  "status": 200
+ },
+ {
+  "file": "busan_busanjin_1.xlsx",
+  "board": "busan_busanjin",
+  "title": "4829 2026년 8월 전포1동 업무추진비 집행내역 전포1동 26.09.07 9",
+  "url": "https://www.busanjin.go.kr/board/download.busanjin?boardId=BBS_0000023&menuCd=DOM_000000109001003000&paging=ok&startPage=1&dataSid=3975983&command=update&fileSid=194674",
+  "fmt": "xlsx",
+  "size": 21189,
+  "cd": "2026³â8¿ù¾÷¹«ÃßÁøºñÁýÇà³»¿ª(ÀüÆ÷1µ¿).xlsx",
+  "status": 200
+ },
+ {
+  "file": "busan_busanjin_2.xlsx",
+  "board": "busan_busanjin",
+  "title": "4828 2026년 8월 전포2동 업무추진비 집행내역 전포2동 26.09.07 8",
+  "url": "https://www.busanjin.go.kr/board/download.busanjin?boardId=BBS_0000023&menuCd=DOM_000000109001003000&paging=ok&startPage=1&dataSid=3975929&command=update&fileSid=194656",
+  "fmt": "xlsx",
+  "size": 15506,
+  "cd": "2026³â8¿ù¾÷¹«ÃßÁøºñÁýÇà³»¿ª(ÀüÆ÷2µ¿).xlsx",
+  "status": 200
+ },
+ {
+  "file": "busan_dongnae_0.zip",
+  "board": "busan_dongnae",
+  "title": "2660 2026년 1분기,2분기 환경위생과 업무추진비 집행내역 환경위생과 2026.09.02 2",
+  "url": "https://www.dongnae.go.kr/board/download.dongnae?boardId=BBS_0000200&menuCd=null&startPage=1&dataSid=898338&command=update&fileSid=379412",
+  "fmt": "zip",
+  "size": 55957,
+  "cd": "2026³â1ºÐ±âÈ¯°æÀ§»ý°ú¾÷¹«ÃßÁøºñÁýÇà³»¿ª.hwpx",
+  "status": 200
+ },
+ {
+  "file": "busan_dongnae_2.pdf",
+  "board": "busan_dongnae",
+  "title": "2657 2026년 2분기 안락2동 업무추진비 집행내역 안락2동 2026.07.29 52",
+  "url": "https://www.dongnae.go.kr/board/download.dongnae?boardId=BBS_0000200&menuCd=null&startPage=1&dataSid=897211&command=update&fileSid=377079",
+  "fmt": "pdf",
+  "size": 48831,
+  "cd": "2026³â2ºÐ±â¾÷¹«ÃßÁøºñÁýÇà³»¿ª(¾È¶ô2µ¿).pdf",
+  "status": 200
+ },
+ {
+  "file": "busan_sasang_0.ole",
+  "board": "busan_sasang",
+  "title": "3788 돌봄정책과 업무추진비 사용내역(2026년 8월) 돌봄정책과 2026-09-08 5",
+  "url": "https://www.sasang.go.kr/board/download.sasang?boardId=BBS_0000175&startPage=1&dataSid=567311&command=update&fileSid=295066",
+  "fmt": "ole",
+  "size": 71168,
+  "cd": "¡Ù2026³â8¿ù¿ù¾÷¹«ÃßÁøºñ»ç¿ë³»¿ª(µ¹º½Á¤Ã¥°ú).hwp",
+  "status": 200
+ },
+ {
+  "file": "busan_sasang_1.ole",
+  "board": "busan_sasang",
+  "title": "3787 문화체육과 업무추진비 사용내역(2026년 8월) 문화체육과 2026-09-08 2",
+  "url": "https://www.sasang.go.kr/board/download.sasang?boardId=BBS_0000175&startPage=1&dataSid=567291&command=update&fileSid=295049",
+  "fmt": "ole",
+  "size": 33792,
+  "cd": "2026³â8¿ù¾÷¹«ÃßÁøºñ»ç¿ë³»¿ª(¹®È­Ã¼À°°ú).hwp",
+  "status": 200
+ },
+ {
+  "file": "busan_sasang_2.ole",
+  "board": "busan_sasang",
+  "title": "3786 세무1과 업무추진비 사용내역(2026년 8월) 세무1과 2026-09-07 4",
+  "url": "https://www.sasang.go.kr/board/download.sasang?boardId=BBS_0000175&startPage=1&dataSid=567241&command=update&fileSid=295004",
+  "fmt": "ole",
+  "size": 26112,
+  "cd": "¼¼¹«1°ú¾÷¹«ÃßÁøºñ»ç¿ë³»¿ª(2026³â8¿ù).hwp",
+  "status": 200
+ },
+ {
+  "file": "busan_gijang_0.html",
+  "board": "busan_gijang",
+  "title": "목록 HTML 표 2쪽",
+  "url": "https://www.gijang.go.kr/board/list.gijang?boardId=BBS_0000147&menuCd=DOM_000000101002014000&paging=ok&categoryCode1=000&startPage=2",
+  "fmt": "html",
+  "size": 124068
+ },
+ {
+  "file": "seoul_gwangjin_0.xlsx",
+  "board": "seoul_gwangjin",
+  "title": "5672 2026년 8월 도시계획과 업무추진비 집행내역 2026년08월_업무추진비 집행내역. xlsx 바로보기 바로듣기 도시계획과 2026-09-08",
+  "url": "https://www.gwangjin.go.kr/portal/cmmn/file/fileDown.do?menuNo=201646&atchFileId=3fd879a5aa70bb48e900ecfd02fc3b20ae04594867c9feeafa9455502566c0e3&fileSn=1",
+  "fmt": "xlsx",
+  "size": 13977,
+  "cd": "2026년08월_업무추진비 집행내역.xlsx",
+  "status": 200
+ },
+ {
+  "file": "seoul_yongsan_0.pdf",
+  "board": "seoul_yongsan",
+  "title": "7604 2026년 8월 자치행정과 업무추진비 집행내역 공개 자치행정과 2026-09-09 7",
+  "url": "https://www.yongsan.go.kr/portal/cmmn/file/fileDown.do?menuNo=200140&atchFileId=33f8058d391f4995a48bbbdd07a13257&fileSn=1",
+  "fmt": "pdf",
+  "size": 90766,
+  "cd": "업무추진비 집행내역(2026.8월).pdf",
+  "status": 200
+ },
+ {
+  "file": "seoul_yongsan_1.pdf",
+  "board": "seoul_yongsan",
+  "title": "7603 2026년 8월 부동산정보과 업무추진비 집행내역 공개 부동산정보과 2026-09-08 14",
+  "url": "https://www.yongsan.go.kr/portal/cmmn/file/fileDown.do?menuNo=200140&atchFileId=16b6c52676624e9cb8d3245d5b631194&fileSn=1",
+  "fmt": "pdf",
+  "size": 95457,
+  "cd": "시책추진업무추진비 사용내역(2026. 8월).pdf",
+  "status": 200
+ },
+ {
+  "file": "seoul_yongsan_2.pdf",
+  "board": "seoul_yongsan",
+  "title": "7602 2026년 8월 주택과 업무추진비 집행내역 공개 주택과 2026-09-07 14",
+  "url": "https://www.yongsan.go.kr/portal/cmmn/file/fileDown.do?menuNo=200140&atchFileId=a04233fcf621422fb3c58d75327feaae&fileSn=1",
+  "fmt": "pdf",
+  "size": 109594,
+  "cd": "업무추진비 집행내역(26. 8월).pdf",
+  "status": 200
+ },
+ {
+  "file": "seoul_jongno_0.pdf",
+  "board": "seoul_jongno",
+  "title": "파일",
+  "url": "https://www.jongno.go.kr/cmm/fms/FileDown.do?atchFileId=FILE_000000000220966&fileSn=1",
+  "fmt": "pdf",
+  "size": 39782,
+  "cd": "기관업무추진비내역(8월).pdf",
+  "status": 200
+ },
+ {
+  "file": "seoul_jongno_1.pdf",
+  "board": "seoul_jongno",
+  "title": "파일",
+  "url": "https://www.jongno.go.kr/cmm/fms/FileDown.do?atchFileId=FILE_000000000220965&fileSn=1",
+  "fmt": "pdf",
+  "size": 60037,
+  "cd": "(주차관리과) 2026년 8월 업무추진비 집행내역.pdf",
+  "status": 200
+ },
+ {
+  "file": "seoul_jongno_2.pdf",
+  "board": "seoul_jongno",
+  "title": "파일",
+  "url": "https://www.jongno.go.kr/cmm/fms/FileDown.do?atchFileId=FILE_000000000220964&fileSn=1",
+  "fmt": "pdf",
+  "size": 44428,
+  "cd": "시책업무추진비내역(8월).pdf",
+  "status": 200
+ },
+ {
+  "file": "seoul_seongdong_0.pdf",
+  "board": "seoul_seongdong",
+  "title": "3569 2026년 8월 안전건설교통국 기관운영업무추진비 집행내역 공개 NEW 2026.09.09 3 pdf파일첨부",
+  "url": "https://www.sd.go.kr/main/downloadBbsFileStr.do?atchmnflStr=X4NES4MLYZZSQABTEKTOKH4HXDCZFB3REEAMQ5XM7ZK4IUIXQGTQ_AILO",
+  "fmt": "pdf",
+  "size": 47617,
+  "cd": "기관운영업무추진비 집행내역（2026.8.）.pdf",
+  "status": 200
+ },
+ {
+  "file": "seoul_seongdong_1.pdf",
+  "board": "seoul_seongdong",
+  "title": "3568 2026년 8월 공원녹지과 시책추진업무추진비 집행내역 공개 NEW 2026.09.09 6 pdf파일첨부",
+  "url": "https://www.sd.go.kr/main/downloadBbsFileStr.do?atchmnflStr=MRIPQAN333FLCGB77XWHRDVBEVOF4NFVXV755JGTA3TIO56D2VPQ_AILO",
+  "fmt": "pdf",
+  "size": 47275,
+  "cd": "2026년 8월 시책추진업무추진비.pdf",
+  "status": 200
+ },
+ {
+  "file": "seoul_seongdong_2.pdf",
+  "board": "seoul_seongdong",
+  "title": "3567 2026년 8월 건강관리과 시책추진업무추진비 집행내역 공개 NEW 2026.09.09 5 pdf파일첨부",
+  "url": "https://www.sd.go.kr/main/downloadBbsFileStr.do?atchmnflStr=ZFHLRVDXXY3SDDDBPSLFZBVQZUFB2AVW3LMFWUHOLR6JTZYUDNVQ_AILO",
+  "fmt": "pdf",
+  "size": 51083,
+  "cd": "시책추진업무추진비（8월 공개）.pdf",
+  "status": 200
+ },
+ {
+  "file": "seoul_mapo_0.pdf",
+  "board": "seoul_mapo",
+  "title": "7367 2026년 8월 부동산정보과 업무추진비 집행내역 공개 부동산정보과 2026.09.09",
+  "url": "https://www.mapo.go.kr/site/main/file/download/uu/2308476cc828495cb82236e62ba82bdf",
+  "fmt": "pdf",
+  "size": 39283,
+  "cd": "2026³â 8¿ù ¾÷¹«ÃßÁøºñ ÁýÇà³»¿ª(ºÎµ¿»êÁ¤º¸°ú).pdf",
+  "status": 200
+ },
+ {
+  "file": "seoul_mapo_1.pdf",
+  "board": "seoul_mapo",
+  "title": "7366 2026년 8월 아현동 업무추진비 집행내역 공개 아현동 2026.09.09",
+  "url": "https://www.mapo.go.kr/site/main/file/download/uu/5ef797dcde354d30867fdcf2efd23b35",
+  "fmt": "pdf",
+  "size": 59403,
+  "cd": "¾÷¹«ÃßÁøºñ ÁýÇà³»¿ª(2026³â8¿ù ¾ÆÇöµ¿).pdf",
+  "status": 200
+ },
+ {
+  "file": "seoul_mapo_2.pdf",
+  "board": "seoul_mapo",
+  "title": "7365 2026년 8월 민원여권과 업무추진비 집행내역 공개 민원여권과 2026.09.09",
+  "url": "https://www.mapo.go.kr/site/main/file/download/uu/a119274e20304f7cb0922a0b2cd54fa6",
+  "fmt": "pdf",
+  "size": 85404,
+  "cd": "2026³â 8¿ù ¾÷¹«ÃßÁøºñ ÁýÇà³»¿ª(¹Î¿ø¿©±Ç°ú).pdf",
+  "status": 200
+ },
+ {
+  "file": "seoul_gangnam_0.xlsx",
+  "board": "seoul_gangnam",
+  "title": "9364 2026년 8월 업무추진비 집행내역 공개 미리보기 공원녹지과 2026-09-08",
+  "url": "https://www.gangnam.go.kr/file/1/get/0cb943ad-499b-40cc-a4a2-099a4d85b670/download.do",
+  "fmt": "xlsx",
+  "size": 12890,
+  "cd": "2026ë 8ì ìë¬´ì¶ì§ë¹ ì§íë´ì­ ê³µê°(ê³µìë¹ì§ê³¼).xlsx",
+  "status": 200
+ },
+ {
+  "file": "seoul_gangnam_1.ole",
+  "board": "seoul_gangnam",
+  "title": "9363 2026년 8월 업무추진비 집행내역 공개 미리보기 일자리정책과 2026-09-07",
+  "url": "https://www.gangnam.go.kr/file/1/get/3782b4e8-845a-4951-8dfc-f22d6695f2cd/download.do",
+  "fmt": "ole",
+  "size": 30208,
+  "cd": "2026ë 8ì ìë¬´ì¶ì§ë¹ ì¬ì© ë´ì­(ì¼ìë¦¬ì ì±ê³¼).xls",
+  "status": 200
+ },
+ {
+  "file": "seoul_gangnam_2.xlsx",
+  "board": "seoul_gangnam",
+  "title": "9362 2026년 8월 업무추진비 집행내역 공개 미리보기 논현2동 2026-09-07",
+  "url": "https://www.gangnam.go.kr/file/1/get/809f4614-e6d0-4e90-90e5-8c86cd869680/download.do",
+  "fmt": "xlsx",
+  "size": 12919,
+  "cd": "ë¼í2ë ìë¬´ì¶ì§ë¹ ì§íë´ì­(2026ë 8ì).xlsx",
+  "status": 200
+ },
+ {
+  "file": "seoul_gangseo_0.pdf",
+  "board": "seoul_gangseo",
+  "title": "9513 2026년 8월 등촌2동 업무추진비 집행내역 공개 등촌2동 2026-09-09 1",
+  "url": "https://www.gangseo.seoul.kr/comm/getFile?srvcId=BBSTY1&upperNo=P8RUNeed1mj2XuGmGiBvKw%3d%3d&fileTy=ATTACH&fileNo=tGIne2XfAUPj%5ehjf3NXN7A%3d%3d",
+  "fmt": "pdf",
+  "size": 89179,
+  "cd": "시책업무추진비 집행내역(202608).pdf",
+  "status": 200
+ },
+ {
+  "file": "seoul_gangseo_1.pdf",
+  "board": "seoul_gangseo",
+  "title": "9512 2026년 8월 의약과 업무추진비 집행내역 공개 의약과 2026-09-09 4",
+  "url": "https://www.gangseo.seoul.kr/comm/getFile?srvcId=BBSTY1&upperNo=R8JnBKFb1WQI*2Fi2ntIGA%3d%3d&fileTy=ATTACH&fileNo=U9s42PO52omVQtiMxzT9vw%3d%3d",
+  "fmt": "pdf",
+  "size": 64728,
+  "cd": "업무추진비집행내역(202608).pdf",
+  "status": 200
+ },
+ {
+  "file": "seoul_gangseo_2.pdf",
+  "board": "seoul_gangseo",
+  "title": "9511 2026년 8월 행정지원과 업무추진비 집행내역 행정지원과 2026-09-08 3",
+  "url": "https://www.gangseo.seoul.kr/comm/getFile?srvcId=BBSTY1&upperNo=J3lHptY0GqKdL2sR9GFAtg%3d%3d&fileTy=ATTACH&fileNo=7eVGP1dx2mMKPG71FJSOZQ%3d%3d",
+  "fmt": "pdf",
+  "size": 82083,
+  "cd": "시책추진업무추진비 집행내역(8월).pdf",
+  "status": 200
+ },
+ {
+  "file": "seoul_city_0.html",
+  "board": "seoul_city",
+  "title": "2026년 8월 서울시본청 글로벌도시정책관 외국인이민담당관 업무추진비 - 기관운영 시책추진 부서운영",
+  "url": "https://opengov.seoul.go.kr/expense/36924769",
+  "fmt": "html",
+  "size": 59126
+ },
+ {
+  "file": "seoul_city_1.html",
+  "board": "seoul_city",
+  "title": "2026년 8월 서울시본청 복지실 돌봄고독정책관 통합돌봄과 업무추진비 - 시책추진",
+  "url": "https://opengov.seoul.go.kr/expense/36924768",
+  "fmt": "html",
+  "size": 46583
+ },
+ {
+  "file": "seoul_seodaemun_0.html",
+  "board": "seoul_seodaemun",
+  "title": "2026-06 HTML 라인 (천원)",
+  "url": "https://www.sdm.go.kr/admininfo/budget/openmoney.do",
+  "fmt": "html",
+  "size": 93061
+ },
+ {
+  "file": "seoul_gwanak_0.html",
+  "board": "seoul_gwanak",
+  "title": "HTML 카드형 목록",
+  "url": "https://www.gwanak.go.kr/site/gwanak/estimate/estimateList.do",
+  "fmt": "html",
+  "size": 196602
+ },
+ {
+  "file": "seoul_eunpyeong_0.html",
+  "board": "seoul_eunpyeong",
+  "title": "HTML 라인 목록",
+  "url": "https://www.ep.go.kr/www/selectJobPrtnCtWebList.do?key=666&pageUnit=50",
+  "fmt": "html",
+  "size": 323378
+ },
+ {
+  "file": "gwangju_nam_0.xlsx",
+  "board": "gwangju_nam",
+  "title": "1,119 2026년 2분기 자치행정국 업무추진비 집행내역 총무과 2026/07/31 53",
+  "url": "https://www.namgu.gwangju.kr/boardDownload.es?mid=a10304100000&bid=0007&list_no=1170&seq=1",
+  "fmt": "xlsx",
+  "size": 24998,
+  "cd": "2분기+업무추진비+지출내역(자치행정국).xlsx",
+  "status": 200
+ },
+ {
+  "file": "gwangju_nam_1.xlsx",
+  "board": "gwangju_nam",
+  "title": "1,118 2026년 2분기 구청장,부구청장 업무추진비 집행내역 총무과 2026/07/31 64",
+  "url": "https://www.namgu.gwangju.kr/boardDownload.es?mid=a10304100000&bid=0007&list_no=1169&seq=1",
+  "fmt": "xlsx",
+  "size": 18030,
+  "cd": "2분기+업무추진비+지출내역(구청장).xlsx",
+  "status": 200
+ },
+ {
+  "file": "gwangju_nam_2.zip",
+  "board": "gwangju_nam",
+  "title": "1,117 2026년 2분기 감사담당관 업무추진비 집행내역 감사담당관 2026/07/15 81",
+  "url": "https://www.namgu.gwangju.kr/boardDownload.es?mid=a10304100000&bid=0007&list_no=1168&seq=1",
+  "fmt": "zip",
+  "size": 24880,
+  "cd": "업무추진비+집행내역(2분기).hwpx",
+  "status": 200
+ },
+ {
+  "file": "gwangju_buk_0.xlsx",
+  "board": "gwangju_buk",
+  "title": "2026년 2분기 기관운영업무추진비 집행내역 공개(두암2동)",
+  "url": "https://bukgu.gwangju.kr/boardDownload.es?mid=a10502050000&bid=0004&list_no=1200&seq=1",
+  "fmt": "xlsx",
+  "size": 13046,
+  "cd": "두암2동+기관운영업무추진비+지출+내역(2026년+2분기).xlsx",
+  "status": 200
+ },
+ {
+  "file": "gwangju_buk_1.xlsx",
+  "board": "gwangju_buk",
+  "title": "2026년 2분기 시책업무추진비 집행내역 공개(공원녹지과)",
+  "url": "https://bukgu.gwangju.kr/boardDownload.es?mid=a10502050000&bid=0004&list_no=1202&seq=1",
+  "fmt": "xlsx",
+  "size": 16180,
+  "cd": "(공원녹지과)시책추진+업무추진비+내역(2026년+2분기).xlsx",
+  "status": 200
+ },
+ {
+  "file": "gwangju_buk_2.xlsx",
+  "board": "gwangju_buk",
+  "title": "2026년 2분기 기관운영업무추진비 집행내역 공개(용봉동)",
+  "url": "https://bukgu.gwangju.kr/boardDownload.es?mid=a10502050000&bid=0004&list_no=1198&seq=1",
+  "fmt": "xlsx",
+  "size": 12312,
+  "cd": "기관운영업무추진비+공개(2026.2분기).xlsx",
+  "status": 200
+ },
+ {
+  "file": "gwangju_dong_0.xlsx",
+  "board": "gwangju_dong",
+  "title": "57 2026년 2분기 의회운영업무추진비 집행내역 의정팀 2026.07.22 35",
+  "url": "https://gjdc.donggu.kr/boardDownload.es?mid=a10801040000&bid=0020&list_no=7785&seq=1",
+  "fmt": "xlsx",
+  "size": 37858,
+  "cd": "2026년+2분기+전남광주통합특별시+동구의회+업무추진비+사용+내역.xlsx",
+  "status": 200
+ },
+ {
+  "file": "gwangju_dong_1.xlsx",
+  "board": "gwangju_dong",
+  "title": "57 2026년 2분기 의회운영업무추진비 집행내역 의정팀 2026.07.22 35",
+  "url": "https://gjdc.donggu.kr/boardDownload.es?mid=a10801040000&bid=0020&list_no=7785&seq=1",
+  "fmt": "xlsx",
+  "size": 37858,
+  "cd": "2026년+2분기+전남광주통합특별시+동구의회+업무추진비+사용+내역.xlsx",
+  "status": 200
+ },
+ {
+  "file": "gwangju_dong_2.xlsx",
+  "board": "gwangju_dong",
+  "title": "56 2026년 1분기 의회운영업무추진비 집행내역 의정팀 2026.04.23 114",
+  "url": "https://gjdc.donggu.kr/boardDownload.es?mid=a10801040000&bid=0020&list_no=7701&seq=1",
+  "fmt": "xlsx",
+  "size": 47797,
+  "cd": "2026년+1분기+광주광역시+동구의회+업무추진비+사용+내역.xlsx",
+  "status": 200
+ },
+ {
+  "file": "gwangju_city_0.ole",
+  "board": "gwangju_city",
+  "title": "2026년 2분기 업무추진비 집행내역(신활력총괄관)",
+  "url": "https://www.gwangju.go.kr/fileDownload.do?fileSe=BB&fileKey=BD_0000000252%7C11024&fileSn=1&boardId=BD_0000000252&seq=11024",
+  "fmt": "ole",
+  "size": 43520,
+  "cd": "download.xls",
+  "status": 200
+ },
+ {
+  "file": "gwangju_city_1.ole",
+  "board": "gwangju_city",
+  "title": "2026년 2분기 업무추진비 집행내역(상수도사업본부 서남광산수도사업소)",
+  "url": "https://www.gwangju.go.kr/fileDownload.do?fileSe=BB&fileKey=BD_0000000252%7C11023&fileSn=1&boardId=BD_0000000252&seq=11023",
+  "fmt": "ole",
+  "size": 31232,
+  "cd": "download.xls",
+  "status": 200
+ },
+ {
+  "file": "gwangju_city_2.xlsx",
+  "board": "gwangju_city",
+  "title": "2026년 2분기 업무추진비 집행내역(자치경찰행정과)",
+  "url": "https://www.gwangju.go.kr/fileDownload.do?fileSe=BB&fileKey=BD_0000000252%7C11022&fileSn=1&boardId=BD_0000000252&seq=11022",
+  "fmt": "xlsx",
+  "size": 25718,
+  "cd": "download.xlsx",
+  "status": 200
+ },
+ {
+  "file": "incheon_michuhol_0.xlsx",
+  "board": "incheon_michuhol",
+  "title": "7103 2026년 8월 기획예산실 시책추진업무추진비 기획예산실 2026-09-09 3",
+  "url": "https://www.michuhol.go.kr/other/file_down.do?sq=1219264&key=F25E879009",
+  "fmt": "xlsx",
+  "size": 10036,
+  "cd": "기획예산실+시책추진업무추진비+집행현황(2026.8월).xlsx",
+  "status": 200
+ },
+ {
+  "file": "incheon_michuhol_1.xlsx",
+  "board": "incheon_michuhol",
+  "title": "7102 2026년 8월 기획예산실 부서운영업무추진비 기획예산실 2026-09-09 1",
+  "url": "https://www.michuhol.go.kr/other/file_down.do?sq=1219263&key=F25E879009",
+  "fmt": "xlsx",
+  "size": 9996,
+  "cd": "기획예산실+부서운영업무추진비+집행현황(2026.8월).xlsx",
+  "status": 200
+ },
+ {
+  "file": "incheon_michuhol_2.xlsx",
+  "board": "incheon_michuhol",
+  "title": "7101 2026년 8월 치매정신건강과 시책운영 업무추진비 사용내역 치매정신건강과 2026-09-08 3",
+  "url": "https://www.michuhol.go.kr/other/file_down.do?sq=1219255&key=CF808F8920",
+  "fmt": "xlsx",
+  "size": 12011,
+  "cd": "시책추진업무추진비(26년8월).xlsx",
+  "status": 200
+ },
+ {
+  "file": "incheon_yeongjong_mn_exp_cap_0.xlsx",
+  "board": "incheon_yeongjong",
+  "title": "844 2026년 2분기 총무과장 업무추진비 사용 내역 첨부파일 총무과 2026-06-29 52",
+  "url": "https://www.yeongjong.go.kr/other/attach/process.file.do?TP=dn&sn=340615&key=58F32FB65750C31",
+  "fmt": "xlsx",
+  "size": 10578,
+  "cd": "2026년 2분기 인천 중구 총무과장 업무추진비 사용내역.xlsx",
+  "status": 200
+ },
+ {
+  "file": "incheon_yeongjong_mn_exp_cap_1.xlsx",
+  "board": "incheon_yeongjong",
+  "title": "843 2026년 2분기 건축허가과 업무추진비 사용내역 첨부파일 건축허가과 2026-06-23 58",
+  "url": "https://www.yeongjong.go.kr/other/attach/process.file.do?TP=dn&sn=340584&key=C23545FA71C7172",
+  "fmt": "xlsx",
+  "size": 14002,
+  "cd": "업무추진비 사용내역 작성서식 (26.2분기 건축허가과).xlsx",
+  "status": 200
+ },
+ {
+  "file": "incheon_yeongjong_mn_exp_head_0.xlsx",
+  "board": "incheon_yeongjong",
+  "title": "168 2026년 6월 인천 중구청장 업무추진비 사용내역 첨부파일 총무과 2026-06-29 109",
+  "url": "https://www.yeongjong.go.kr/other/attach/process.file.do?TP=dn&sn=340612&key=58F32FB65750C31",
+  "fmt": "xlsx",
+  "size": 12916,
+  "cd": "2026년 6월 인천 중구청장 업무추진비 사용내역.xlsx",
+  "status": 200
+ },
+ {
+  "file": "incheon_yeongjong_mn_exp_head_1.xlsx",
+  "board": "incheon_yeongjong",
+  "title": "167 2026년 5월 인천 중구청장 업무추진비 사용내역 첨부파일 총무과 2026-06-08 133",
+  "url": "https://www.yeongjong.go.kr/other/attach/process.file.do?TP=dn&sn=340511&key=7B525F3037D07B7",
+  "fmt": "xlsx",
+  "size": 12431,
+  "cd": "2026년 5월 인천 중구청장 업무추진비 사용내역.xlsx",
+  "status": 200
+ },
+ {
+  "file": "incheon_jemulpo_0.zip",
+  "board": "incheon_jemulpo",
+  "title": "13745 2026년 6월기준 자원봉사자 현황 사회복지 > 자원봉사 현황 총무과 2026.09.02 10",
+  "url": "https://www.jemulpo.go.kr/main/bbs/bbsMsgFileDown.do?bcd=opendata&msg_seq=14519&fileno=1",
+  "fmt": "zip",
+  "size": 59428,
+  "cd": "ììë´ì¬ì_íí©(2026.6.30ê¸°ì¤.).hwpx",
+  "status": 200
+ },
+ {
+  "file": "incheon_jemulpo_1.zip",
+  "board": "incheon_jemulpo",
+  "title": "13745 2026년 6월기준 자원봉사자 현황 사회복지 > 자원봉사 현황 총무과 2026.09.02 10",
+  "url": "https://www.jemulpo.go.kr/main/bbs/bbsMsgFileDown.do?bcd=opendata&msg_seq=14519&fileno=1",
+  "fmt": "zip",
+  "size": 59428,
+  "cd": "ììë´ì¬ì_íí©(2026.6.30ê¸°ì¤.).hwpx",
+  "status": 200
+ },
+ {
+  "file": "incheon_jemulpo_2.zip",
+  "board": "incheon_jemulpo",
+  "title": "13744 2026년 1.2분기 청소대행업체 수거량 및 대행료 환경보호 > 청소대행업체 수거량 및 대행료 자원순환과 2026.09.01 11",
+  "url": "https://www.jemulpo.go.kr/main/bbs/bbsMsgFileDown.do?bcd=opendata&msg_seq=14518&fileno=1",
+  "fmt": "zip",
+  "size": 46826,
+  "cd": "2026ë_1.2ë¶ê¸°_ìì²´ë³_ìíì°ë ê¸°_ìê±°_ë°ì_ë°_ëíë£_ì§ê¸_íí©.hwpx",
+  "status": 200
+ },
+ {
+  "file": "incheon_gyeyang_0.xlsx",
+  "board": "incheon_gyeyang",
+  "title": "3177 2026년도 8월분 작전2동장 업무추진비 사용 내역 공개 행정지원팀 업무추진비 공개 2026.09.09 3",
+  "url": "https://www.gyeyang.go.kr/open_content/main/bbs/bbsMsgFileDown.do?bcd=board_14&msg_seq=7579&fileno=1",
+  "fmt": "xlsx",
+  "size": 13131,
+  "cd": "2026년_8월중_업무추진비_집행내역(작전2동).xlsx",
+  "status": 200
+ },
+ {
+  "file": "incheon_gyeyang_1.xlsx",
+  "board": "incheon_gyeyang",
+  "title": "3177 2026년도 8월분 작전2동장 업무추진비 사용 내역 공개 행정지원팀 업무추진비 공개 2026.09.09 3",
+  "url": "https://www.gyeyang.go.kr/open_content/main/bbs/bbsMsgFileDown.do?bcd=board_14&msg_seq=7579&fileno=1",
+  "fmt": "xlsx",
+  "size": 13131,
+  "cd": "2026년_8월중_업무추진비_집행내역(작전2동).xlsx",
+  "status": 200
+ },
+ {
+  "file": "incheon_gyeyang_2.xlsx",
+  "board": "incheon_gyeyang",
+  "title": "3176 2026년도 8월분 계양3동장 업무추진비 사용내역 공개 행정지원팀 업무추진비 공개 2026.09.08 5",
+  "url": "https://www.gyeyang.go.kr/open_content/main/bbs/bbsMsgFileDown.do?bcd=board_14&msg_seq=7578&fileno=1",
+  "fmt": "xlsx",
+  "size": 13387,
+  "cd": "계양3동장_업무추진비_사용내역(8월).xlsx",
+  "status": 200
+ },
+ {
+  "file": "incheon_ganghwa_0.xlsx",
+  "board": "incheon_ganghwa",
+  "title": "2850 2026년 8월 강화박물관 업무추진비 집행내역 강화박물관 13:55:31 3",
+  "url": "https://www.ganghwa.go.kr/open_content/main/bbs/bbsMsgFileDown.do?bcd=operation&msg_seq=6283&fileno=1",
+  "fmt": "xlsx",
+  "size": 9786,
+  "cd": "강화박물관_업무추진비_집행내역(2026년_8월).xlsx",
+  "status": 200
+ },
+ {
+  "file": "incheon_ganghwa_1.xlsx",
+  "board": "incheon_ganghwa",
+  "title": "2850 2026년 8월 강화박물관 업무추진비 집행내역 강화박물관 13:55:31 3",
+  "url": "https://www.ganghwa.go.kr/open_content/main/bbs/bbsMsgFileDown.do?bcd=operation&msg_seq=6283&fileno=1",
+  "fmt": "xlsx",
+  "size": 9786,
+  "cd": "강화박물관_업무추진비_집행내역(2026년_8월).xlsx",
+  "status": 200
+ },
+ {
+  "file": "incheon_ganghwa_2.xlsx",
+  "board": "incheon_ganghwa",
+  "title": "2849 2026년 8월 하점면 업무추진비 집행내역 하점면 2026.09.08 5",
+  "url": "https://www.ganghwa.go.kr/open_content/main/bbs/bbsMsgFileDown.do?bcd=operation&msg_seq=6282&fileno=1",
+  "fmt": "xlsx",
+  "size": 10491,
+  "cd": "업무추진비_사용내역(2026._8월).xlsx",
+  "status": 200
+ },
+ {
+  "file": "incheon_city_OPEN010305_0.pdf",
+  "board": "incheon_city",
+  "title": "11047 2026년 8월 통합돌봄국장, 통합돌봄과장 업무추진비 집행현황 통합돌봄과 2026-09-09 1",
+  "url": "https://www.incheon.go.kr/comm/getFile?srvcId=BBSTY1&upperNo=3087479&fileTy=ATTACH&fileNo=1",
+  "fmt": "pdf",
+  "size": 51158,
+  "cd": "2026년 8월 통합돌봄국장 시책추진업무추진비 집행내역.pdf",
+  "status": 200
+ },
+ {
+  "file": "incheon_city_OPEN010305_1.pdf",
+  "board": "incheon_city",
+  "title": "11046 2026년 8월 재정기획관 및 예산담당관 업무추진비 집행내역 예산담당관 2026-09-09 2",
+  "url": "https://www.incheon.go.kr/comm/getFile?srvcId=BBSTY1&upperNo=3087478&fileTy=ATTACH&fileNo=1",
+  "fmt": "pdf",
+  "size": 115163,
+  "cd": "2025년 8월분 업무추진비 집행내역.pdf",
+  "status": 200
+ },
+ {
+  "file": "incheon_city_OPEN010301_0.pdf",
+  "board": "incheon_city",
+  "title": "151 2026년 6월 시장 업무추진비 사용내역 총무과 2026-07-15 197",
+  "url": "https://www.incheon.go.kr/comm/getFile?srvcId=BBSTY1&upperNo=3081521&fileTy=ATTACH&fileNo=1",
+  "fmt": "pdf",
+  "size": 117650,
+  "cd": "1. 시장 기관운영업무추진비 사용내역(6월).pdf",
+  "status": 200
+ },
+ {
+  "file": "incheon_city_OPEN010301_1.pdf",
+  "board": "incheon_city",
+  "title": "150 2026년 4월 시장 업무추진비 사용내역 총무과 2026-05-18 281",
+  "url": "https://www.incheon.go.kr/comm/getFile?srvcId=BBSTY1&upperNo=3071498&fileTy=ATTACH&fileNo=1",
+  "fmt": "pdf",
+  "size": 114501,
+  "cd": "1. 시장 기관운영업무추진비 사용내역(4월).pdf",
+  "status": 200
+ },
+ {
+  "file": "ulsan_namgu_0.pdf",
+  "board": "ulsan_namgu",
+  "title": "1629 2026년 8월 여성가족과 업무추진비 사용내역 여성가족과 2026-09-09 1",
+  "url": "https://www.ulsannamgu.go.kr/cmm/fms/FileDown.do?atchFileId=FILE_000000000258781&fileSn=0",
+  "fmt": "pdf",
+  "size": 27959,
+  "cd": "2026년 8월 여성가족과 업무추진비 사용내역.pdf",
+  "status": 200
+ },
+ {
+  "file": "ulsan_namgu_1.pdf",
+  "board": "ulsan_namgu",
+  "title": "1628 2026년 8월 주민자치과 업무추진비 사용내역 주민자치과 2026-09-09 1",
+  "url": "https://www.ulsannamgu.go.kr/cmm/fms/FileDown.do?atchFileId=FILE_000000000258730&fileSn=0",
+  "fmt": "pdf",
+  "size": 49712,
+  "cd": "주민자치과 업무추진비 사용내역(2026. 8.).pdf",
+  "status": 200
+ },
+ {
+  "file": "ulsan_namgu_2.pdf",
+  "board": "ulsan_namgu",
+  "title": "1627 2026년 8월 위생과 업무추진비 사용내역 위생과 2026-09-07 10",
+  "url": "https://www.ulsannamgu.go.kr/cmm/fms/FileDown.do?atchFileId=FILE_000000000258657&fileSn=0",
+  "fmt": "pdf",
+  "size": 20235,
+  "cd": "2026년 8월 업무추진비 사용내역(위생과).pdf",
+  "status": 200
+ },
+ {
+  "file": "ulsan_buk_0.pdf",
+  "board": "ulsan_buk",
+  "title": "2198 2026년 6월 ~ 8월 업무추진비 집행현황(염포동) 염포동 2026-09-02",
+  "url": "https://www.bukgu.ulsan.kr/download.do?uuid=af614cb1-b218-44d4-8fd4-4873b0b3457b.pdf",
+  "fmt": "pdf",
+  "size": 48585,
+  "cd": "2026년 6월 업무추진비 집행현황(염포동장).pdf",
+  "status": 200
+ },
+ {
+  "file": "ulsan_junggu_0.html",
+  "board": "ulsan_junggu",
+  "title": "목록 = 집행내역 표",
+  "url": "https://www.junggu.ulsan.kr/mayor/board/list.ulsan?boardId=BBS_0000006&listRow=30&listCel=1&menuCd=DOM_000000201005000000",
+  "fmt": "html",
+  "size": 28854
+ },
+ {
+  "file": "ulsan_donggu_0.html",
+  "board": "ulsan_donggu",
+  "title": "상세 표",
+  "url": "https://www.donggu.ulsan.kr/mayor/expense/view.do?ymd2=20260626",
+  "fmt": "html",
+  "size": 27223
+ },
+ {
+  "file": "ulsan_city_0.html",
+  "board": "ulsan_city",
+  "title": "상세 표 (천원)",
+  "url": "https://www.ulsan.go.kr/u/rep/transfer/ecnmy/list.ulsan?mId=001004003002000000&useDe=2026-06-26",
+  "fmt": "html",
+  "size": 156783
+ },
+ {
+  "file": "daejeon_junggu_0.xlsx",
+  "board": "daejeon_junggu",
+  "title": "140 구청장 업무추진비 사용내역(2026년 6월) 행정지원과 28 2026-07-09 xlsx 파일 다운로드 구청장 업무추진비 사용내역(2026년 6월).xlsx",
+  "url": "https://www.djjunggu.go.kr/cmm/fms/FileDown.do?atchFileId=FILE_000000060401Ar8&fileSn=0",
+  "fmt": "xlsx",
+  "size": 22223,
+  "cd": "구청장 업무추진비 사용내역(2026년 6월).xlsx",
+  "status": 200
+ },
+ {
+  "file": "daejeon_junggu_1.xlsx",
+  "board": "daejeon_junggu",
+  "title": "138 구청장 업무추진비 사용내역(2026년 4월) 행정지원과 34 2026-05-08 xlsx 파일 다운로드 구청장 업무추진비 사용내역(2026년 4월).xlsx",
+  "url": "https://www.djjunggu.go.kr/cmm/fms/FileDown.do?atchFileId=FILE_000000059013Vb8&fileSn=0",
+  "fmt": "xlsx",
+  "size": 21720,
+  "cd": "구청장 업무추진비 사용내역(2026년 4월).xlsx",
+  "status": 200
+ },
+ {
+  "file": "daejeon_junggu_2.xlsx",
+  "board": "daejeon_junggu",
+  "title": "137 구청장 업무추진비 사용내역(2026년 3월) 행정지원과 1,661 2026-04-02 xlsx 파일 다운로드 구청장 업무추진비 사용내역(2026년 3월).xlsx",
+  "url": "https://www.djjunggu.go.kr/cmm/fms/FileDown.do?atchFileId=FILE_000000057924Da2&fileSn=0",
+  "fmt": "xlsx",
+  "size": 22333,
+  "cd": "구청장 업무추진비 사용내역(2026년 3월).xlsx",
+  "status": 200
+ },
+ {
+  "file": "daejeon_yuseong_0.pdf",
+  "board": "daejeon_yuseong",
+  "title": "243 2026년 6월 단체장 업무추진비 집행내역 운영지원과 43 2026-07-08 2026년 6월 단체장 업무추진비 집행내역.pdf",
+  "url": "https://www.yuseong.go.kr/cmm/fms/FileDown.do?atchFileId=FILE_000000121046Ir4&fileSn=0",
+  "fmt": "pdf",
+  "size": 87907,
+  "cd": "2026년 6월 단체장 업무추진비 집행내역.pdf",
+  "status": 200
+ },
+ {
+  "file": "daejeon_yuseong_1.pdf",
+  "board": "daejeon_yuseong",
+  "title": "241 2026년 4월 단체장 업무추진비 집행내역 운영지원과 74 2026-05-08 2026년 4월 단체장 업무추진비 집행내역.pdf",
+  "url": "https://www.yuseong.go.kr/cmm/fms/FileDown.do?atchFileId=FILE_000000119361Do1&fileSn=0",
+  "fmt": "pdf",
+  "size": 81870,
+  "cd": "2026년 4월 단체장 업무추진비 집행내역.pdf",
+  "status": 200
+ },
+ {
+  "file": "daejeon_yuseong_2.pdf",
+  "board": "daejeon_yuseong",
+  "title": "240 2026년 3월 단체장 업무추진비 집행내역 운영지원과 1,225 2026-04-08 2026년 3월 단체장 업무추진비 집행내역.pdf",
+  "url": "https://www.yuseong.go.kr/cmm/fms/FileDown.do?atchFileId=FILE_000000118818Je8&fileSn=0",
+  "fmt": "pdf",
+  "size": 83544,
+  "cd": "2026년 3월 단체장 업무추진비 집행내역.pdf",
+  "status": 200
+ },
+ {
+  "file": "daejeon_city_694_0.pdf",
+  "board": "daejeon_city",
+  "title": "과장 2026년 8월 업무추진비 집행내역(운영지원과) 업무추진비 2026.8월(운영지원과장, 비서실장).pdf",
+  "url": "https://www.daejeon.go.kr/cmm/Download.do?filePath=FileUpload/DRH/202609/20260909061859511.pdf&fileName=%EC%97%85%EB%AC%B4%EC%B6%94%EC%A7%84%EB%B9%84%202026.8%EC%9B%94%28%EC%9A%B4%EC%98%81%EC%A7%80%EC%9B%90%EA%B3%BC%EC%9E%A5%2C%20%EB%B9%84%EC%84%9C%EC%8B%A4%EC%9E%A5%29.pdf",
+  "fmt": "pdf",
+  "size": 54841,
+  "cd": "",
+  "status": 200
+ },
+ {
+  "file": "daejeon_city_694_1.xlsx",
+  "board": "daejeon_city",
+  "title": "과장 2026년 7~8월 업무추진비 집행내역(체육진흥과장) 체육진흥과장님 업무추진비 사용내역(`26.7.~8.).xlsx",
+  "url": "https://www.daejeon.go.kr/cmm/Download.do?filePath=FileUpload/DRH/202609/20260909061707075.xlsx&fileName=%EC%B2%B4%EC%9C%A1%EC%A7%84%ED%9D%A5%EA%B3%BC%EC%9E%A5%EB%8B%98%20%EC%97%85%EB%AC%B4%EC%B6%94%EC%A7%84%EB%B9%84%20%EC%82%AC%EC%9A%A9%EB%82%B4%EC%97%AD%28%6026.7.~8.%29.xlsx",
+  "fmt": "xlsx",
+  "size": 15821,
+  "cd": "",
+  "status": 200
+ },
+ {
+  "file": "daejeon_city_694_2.xlsx",
+  "board": "daejeon_city",
+  "title": "과장 2026년 3~6월 업무추진비 집행내역(체육진흥과장) 체육진흥과장님 업무추진비 사용내역(`26.3.~6.).xlsx",
+  "url": "https://www.daejeon.go.kr/cmm/Download.do?filePath=FileUpload/DRH/202609/20260909062217258.xlsx&fileName=%EC%B2%B4%EC%9C%A1%EC%A7%84%ED%9D%A5%EA%B3%BC%EC%9E%A5%EB%8B%98%20%EC%97%85%EB%AC%B4%EC%B6%94%EC%A7%84%EB%B9%84%20%EC%82%AC%EC%9A%A9%EB%82%B4%EC%97%AD%28%6026.3.~6.%29.xlsx",
+  "fmt": "xlsx",
+  "size": 15677,
+  "cd": "",
+  "status": 200
+ },
+ {
+  "file": "daejeon_city_1186_0.pdf",
+  "board": "daejeon_city",
+  "title": "시장 2026년 7월중 업무추진비 사용내역 공개 1.시장(‘26.7월).pdf",
+  "url": "https://www.daejeon.go.kr/cmm/Download.do?filePath=FileUpload/DRH/202608/20260807090414893.pdf&fileName=1.%EC%8B%9C%EC%9E%A5%28%E2%80%9826.7%EC%9B%94%29.pdf",
+  "fmt": "pdf",
+  "size": 58681,
+  "cd": "",
+  "status": 200
+ },
+ {
+  "file": "daejeon_city_1186_1.pdf",
+  "board": "daejeon_city",
+  "title": "시장 2026년 6월중 업무추진비 사용내역 공개 0. 26. 6월 사용내역공개.pdf",
+  "url": "https://www.daejeon.go.kr/cmm/Download.do?filePath=FileUpload/DRH/202607/20260709114709350.pdf&fileName=0.%2026.%206%EC%9B%94%20%EC%82%AC%EC%9A%A9%EB%82%B4%EC%97%AD%EA%B3%B5%EA%B0%9C.pdf",
+  "fmt": "pdf",
+  "size": 122640,
+  "cd": "",
+  "status": 200
+ },
+ {
+  "file": "daejeon_city_1186_2.pdf",
+  "board": "daejeon_city",
+  "title": "시장 2026년 5월중 업무추진비 사용내역 공개 0. 26. 5월 사용내역공개.pdf",
+  "url": "https://www.daejeon.go.kr/cmm/Download.do?filePath=FileUpload/DRH/202606/20260610034608107.pdf&fileName=0.%2026.%205%EC%9B%94%20%EC%82%AC%EC%9A%A9%EB%82%B4%EC%97%AD%EA%B3%B5%EA%B0%9C.pdf",
+  "fmt": "pdf",
+  "size": 106848,
+  "cd": "",
+  "status": 200
+ },
+ {
+  "file": "daejeon_city_747_0.pdf",
+  "board": "daejeon_city",
+  "title": "국장 2026년 8월 업무추진비 집행내역(행정자치국) 업무추진비 2026.8월(행정자치국장).pdf",
+  "url": "https://www.daejeon.go.kr/cmm/Download.do?filePath=FileUpload/DRH/202609/20260909061817251.pdf&fileName=%EC%97%85%EB%AC%B4%EC%B6%94%EC%A7%84%EB%B9%84%202026.8%EC%9B%94%28%ED%96%89%EC%A0%95%EC%9E%90%EC%B9%98%EA%B5%AD%EC%9E%A5%29.pdf",
+  "fmt": "pdf",
+  "size": 45437,
+  "cd": "",
+  "status": 200
+ },
+ {
+  "file": "daejeon_city_747_1.xlsx",
+  "board": "daejeon_city",
+  "title": "국장 2026년 7~8월 업무추진비 집행내역(체육건강국장) 체육건강국장 업무추진비 사용내역(`26.7.~8.).xlsx",
+  "url": "https://www.daejeon.go.kr/cmm/Download.do?filePath=FileUpload/DRH/202609/20260909061523294.xlsx&fileName=%EC%B2%B4%EC%9C%A1%EA%B1%B4%EA%B0%95%EA%B5%AD%EC%9E%A5%20%EC%97%85%EB%AC%B4%EC%B6%94%EC%A7%84%EB%B9%84%20%EC%82%AC%EC%9A%A9%EB%82%B4%EC%97%AD%28%6026.7.~8.%29.xlsx",
+  "fmt": "xlsx",
+  "size": 15709,
+  "cd": "",
+  "status": 200
+ },
+ {
+  "file": "daejeon_city_747_2.xlsx",
+  "board": "daejeon_city",
+  "title": "국장 2026년 3~6월 업무추진비 집행내역(체육건강국장) 체육진흥과장님 업무추진비 사용내역(`26.3.~6.).xlsx",
+  "url": "https://www.daejeon.go.kr/cmm/Download.do?filePath=FileUpload/DRH/202609/20260909062120280.xlsx&fileName=%EC%B2%B4%EC%9C%A1%EC%A7%84%ED%9D%A5%EA%B3%BC%EC%9E%A5%EB%8B%98%20%EC%97%85%EB%AC%B4%EC%B6%94%EC%A7%84%EB%B9%84%20%EC%82%AC%EC%9A%A9%EB%82%B4%EC%97%AD%28%6026.3.~6.%29.xlsx",
+  "fmt": "xlsx",
+  "size": 15677,
+  "cd": "",
+  "status": 200
+ },
+ {
+  "file": "incheon_jemulpo_0.pdf",
+  "board": "incheon_jemulpo",
+  "title": "13747 2026년 8월중 업무추진비 집행내역(주민생활국장) 일반공공행정 > 과장급 이상 업무추진비 사용내역 홍보체육과 2026.09.03 10",
+  "url": "https://www.jemulpo.go.kr/main/bbs/bbsMsgFileDown.do?bcd=opendata&msg_seq=14521&fileno=1",
+  "fmt": "pdf",
+  "size": 58113,
+  "cd": "2026ëë_8ì_ê¸°ê´ì´ììë¬´ì¶ì§ë¹_ì§íë´ì­(ì£¼ë¯¼ìíêµ­).pdf",
+  "status": 200
+ },
+ {
+  "file": "incheon_jemulpo_1.pdf",
+  "board": "incheon_jemulpo",
+  "title": "13747 2026년 8월중 업무추진비 집행내역(주민생활국장) 일반공공행정 > 과장급 이상 업무추진비 사용내역 홍보체육과 2026.09.03 10",
+  "url": "https://www.jemulpo.go.kr/main/bbs/bbsMsgFileDown.do?bcd=opendata&msg_seq=14521&fileno=1",
+  "fmt": "pdf",
+  "size": 58113,
+  "cd": "2026ëë_8ì_ê¸°ê´ì´ììë¬´ì¶ì§ë¹_ì§íë´ì­(ì£¼ë¯¼ìíêµ­).pdf",
+  "status": 200
+ },
+ {
+  "file": "incheon_bupyeong_0.html",
+  "board": "incheon_bupyeong",
+  "title": "",
+  "url": "https://www.icbp.go.kr/main/bbs/bbsMsgFileDown.do?bcd=expense&msg_seq=3352&fileno=1",
+  "fmt": "html",
+  "size": 251279,
+  "cd": "",
+  "status": 200
+ },
+ {
+  "file": "incheon_bupyeong_1.html",
+  "board": "incheon_bupyeong",
+  "title": "",
+  "url": "https://www.icbp.go.kr/main/bbs/bbsMsgFileDown.do?bcd=expense&msg_seq=105&fileno=1",
+  "fmt": "html",
+  "size": 251279,
+  "cd": "",
+  "status": 200
+ }
+]

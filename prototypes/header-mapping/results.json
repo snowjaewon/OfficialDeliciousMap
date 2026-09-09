@@ -1,0 +1,5880 @@
+[
+ {
+  "file": "busan_busanjin_0.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 976,
+   "out": 162,
+   "thought": null,
+   "sec": 3.71
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    1
+   ],
+   "data_start_row": 2,
+   "columns": [
+    {
+     "col": 1,
+     "role": "dept",
+     "header_text": "부서명"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "집행일자"
+    },
+    {
+     "col": 3,
+     "role": "place",
+     "header_text": "사용장소"
+    },
+    {
+     "col": 4,
+     "role": "purpose",
+     "header_text": "집  행  내  용"
+    },
+    {
+     "col": 5,
+     "role": "amount",
+     "header_text": "금액(원)"
+    },
+    {
+     "col": 6,
+     "role": "count",
+     "header_text": "대상(인원)"
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": "결제방법"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "busan_busanjin_1.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 915,
+   "out": 174,
+   "thought": null,
+   "sec": 3.05
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    1
+   ],
+   "data_start_row": null,
+   "columns": [
+    {
+     "col": 2,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 3,
+     "role": "date",
+     "header_text": "집행일자"
+    },
+    {
+     "col": 4,
+     "role": "place",
+     "header_text": "사용 장소"
+    },
+    {
+     "col": 5,
+     "role": "purpose",
+     "header_text": "집  행  내  용"
+    },
+    {
+     "col": 6,
+     "role": "amount",
+     "header_text": "금액(원)"
+    },
+    {
+     "col": 7,
+     "role": "count",
+     "header_text": "대상(인원)"
+    },
+    {
+     "col": 8,
+     "role": "method",
+     "header_text": "결제방법"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": "데이터가 없음(해당없음 및 합계만 존재)"
+  }
+ },
+ {
+  "file": "busan_busanjin_2.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 905,
+   "out": 282,
+   "thought": null,
+   "sec": 3.16
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    1
+   ],
+   "data_start_row": 2,
+   "columns": [
+    {
+     "col": 1,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "집행일자"
+    },
+    {
+     "col": 3,
+     "role": "place",
+     "header_text": "사용 장소"
+    },
+    {
+     "col": 4,
+     "role": "purpose",
+     "header_text": "집  행  내  용"
+    },
+    {
+     "col": 5,
+     "role": "amount",
+     "header_text": "금액(원)"
+    },
+    {
+     "col": 6,
+     "role": "count",
+     "header_text": "대상(인원)"
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": "결제방법"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": "데이터 행인 r2에 '해당없음'만 표시되어 있으나 집행내역 표 형태를 갖추고 있으므로 table로 매핑함"
+  }
+ },
+ {
+  "file": "busan_dongnae_2.pdf",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1611,
+   "out": 357,
+   "thought": null,
+   "sec": 2.9
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    1
+   ],
+   "data_start_row": 2,
+   "columns": [
+    {
+     "col": 0,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 1,
+     "role": "date",
+     "header_text": "일시"
+    },
+    {
+     "col": 2,
+     "role": "place",
+     "header_text": "사용장소 / (가맹점명)"
+    },
+    {
+     "col": 3,
+     "role": "purpose",
+     "header_text": "집행목적(내용)"
+    },
+    {
+     "col": 4,
+     "role": "count",
+     "header_text": "대상 / 인원(명)"
+    },
+    {
+     "col": 5,
+     "role": "amount",
+     "header_text": "금액 / (원)"
+    },
+    {
+     "col": 6,
+     "role": "method",
+     "header_text": "사용 / 방법"
+    },
+    {
+     "col": 7,
+     "role": "category",
+     "header_text": "비목"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": "None"
+  }
+ },
+ {
+  "file": "busan_gijang_0.html",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1874,
+   "out": 214,
+   "thought": null,
+   "sec": 2.98
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    0
+   ],
+   "data_start_row": 1,
+   "columns": [
+    {
+     "col": 0,
+     "role": "dept",
+     "header_text": "부서"
+    },
+    {
+     "col": 1,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "사용일자(일시)"
+    },
+    {
+     "col": 3,
+     "role": "place",
+     "header_text": "사용장소(가맹점)"
+    },
+    {
+     "col": 4,
+     "role": "purpose",
+     "header_text": "사용목적(내역)"
+    },
+    {
+     "col": 5,
+     "role": "amount",
+     "header_text": "사용금액(원)"
+    },
+    {
+     "col": 6,
+     "role": "count",
+     "header_text": "대상인원(명)"
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": "사용방법"
+    },
+    {
+     "col": 8,
+     "role": "other",
+     "header_text": "연도"
+    },
+    {
+     "col": 9,
+     "role": "other",
+     "header_text": "월"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "busan_haeundae_0.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1090,
+   "out": 189,
+   "thought": null,
+   "sec": 2.26
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    1
+   ],
+   "data_start_row": 2,
+   "columns": [
+    {
+     "col": 0,
+     "role": "dept",
+     "header_text": "부 서"
+    },
+    {
+     "col": 1,
+     "role": "date",
+     "header_text": "사용일시"
+    },
+    {
+     "col": 2,
+     "role": "category",
+     "header_text": "사업명(예산과목)"
+    },
+    {
+     "col": 3,
+     "role": "purpose",
+     "header_text": "사용목적"
+    },
+    {
+     "col": 4,
+     "role": "amount",
+     "header_text": "사용금액(원)"
+    },
+    {
+     "col": 5,
+     "role": "count",
+     "header_text": "사용대상"
+    },
+    {
+     "col": 6,
+     "role": "method",
+     "header_text": "결제방법"
+    },
+    {
+     "col": 7,
+     "role": "place",
+     "header_text": "사용처"
+    },
+    {
+     "col": 8,
+     "role": "other",
+     "header_text": "비고"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "daegu_buk_0.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1436,
+   "out": 174,
+   "thought": null,
+   "sec": 2.63
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    2
+   ],
+   "data_start_row": 3,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "category",
+     "header_text": "구분"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "집행일시"
+    },
+    {
+     "col": 3,
+     "role": "purpose",
+     "header_text": "집행목적"
+    },
+    {
+     "col": 4,
+     "role": "amount",
+     "header_text": "집행금액"
+    },
+    {
+     "col": 5,
+     "role": "place",
+     "header_text": "집행장소"
+    },
+    {
+     "col": 6,
+     "role": "count",
+     "header_text": "대상인원(명)"
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": "결제방법"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "daegu_buk_1.pdf",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1255,
+   "out": 177,
+   "thought": null,
+   "sec": 2.53
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    0
+   ],
+   "data_start_row": 1,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "category",
+     "header_text": "구분"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "집행일시"
+    },
+    {
+     "col": 3,
+     "role": "purpose",
+     "header_text": "집행목적"
+    },
+    {
+     "col": 4,
+     "role": "amount",
+     "header_text": "집행금액(원)"
+    },
+    {
+     "col": 5,
+     "role": "place",
+     "header_text": "집행장소"
+    },
+    {
+     "col": 6,
+     "role": "count",
+     "header_text": "대상인원(명)"
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": "결제방법"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "daegu_buk_2.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1079,
+   "out": 260,
+   "thought": null,
+   "sec": 2.65
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    2
+   ],
+   "data_start_row": 3,
+   "columns": [
+    {
+     "col": 0,
+     "role": "category",
+     "header_text": "구 분"
+    },
+    {
+     "col": 1,
+     "role": "date",
+     "header_text": "사용일시 / (승인일시)"
+    },
+    {
+     "col": 2,
+     "role": "purpose",
+     "header_text": "집행목적"
+    },
+    {
+     "col": 3,
+     "role": "place",
+     "header_text": "집행장소"
+    },
+    {
+     "col": 4,
+     "role": "count",
+     "header_text": "대상인원"
+    },
+    {
+     "col": 5,
+     "role": "amount",
+     "header_text": "사용금액"
+    },
+    {
+     "col": 6,
+     "role": "method",
+     "header_text": "결제방법 / (카드/현금)"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": "Standard departmental operational expense table"
+  }
+ },
+ {
+  "file": "daegu_city_0.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1254,
+   "out": 289,
+   "thought": null,
+   "sec": 4.99
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    3
+   ],
+   "data_start_row": 5,
+   "columns": [
+    {
+     "col": 0,
+     "role": "dept",
+     "header_text": "부서명"
+    },
+    {
+     "col": 1,
+     "role": "date",
+     "header_text": "집행일자"
+    },
+    {
+     "col": 2,
+     "role": "purpose",
+     "header_text": "집행내역"
+    },
+    {
+     "col": 3,
+     "role": "amount",
+     "header_text": "금액(원)"
+    },
+    {
+     "col": 4,
+     "role": "place",
+     "header_text": "집행장소"
+    },
+    {
+     "col": 5,
+     "role": "count",
+     "header_text": "대상인원(명)"
+    },
+    {
+     "col": 6,
+     "role": "method",
+     "header_text": "결제방법"
+    },
+    {
+     "col": 7,
+     "role": "other",
+     "header_text": "비  고"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": "Row 4 is a summary row and skipped. Row 3 is the header row."
+  }
+ },
+ {
+  "file": "daegu_city_1.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1340,
+   "out": 176,
+   "thought": null,
+   "sec": 4.24
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    3
+   ],
+   "data_start_row": 5,
+   "columns": [
+    {
+     "col": 0,
+     "role": "dept",
+     "header_text": "부서명"
+    },
+    {
+     "col": 1,
+     "role": "date",
+     "header_text": "집행일자"
+    },
+    {
+     "col": 2,
+     "role": "purpose",
+     "header_text": "집행내역"
+    },
+    {
+     "col": 3,
+     "role": "amount",
+     "header_text": "금액(원)"
+    },
+    {
+     "col": 4,
+     "role": "place",
+     "header_text": "집행장소"
+    },
+    {
+     "col": 5,
+     "role": "count",
+     "header_text": "대상인원(명)"
+    },
+    {
+     "col": 6,
+     "role": "method",
+     "header_text": "결제방법"
+    },
+    {
+     "col": 7,
+     "role": "other",
+     "header_text": "비 고"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "daegu_city_2.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1485,
+   "out": 291,
+   "thought": null,
+   "sec": 3.89
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    3
+   ],
+   "data_start_row": 5,
+   "columns": [
+    {
+     "col": 0,
+     "role": "dept",
+     "header_text": "부서명"
+    },
+    {
+     "col": 1,
+     "role": "date",
+     "header_text": "집행일자"
+    },
+    {
+     "col": 2,
+     "role": "purpose",
+     "header_text": "집행내역"
+    },
+    {
+     "col": 3,
+     "role": "amount",
+     "header_text": "금액(원)"
+    },
+    {
+     "col": 4,
+     "role": "place",
+     "header_text": "집행장소"
+    },
+    {
+     "col": 5,
+     "role": "count",
+     "header_text": "대상인원(명)"
+    },
+    {
+     "col": 6,
+     "role": "method",
+     "header_text": "결제방법"
+    },
+    {
+     "col": 7,
+     "role": "other",
+     "header_text": "비고"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": "Row 4 is a summary row (total) and skipped; actual data starts at row 5."
+  }
+ },
+ {
+  "file": "daejeon_city_1186_0.pdf",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1912,
+   "out": 329,
+   "thought": null,
+   "sec": 3.18
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    0
+   ],
+   "data_start_row": 2,
+   "columns": [
+    {
+     "col": 0,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 1,
+     "role": "date",
+     "header_text": "사용일자"
+    },
+    {
+     "col": 2,
+     "role": "time",
+     "header_text": "시간"
+    },
+    {
+     "col": 3,
+     "role": "place",
+     "header_text": "사용장소"
+    },
+    {
+     "col": 4,
+     "role": "address",
+     "header_text": "구별"
+    },
+    {
+     "col": 5,
+     "role": "purpose",
+     "header_text": "집행목적"
+    },
+    {
+     "col": 6,
+     "role": "amount",
+     "header_text": "사용금액(원)"
+    },
+    {
+     "col": 7,
+     "role": "count",
+     "header_text": "인원(명)"
+    },
+    {
+     "col": 8,
+     "role": "method",
+     "header_text": "결제방법"
+    },
+    {
+     "col": 9,
+     "role": "category",
+     "header_text": "비목"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": "Row 1 contains the summary total and was skipped from data_start_row."
+  }
+ },
+ {
+  "file": "daejeon_city_1186_1.pdf",
+  "layout_ok": true,
+  "usage": {
+   "in": 851,
+   "out": 78,
+   "thought": null,
+   "sec": 2.52
+  },
+  "ans": {
+   "layout": "none",
+   "header_rows": [],
+   "data_start_row": null,
+   "columns": [],
+   "amount_unit": "unknown",
+   "year_hint": "2026",
+   "note": "표 내역이 없는 표지/안내 페이지입니다."
+  }
+ },
+ {
+  "file": "daejeon_city_1186_2.pdf",
+  "layout_ok": true,
+  "usage": {
+   "in": 828,
+   "out": 73,
+   "thought": null,
+   "sec": 1.82
+  },
+  "ans": {
+   "layout": "none",
+   "header_rows": [],
+   "data_start_row": null,
+   "columns": [],
+   "amount_unit": "unknown",
+   "year_hint": "2026",
+   "note": "No table found in the provided grid."
+  }
+ },
+ {
+  "file": "daejeon_city_694_0.pdf",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 2008,
+   "out": 338,
+   "thought": null,
+   "sec": 2.55
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    1
+   ],
+   "data_start_row": 2,
+   "columns": [
+    {
+     "col": 0,
+     "role": "user",
+     "header_text": "구분"
+    },
+    {
+     "col": 1,
+     "role": "date",
+     "header_text": "일자"
+    },
+    {
+     "col": 2,
+     "role": "time",
+     "header_text": "시간"
+    },
+    {
+     "col": 3,
+     "role": "place",
+     "header_text": "장소"
+    },
+    {
+     "col": 4,
+     "role": "purpose",
+     "header_text": "목적"
+    },
+    {
+     "col": 5,
+     "role": "amount",
+     "header_text": "금액(원)"
+    },
+    {
+     "col": 6,
+     "role": "count",
+     "header_text": "인원"
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": "결제방식"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "daejeon_city_694_1.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1982,
+   "out": 193,
+   "thought": null,
+   "sec": 2.63
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    1
+   ],
+   "data_start_row": 2,
+   "columns": [
+    {
+     "col": 0,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 1,
+     "role": "date",
+     "header_text": "사용일자"
+    },
+    {
+     "col": 2,
+     "role": "time",
+     "header_text": "시간"
+    },
+    {
+     "col": 3,
+     "role": "place",
+     "header_text": "사용장소 / (가맹점명)"
+    },
+    {
+     "col": 4,
+     "role": "address",
+     "header_text": "주소"
+    },
+    {
+     "col": 5,
+     "role": "purpose",
+     "header_text": "사용목적(내역)"
+    },
+    {
+     "col": 6,
+     "role": "amount",
+     "header_text": "사용금액(원)"
+    },
+    {
+     "col": 7,
+     "role": "count",
+     "header_text": "대상인원(명)"
+    },
+    {
+     "col": 8,
+     "role": "method",
+     "header_text": "사용방법"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026"
+  }
+ },
+ {
+  "file": "daejeon_city_694_2.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1893,
+   "out": 346,
+   "thought": null,
+   "sec": 2.83
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    1
+   ],
+   "data_start_row": 2,
+   "columns": [
+    {
+     "col": 0,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 1,
+     "role": "date",
+     "header_text": "사용일자"
+    },
+    {
+     "col": 2,
+     "role": "time",
+     "header_text": "시간"
+    },
+    {
+     "col": 3,
+     "role": "place",
+     "header_text": "사용장소 / (가맹점명)"
+    },
+    {
+     "col": 4,
+     "role": "purpose",
+     "header_text": "사용목적(내역)"
+    },
+    {
+     "col": 5,
+     "role": "amount",
+     "header_text": "사용금액(원)"
+    },
+    {
+     "col": 6,
+     "role": "count",
+     "header_text": "대상인원(명)"
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": "사용방법"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026"
+  }
+ },
+ {
+  "file": "daejeon_city_747_0.pdf",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 2094,
+   "out": 268,
+   "thought": null,
+   "sec": 3.44
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    0
+   ],
+   "data_start_row": 1,
+   "columns": [
+    {
+     "col": 0,
+     "role": "category",
+     "header_text": "구분"
+    },
+    {
+     "col": 1,
+     "role": "date",
+     "header_text": "일자"
+    },
+    {
+     "col": 2,
+     "role": "time",
+     "header_text": "시간"
+    },
+    {
+     "col": 3,
+     "role": "place",
+     "header_text": "장소"
+    },
+    {
+     "col": 4,
+     "role": "purpose",
+     "header_text": "목적"
+    },
+    {
+     "col": 5,
+     "role": "amount",
+     "header_text": "금액(원)"
+    },
+    {
+     "col": 6,
+     "role": "count",
+     "header_text": "인원"
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": "결제방식"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": "Standard execution record table with 8 columns."
+  }
+ },
+ {
+  "file": "daejeon_city_747_1.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1946,
+   "out": 310,
+   "thought": null,
+   "sec": 5.0
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    1
+   ],
+   "data_start_row": 2,
+   "columns": [
+    {
+     "col": 0,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 1,
+     "role": "date",
+     "header_text": "사용일자"
+    },
+    {
+     "col": 2,
+     "role": "time",
+     "header_text": "시간"
+    },
+    {
+     "col": 3,
+     "role": "place",
+     "header_text": "사용장소 / (가맹점명)"
+    },
+    {
+     "col": 4,
+     "role": "address",
+     "header_text": "주소"
+    },
+    {
+     "col": 5,
+     "role": "purpose",
+     "header_text": "사용목적(내역)"
+    },
+    {
+     "col": 6,
+     "role": "amount",
+     "header_text": "사용금액(원)"
+    },
+    {
+     "col": 7,
+     "role": "count",
+     "header_text": "대상인원(명)"
+    },
+    {
+     "col": 8,
+     "role": "method",
+     "header_text": "사용방법"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": "Standard spending report with detailed headers and individual line items."
+  }
+ },
+ {
+  "file": "daejeon_junggu_0.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1865,
+   "out": 319,
+   "thought": null,
+   "sec": 4.15
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    1
+   ],
+   "data_start_row": 3,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "사용일자"
+    },
+    {
+     "col": 3,
+     "role": "time",
+     "header_text": "시간"
+    },
+    {
+     "col": 4,
+     "role": "place",
+     "header_text": "사용장소 / (가맹점명)"
+    },
+    {
+     "col": 5,
+     "role": "purpose",
+     "header_text": "사용목적(내역)"
+    },
+    {
+     "col": 6,
+     "role": "count",
+     "header_text": "대상인원(명)"
+    },
+    {
+     "col": 7,
+     "role": "amount",
+     "header_text": "사용금액(원)"
+    },
+    {
+     "col": 8,
+     "role": "method",
+     "header_text": "사용방법"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": "Row 2 contains summary totals (계) and is skipped. Data starts from Row 3."
+  }
+ },
+ {
+  "file": "daejeon_junggu_1.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1938,
+   "out": 197,
+   "thought": null,
+   "sec": 3.89
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    1
+   ],
+   "data_start_row": 3,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "사용일자"
+    },
+    {
+     "col": 3,
+     "role": "time",
+     "header_text": "시간"
+    },
+    {
+     "col": 4,
+     "role": "place",
+     "header_text": "사용장소 / (가맹점명)"
+    },
+    {
+     "col": 5,
+     "role": "purpose",
+     "header_text": "사용목적(내역)"
+    },
+    {
+     "col": 6,
+     "role": "count",
+     "header_text": "대상인원(명)"
+    },
+    {
+     "col": 7,
+     "role": "amount",
+     "header_text": "사용금액(원)"
+    },
+    {
+     "col": 8,
+     "role": "method",
+     "header_text": "사용방법"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "daejeon_junggu_2.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1863,
+   "out": 409,
+   "thought": null,
+   "sec": 2.43
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    1
+   ],
+   "data_start_row": 3,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "사용일자"
+    },
+    {
+     "col": 3,
+     "role": "time",
+     "header_text": "시간"
+    },
+    {
+     "col": 4,
+     "role": "place",
+     "header_text": "사용장소 / (가맹점명)"
+    },
+    {
+     "col": 5,
+     "role": "purpose",
+     "header_text": "사용목적(내역)"
+    },
+    {
+     "col": 6,
+     "role": "count",
+     "header_text": "대상인원(명)"
+    },
+    {
+     "col": 7,
+     "role": "amount",
+     "header_text": "사용금액(원)"
+    },
+    {
+     "col": 8,
+     "role": "method",
+     "header_text": "사용방법"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": "r2행의 '계' 요약행을 건너뛰고 r3행부터 데이터가 시작됩니다."
+  }
+ },
+ {
+  "file": "daejeon_yuseong_0.pdf",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1745,
+   "out": 336,
+   "thought": null,
+   "sec": 4.33
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    0
+   ],
+   "data_start_row": 1,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "사용일"
+    },
+    {
+     "col": 3,
+     "role": "time",
+     "header_text": "시간"
+    },
+    {
+     "col": 4,
+     "role": "place",
+     "header_text": "장소/구입처"
+    },
+    {
+     "col": 5,
+     "role": "address",
+     "header_text": "주소지"
+    },
+    {
+     "col": 6,
+     "role": "purpose",
+     "header_text": "집행목적"
+    },
+    {
+     "col": 7,
+     "role": "count",
+     "header_text": "대상인원"
+    },
+    {
+     "col": 8,
+     "role": "amount",
+     "header_text": "집행액"
+    },
+    {
+     "col": 9,
+     "role": "method",
+     "header_text": "결재방법"
+    },
+    {
+     "col": 10,
+     "role": "category",
+     "header_text": "비목"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": "None"
+  }
+ },
+ {
+  "file": "daejeon_yuseong_1.pdf",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1607,
+   "out": 216,
+   "thought": null,
+   "sec": 2.26
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    0
+   ],
+   "data_start_row": 1,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "사용일"
+    },
+    {
+     "col": 3,
+     "role": "time",
+     "header_text": "시간"
+    },
+    {
+     "col": 4,
+     "role": "place",
+     "header_text": "장소/구입처"
+    },
+    {
+     "col": 5,
+     "role": "address",
+     "header_text": "주소지"
+    },
+    {
+     "col": 6,
+     "role": "purpose",
+     "header_text": "집행목적"
+    },
+    {
+     "col": 7,
+     "role": "count",
+     "header_text": "대상인원"
+    },
+    {
+     "col": 8,
+     "role": "amount",
+     "header_text": "집행액"
+    },
+    {
+     "col": 9,
+     "role": "method",
+     "header_text": "결재방법"
+    },
+    {
+     "col": 10,
+     "role": "category",
+     "header_text": "비목"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "daejeon_yuseong_2.pdf",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1777,
+   "out": 213,
+   "thought": null,
+   "sec": 3.81
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    0
+   ],
+   "data_start_row": 1,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "사용일"
+    },
+    {
+     "col": 3,
+     "role": "time",
+     "header_text": "시간"
+    },
+    {
+     "col": 4,
+     "role": "place",
+     "header_text": "장소/구입처"
+    },
+    {
+     "col": 5,
+     "role": "address",
+     "header_text": "주소지"
+    },
+    {
+     "col": 6,
+     "role": "purpose",
+     "header_text": "집행목적"
+    },
+    {
+     "col": 7,
+     "role": "count",
+     "header_text": "대상인원"
+    },
+    {
+     "col": 8,
+     "role": "amount",
+     "header_text": "집행액"
+    },
+    {
+     "col": 9,
+     "role": "method",
+     "header_text": "결재방법"
+    },
+    {
+     "col": 10,
+     "role": "category",
+     "header_text": "비목"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026"
+  }
+ },
+ {
+  "file": "gwangju_buk_0.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1771,
+   "out": 182,
+   "thought": null,
+   "sec": 2.01
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    1
+   ],
+   "data_start_row": 2,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "일시"
+    },
+    {
+     "col": 3,
+     "role": "place",
+     "header_text": "장소"
+    },
+    {
+     "col": 4,
+     "role": "count",
+     "header_text": "대상자 / 인원수"
+    },
+    {
+     "col": 5,
+     "role": "amount",
+     "header_text": "금 액"
+    },
+    {
+     "col": 6,
+     "role": "purpose",
+     "header_text": "집 행 목 적"
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": "결 제"
+    },
+    {
+     "col": 8,
+     "role": "other",
+     "header_text": "비 고"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "gwangju_buk_1.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1069,
+   "out": 256,
+   "thought": null,
+   "sec": 3.16
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    1
+   ],
+   "data_start_row": 2,
+   "columns": [
+    {
+     "col": 1,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "일시"
+    },
+    {
+     "col": 3,
+     "role": "purpose",
+     "header_text": "적 요"
+    },
+    {
+     "col": 4,
+     "role": "place",
+     "header_text": "채주"
+    },
+    {
+     "col": 5,
+     "role": "count",
+     "header_text": "인원"
+    },
+    {
+     "col": 6,
+     "role": "amount",
+     "header_text": "금액"
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": "결제방법"
+    },
+    {
+     "col": 8,
+     "role": "category",
+     "header_text": "비 고"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "gwangju_buk_2.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1689,
+   "out": 155,
+   "thought": null,
+   "sec": 2.17
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    1
+   ],
+   "data_start_row": 2,
+   "columns": [
+    {
+     "col": 0,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 1,
+     "role": "date",
+     "header_text": "품의일자"
+    },
+    {
+     "col": 2,
+     "role": "place",
+     "header_text": "장소"
+    },
+    {
+     "col": 3,
+     "role": "purpose",
+     "header_text": "집행목적"
+    },
+    {
+     "col": 4,
+     "role": "count",
+     "header_text": "대상인원수"
+    },
+    {
+     "col": 5,
+     "role": "amount",
+     "header_text": "품의금액"
+    },
+    {
+     "col": 6,
+     "role": "method",
+     "header_text": "결재방법"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "gwangju_city_0.ole",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1803,
+   "out": 349,
+   "thought": null,
+   "sec": 2.81
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    1
+   ],
+   "data_start_row": 2,
+   "columns": [
+    {
+     "col": 1,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "사용일시"
+    },
+    {
+     "col": 3,
+     "role": "place",
+     "header_text": "사용장소"
+    },
+    {
+     "col": 4,
+     "role": "purpose",
+     "header_text": "집행목적"
+    },
+    {
+     "col": 5,
+     "role": "count",
+     "header_text": "대상인원수 / (명)"
+    },
+    {
+     "col": 6,
+     "role": "amount",
+     "header_text": "사용금액 / (원)"
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": "결제방법"
+    },
+    {
+     "col": 8,
+     "role": "category",
+     "header_text": "비목"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "gwangju_city_1.ole",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1608,
+   "out": 284,
+   "thought": null,
+   "sec": 5.15
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    1
+   ],
+   "data_start_row": 3,
+   "columns": [
+    {
+     "col": 1,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "사용일시"
+    },
+    {
+     "col": 3,
+     "role": "place",
+     "header_text": "사용장소"
+    },
+    {
+     "col": 4,
+     "role": "purpose",
+     "header_text": "집행목적"
+    },
+    {
+     "col": 5,
+     "role": "count",
+     "header_text": "대상인원수 / (명)"
+    },
+    {
+     "col": 6,
+     "role": "amount",
+     "header_text": "사용금액 / (원)"
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": "결제방법"
+    },
+    {
+     "col": 8,
+     "role": "category",
+     "header_text": "비목"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": "Row 2 contains total summary (계) and is skipped."
+  }
+ },
+ {
+  "file": "gwangju_city_2.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1722,
+   "out": 177,
+   "thought": null,
+   "sec": 2.9
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    1
+   ],
+   "data_start_row": 3,
+   "columns": [
+    {
+     "col": 1,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "사용일시"
+    },
+    {
+     "col": 3,
+     "role": "place",
+     "header_text": "사용장소"
+    },
+    {
+     "col": 4,
+     "role": "purpose",
+     "header_text": "집행목적"
+    },
+    {
+     "col": 5,
+     "role": "count",
+     "header_text": "대상인원수 / (명)"
+    },
+    {
+     "col": 6,
+     "role": "amount",
+     "header_text": "사용금액 / (원)"
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": "결제방법"
+    },
+    {
+     "col": 8,
+     "role": "category",
+     "header_text": "비목"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "gwangju_dong_0.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1647,
+   "out": 263,
+   "thought": null,
+   "sec": 2.62
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    1
+   ],
+   "data_start_row": 2,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "date",
+     "header_text": "일  시"
+    },
+    {
+     "col": 2,
+     "role": "purpose",
+     "header_text": "집행목적"
+    },
+    {
+     "col": 3,
+     "role": "count",
+     "header_text": "인 원"
+    },
+    {
+     "col": 4,
+     "role": "amount",
+     "header_text": "금  액"
+    },
+    {
+     "col": 5,
+     "role": "place",
+     "header_text": "장  소"
+    },
+    {
+     "col": 6,
+     "role": "method",
+     "header_text": "결제방법"
+    },
+    {
+     "col": 7,
+     "role": "other",
+     "header_text": "비고"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": "None"
+  }
+ },
+ {
+  "file": "gwangju_dong_2.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1825,
+   "out": 376,
+   "thought": null,
+   "sec": 3.89
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    1
+   ],
+   "data_start_row": 2,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "date",
+     "header_text": "일  시"
+    },
+    {
+     "col": 2,
+     "role": "purpose",
+     "header_text": "집행목적"
+    },
+    {
+     "col": 3,
+     "role": "count",
+     "header_text": "대상인원수"
+    },
+    {
+     "col": 4,
+     "role": "amount",
+     "header_text": "금  액"
+    },
+    {
+     "col": 5,
+     "role": "place",
+     "header_text": "장  소"
+    },
+    {
+     "col": 6,
+     "role": "address",
+     "header_text": "주소"
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": "결제방법"
+    },
+    {
+     "col": 8,
+     "role": "other",
+     "header_text": "비고"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "gwangju_nam_0.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1547,
+   "out": 213,
+   "thought": null,
+   "sec": 3.26
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    1
+   ],
+   "data_start_row": 2,
+   "columns": [
+    {
+     "col": 0,
+     "role": "date",
+     "header_text": "집행일자"
+    },
+    {
+     "col": 1,
+     "role": "purpose",
+     "header_text": "적     요"
+    },
+    {
+     "col": 2,
+     "role": "amount",
+     "header_text": "금액"
+    },
+    {
+     "col": 3,
+     "role": "count",
+     "header_text": "인원"
+    },
+    {
+     "col": 4,
+     "role": "place",
+     "header_text": "거래처"
+    },
+    {
+     "col": 5,
+     "role": "method",
+     "header_text": "비고"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "gwangju_nam_1.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1613,
+   "out": 214,
+   "thought": null,
+   "sec": 2.79
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    1
+   ],
+   "data_start_row": 2,
+   "columns": [
+    {
+     "col": 0,
+     "role": "date",
+     "header_text": "집행일자"
+    },
+    {
+     "col": 1,
+     "role": "purpose",
+     "header_text": "적 요"
+    },
+    {
+     "col": 2,
+     "role": "amount",
+     "header_text": "금액(원)"
+    },
+    {
+     "col": 3,
+     "role": "count",
+     "header_text": "인원"
+    },
+    {
+     "col": 4,
+     "role": "place",
+     "header_text": "거래처"
+    },
+    {
+     "col": 5,
+     "role": "method",
+     "header_text": "비고"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "incheon_city_OPEN010301_0.pdf",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1956,
+   "out": 276,
+   "thought": null,
+   "sec": 3.62
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    0
+   ],
+   "data_start_row": 1,
+   "columns": [
+    {
+     "col": 0,
+     "role": "date",
+     "header_text": "일 자"
+    },
+    {
+     "col": 1,
+     "role": "time",
+     "header_text": "시간"
+    },
+    {
+     "col": 2,
+     "role": "place",
+     "header_text": "장 소"
+    },
+    {
+     "col": 3,
+     "role": "count",
+     "header_text": "인원"
+    },
+    {
+     "col": 4,
+     "role": "user",
+     "header_text": "대상"
+    },
+    {
+     "col": 5,
+     "role": "address",
+     "header_text": "사용지역"
+    },
+    {
+     "col": 6,
+     "role": "amount",
+     "header_text": "금액"
+    },
+    {
+     "col": 7,
+     "role": "purpose",
+     "header_text": "내 역"
+    },
+    {
+     "col": 8,
+     "role": "method",
+     "header_text": "사용방법"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "incheon_city_OPEN010301_1.pdf",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1990,
+   "out": 270,
+   "thought": null,
+   "sec": 2.45
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    0
+   ],
+   "data_start_row": 1,
+   "columns": [
+    {
+     "col": 0,
+     "role": "date",
+     "header_text": "일 자"
+    },
+    {
+     "col": 1,
+     "role": "time",
+     "header_text": "시간"
+    },
+    {
+     "col": 2,
+     "role": "place",
+     "header_text": "장 소"
+    },
+    {
+     "col": 3,
+     "role": "count",
+     "header_text": "인원"
+    },
+    {
+     "col": 4,
+     "role": "user",
+     "header_text": "대상"
+    },
+    {
+     "col": 5,
+     "role": "address",
+     "header_text": "사용지역"
+    },
+    {
+     "col": 6,
+     "role": "amount",
+     "header_text": "금액"
+    },
+    {
+     "col": 7,
+     "role": "purpose",
+     "header_text": "내 역"
+    },
+    {
+     "col": 8,
+     "role": "method",
+     "header_text": "사용방법"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026"
+  }
+ },
+ {
+  "file": "incheon_city_OPEN010305_0.pdf",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1720,
+   "out": 404,
+   "thought": null,
+   "sec": 3.35
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    0,
+    1
+   ],
+   "data_start_row": 2,
+   "columns": [
+    {
+     "col": 0,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 1,
+     "role": "date",
+     "header_text": "사용일시 일자"
+    },
+    {
+     "col": 2,
+     "role": "time",
+     "header_text": "사용일시 시간"
+    },
+    {
+     "col": 3,
+     "role": "purpose",
+     "header_text": "적요"
+    },
+    {
+     "col": 4,
+     "role": "place",
+     "header_text": "장소"
+    },
+    {
+     "col": 5,
+     "role": "count",
+     "header_text": "인원"
+    },
+    {
+     "col": 6,
+     "role": "amount",
+     "header_text": "금액"
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": "결제방법"
+    },
+    {
+     "col": 8,
+     "role": "category",
+     "header_text": "비고"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": "2단 헤더 구조(0~1행) 및 사용일시가 일자/시간으로 분리된 표입니다."
+  }
+ },
+ {
+  "file": "incheon_city_OPEN010305_1.pdf",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 2155,
+   "out": 291,
+   "thought": null,
+   "sec": 3.34
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    0
+   ],
+   "data_start_row": 1,
+   "columns": [
+    {
+     "col": 0,
+     "role": "date",
+     "header_text": "사용일자"
+    },
+    {
+     "col": 1,
+     "role": "time",
+     "header_text": "승인일시"
+    },
+    {
+     "col": 2,
+     "role": "purpose",
+     "header_text": "적 요"
+    },
+    {
+     "col": 3,
+     "role": "place",
+     "header_text": "장소(대상)"
+    },
+    {
+     "col": 4,
+     "role": "count",
+     "header_text": "인원(범위내)"
+    },
+    {
+     "col": 5,
+     "role": "amount",
+     "header_text": "금액"
+    },
+    {
+     "col": 6,
+     "role": "category",
+     "header_text": "과목"
+    },
+    {
+     "col": 7,
+     "role": "user",
+     "header_text": "권한"
+    },
+    {
+     "col": 8,
+     "role": "method",
+     "header_text": "결재 / 방법"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "incheon_ganghwa_0.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1143,
+   "out": 239,
+   "thought": null,
+   "sec": 3.46
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    1,
+    2
+   ],
+   "data_start_row": 4,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "dept",
+     "header_text": "부서명"
+    },
+    {
+     "col": 2,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 3,
+     "role": "date",
+     "header_text": "사용일시 사용일"
+    },
+    {
+     "col": 4,
+     "role": "time",
+     "header_text": "사용시간"
+    },
+    {
+     "col": 5,
+     "role": "purpose",
+     "header_text": "사용목적"
+    },
+    {
+     "col": 6,
+     "role": "place",
+     "header_text": "사용장소"
+    },
+    {
+     "col": 7,
+     "role": "amount",
+     "header_text": "사용금액"
+    },
+    {
+     "col": 8,
+     "role": "count",
+     "header_text": "대상인원"
+    },
+    {
+     "col": 9,
+     "role": "method",
+     "header_text": "결재방법"
+    },
+    {
+     "col": 10,
+     "role": "other",
+     "header_text": "비고"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": "행 3은 합계 행이므로 데이터 시작행에서 제외하고 행 4부터 시작합니다."
+  }
+ },
+ {
+  "file": "incheon_ganghwa_2.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1634,
+   "out": 382,
+   "thought": null,
+   "sec": 3.08
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    1
+   ],
+   "data_start_row": 2,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "사용 일시"
+    },
+    {
+     "col": 3,
+     "role": "place",
+     "header_text": "사용 장소"
+    },
+    {
+     "col": 4,
+     "role": "purpose",
+     "header_text": "사용목적(내역)"
+    },
+    {
+     "col": 5,
+     "role": "amount",
+     "header_text": "사용금액(원)"
+    },
+    {
+     "col": 6,
+     "role": "count",
+     "header_text": "대상인원(명)"
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": "사용방법"
+    },
+    {
+     "col": 8,
+     "role": "category",
+     "header_text": "비목"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": "None"
+  }
+ },
+ {
+  "file": "incheon_gyeyang_0.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1191,
+   "out": 411,
+   "thought": null,
+   "sec": 3.71
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    2
+   ],
+   "data_start_row": 3,
+   "columns": [
+    {
+     "col": 0,
+     "role": "user",
+     "header_text": "대상"
+    },
+    {
+     "col": 1,
+     "role": "category",
+     "header_text": "예산과목"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "사용일자"
+    },
+    {
+     "col": 3,
+     "role": "time",
+     "header_text": "사용시간"
+    },
+    {
+     "col": 4,
+     "role": "place",
+     "header_text": "사용장소"
+    },
+    {
+     "col": 5,
+     "role": "purpose",
+     "header_text": "사용목적"
+    },
+    {
+     "col": 6,
+     "role": "amount",
+     "header_text": "집행금액"
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": "결제방법"
+    },
+    {
+     "col": 8,
+     "role": "count",
+     "header_text": "참석인원"
+    },
+    {
+     "col": 9,
+     "role": "other",
+     "header_text": "비고"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "incheon_gyeyang_2.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": false,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1670,
+   "out": 323,
+   "thought": null,
+   "sec": 2.35
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    2
+   ],
+   "data_start_row": 3,
+   "columns": [
+    {
+     "col": 0,
+     "role": "dept",
+     "header_text": "대상"
+    },
+    {
+     "col": 1,
+     "role": "category",
+     "header_text": "예산과목"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "사용일자"
+    },
+    {
+     "col": 3,
+     "role": "time",
+     "header_text": "사용시간"
+    },
+    {
+     "col": 4,
+     "role": "place",
+     "header_text": "사용장소 / (가맹점명)"
+    },
+    {
+     "col": 5,
+     "role": "purpose",
+     "header_text": "사용목적"
+    },
+    {
+     "col": 6,
+     "role": "amount",
+     "header_text": "집행금액"
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": "결제방법"
+    },
+    {
+     "col": 8,
+     "role": "count",
+     "header_text": "참석인원"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": "Row 8-11 seem to have swapped contents for columns 4 and 5 in the source data, but header definition remains consistent."
+  }
+ },
+ {
+  "file": "incheon_jemulpo_0.pdf",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1296,
+   "out": 283,
+   "thought": null,
+   "sec": 4.0
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    0
+   ],
+   "data_start_row": 1,
+   "columns": [
+    {
+     "col": 0,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 1,
+     "role": "date",
+     "header_text": "일시"
+    },
+    {
+     "col": 2,
+     "role": "place",
+     "header_text": "장소"
+    },
+    {
+     "col": 3,
+     "role": "purpose",
+     "header_text": "집행목적"
+    },
+    {
+     "col": 4,
+     "role": "count",
+     "header_text": "대상인원수"
+    },
+    {
+     "col": 5,
+     "role": "amount",
+     "header_text": "금액"
+    },
+    {
+     "col": 6,
+     "role": "method",
+     "header_text": "결제방법"
+    },
+    {
+     "col": 7,
+     "role": "category",
+     "header_text": "비목"
+    },
+    {
+     "col": 8,
+     "role": "other",
+     "header_text": "비고"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "incheon_michuhol_0.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1148,
+   "out": 321,
+   "thought": null,
+   "sec": 4.36
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    2
+   ],
+   "data_start_row": 4,
+   "columns": [
+    {
+     "col": 1,
+     "role": "category",
+     "header_text": "예산과목"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "사용일"
+    },
+    {
+     "col": 3,
+     "role": "time",
+     "header_text": "사용시간"
+    },
+    {
+     "col": 4,
+     "role": "place",
+     "header_text": "사용처"
+    },
+    {
+     "col": 5,
+     "role": "address",
+     "header_text": "주소"
+    },
+    {
+     "col": 6,
+     "role": "time",
+     "header_text": "사용시간"
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": "사용방법"
+    },
+    {
+     "col": 8,
+     "role": "purpose",
+     "header_text": "집행세부내역"
+    },
+    {
+     "col": 9,
+     "role": "count",
+     "header_text": "대상"
+    },
+    {
+     "col": 10,
+     "role": "amount",
+     "header_text": "집행액"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": "Row 3 is a summary row (계) and skipped."
+  }
+ },
+ {
+  "file": "incheon_michuhol_1.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1052,
+   "out": 152,
+   "thought": null,
+   "sec": 4.81
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    2
+   ],
+   "data_start_row": 4,
+   "columns": [
+    {
+     "col": 1,
+     "role": "category",
+     "header_text": "예산과목"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "사용일"
+    },
+    {
+     "col": 3,
+     "role": "place",
+     "header_text": "사용처"
+    },
+    {
+     "col": 4,
+     "role": "method",
+     "header_text": "사용방법"
+    },
+    {
+     "col": 5,
+     "role": "purpose",
+     "header_text": "집행세부내역"
+    },
+    {
+     "col": 6,
+     "role": "count",
+     "header_text": "대상"
+    },
+    {
+     "col": 7,
+     "role": "amount",
+     "header_text": "집행액"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "incheon_michuhol_2.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1147,
+   "out": 342,
+   "thought": null,
+   "sec": 3.8
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    3
+   ],
+   "data_start_row": 4,
+   "columns": [
+    {
+     "col": 0,
+     "role": "category",
+     "header_text": "세 목"
+    },
+    {
+     "col": 1,
+     "role": "month",
+     "header_text": "사용일자"
+    },
+    {
+     "col": 2,
+     "role": "day",
+     "header_text": "사용일자"
+    },
+    {
+     "col": 3,
+     "role": "time",
+     "header_text": "시간"
+    },
+    {
+     "col": 4,
+     "role": "place",
+     "header_text": "사용처"
+    },
+    {
+     "col": 5,
+     "role": "method",
+     "header_text": "사용방법"
+    },
+    {
+     "col": 6,
+     "role": "purpose",
+     "header_text": "사용목적"
+    },
+    {
+     "col": 7,
+     "role": "user",
+     "header_text": "사용대상"
+    },
+    {
+     "col": 8,
+     "role": "count",
+     "header_text": "인원(명)"
+    },
+    {
+     "col": 9,
+     "role": "amount",
+     "header_text": "사용액(원)"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": "Date is split into month (col 1) and day (col 2). Row 6 contains total summary and is excluded from data_start_row."
+  }
+ },
+ {
+  "file": "incheon_yeongjong_mn_exp_cap_0.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1007,
+   "out": 337,
+   "thought": null,
+   "sec": 3.32
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    1
+   ],
+   "data_start_row": 2,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "date",
+     "header_text": "결제일자"
+    },
+    {
+     "col": 2,
+     "role": "time",
+     "header_text": "시간"
+    },
+    {
+     "col": 3,
+     "role": "amount",
+     "header_text": "금액(원)"
+    },
+    {
+     "col": 4,
+     "role": "purpose",
+     "header_text": "사용내용"
+    },
+    {
+     "col": 5,
+     "role": "place",
+     "header_text": "업소명"
+    },
+    {
+     "col": 6,
+     "role": "count",
+     "header_text": "인원수"
+    },
+    {
+     "col": 7,
+     "role": "category",
+     "header_text": "업무추진비 종류"
+    },
+    {
+     "col": 8,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 9,
+     "role": "method",
+     "header_text": "결제방법"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": "2026년 2분기 인천 중구 총무과장 업무추진비 사용내역"
+  }
+ },
+ {
+  "file": "incheon_yeongjong_mn_exp_cap_1.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 950,
+   "out": 314,
+   "thought": null,
+   "sec": 2.53
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    1
+   ],
+   "data_start_row": 3,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "user",
+     "header_text": "사 용 자"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "결제일자"
+    },
+    {
+     "col": 3,
+     "role": "time",
+     "header_text": "시간"
+    },
+    {
+     "col": 4,
+     "role": "purpose",
+     "header_text": "사용내용"
+    },
+    {
+     "col": 5,
+     "role": "amount",
+     "header_text": "금액(원)"
+    },
+    {
+     "col": 6,
+     "role": "place",
+     "header_text": "업 소 명"
+    },
+    {
+     "col": 7,
+     "role": "count",
+     "header_text": "인원수"
+    },
+    {
+     "col": 8,
+     "role": "category",
+     "header_text": "업무추진비 종류"
+    },
+    {
+     "col": 9,
+     "role": "method",
+     "header_text": "결제방법"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "incheon_yeongjong_mn_exp_head_0.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1922,
+   "out": 337,
+   "thought": null,
+   "sec": 2.53
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    1
+   ],
+   "data_start_row": 2,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "date",
+     "header_text": "결제일자"
+    },
+    {
+     "col": 2,
+     "role": "time",
+     "header_text": "시간"
+    },
+    {
+     "col": 3,
+     "role": "amount",
+     "header_text": "금액(원)"
+    },
+    {
+     "col": 4,
+     "role": "purpose",
+     "header_text": "사용내용"
+    },
+    {
+     "col": 5,
+     "role": "place",
+     "header_text": "업소명"
+    },
+    {
+     "col": 6,
+     "role": "count",
+     "header_text": "인원수"
+    },
+    {
+     "col": 7,
+     "role": "category",
+     "header_text": "업무추진비 종류"
+    },
+    {
+     "col": 8,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 9,
+     "role": "method",
+     "header_text": "결제방법"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": "2026년 6월 인천 중구청장 업무추진비 사용내역 표 매핑"
+  }
+ },
+ {
+  "file": "incheon_yeongjong_mn_exp_head_1.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1875,
+   "out": 332,
+   "thought": null,
+   "sec": 4.07
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    1
+   ],
+   "data_start_row": 2,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "date",
+     "header_text": "결제일자"
+    },
+    {
+     "col": 2,
+     "role": "time",
+     "header_text": "시간"
+    },
+    {
+     "col": 3,
+     "role": "amount",
+     "header_text": "금액(원)"
+    },
+    {
+     "col": 4,
+     "role": "purpose",
+     "header_text": "사용내용"
+    },
+    {
+     "col": 5,
+     "role": "place",
+     "header_text": "업소명"
+    },
+    {
+     "col": 6,
+     "role": "count",
+     "header_text": "인원수"
+    },
+    {
+     "col": 7,
+     "role": "category",
+     "header_text": "업무추진비 종류"
+    },
+    {
+     "col": 8,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 9,
+     "role": "method",
+     "header_text": "결제방법"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": "r0의 제목 행 및 r1의 헤더 정보를 바탕으로 열 역할을 추출했습니다."
+  }
+ },
+ {
+  "file": "seoul_city_0.html",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 2181,
+   "out": 373,
+   "thought": null,
+   "sec": 3.36
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    0
+   ],
+   "data_start_row": 1,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "dept",
+     "header_text": "부서명"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "사용일시"
+    },
+    {
+     "col": 3,
+     "role": "place",
+     "header_text": "사용장소"
+    },
+    {
+     "col": 4,
+     "role": "purpose",
+     "header_text": "사용목적"
+    },
+    {
+     "col": 5,
+     "role": "amount",
+     "header_text": "사용금액(원)"
+    },
+    {
+     "col": 6,
+     "role": "user",
+     "header_text": "사용자 및 인원"
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": "결제방법"
+    },
+    {
+     "col": 8,
+     "role": "category",
+     "header_text": "비목"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026"
+  }
+ },
+ {
+  "file": "seoul_city_1.html",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 2138,
+   "out": 396,
+   "thought": null,
+   "sec": 3.16
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    0
+   ],
+   "data_start_row": 1,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "dept",
+     "header_text": "부서명"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "사용일시"
+    },
+    {
+     "col": 3,
+     "role": "place",
+     "header_text": "사용장소"
+    },
+    {
+     "col": 4,
+     "role": "purpose",
+     "header_text": "사용목적"
+    },
+    {
+     "col": 5,
+     "role": "amount",
+     "header_text": "사용금액(원)"
+    },
+    {
+     "col": 6,
+     "role": "user",
+     "header_text": "사용자 및 인원"
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": "결제방법"
+    },
+    {
+     "col": 8,
+     "role": "category",
+     "header_text": "비목"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": "사용장소 열에 상호명과 주소가 함께 표기되어 있습니다."
+  }
+ },
+ {
+  "file": "seoul_eunpyeong_0.html",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1917,
+   "out": 346,
+   "thought": null,
+   "sec": 3.63
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    0
+   ],
+   "data_start_row": 1,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "dept",
+     "header_text": "부서명"
+    },
+    {
+     "col": 2,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 3,
+     "role": "count",
+     "header_text": "대상인원"
+    },
+    {
+     "col": 4,
+     "role": "date",
+     "header_text": "사용일자(일시)"
+    },
+    {
+     "col": 5,
+     "role": "place",
+     "header_text": "사용장소(가맹점명)"
+    },
+    {
+     "col": 6,
+     "role": "purpose",
+     "header_text": "사용목적(내역)"
+    },
+    {
+     "col": 7,
+     "role": "amount",
+     "header_text": "사용금액(원)"
+    },
+    {
+     "col": 8,
+     "role": "method",
+     "header_text": "사용방법"
+    },
+    {
+     "col": 9,
+     "role": "category",
+     "header_text": "비목"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": "Standard 업무추진비 집행내역 table with complete header mappings and year extrated from dates."
+  }
+ },
+ {
+  "file": "seoul_gangnam_0.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1871,
+   "out": 166,
+   "thought": null,
+   "sec": 1.8
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    1
+   ],
+   "data_start_row": 2,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "category",
+     "header_text": "구분"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "사용일자"
+    },
+    {
+     "col": 3,
+     "role": "time",
+     "header_text": "사용일시"
+    },
+    {
+     "col": 4,
+     "role": "place",
+     "header_text": "사용장소 및 가맹점명"
+    },
+    {
+     "col": 5,
+     "role": "purpose",
+     "header_text": "내용"
+    },
+    {
+     "col": 6,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 7,
+     "role": "amount",
+     "header_text": "집행액"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026"
+  }
+ },
+ {
+  "file": "seoul_gangnam_1.ole",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1524,
+   "out": 286,
+   "thought": null,
+   "sec": 3.7
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    2
+   ],
+   "data_start_row": 3,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "사용일자/시간"
+    },
+    {
+     "col": 3,
+     "role": "place",
+     "header_text": "장  소"
+    },
+    {
+     "col": 4,
+     "role": "purpose",
+     "header_text": "집행목적"
+    },
+    {
+     "col": 5,
+     "role": "count",
+     "header_text": "대상인원"
+    },
+    {
+     "col": 6,
+     "role": "amount",
+     "header_text": "금액"
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": "결제방법"
+    },
+    {
+     "col": 8,
+     "role": "category",
+     "header_text": "비목"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "seoul_gangnam_2.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1960,
+   "out": 281,
+   "thought": null,
+   "sec": 2.52
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    1
+   ],
+   "data_start_row": 2,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "category",
+     "header_text": "구분"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "사용일자"
+    },
+    {
+     "col": 3,
+     "role": "other",
+     "header_text": "법인카드번호"
+    },
+    {
+     "col": 4,
+     "role": "purpose",
+     "header_text": "내 용"
+    },
+    {
+     "col": 5,
+     "role": "count",
+     "header_text": "대상인원"
+    },
+    {
+     "col": 6,
+     "role": "place",
+     "header_text": "가맹점"
+    },
+    {
+     "col": 7,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 8,
+     "role": "amount",
+     "header_text": "집행액(원)"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026"
+  }
+ },
+ {
+  "file": "seoul_gangseo_0.pdf",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1668,
+   "out": 281,
+   "thought": null,
+   "sec": 2.99
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    0
+   ],
+   "data_start_row": 1,
+   "columns": [
+    {
+     "col": 0,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 1,
+     "role": "date",
+     "header_text": "사용일자"
+    },
+    {
+     "col": 2,
+     "role": "time",
+     "header_text": "시간"
+    },
+    {
+     "col": 3,
+     "role": "place",
+     "header_text": "사용장소 / (가맹점명)"
+    },
+    {
+     "col": 4,
+     "role": "purpose",
+     "header_text": "사용목적(내역) / * 사용대상 포함"
+    },
+    {
+     "col": 5,
+     "role": "amount",
+     "header_text": "사용금액(원)"
+    },
+    {
+     "col": 6,
+     "role": "count",
+     "header_text": "대상인원(명)"
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": "사용방법"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "seoul_gangseo_1.pdf",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1934,
+   "out": 339,
+   "thought": null,
+   "sec": 3.63
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    0
+   ],
+   "data_start_row": 1,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "승인일시"
+    },
+    {
+     "col": 3,
+     "role": "time",
+     "header_text": "사용시간"
+    },
+    {
+     "col": 4,
+     "role": "place",
+     "header_text": "가맹점명"
+    },
+    {
+     "col": 5,
+     "role": "purpose",
+     "header_text": "품의적요"
+    },
+    {
+     "col": 6,
+     "role": "amount",
+     "header_text": "집행금액(원)"
+    },
+    {
+     "col": 7,
+     "role": "count",
+     "header_text": "대상인원"
+    },
+    {
+     "col": 8,
+     "role": "address",
+     "header_text": "사용장소"
+    },
+    {
+     "col": 9,
+     "role": "method",
+     "header_text": "결제방법"
+    },
+    {
+     "col": 10,
+     "role": "other",
+     "header_text": "비고"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "seoul_gangseo_2.pdf",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1802,
+   "out": 287,
+   "thought": null,
+   "sec": 3.17
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    0
+   ],
+   "data_start_row": 1,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "date",
+     "header_text": "집행일"
+    },
+    {
+     "col": 2,
+     "role": "time",
+     "header_text": "집행시간"
+    },
+    {
+     "col": 3,
+     "role": "place",
+     "header_text": "집행장소"
+    },
+    {
+     "col": 4,
+     "role": "amount",
+     "header_text": "집행액"
+    },
+    {
+     "col": 5,
+     "role": "count",
+     "header_text": "대상인원"
+    },
+    {
+     "col": 6,
+     "role": "purpose",
+     "header_text": "집행내역"
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": "결제방법"
+    },
+    {
+     "col": 8,
+     "role": "other",
+     "header_text": "비고"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "seoul_gwanak_0.html",
+  "layout_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 943,
+   "out": 411,
+   "thought": null,
+   "sec": 3.17
+  },
+  "ans": {
+   "layout": "key_value",
+   "header_rows": [],
+   "data_start_row": 0,
+   "columns": [
+    {
+     "col": 0,
+     "role": "category",
+     "header_text": "비목"
+    },
+    {
+     "col": 1,
+     "role": "other",
+     "header_text": "시책추진"
+    },
+    {
+     "col": 2,
+     "role": "dept",
+     "header_text": "집행부서"
+    },
+    {
+     "col": 3,
+     "role": "dept",
+     "header_text": "건축과"
+    },
+    {
+     "col": 4,
+     "role": "date",
+     "header_text": "집행일시"
+    },
+    {
+     "col": 5,
+     "role": "date",
+     "header_text": "2026-09-09    11:24"
+    },
+    {
+     "col": 0,
+     "role": "purpose",
+     "header_text": "집행내역"
+    },
+    {
+     "col": 1,
+     "role": "purpose",
+     "header_text": "건축위원회 운영 관련 간담회"
+    },
+    {
+     "col": 2,
+     "role": "method",
+     "header_text": "결제방법"
+    },
+    {
+     "col": 3,
+     "role": "method",
+     "header_text": "신용카드"
+    },
+    {
+     "col": 0,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 1,
+     "role": "user",
+     "header_text": "건축과장 외 4인"
+    },
+    {
+     "col": 2,
+     "role": "count",
+     "header_text": "대상인원수(명)"
+    },
+    {
+     "col": 3,
+     "role": "count",
+     "header_text": "5"
+    },
+    {
+     "col": 4,
+     "role": "place",
+     "header_text": "집행장소"
+    },
+    {
+     "col": 5,
+     "role": "place",
+     "header_text": "왁버거(서울 관악구 남부순환로 1820 1층)"
+    },
+    {
+     "col": 6,
+     "role": "amount",
+     "header_text": "집행금액(원)"
+    },
+    {
+     "col": 7,
+     "role": "amount",
+     "header_text": "59,100"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": "카드형(key-value) 구조의 업무추진비 집행내역 데이터입니다."
+  }
+ },
+ {
+  "file": "seoul_gwangjin_0.xlsx",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1793,
+   "out": 333,
+   "thought": null,
+   "sec": 2.87
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    1
+   ],
+   "data_start_row": 2,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "일시"
+    },
+    {
+     "col": 3,
+     "role": "place",
+     "header_text": "장소"
+    },
+    {
+     "col": 4,
+     "role": "purpose",
+     "header_text": "집행목적"
+    },
+    {
+     "col": 5,
+     "role": "count",
+     "header_text": "대상인원수"
+    },
+    {
+     "col": 6,
+     "role": "amount",
+     "header_text": "금액"
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": "결제방법"
+    },
+    {
+     "col": 8,
+     "role": "category",
+     "header_text": "비목(세부사업명)"
+    },
+    {
+     "col": 9,
+     "role": "category",
+     "header_text": "비목"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": "2026년 8월 도시계획과 업무추진비 집행내역"
+  }
+ },
+ {
+  "file": "seoul_jongno_0.pdf",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1119,
+   "out": 292,
+   "thought": null,
+   "sec": 2.87
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    0
+   ],
+   "data_start_row": 1,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "dept",
+     "header_text": "부서명 / (사용자)"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "사용일자 / (일시)"
+    },
+    {
+     "col": 3,
+     "role": "place",
+     "header_text": "사용 장소 / (가맹점명)"
+    },
+    {
+     "col": 4,
+     "role": "purpose",
+     "header_text": "사용목적 / * 사용대상 포함"
+    },
+    {
+     "col": 5,
+     "role": "amount",
+     "header_text": "사용 / 금액 / (원)"
+    },
+    {
+     "col": 6,
+     "role": "count",
+     "header_text": "대상 / 인원 / (명)"
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": "사용방법"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "seoul_jongno_1.pdf",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1668,
+   "out": 197,
+   "thought": null,
+   "sec": 3.7
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    0
+   ],
+   "data_start_row": 1,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "dept",
+     "header_text": "부서명 / (사용자)"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "사용일자 / (일시)"
+    },
+    {
+     "col": 3,
+     "role": "place",
+     "header_text": "사용 장소 / (가맹점명)"
+    },
+    {
+     "col": 4,
+     "role": "purpose",
+     "header_text": "사용목적 / * 사용대상 포함"
+    },
+    {
+     "col": 5,
+     "role": "amount",
+     "header_text": "사용금액 / (원)"
+    },
+    {
+     "col": 6,
+     "role": "count",
+     "header_text": "대상인원 / (명)"
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": "사용방법"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "seoul_jongno_2.pdf",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1067,
+   "out": 200,
+   "thought": null,
+   "sec": 2.11
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    0
+   ],
+   "data_start_row": 1,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "dept",
+     "header_text": "부서명 / (사용자)"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "사용일자 / (일시)"
+    },
+    {
+     "col": 3,
+     "role": "place",
+     "header_text": "사용 / 장소 / (가맹점 / 명)"
+    },
+    {
+     "col": 4,
+     "role": "purpose",
+     "header_text": "사용목적 / * 사용대상 포함"
+    },
+    {
+     "col": 5,
+     "role": "amount",
+     "header_text": "사용 / 금액 / (원)"
+    },
+    {
+     "col": 6,
+     "role": "count",
+     "header_text": "대상 / 인원 / (명)"
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": "사용방법"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "seoul_mapo_0.pdf",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1527,
+   "out": 187,
+   "thought": null,
+   "sec": 2.01
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    0
+   ],
+   "data_start_row": 1,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "일시"
+    },
+    {
+     "col": 3,
+     "role": "place",
+     "header_text": "장소 / (상호명)"
+    },
+    {
+     "col": 4,
+     "role": "purpose",
+     "header_text": "집행목적"
+    },
+    {
+     "col": 5,
+     "role": "count",
+     "header_text": "대상인원수"
+    },
+    {
+     "col": 6,
+     "role": "amount",
+     "header_text": "금액"
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": "결제방법"
+    },
+    {
+     "col": 8,
+     "role": "category",
+     "header_text": "비목"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "seoul_mapo_1.pdf",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1594,
+   "out": 187,
+   "thought": null,
+   "sec": 2.06
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    0
+   ],
+   "data_start_row": 1,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "일시"
+    },
+    {
+     "col": 3,
+     "role": "place",
+     "header_text": "장소 / (상호명)"
+    },
+    {
+     "col": 4,
+     "role": "purpose",
+     "header_text": "집행목적"
+    },
+    {
+     "col": 5,
+     "role": "count",
+     "header_text": "대상인원수"
+    },
+    {
+     "col": 6,
+     "role": "amount",
+     "header_text": "금액"
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": "결제방법"
+    },
+    {
+     "col": 8,
+     "role": "category",
+     "header_text": "비목"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "seoul_mapo_2.pdf",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1319,
+   "out": 186,
+   "thought": null,
+   "sec": 2.06
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    0
+   ],
+   "data_start_row": 1,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "일시"
+    },
+    {
+     "col": 3,
+     "role": "place",
+     "header_text": "장소(상호명)"
+    },
+    {
+     "col": 4,
+     "role": "purpose",
+     "header_text": "집행목적"
+    },
+    {
+     "col": 5,
+     "role": "count",
+     "header_text": "대상인원수"
+    },
+    {
+     "col": 6,
+     "role": "amount",
+     "header_text": "금액"
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": "결제방법"
+    },
+    {
+     "col": 8,
+     "role": "category",
+     "header_text": "비목"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "seoul_seodaemun_0.html",
+  "layout_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 934,
+   "out": 78,
+   "thought": null,
+   "sec": 1.5
+  },
+  "ans": {
+   "layout": "key_value",
+   "header_rows": [],
+   "data_start_row": 0,
+   "columns": [],
+   "amount_unit": "thousand_won",
+   "year_hint": "2026",
+   "note": "Card layout mapping key-value pairs"
+  }
+ },
+ {
+  "file": "seoul_seongdong_0.pdf",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1466,
+   "out": 169,
+   "thought": null,
+   "sec": 4.15
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    0
+   ],
+   "data_start_row": 1,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "일시"
+    },
+    {
+     "col": 3,
+     "role": "place",
+     "header_text": "장소"
+    },
+    {
+     "col": 4,
+     "role": "purpose",
+     "header_text": "집행목적"
+    },
+    {
+     "col": 5,
+     "role": "count",
+     "header_text": "대상인원"
+    },
+    {
+     "col": 6,
+     "role": "amount",
+     "header_text": "금액(원)"
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": "결제 / 방법"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "seoul_seongdong_1.pdf",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1091,
+   "out": 285,
+   "thought": null,
+   "sec": 3.25
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    0
+   ],
+   "data_start_row": 1,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "일 시"
+    },
+    {
+     "col": 3,
+     "role": "place",
+     "header_text": "장 소"
+    },
+    {
+     "col": 4,
+     "role": "purpose",
+     "header_text": "집행목적"
+    },
+    {
+     "col": 5,
+     "role": "count",
+     "header_text": "대 상 / 인원 수"
+    },
+    {
+     "col": 6,
+     "role": "amount",
+     "header_text": "금 액"
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": "결제방법"
+    },
+    {
+     "col": 8,
+     "role": "category",
+     "header_text": "비목"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "seoul_seongdong_2.pdf",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1176,
+   "out": 182,
+   "thought": null,
+   "sec": 3.1
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    0
+   ],
+   "data_start_row": 1,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "일시"
+    },
+    {
+     "col": 3,
+     "role": "place",
+     "header_text": "장소"
+    },
+    {
+     "col": 4,
+     "role": "purpose",
+     "header_text": "집행목적"
+    },
+    {
+     "col": 5,
+     "role": "count",
+     "header_text": "대상 / 인원수"
+    },
+    {
+     "col": 6,
+     "role": "amount",
+     "header_text": "금액"
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": "결제방법"
+    },
+    {
+     "col": 8,
+     "role": "category",
+     "header_text": "비목"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "seoul_yongsan_0.pdf",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1771,
+   "out": 294,
+   "thought": null,
+   "sec": 7.3
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    0
+   ],
+   "data_start_row": 1,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "집행일시"
+    },
+    {
+     "col": 3,
+     "role": "time",
+     "header_text": "집행일시"
+    },
+    {
+     "col": 4,
+     "role": "place",
+     "header_text": "사용장소"
+    },
+    {
+     "col": 5,
+     "role": "purpose",
+     "header_text": "집행목적"
+    },
+    {
+     "col": 6,
+     "role": "amount",
+     "header_text": "집행금액(원)"
+    },
+    {
+     "col": 7,
+     "role": "count",
+     "header_text": "대상 / 인원"
+    },
+    {
+     "col": 8,
+     "role": "method",
+     "header_text": "결제 / 방법"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "seoul_yongsan_1.pdf",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1442,
+   "out": 179,
+   "thought": null,
+   "sec": 2.98
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [],
+   "data_start_row": 1,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": ""
+    },
+    {
+     "col": 1,
+     "role": "user",
+     "header_text": ""
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": ""
+    },
+    {
+     "col": 3,
+     "role": "place",
+     "header_text": ""
+    },
+    {
+     "col": 4,
+     "role": "purpose",
+     "header_text": ""
+    },
+    {
+     "col": 5,
+     "role": "amount",
+     "header_text": ""
+    },
+    {
+     "col": 6,
+     "role": "count",
+     "header_text": ""
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": ""
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": "헤더 행이 생략된 표 형식 데이터입니다. 데이터 행의 값 구조를 기반으로 각 열의 역할을 추정하였습니다."
+  }
+ },
+ {
+  "file": "seoul_yongsan_2.pdf",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1680,
+   "out": 272,
+   "thought": null,
+   "sec": 2.38
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    0
+   ],
+   "data_start_row": 1,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 2,
+     "role": "date",
+     "header_text": "사용일시"
+    },
+    {
+     "col": 3,
+     "role": "place",
+     "header_text": "사용장소 / (가맹점명)"
+    },
+    {
+     "col": 4,
+     "role": "purpose",
+     "header_text": "사용목적"
+    },
+    {
+     "col": 5,
+     "role": "amount",
+     "header_text": "사용금액"
+    },
+    {
+     "col": 6,
+     "role": "count",
+     "header_text": "대상 / 인원"
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": "결제 / 방법"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": "None"
+  }
+ },
+ {
+  "file": "ulsan_buk_0.pdf",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1125,
+   "out": 264,
+   "thought": null,
+   "sec": 3.74
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    0
+   ],
+   "data_start_row": 1,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "연번"
+    },
+    {
+     "col": 1,
+     "role": "date",
+     "header_text": "일자"
+    },
+    {
+     "col": 2,
+     "role": "place",
+     "header_text": "사용장소 / (가맹점명)"
+    },
+    {
+     "col": 3,
+     "role": "purpose",
+     "header_text": "사 용 내 역"
+    },
+    {
+     "col": 4,
+     "role": "amount",
+     "header_text": "사용 / 금액"
+    },
+    {
+     "col": 5,
+     "role": "count",
+     "header_text": "대상 / 인원"
+    },
+    {
+     "col": 6,
+     "role": "method",
+     "header_text": "사용 / 방법"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": "Standard table layout with explicit headers and 2026 year hint from post title."
+  }
+ },
+ {
+  "file": "ulsan_city_0.html",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 848,
+   "out": 156,
+   "thought": null,
+   "sec": 3.05
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    0
+   ],
+   "data_start_row": 1,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "번호"
+    },
+    {
+     "col": 1,
+     "role": "purpose",
+     "header_text": "결제내용"
+    },
+    {
+     "col": 2,
+     "role": "method",
+     "header_text": "결제방법"
+    },
+    {
+     "col": 3,
+     "role": "count",
+     "header_text": "인원(수량)"
+    },
+    {
+     "col": 4,
+     "role": "amount",
+     "header_text": "금액(천원)"
+    },
+    {
+     "col": 5,
+     "role": "user",
+     "header_text": "참석대상"
+    },
+    {
+     "col": 6,
+     "role": "place",
+     "header_text": "장소"
+    }
+   ],
+   "amount_unit": "thousand_won",
+   "year_hint": null,
+   "note": ""
+  }
+ },
+ {
+  "file": "ulsan_donggu_0.html",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 904,
+   "out": 286,
+   "thought": null,
+   "sec": 3.93
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    0
+   ],
+   "data_start_row": 1,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "번호"
+    },
+    {
+     "col": 1,
+     "role": "time",
+     "header_text": "시간"
+    },
+    {
+     "col": 2,
+     "role": "place",
+     "header_text": "장소"
+    },
+    {
+     "col": 3,
+     "role": "purpose",
+     "header_text": "집행목적"
+    },
+    {
+     "col": 4,
+     "role": "count",
+     "header_text": "인원수"
+    },
+    {
+     "col": 5,
+     "role": "amount",
+     "header_text": "금액(원)"
+    },
+    {
+     "col": 6,
+     "role": "method",
+     "header_text": "결제방법"
+    },
+    {
+     "col": 7,
+     "role": "category",
+     "header_text": "비목"
+    },
+    {
+     "col": 8,
+     "role": "other",
+     "header_text": "첨부"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": null,
+   "note": "Standard HTML table containing execution details."
+  }
+ },
+ {
+  "file": "ulsan_junggu_0.html",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 1760,
+   "out": 284,
+   "thought": null,
+   "sec": 3.4
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    0
+   ],
+   "data_start_row": 1,
+   "columns": [
+    {
+     "col": 0,
+     "role": "seq",
+     "header_text": "번호"
+    },
+    {
+     "col": 1,
+     "role": "date",
+     "header_text": "날짜"
+    },
+    {
+     "col": 2,
+     "role": "time",
+     "header_text": "시간"
+    },
+    {
+     "col": 3,
+     "role": "place",
+     "header_text": "장소"
+    },
+    {
+     "col": 4,
+     "role": "purpose",
+     "header_text": "집행목적"
+    },
+    {
+     "col": 5,
+     "role": "count",
+     "header_text": "대상 인원수"
+    },
+    {
+     "col": 6,
+     "role": "amount",
+     "header_text": "금액(원)"
+    },
+    {
+     "col": 7,
+     "role": "method",
+     "header_text": "결제방법"
+    },
+    {
+     "col": 8,
+     "role": "category",
+     "header_text": "비목"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "ulsan_namgu_0.pdf",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": true,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 890,
+   "out": 285,
+   "thought": null,
+   "sec": 4.3
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    0
+   ],
+   "data_start_row": null,
+   "columns": [
+    {
+     "col": 0,
+     "role": "user",
+     "header_text": "사용자"
+    },
+    {
+     "col": 1,
+     "role": "date",
+     "header_text": "사용일자"
+    },
+    {
+     "col": 2,
+     "role": "place",
+     "header_text": "사용 / 장소"
+    },
+    {
+     "col": 3,
+     "role": "purpose",
+     "header_text": "사용목적(내역)"
+    },
+    {
+     "col": 4,
+     "role": "amount",
+     "header_text": "금액 / (원)"
+    },
+    {
+     "col": 5,
+     "role": "count",
+     "header_text": "대상 / 인원 / (명)"
+    },
+    {
+     "col": 6,
+     "role": "method",
+     "header_text": "사용 / 방법"
+    },
+    {
+     "col": 7,
+     "role": "category",
+     "header_text": "비목"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": "사용내역 없음 표기된 빈 데이터 테이블입니다."
+  }
+ },
+ {
+  "file": "ulsan_namgu_1.pdf",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": false,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 918,
+   "out": 265,
+   "thought": null,
+   "sec": 2.63
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    0
+   ],
+   "data_start_row": 1,
+   "columns": [
+    {
+     "col": 0,
+     "role": "dept",
+     "header_text": "사용자"
+    },
+    {
+     "col": 1,
+     "role": "date",
+     "header_text": "사용일자"
+    },
+    {
+     "col": 2,
+     "role": "place",
+     "header_text": "장소"
+    },
+    {
+     "col": 3,
+     "role": "purpose",
+     "header_text": "내용"
+    },
+    {
+     "col": 4,
+     "role": "amount",
+     "header_text": "금액(단위:원)"
+    },
+    {
+     "col": 5,
+     "role": "count",
+     "header_text": "인원(명)"
+    },
+    {
+     "col": 6,
+     "role": "method",
+     "header_text": "사용방법"
+    },
+    {
+     "col": 7,
+     "role": "category",
+     "header_text": "비목"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": ""
+  }
+ },
+ {
+  "file": "ulsan_namgu_2.pdf",
+  "layout_ok": true,
+  "hdr_ok": true,
+  "date_ok": true,
+  "dept_ok": false,
+  "place_ok": true,
+  "purpose_ok": true,
+  "amount_ok": true,
+  "unit_ok": true,
+  "usage": {
+   "in": 885,
+   "out": 195,
+   "thought": null,
+   "sec": 2.78
+  },
+  "ans": {
+   "layout": "table",
+   "header_rows": [
+    0
+   ],
+   "data_start_row": 1,
+   "columns": [
+    {
+     "col": 0,
+     "role": "dept",
+     "header_text": "사용자"
+    },
+    {
+     "col": 1,
+     "role": "date",
+     "header_text": "사용일자"
+    },
+    {
+     "col": 2,
+     "role": "place",
+     "header_text": "사용장소 / (가맴점명)"
+    },
+    {
+     "col": 3,
+     "role": "purpose",
+     "header_text": "사용목적(내역) / *사용대상 포함"
+    },
+    {
+     "col": 4,
+     "role": "amount",
+     "header_text": "사용금액 / (원)"
+    },
+    {
+     "col": 5,
+     "role": "count",
+     "header_text": "대상인원 / (명)"
+    },
+    {
+     "col": 6,
+     "role": "method",
+     "header_text": "사용 / 방법"
+    },
+    {
+     "col": 7,
+     "role": "category",
+     "header_text": "비목"
+    }
+   ],
+   "amount_unit": "won",
+   "year_hint": "2026",
+   "note": "사용 내역 없음"
+  }
+ }
+]
