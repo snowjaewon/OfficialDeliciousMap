@@ -1,0 +1,27 @@
+# 비밀
+.env
+.env.*
+!.env.example
+
+# 저장소 밖에 두는 것 (ADR-0001)
+data/raw/
+dist/
+*.zip
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Node (사이트 빌드 도구를 쓰게 될 경우)
+node_modules/
+
+# 에디터·OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
