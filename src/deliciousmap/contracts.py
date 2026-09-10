@@ -1,0 +1,197 @@
+"""Versioned, validated public contracts. No external service implementation."""
+
+from dataclasses import dataclass
+from datetime import date
+from decimal import Decimal
+from pathlib import Path
+from typing import Annotated, Literal
+
+from pydantic import BaseModel, ConfigDict, Field, JsonValue, StringConstraints, model_validator
+
+from deliciousmap.registry import Target
+
+Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+Sha256 = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{64}$")]
+
+
+class Contract(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True, revalidate_instances="always")
+
+
+class Record(Contract):
+    record_id: Text
+    spent_on: date
+    organization: Text
+    department: str
+    merchant: Text
+    purpose: str
+    amount_krw: Decimal = Field(allow_inf_nan=False)
+    source_hash: Sha256
+    source_location: Text
+
+
+class CacheEntry(Contract):
+    schema_version: Literal[1] = 1
+    key: Text
+    revision: int = Field(ge=1, strict=True)
+    valid: bool
+    evidence: Text
+    value: dict[str, JsonValue]
+
+
+class CacheRef(Contract):
+    """Reference into data/_shared/headermap.jsonl; schema version 1."""
+
+    schema_version: Literal[1] = 1
+    key: Text
+    revision: int = Field(ge=1)
+
+
+class SourceRef(Contract):
+    path: Path
+    source_hash: Sha256
+    organization: Text
+    board: Text
+    url: Text
+
+
+class HeaderMap(Contract):
+    source_hash: Sha256
+    table: Text
+    layout: Literal["table", "key_value", "none"]
+    header_rows: tuple[Annotated[int, Field(ge=1)], ...]
+    data_start_row: int = Field(ge=1)
+    year_hint: int | None = Field(default=None, ge=1, le=9999)
+    columns: dict[
+        Literal[
+            "spent_on", "merchant", "purpose", "department", "amount_krw", "month", "day", "time"
+        ],
+        Annotated[int, Field(ge=0)],
+    ]
+    amount_multiplier: Decimal = Field(gt=0, allow_inf_nan=False)
+    cache: CacheRef | None = None
+
+    @model_validator(mode="after")
+    def header_cache_requires_headers(self) -> "HeaderMap":
+        if not self.header_rows and self.cache is not None:
+            raise ValueError("headerless mapping cannot use shared header cache")
+        return self
+
+
+class ManualCorrection(Contract):
+    schema_version: Literal[1] = 1
+    city: Text
+    merchant: Text
+    organization: str | None = None
+    source_hash: Sha256 | None = None
+    status: Literal["restaurant", "non_restaurant"]
+    evidence: Text
+
+
+class Classification(Contract):
+    record_id: Text
+    status: Literal["restaurant", "non_restaurant", "pending"]
+    evidence: Text
+
+
+class GeocodeResult(Contract):
+    merchant: Text
+    status: Literal["success", "failed"]
+    latitude: float | None = Field(default=None, ge=-90, le=90, allow_inf_nan=False)
+    longitude: float | None = Field(default=None, ge=-180, le=180, allow_inf_nan=False)
+    evidence: Text
+
+    @model_validator(mode="after")
+    def consistent_coordinates(self) -> "GeocodeResult":
+        if self.status == "success" and (self.latitude is None or self.longitude is None):
+            raise ValueError("successful geocoding requires both coordinates")
+        if self.status == "failed" and (self.latitude is not None or self.longitude is not None):
+            raise ValueError("failed geocoding cannot carry coordinates")
+        return self
+
+
+class MarkerCandidate(Contract):
+    merchant: Text
+    record_ids: tuple[str, ...]
+    latitude: float
+    longitude: float
+
+
+class ClosureResult(Contract):
+    merchant: Text
+    status: Literal["open", "closed", "unknown"]
+    evidence: Text
+
+
+@dataclass(frozen=True)
+class FetchInput:
+    target: Target
+
+
+class FetchOutput(Contract):
+    sources: tuple[SourceRef, ...]
+    empty_reason: Text | None = None
+
+
+class HeaderMapInput(Contract):
+    sources: tuple[SourceRef, ...]
+
+
+class HeaderMapOutput(Contract):
+    mappings: tuple[HeaderMap, ...]
+
+
+class ParseInput(Contract):
+    sources: tuple[SourceRef, ...]
+    mappings: tuple[HeaderMap, ...]
+
+
+class ParseOutput(Contract):
+    records: tuple[Record, ...]
+    empty_reason: Text | None = None
+
+
+class ClassifyInput(Contract):
+    records: tuple[Record, ...]
+    manual: tuple[ManualCorrection, ...] = ()
+
+    @property
+    def merchants(self) -> tuple[str, ...]:
+        return tuple(dict.fromkeys(record.merchant for record in self.records))
+
+
+class ClassifyOutput(Contract):
+    decisions: tuple[Classification, ...]
+
+
+class GeocodeInput(Contract):
+    merchants: tuple[str, ...]
+    previous: tuple[GeocodeResult, ...] = ()
+    retry_failed: bool = False
+
+
+class GeocodeOutput(Contract):
+    results: tuple[GeocodeResult, ...]
+
+
+class ClosureInput(Contract):
+    candidates: tuple[MarkerCandidate, ...]
+    license_root: Path
+
+
+class ClosureOutput(Contract):
+    results: tuple[ClosureResult, ...]
+
+
+class BuildInput(Contract):
+    records: tuple[Record, ...]
+    decisions: tuple[Classification, ...]
+    geocodes: tuple[GeocodeResult, ...]
+    closures: tuple[ClosureResult, ...]
+    candidates: tuple[MarkerCandidate, ...]
+
+
+class BuildOutput(Contract):
+    files: tuple[Path, ...]
+    record_count: int = Field(ge=0)
+    marker_count: int = Field(ge=0)
