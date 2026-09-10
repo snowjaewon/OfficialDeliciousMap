@@ -9,7 +9,7 @@ import re
 import tempfile
 from pathlib import Path
 
-from deliciousmap import identity
+from deliciousmap import identity, restoration
 from deliciousmap.contracts import (
     BuildOutput,
     CacheEntry,
@@ -25,6 +25,7 @@ from deliciousmap.contracts import (
     HeaderMapOutput,
     IdentityConfirmation,
     ManualCorrection,
+    NameRestoration,
     ParseOutput,
     Record,
 )
@@ -53,6 +54,9 @@ OUTPUT_MODELS: dict[str, type[Contract]] = {
     "build": BuildOutput,
 }
 
+# geocode·closure·build은 상호 복원 결과를 포함하는 v3 계약이다.
+SCHEMA_VERSIONS = {"geocode": 3, "closure": 3, "build": 3}
+
 DEPENDENCIES = {
     "fetch": (),
     "headermap": ("fetch.json",),
@@ -62,6 +66,33 @@ DEPENDENCIES = {
     "closure": ("records.csv", "parse.json", "classify.json", "geocode.json"),
     "build": ("records.csv", "parse.json", "classify.json", "geocode.json", "closure.json"),
 }
+
+
+def schema_version(stage: str) -> int:
+    return SCHEMA_VERSIONS.get(stage, 1)
+
+
+def file_digest(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes() if path.exists() else b"").hexdigest()
+
+
+def read_reviews[T: Contract](path: Path, model: type[T]) -> tuple[T, ...]:
+    """사람 검토 입력은 한 줄에 계약 하나인 JSONL이다. 없는 파일은 검토 없음이다."""
+    if not path.exists():
+        return ()
+    return tuple(
+        model.model_validate_json(line) for line in path.read_text(encoding="utf-8").splitlines()
+    )
+
+
+def require_scoped_reviews(
+    entries: tuple[NameRestoration, ...] | tuple[IdentityConfirmation, ...], city: str
+) -> None:
+    if any(item.scope.city != city for item in entries):
+        raise ValueError("review city mismatch")
+    scopes = [item.scope for item in entries]
+    if len(scopes) != len(set(scopes)):
+        raise ValueError("duplicate review scope")
 
 
 class RegenerationRequired(ValueError):
@@ -167,7 +198,7 @@ class ArtifactStore:
         if isinstance(output, ParseOutput):
             payload.pop("records")
         envelope = {
-            "schema_version": 2 if stage in {"geocode", "closure", "build"} else 1,
+            "schema_version": schema_version(stage),
             "city": self.target.city.slug,
             "org": self.target.org,
             "dependencies": self._dependencies(stage),
@@ -218,10 +249,9 @@ class ArtifactStore:
 
     def load[T: Contract](self, stage: str, model: type[T]) -> T:
         envelope = json.loads((self.directory / f"{stage}.json").read_text(encoding="utf-8"))
-        if envelope["schema_version"] != (2 if stage in {"geocode", "closure", "build"} else 1):
+        if envelope["schema_version"] != schema_version(stage):
             raise RegenerationRequired("rerun the producing stage for the current contract")
-        if (envelope["schema_version"], envelope["city"], envelope["org"]) != (
-            2 if stage in {"geocode", "closure", "build"} else 1,
+        if (envelope["city"], envelope["org"]) != (
             self.target.city.slug,
             self.target.org,
         ):
@@ -241,22 +271,14 @@ class ArtifactStore:
             for name in DEPENDENCIES[stage]
         }
         if stage == "classify":
-            manual = self.paths.manual(self.target)
-            result["manual"] = hashlib.sha256(
-                manual.read_bytes() if manual.exists() else b""
-            ).hexdigest()
+            result["manual"] = file_digest(self.paths.manual(self.target, "classify"))
         if stage == "geocode":
-            for name, path in (
-                ("candidates", self.directory / "geocode-input.json"),
-                (
-                    "confirmations",
-                    self.paths.data_root / "manual" / self.target.city.slug / "geocode.jsonl",
-                ),
-            ):
-                result[name] = hashlib.sha256(
-                    path.read_bytes() if path.exists() else b""
-                ).hexdigest()
+            result["candidates"] = file_digest(self.directory / "geocode-input.json")
+            result["confirmations"] = file_digest(self.paths.manual(self.target, "geocode"))
             result["policy"] = identity.POLICY_VERSION
+        if stage in {"classify", "geocode"}:
+            result["restorations"] = file_digest(self.paths.manual(self.target, "restore"))
+            result["restoration_policy"] = restoration.POLICY_VERSION
         return result
 
     def _validate(self, output: Contract) -> None:
@@ -324,6 +346,7 @@ class ArtifactStore:
                     record,
                     item.lookup,
                     item.confirmation,
+                    item.restoration,
                     item.dependency_key,
                 ):
                     raise ValueError("geocode dependency mismatch")
@@ -346,19 +369,23 @@ class ArtifactStore:
                 raise ValueError("build must produce files within output-root")
 
     def manual(self) -> tuple[ManualCorrection, ...]:
-        path = self.paths.manual(self.target)
-        if not path.exists():
-            return ()
-        corrections = tuple(
-            ManualCorrection.model_validate_json(line)
-            for line in path.read_text(encoding="utf-8").splitlines()
-        )
+        corrections = read_reviews(self.paths.manual(self.target, "classify"), ManualCorrection)
         if any(item.city != self.target.city.slug for item in corrections):
             raise ValueError("manual correction city mismatch")
         return tuple(
             item
             for item in corrections
             if self.target.org is None or item.organization in (None, self.target.org)
+        )
+
+    def restorations(self) -> tuple[NameRestoration, ...]:
+        """확정 복원명의 직렬화는 여기에 둔다. 복원 로직은 파일을 보지 않는다."""
+        entries = read_reviews(self.paths.manual(self.target, "restore"), NameRestoration)
+        require_scoped_reviews(entries, self.target.city.slug)
+        return tuple(
+            item
+            for item in entries
+            if self.target.org is None or item.scope.organization in (None, self.target.org)
         )
 
     def previous_geocodes(self) -> tuple[GeocodeResult, ...]:
@@ -402,17 +429,7 @@ class ArtifactStore:
         )
 
     def confirmations(self, records: tuple[Record, ...]) -> tuple[IdentityConfirmation, ...]:
-        path = self.paths.data_root / "manual" / self.target.city.slug / "geocode.jsonl"
-        if not path.exists():
-            return ()
-        supplied = tuple(
-            IdentityConfirmation.model_validate_json(line)
-            for line in path.read_text(encoding="utf-8").splitlines()
-        )
-        if any(item.scope.city != self.target.city.slug for item in supplied):
-            raise ValueError("confirmation city mismatch")
-        scopes = [item.scope for item in supplied]
-        if len(scopes) != len(set(scopes)):
-            raise ValueError("duplicate confirmation scope")
+        supplied = read_reviews(self.paths.manual(self.target, "geocode"), IdentityConfirmation)
+        require_scoped_reviews(supplied, self.target.city.slug)
         expected = {self.scope(record) for record in records}
         return tuple(item for item in supplied if item.scope in expected)

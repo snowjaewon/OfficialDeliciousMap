@@ -21,7 +21,7 @@ from deliciousmap.contracts import (
 )
 from deliciousmap.identity import decide_identity, lookup_key, reconcile_coordinates
 from deliciousmap.pipeline import AdapterFailure, ExecutionContext, FailureCause
-from deliciousmap.storage import write_text
+from deliciousmap.storage import schema_version, write_text
 
 
 class LocalAdapters:
@@ -40,18 +40,25 @@ class LocalAdapters:
     def geocode(self, value: GeocodeInput, context: ExecutionContext) -> GeocodeOutput:
         lookups = {item.scope.record_id: item for item in value.lookups}
         confirmations = {item.scope.record_id: item for item in value.confirmations}
+        restorations = {item.record_id: item for item in value.restorations}
         previous = {item.lookup_key: item for item in value.previous}
         results = []
         for record in value.records:
             lookup = lookups[record.record_id]
             confirmation = confirmations.get(record.record_id)
-            cached = previous.get(lookup_key(record, lookup, confirmation, value.dependency_key))
+            restored = restorations.get(record.record_id)
+            key = lookup_key(record, lookup, confirmation, restored, value.dependency_key)
+            cached = previous.get(key)
             if cached is not None and (cached.status == "success" or not value.retry_failed):
                 results.append(cached)
             else:
                 results.append(
                     decide_identity(
-                        record, lookup, confirmation, dependency_key=value.dependency_key
+                        record,
+                        lookup,
+                        confirmation,
+                        restored,
+                        dependency_key=value.dependency_key,
                     )
                 )
         return GeocodeOutput(results=reconcile_coordinates(tuple(results)))
@@ -77,7 +84,7 @@ class LocalAdapters:
             path,
             json.dumps(
                 {
-                    "schema_version": 2,
+                    "schema_version": schema_version("build"),
                     "city": context.target.city.slug,
                     "org": context.target.org,
                     **value.model_dump(mode="json"),

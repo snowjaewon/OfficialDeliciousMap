@@ -19,8 +19,11 @@ class Paths:
         base = self.data_root / target.city.slug
         return base / "orgs" / target.org if target.org else base
 
-    def manual(self, target: Target) -> Path:
-        return self.data_root / "manual" / target.city.slug / "classify.jsonl"
+    def manual(self, target: Target, name: str) -> Path:
+        """사람 보정·상호 복원·업소 확인은 의미가 다르므로 파일을 나눈다."""
+        if name not in {"classify", "restore", "geocode"}:
+            raise ValueError("unknown manual review input")
+        return self.data_root / "manual" / target.city.slug / f"{name}.jsonl"
 
     def shared(self, name: str) -> Path:
         if name not in {"headermap", "classify"}:

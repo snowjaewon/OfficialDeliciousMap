@@ -12,6 +12,8 @@ from deliciousmap.registry import Target
 
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 Sha256 = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{64}$")]
+# 동일성 판단에 필요한 근거만 남기기 위한 상한. 원본 전체를 옮겨 적는 용도가 아니다.
+Excerpt = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=500)]
 
 
 class Contract(BaseModel):
@@ -92,6 +94,45 @@ class Classification(Contract):
     record_id: Text
     status: Literal["restaurant", "non_restaurant", "pending"]
     evidence: Text
+
+
+class ReviewReference(Contract):
+    """검토에 사용한 자료의 출처와 근거. 원본 전체 대신 판단에 필요한 부분만 남긴다."""
+
+    kind: Literal["disclosure", "license", "place", "other"]
+    source: Text
+    detail: Excerpt
+
+
+class RestorationScope(Contract):
+    """확인 근거가 뒷받침하는 적용 범위. 선언한 항목이 모두 맞는 레코드에만 적용한다."""
+
+    city: Text
+    merchant: Text
+    organization: str | None = None
+    source_hash: Sha256 | None = None
+    record_id: str | None = None
+
+
+class NameRestoration(Contract):
+    """data/manual/<city>/restore.jsonl 한 줄. 사람이 확정한 전체 상호."""
+
+    schema_version: Literal[1] = 1
+    scope: RestorationScope
+    restored_merchant: Text
+    evidence: Text
+    references: tuple[ReviewReference, ...] = ()
+
+
+class RestoredName(Contract):
+    """레코드 하나에 적용한 복원 결과. 원본 표기는 그대로 보존한다."""
+
+    record_id: Text
+    merchant: Text
+    restored_merchant: Text
+    scope: RestorationScope
+    evidence: Text
+    references: tuple[ReviewReference, ...] = ()
 
 
 class EvidenceScope(Contract):
@@ -176,6 +217,7 @@ class GeocodeResult(Contract):
     dependency_key: Sha256
     lookup: CandidateLookup
     confirmation: IdentityConfirmation | None = None
+    restoration: RestoredName | None = None
     latitude: float | None = Field(default=None, ge=-90, le=90, allow_inf_nan=False)
     longitude: float | None = Field(default=None, ge=-180, le=180, allow_inf_nan=False)
     evidence: Text
@@ -200,6 +242,11 @@ class GeocodeResult(Contract):
             raise ValueError("unresolved records cannot be assigned a business")
         if self.record_id != self.lookup.scope.record_id:
             raise ValueError("result scope mismatch")
+        if self.restoration is not None and (
+            self.restoration.record_id != self.record_id
+            or self.restoration.merchant != self.merchant
+        ):
+            raise ValueError("restoration record or original name mismatch")
         return self
 
 
@@ -248,10 +295,17 @@ class ParseOutput(Contract):
 class ClassifyInput(Contract):
     records: tuple[Record, ...]
     manual: tuple[ManualCorrection, ...] = ()
+    restorations: tuple[RestoredName, ...] = ()
 
     @property
     def merchants(self) -> tuple[str, ...]:
-        return tuple(dict.fromkeys(record.merchant for record in self.records))
+        """확정 복원명이 있으면 그 이름을 판별한다. 원본 표기는 레코드에 그대로 남는다."""
+        restored = {item.record_id: item.restored_merchant for item in self.restorations}
+        return tuple(
+            dict.fromkeys(
+                restored.get(record.record_id, record.merchant) for record in self.records
+            )
+        )
 
 
 class ClassifyOutput(Contract):
@@ -263,6 +317,7 @@ class GeocodeInput(Contract):
     records: tuple[Record, ...]
     lookups: tuple[CandidateLookup, ...] = ()
     confirmations: tuple[IdentityConfirmation, ...] = ()
+    restorations: tuple[RestoredName, ...] = ()
     previous: tuple[GeocodeResult, ...] = ()
     retry_failed: bool = False
 
