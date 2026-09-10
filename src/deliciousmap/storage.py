@@ -163,7 +163,20 @@ class ArtifactStore:
     def save(self, stage: str, output: Contract, *, retry_failed: bool = False) -> None:
         output = OUTPUT_MODELS[stage].model_validate(output)
         self._validate(output)
-        require_size(output.model_dump_json())
+        payload = output.model_dump(mode="json")
+        if isinstance(output, ParseOutput):
+            payload.pop("records")
+        envelope = {
+            "schema_version": 2 if stage in {"geocode", "closure", "build"} else 1,
+            "city": self.target.city.slug,
+            "org": self.target.org,
+            "dependencies": self._dependencies(stage),
+            "payload": payload,
+        }
+        content = json.dumps(envelope, ensure_ascii=False, sort_keys=True) + "\n"
+        require_size(content)
+        if isinstance(output, ParseOutput):
+            write_records(self.directory / "records.csv", output.records)
         if isinstance(output, GeocodeOutput):
             cache_path = self.directory / "geocode-history-v2.jsonl"
             latest = {entry.key: entry for entry in read_cache(cache_path) if entry.valid}
@@ -188,17 +201,6 @@ class ArtifactStore:
                     )
             if additions:
                 append_cache_entries(cache_path, tuple(additions))
-        payload = output.model_dump(mode="json")
-        if isinstance(output, ParseOutput):
-            write_records(self.directory / "records.csv", output.records)
-            payload.pop("records")
-        envelope = {
-            "schema_version": 2 if stage in {"geocode", "closure", "build"} else 1,
-            "city": self.target.city.slug,
-            "org": self.target.org,
-            "dependencies": self._dependencies(stage),
-            "payload": payload,
-        }
         path = self.directory / f"{stage}.json"
         if path.exists():
             old = path.read_bytes().decode("utf-8")
@@ -212,10 +214,7 @@ class ArtifactStore:
                     )
                 )
                 write_text(archive, old)
-        write_text(
-            self.directory / f"{stage}.json",
-            json.dumps(envelope, ensure_ascii=False, sort_keys=True) + "\n",
-        )
+        write_text(path, content)
 
     def load[T: Contract](self, stage: str, model: type[T]) -> T:
         envelope = json.loads((self.directory / f"{stage}.json").read_text(encoding="utf-8"))
@@ -314,11 +313,12 @@ class ArtifactStore:
                 included,
             )
             by_id = {record.record_id: record for record in records}
+            dependency_key = self.geocode_dependency_key()
             for item in output.results:
                 record = by_id[item.record_id]
                 if item.merchant != record.merchant or item.lookup.scope != self.scope(record):
                     raise ValueError("geocode record provenance mismatch")
-                if item.dependency_key != self.geocode_dependency_key():
+                if item.dependency_key != dependency_key:
                     raise ValueError("stale geocode result")
                 if item.lookup_key != identity.lookup_key(
                     record,

@@ -18,6 +18,16 @@ def normalized(value: str) -> str:
     return " ".join(unicodedata.normalize("NFC", value).split()).casefold()
 
 
+def _place_identity(
+    merchant: str,
+    branch: str | None,
+    address: str | None,
+) -> tuple[str, str, str] | None:
+    if branch is None or address is None:
+        return None
+    return normalized(merchant), normalized(branch), normalized(address)
+
+
 def digest(value: object) -> str:
     return hashlib.sha256(
         json.dumps(
@@ -86,11 +96,8 @@ def decide_identity(
             for candidate in lookup.candidates
             if (
                 candidate.source == confirmation.candidate_source
-                and normalized(candidate.merchant) == normalized(confirmation.merchant)
-                and candidate.branch is not None
-                and normalized(candidate.branch) == normalized(confirmation.branch)
-                and candidate.address is not None
-                and normalized(candidate.address) == normalized(confirmation.address)
+                and _place_identity(candidate.merchant, candidate.branch, candidate.address)
+                == _place_identity(confirmation.merchant, confirmation.branch, confirmation.address)
             )
         ]
     else:
@@ -101,28 +108,19 @@ def decide_identity(
             return unresolved("insufficient_evidence")
         if any(fact.branch is None for fact in facts):
             return unresolved("unknown_branch")
-        identities = {
-            (
-                normalized(fact.merchant),
-                normalized(fact.branch or ""),
-                normalized(fact.address or ""),
-            )
-            for fact in facts
-        }
+        identities = {_place_identity(fact.merchant, fact.branch, fact.address) for fact in facts}
         if len(identities) != 1:
             return unresolved("conflicting_evidence")
-        name, branch, address = next(iter(identities))
-        if name != normalized(record.merchant):
+        expected = next(iter(identities))
+        if expected is None:
+            return unresolved("insufficient_evidence")
+        if expected[0] != normalized(record.merchant):
             return unresolved("unconfirmed_name")
         matches = [
             candidate
             for candidate in lookup.candidates
             if (
-                normalized(candidate.merchant) == name
-                and candidate.branch is not None
-                and normalized(candidate.branch) == branch
-                and candidate.address is not None
-                and normalized(candidate.address) == address
+                _place_identity(candidate.merchant, candidate.branch, candidate.address) == expected
             )
         ]
     if not matches:
@@ -140,9 +138,14 @@ def decide_identity(
             "business_id": digest(
                 [
                     "business-1",
-                    normalized(candidate.merchant),
-                    normalized(candidate.branch or ""),
-                    normalized(candidate.address or ""),
+                    *(
+                        _place_identity(
+                            candidate.merchant,
+                            candidate.branch,
+                            candidate.address,
+                        )
+                        or ()
+                    ),
                 ]
             ),
             "confirmed_merchant": candidate.merchant,
