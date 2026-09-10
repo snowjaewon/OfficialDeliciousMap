@@ -69,6 +69,7 @@ uv run python -m deliciousmap build --city seoul
 자동 채택은 독립 근거의 상호·지점·주소가 일치하고 후보 하나를 특정할 때만 한다.
 비교 정규화는 Unicode NFC·대소문자·공백 정리에 한정하며, 유사 검색·주소 추정은 하지 않는다.
 잘린 원본과 전체 상호가 다르면 사람 확인 전까지 복원명을 확정하지 않는다.
+확정 복원명이 있으면 원본 표기 대신 그 이름을 근거와 대조한다.
 같은 업소의 좌표 근거가 레코드 사이에서 충돌해도 모두 보류한다.
 
 | 식별자 | 용도 |
@@ -76,14 +77,14 @@ uv run python -m deliciousmap build --city seoul
 | `record_id` + `scope` | 지출 1건과 기관·도시·원본의 맥락. 원본 `merchant`는 바꾸지 않음 |
 | `CandidateSource` | 공급자·출처 내 ID·근거 위치. 확인된 업소 ID와 별개 |
 | `business_id` | 확인한 전체 상호·명시된 지점·주소의 정규화 조합을 해시. 마커·폐업 결과 연결 |
-| `lookup_key` | 레코드·조회 결과·사람 확인·의존성·정책 해시. 동명이 업소 간 캐시 전파 방지 |
+| `lookup_key` | 레코드·조회 결과·사람 확인·상호 복원·의존성·정책 해시. 동명이 업소 간 캐시 전파 방지 |
 
 `business_id`는 공급자 ID나 표시명 하나로 만들지 않는다. 미확정 결과에는 업소 ID와
 확정 상호·좌표를 넣지 않는다. 주소·정식 이름이 바뀌면 다른 ID가 되며 별칭·이전 주소 병합은 하지 않는다.
 같은 이름·지점·주소에 대해 별도 업소의 가능성을 구분할 근거가 없다면 후보를 임의로 하나로 줄이지 않는다.
 
-`GeocodeResult`는 원본 상호, 레코드 ID, 조회·근거·범위 전체, 사람 확인, 의존성 키,
-`status`, `reason`, 확인된 업소·상호·좌표를 저장한다.
+`GeocodeResult`는 원본 상호, 레코드 ID, 조회·근거·범위 전체, 사람 확인, 적용한 상호 복원,
+의존성 키, `status`, `reason`, 확인된 업소·상호·좌표를 저장한다.
 
 | reason | 결과 |
 | --- | --- |
@@ -94,6 +95,8 @@ uv run python -m deliciousmap build --city seoul
 | `missing_coordinates` | 좌표 미확정 |
 | `lookup_error` | 조회 오류. 저장 후 CLI 종료 1, `cause=lookup-failed` |
 
+사람 확인이 서로 어긋나면 저장하지 않고 종료 1, `cause=conflicting-review`로 알린다.
+
 미확정은 식당 분류의 비식당·판단 보류와 다르다. 모두 장부에 보존하며 마커만 보류한다.
 `closure`는 인허가 미연결 상태를 `unknown`으로 명시한다. 폐업 확정 결과를 공급하는 후속 구현도
 `ClosureResult.business_id`를 사용해야 하며 폐업 업소를 마커에서 삭제하지 않는다.
@@ -103,11 +106,13 @@ uv run python -m deliciousmap build --city seoul
 ## 사람 확인
 
 선택적 `data/manual/<city>/geocode.jsonl`은 한 줄당 `IdentityConfirmation`이다.
-기존 식당 포함·제외용 `classify.jsonl`과 의미가 다르다. 각 항목에는 후보 파일과 같은
-`scope`, 선택한 후보의 `candidate_source`, 확인한 `merchant`, `branch`, `address`,
-사람이 검토한 출처·확인 내용을 적는 `evidence`가 필요하다.
+식당 포함·제외용 `classify.jsonl`, 상호 복원용 `restore.jsonl`과 의미가 다르다.
+확정 복원명의 형식과 적용 규칙은 [상호 복원](restoration.md)에 있다.
+각 항목에는 후보 파일과 같은 `scope`, 선택한 후보의 `candidate_source`, 확인한 `merchant`,
+`branch`, `address`, 사람이 검토한 출처·확인 내용을 적는 `evidence`가 필요하다.
 같은 scope의 중복 확인은 오류다. 다른 레코드·원본·기관의 확인은 적용하지 않는다.
 확인 값이 후보와 일치하지 않거나 조회 오류·좌표 부재가 남으면 성공으로 바꾸지 않는다.
+같은 레코드의 확정 복원명과 확인한 상호가 다르면 `conflicting-review`로 알린다.
 원본이 부족하거나 충돌한 경우 사람 확인은 보충 자료를 검토한 결과로 사용한다.
 
 ## 의존성·이력·교체 경계
@@ -118,13 +123,13 @@ uv run python -m deliciousmap build --city seoul
 따라서 새 공급자 연동이나 판정 구현 교체는 저장·마커·후속 CLI 형식을 바꾸지 않는다.
 범용 플러그인 등록 시스템은 없다. 정책 의미가 바뀌면 `identity.POLICY_VERSION`을 올린다.
 
-재사용 키에는 선행 레코드·분류, 후보 파일, 사람 확인 파일, 정책 버전을 포함한다.
+재사용 키에는 선행 레코드·분류, 후보 파일, 사람 확인·상호 복원 파일, 정책 버전을 포함한다.
 같은 실행 범위의 입력 하나가 바뀌면 그 범위의 캐시를 보수적으로 무효화한다.
 변경 없는 성공·미확정은 재사용하며 `--retry-failed`는 미확정을 다시 판정한다.
 변경된 결과는 새 키에 저장하고 명시적 실패 재시도는 같은 키의 새 revision에 남긴다.
 `geocode-history-v2.jsonl`은 키·revision 순으로 정렬한 추가형 이력이다. 단일 작성자만 지원한다.
 
-geocode·closure·build 산출물은 envelope v2다. 이전 v1은 `regeneration-required`로 거부하고
+geocode·closure·build 산출물은 envelope v3다. 이전 버전은 `regeneration-required`로 거부하고
 선행 정제 자료와 새 후보 입력을 준비해 세 단계를 재실행한다. 교체 전 기존 파일은
 `history/<stage>-v<version>-<content-hash>.json`에 보존한다.
 옛 상호 중심 `geocode-history.jsonl`은 읽거나 수정하지 않는다.

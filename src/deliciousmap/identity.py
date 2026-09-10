@@ -9,6 +9,7 @@ from deliciousmap.contracts import (
     GeocodeResult,
     IdentityConfirmation,
     Record,
+    RestoredName,
 )
 
 POLICY_VERSION = "identity-1"
@@ -43,6 +44,7 @@ def lookup_key(
     record: Record,
     lookup: CandidateLookup,
     confirmation: IdentityConfirmation | None,
+    restoration: RestoredName | None,
     dependency_key: str,
 ) -> str:
     return digest(
@@ -52,6 +54,7 @@ def lookup_key(
             "dependencies": dependency_key,
             "lookup": lookup.model_dump(mode="json"),
             "confirmation": confirmation.model_dump(mode="json") if confirmation else None,
+            "restoration": restoration.model_dump(mode="json") if restoration else None,
         }
     )
 
@@ -60,6 +63,7 @@ def decide_identity(
     record: Record,
     lookup: CandidateLookup,
     confirmation: IdentityConfirmation | None = None,
+    restoration: RestoredName | None = None,
     *,
     dependency_key: str,
 ) -> GeocodeResult:
@@ -67,11 +71,14 @@ def decide_identity(
     common = {
         "record_id": record.record_id,
         "merchant": record.merchant,
-        "lookup_key": lookup_key(record, lookup, confirmation, dependency_key),
+        "lookup_key": lookup_key(record, lookup, confirmation, restoration, dependency_key),
         "dependency_key": dependency_key,
         "lookup": lookup,
         "confirmation": confirmation,
+        "restoration": restoration,
     }
+    # 확정된 복원명만 원본 표기를 대신한다. 확인 전 후보는 복원명이 아니다.
+    expected_name = restoration.restored_merchant if restoration else record.merchant
 
     def unresolved(reason: str) -> GeocodeResult:
         return GeocodeResult.model_validate(
@@ -114,7 +121,7 @@ def decide_identity(
         expected = next(iter(identities))
         if expected is None:
             return unresolved("insufficient_evidence")
-        if expected[0] != normalized(record.merchant):
+        if expected[0] != normalized(expected_name):
             return unresolved("unconfirmed_name")
         matches = [
             candidate
@@ -151,9 +158,17 @@ def decide_identity(
             "confirmed_merchant": candidate.merchant,
             "latitude": candidate.latitude,
             "longitude": candidate.longitude,
-            "evidence": confirmation.evidence if confirmation else "name-branch-address-agreement",
+            "evidence": _evidence(confirmation, restoration),
         }
     )
+
+
+def _evidence(confirmation: IdentityConfirmation | None, restoration: RestoredName | None) -> str:
+    if confirmation is not None:
+        return confirmation.evidence
+    if restoration is not None:
+        return "restored-name-branch-address-agreement"
+    return "name-branch-address-agreement"
 
 
 def reconcile_coordinates(results: tuple[GeocodeResult, ...]) -> tuple[GeocodeResult, ...]:

@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Protocol
 
+from deliciousmap import restoration
 from deliciousmap.contracts import (
     BuildInput,
     BuildOutput,
@@ -48,6 +49,7 @@ class FailureCause(StrEnum):
     SERVICE_UNAVAILABLE = "service-unavailable"
     LOOKUP_FAILED = "lookup-failed"
     REGENERATION_REQUIRED = "regeneration-required"
+    CONFLICTING_REVIEW = "conflicting-review"
 
 
 class AdapterFailure(Exception):
@@ -139,6 +141,8 @@ def execute(
             raise PipelineFailure(
                 stage, context.target, FailureCause.REGENERATION_REQUIRED
             ) from None
+        except restoration.ConflictingReview:
+            raise PipelineFailure(stage, context.target, FailureCause.CONFLICTING_REVIEW) from None
         except (ValueError, TypeError, KeyError):
             raise PipelineFailure(stage, context.target, FailureCause.INVALID_ARTIFACT) from None
         except OSError:
@@ -175,18 +179,27 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
         case "classify":
             parsed = store.load("parse", ParseOutput)
             result = adapters.classify(
-                ClassifyInput(records=parsed.records, manual=store.manual()), context
+                ClassifyInput(
+                    records=parsed.records,
+                    manual=store.manual(),
+                    restorations=restoration.resolve(parsed.records, store.restorations()),
+                ),
+                context,
             )
         case "geocode":
             parsed = store.load("parse", ParseOutput)
             classified = store.load("classify", ClassifyOutput)
             records = restaurant_records(parsed.records, classified.decisions)
+            confirmations = store.confirmations(records)
+            restorations = restoration.resolve(records, store.restorations())
+            restoration.require_agreement(restorations, confirmations)
             result = adapters.geocode(
                 GeocodeInput(
                     dependency_key=store.geocode_dependency_key(),
                     records=records,
                     lookups=store.candidate_lookups(records),
-                    confirmations=store.confirmations(records),
+                    confirmations=confirmations,
+                    restorations=restorations,
                     previous=store.previous_geocodes(),
                     retry_failed=context.retry_failed,
                 ),

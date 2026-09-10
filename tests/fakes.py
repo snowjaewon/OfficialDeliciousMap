@@ -36,6 +36,7 @@ class SyntheticAdapters:
     def __init__(self) -> None:
         self.calls: list[str] = []
         self.build_input: BuildInput | None = None
+        self.classify_input: ClassifyInput | None = None
         self.cache_misses = 0
         self.geocode_lookups = 0
 
@@ -112,7 +113,10 @@ class SyntheticAdapters:
 
     def classify(self, value: ClassifyInput, context: ExecutionContext) -> ClassifyOutput:
         self.calls.append("classify")
+        self.classify_input = value
         statuses = {"r0": "restaurant", "r1": "non_restaurant", "r2": "pending", "r3": "restaurant"}
+        # 조회는 확정 복원명으로 한다. 원본 표기는 레코드에 그대로 남는다.
+        restored = {item.record_id: item.restored_merchant for item in value.restorations}
         write_text(
             context.paths.city_dir(context.target) / "geocode-input.json",
             json.dumps(
@@ -129,7 +133,7 @@ class SyntheticAdapters:
                             "status": "ok",
                             "facts": [
                                 {
-                                    "merchant": record.merchant,
+                                    "merchant": restored.get(record.record_id, record.merchant),
                                     "branch": "",
                                     "address": "합성로 1",
                                     "source": "https://example.invalid/disclosure",
@@ -142,7 +146,7 @@ class SyntheticAdapters:
                                         "source_id": record.record_id,
                                         "reference": "https://example.invalid/place",
                                     },
-                                    "merchant": record.merchant,
+                                    "merchant": restored.get(record.record_id, record.merchant),
                                     "branch": "",
                                     "address": "합성로 1",
                                     "latitude": 37.5 if record.record_id == "r0" else None,

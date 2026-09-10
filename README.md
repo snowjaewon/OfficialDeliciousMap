@@ -91,10 +91,10 @@ CLI를 포함한 통합 테스트에는 `cli.main(argv, cities=..., adapters=...
 입출력 타입, 기관·원본 관계, 판정 대상의 완전성과 중복을 검사하며 설명 없는 0건은 실패다.
 확인된 집행 없음은 fetch/parse의 `empty_reason`에 근거를 명시해야 한다.
 classify 이후에는 입력 파일 SHA-256도 기록해 이전 입력의 판정을 재사용하지 못하게 한다.
-레코드나 사람 보정을 바꾸면 classify부터 후속 단계를 다시 실행한다.
+레코드·사람 보정·확정 복원명을 바꾸면 classify부터 후속 단계를 다시 실행한다.
 
 build는 `records.csv`, `parse.json`, `classify.json`, `geocode-input.json`, `geocode.json`,
-`closure.json`과 적용한 사람 보정·업소 확인 파일로 재현하며 원본·수집 메타데이터·API에 접근하지 않는다.
+`closure.json`과 적용한 사람 보정·상호 복원·업소 확인 파일로 재현하며 원본·수집 메타데이터·API에 접근하지 않는다.
 마커는 확인된 업소 식별자로 묶는다. 동일 상호라도 지점·주소가 다르면 분리하고,
 미확정 레코드는 전체 장부에만 남긴다. `markers.json`은 후속 사이트용 정제 입력이며 HTML/PWA는 아니다.
 폐업으로 확인된 후보도 제거하지 않는다.
@@ -103,8 +103,10 @@ build는 `records.csv`, `parse.json`, `classify.json`, `geocode-input.json`, `ge
 
 정제 산출물은 `data/<city>/`에 두며, `--org` 실행은 도시 전체 출력을 덮어쓰지 않도록
 `data/<city>/orgs/<org>/`에 분리한다. 기관별 산출물을 도시 전체로 합치는 기능은 후속 작업이다.
-공통 캐시는 `data/_shared/`, 사람 보정은 `data/manual/<city>/classify.jsonl`이다.
-단계 메타데이터 파일은 `<stage>.json`이며 `schema_version`(geocode·closure·build는 2, 나머지는 1), `city`, `org`, 입력 해시인
+공통 캐시는 `data/_shared/`에 둔다. 사람 검토 입력은 의미별로 나누어
+`data/manual/<city>/`의 `classify.jsonl`(사람 보정), `restore.jsonl`(상호 복원),
+`geocode.jsonl`(업소 확인)에 둔다. 자세한 내용은 [상호 복원](docs/restoration.md)에 있다.
+단계 메타데이터 파일은 `<stage>.json`이며 `schema_version`(geocode·closure·build는 3, 나머지는 1), `city`, `org`, 입력 해시인
 `dependencies`, 실제 출력인 `payload`를 가진다. `parse.json`에는 레코드를 중복 저장하지 않는다.
 원본의 내용·개인정보를 메타데이터에 넣지 않는다. fetch 메타데이터의 외부 경로는 수집 PC 기준이다.
 
@@ -153,6 +155,10 @@ JSON 객체의 키와 줄의 `(key, revision)`을 정렬하며, 이력의 기존
 (`restaurant` / `non_restaurant`), `evidence`, 선택적 `organization`·`source_hash`를 가진다.
 해당 도시 파일을 읽고 기관 선택 범위를 적용해 classify 입력에 전달한다. 실제 판정 우선순위의
 적용은 classify 어댑터 책임이며 공통 LLM 캐시를 사람 보정으로 덮어쓰지 않는다.
+
+상호 복원의 각 줄은 `schema_version=1`, 적용 범위인 `scope`, 확정 복원명 `restored_merchant`,
+`evidence`, 선택적 `references`를 가진다. 식당 포함·제외를 정하는 사람 보정과 의미가 다르며
+원본 표기를 덮어쓰지 않는다. 형식과 적용 규칙은 [상호 복원](docs/restoration.md)에 있다.
 
 ## 라이선스
 
