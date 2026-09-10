@@ -20,6 +20,12 @@ class Contract(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True, revalidate_instances="always")
 
 
+def require_error_code(status: str, error: str | None) -> None:
+    """조회 실패는 언제나 안전한 사유 코드를 함께 남긴다."""
+    if (status == "error") != (error is not None):
+        raise ValueError("lookup errors require an explicit error code")
+
+
 class Record(Contract):
     record_id: Text
     spent_on: date
@@ -165,17 +171,50 @@ class PlaceCandidate(Contract):
     longitude: float | None = Field(default=None, ge=-180, le=180, allow_inf_nan=False)
 
 
+class ProviderCandidates(Contract):
+    """조회 한 번을 해석한 결과. 원본 응답·인증 정보는 남기지 않는다."""
+
+    status: Literal["ok", "error"]
+    error: Literal["unavailable", "invalid_response"] | None = None
+    candidates: tuple[PlaceCandidate, ...] = ()
+
+    @model_validator(mode="after")
+    def consistent_result(self) -> "ProviderCandidates":
+        require_error_code(self.status, self.error)
+        if self.status == "error" and self.candidates:
+            raise ValueError("failed lookups cannot supply candidates")
+        return self
+
+
+class ProviderQuery(Contract):
+    """조회 하나의 요청 맥락·해석 버전·결과 상태. 후보 사실과 분리해 재사용과 추적에 쓴다."""
+
+    provider: Literal["naver"]
+    request: Text
+    interpretation: Text
+    status: Literal["ok", "error"]
+    error: Literal["unavailable", "invalid_response"] | None = None
+    cache: CacheRef
+
+    @model_validator(mode="after")
+    def consistent_query(self) -> "ProviderQuery":
+        require_error_code(self.status, self.error)
+        return self
+
+
 class CandidateLookup(Contract):
     scope: EvidenceScope
     status: Literal["ok", "error"]
     error: Literal["unavailable", "invalid_response", "not_supplied"] | None = None
     facts: tuple[IdentityFacts, ...] = ()
     candidates: tuple[PlaceCandidate, ...] = ()
+    queries: tuple[ProviderQuery, ...] = ()
 
     @model_validator(mode="after")
     def consistent_lookup(self) -> "CandidateLookup":
-        if (self.status == "error") != (self.error is not None):
-            raise ValueError("lookup errors require an explicit error code")
+        require_error_code(self.status, self.error)
+        if self.status != "error" and any(item.status == "error" for item in self.queries):
+            raise ValueError("failed provider lookups cannot be reported as a successful lookup")
         return self
 
 

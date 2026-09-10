@@ -10,3 +10,10 @@ def block_network(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setattr(socket.socket, "connect", forbidden)
     monkeypatch.setattr(socket, "create_connection", forbidden)
+
+
+@pytest.fixture(autouse=True)
+def block_real_keys(monkeypatch: pytest.MonkeyPatch) -> None:
+    """개발자 PC의 실제 키가 테스트에 새어 들어가지 않게 한다."""
+    for name in ("NAVER_SEARCH_CLIENT_ID", "NAVER_SEARCH_CLIENT_SECRET"):
+        monkeypatch.delenv(name, raising=False)

@@ -1,6 +1,7 @@
 """Synthetic adapters, deliberately unavailable from the production package."""
 
 import json
+from collections.abc import Mapping
 from datetime import date
 from decimal import Decimal
 
@@ -213,3 +214,57 @@ class SyntheticAdapters:
         return BuildOutput(
             files=(output,), record_count=len(value.records), marker_count=len(value.candidates)
         )
+
+
+class FakeTransport:
+    """네이버 응답만 대신한다. 인증 헤더 구성·요청·응답 해석은 실제 어댑터가 한다."""
+
+    def __init__(self, *responses: bytes | Exception) -> None:
+        self.responses = responses or (naver_body(),)
+        self.urls: list[str] = []
+        self.requests: list[dict[str, str]] = []
+        self.headers: list[dict[str, str]] = []
+
+    def fetch(self, url: str, params: Mapping[str, str], headers: Mapping[str, str]) -> bytes:
+        self.urls.append(url)
+        self.requests.append(dict(params))
+        self.headers.append(dict(headers))
+        response = self.responses[min(len(self.requests), len(self.responses)) - 1]
+        if isinstance(response, Exception):
+            raise response
+        return response
+
+
+def naver_item(
+    title: str,
+    road_address: str,
+    *,
+    mapx: str = "1291000000",
+    mapy: str = "351000000",
+    link: str = "",
+) -> dict[str, str]:
+    """지역검색 응답 한 건. 실제 응답처럼 공급자 전용 필드도 함께 둔다."""
+    return {
+        "title": title,
+        "link": link,
+        "category": "음식점>한식",
+        "description": "합성 설명",
+        "telephone": "051-000-0000",
+        "address": "부산 합성동 1-2",
+        "roadAddress": road_address,
+        "mapx": mapx,
+        "mapy": mapy,
+    }
+
+
+def naver_body(*items: dict[str, str]) -> bytes:
+    return json.dumps(
+        {
+            "lastBuildDate": "Thu, 10 Sep 2026 00:00:00 +0900",
+            "total": len(items),
+            "start": 1,
+            "display": len(items),
+            "items": list(items),
+        },
+        ensure_ascii=False,
+    ).encode("utf-8")

@@ -1,9 +1,11 @@
-# 로컬 근거 기반 지오코딩
+# 근거 기반 지오코딩과 후보 조회
 
-[이슈 #37](https://github.com/snowjaewon/OfficialDeliciousMap/issues/37)의 실행 계약이다.
+[이슈 #37](https://github.com/snowjaewon/OfficialDeliciousMap/issues/37)과
+[이슈 #39](https://github.com/snowjaewon/OfficialDeliciousMap/issues/39)의 실행 계약이다.
 판정 정책은 [부모 스펙 #36](https://github.com/snowjaewon/OfficialDeliciousMap/issues/36)과
 [확정 정책 #33](https://github.com/snowjaewon/OfficialDeliciousMap/issues/33#issuecomment-5615154736)을 따른다.
-정제 자료를 준비한 담당자가 사용하는 경로이며 외부 HTTP·LLM·과금은 없다.
+정제 자료를 준비한 담당자가 개발자 PC에서 실행하는 경로다. 외부 호출은 네이버 지역검색뿐이고
+LLM·과금 호출은 없다. 검색 키가 없으면 준비된 후보 파일만으로 동작한다.
 
 ## 실행
 
@@ -58,11 +60,48 @@ uv run python -m deliciousmap build --city seoul
 - `candidates`: 정제된 후보만 넣는다. 후보 순위는 의미가 없고, 공급자 응답 원문·HTML·비밀값은 넣지 않는다.
 - `branch: null`은 지점 미확인, `branch: ""`는 지점이 없는 업소임을 명시적으로 확인한 경우다.
   주소 부재는 `address: null`이다. 좌표는 WGS84 위도/경도의 유한한 숫자이며 누락은 `null`이다.
-- `provider`: 현재 필요한 `local`, `naver`, `license`만 표현한다. 네이버·인허가 HTTP 연결은 없다.
+- `provider`: 현재 필요한 `local`, `naver`, `license`만 표현한다. 인허가 HTTP 연결은 아직 없다.
   각 조회 구현이 상호 표기·주소 형식과 좌표계를 정제해 이 계약에 맞춰 공급한다.
 - `status: "ok", candidates: []`는 정상 조회의 후보 없음이다. 조회 실패는 `status: "error"`와
   `error: "unavailable" | "invalid_response" | "not_supplied"`로 구분한다.
   오류 때 남아 있는 일부 후보가 있어도 자동 채택하지 않는다. 파일에서 빠진 식당 레코드는 `not_supplied`로 저장한다.
+- `queries`: 실행이 수행한 조회의 기록이다. 담당자가 적을 필요는 없고 결과에만 남는다.
+
+## 네이버 조회
+
+후보가 비어 있고 담당자가 조회 실패를 적어 두지도 않은 레코드만 네이버 지역검색으로 조회한다.
+근거만 적고 후보를 비워 둔 항목(`status: "ok"`, `candidates: []`)과 파일에 없는 레코드가 조회 대상이다.
+담당자가 넣은 근거·후보는 그대로 두고 후보만 채운다. 담당자가 적은 조회 실패는 덮지 않는다.
+`data/manual/<city>/restore.jsonl`의 확정 복원명이 있으면 그 이름으로, 없으면 원본 표기로 요청한다.
+요청 맥락의 도시·기관은 질의에 넣지 않는다. 도시는 자료를 공개한 기관의 단위일 뿐이므로
+기관 도시 밖 후보를 거르거나 기관 도시 안 동명이 업소로 바꾸지 않는다.
+
+| 경계 | 내용 |
+| --- | --- |
+| 키 | `.env`의 `NAVER_SEARCH_CLIENT_ID`·`NAVER_SEARCH_CLIENT_SECRET`. 둘 다 없으면 조회하지 않고, 한쪽만 있으면 종료 코드 2 |
+| 요청 | NAVER API HUB 지역검색 엔드포인트에 질의어와 결과 수(현재 5)만 보낸다. 지역검색은 다음 페이지를 제공하지 않는다 |
+| 해석 | 강조 태그·문자 참조를 지운 장소 이름, 도로명(없으면 지번) 주소, WGS84 정수 좌표 |
+| 오류 | 통신·인증·응답 실패는 `unavailable`, 해석 불가는 `invalid_response`. 원문·상태 코드·키는 남기지 않는다 |
+
+장소 이름의 마지막 낱말이 지점명이면 상호와 나눈다(`같은 식당 부산점` → `같은 식당` + `부산점`).
+지점명이 없는 이름은 지점 없는 업소(`branch: ""`)로 본다. 그 밖의 이름은 임의로 쪼개지 않는다.
+이 분리가 실제와 다르면 근거와 어긋나 미확정으로 남을 뿐 다른 업소를 채택하지는 않는다.
+좌표는 위경도를 10^7배한 정수로 해석하고, 그 범위를 벗어난 값은 좌표계를 확인할 수 없으므로
+`null`로 남긴다. 이때 후보는 남고 판정은 `missing_coordinates`가 된다.
+어댑터는 후보 사실만 공급한다. 업소 채택 규칙은 `identity` 모듈 하나에 두며 제공자마다 복제하지 않는다.
+한 항목이라도 계약으로 옮길 수 없으면 그 조회를 `invalid_response`로 남기고 일부만 조용히 버리지 않는다.
+
+조회 결과는 `geocode-lookup-v1.jsonl`에 제공자·요청 맥락(질의어·결과 수)·해석 버전의 해시 키로
+쌓는다. 확정 업소 판정 이력인 `geocode-history-v2.jsonl`과 파일을 나누며, 캐시 적중은 조회를
+아꼈다는 뜻일 뿐 동일 업소 확정이나 사람 확인이 아니다. 같은 키의 결과가 달라지면 새 revision으로
+남기고, 값이 같으면 다시 쌓지 않는다. 조회 캐시가 바뀌면 geocode 의존성 키가 바뀌어
+그 전 판정을 재사용하지 않는다. `--retry-failed`는 실패한 조회만 다시 요청한다.
+정상 조회의 후보 없음(`no_candidates`)은 실패가 아니므로 다시 요청하지 않는다.
+
+로컬 후보 파일과 네이버 응답이 같은 후보 사실을 주면 같은 업소·좌표·마커가 나와야 한다.
+공급자 응답의 전화번호·설명·순위 같은 필드는 계약에 옮기지 않는다.
+합성 응답으로만 검증했고 실제 키로는 한 건도 조회하지 않았다. 남은 확인은
+[이슈 #39 검증](validation/issue-39.md)의 제한을 읽는다.
 
 ## 판정과 식별자
 
@@ -123,13 +162,13 @@ uv run python -m deliciousmap build --city seoul
 따라서 새 공급자 연동이나 판정 구현 교체는 저장·마커·후속 CLI 형식을 바꾸지 않는다.
 범용 플러그인 등록 시스템은 없다. 정책 의미가 바뀌면 `identity.POLICY_VERSION`을 올린다.
 
-재사용 키에는 선행 레코드·분류, 후보 파일, 사람 확인·상호 복원 파일, 정책 버전을 포함한다.
+재사용 키에는 선행 레코드·분류, 후보 파일, 조회 캐시, 사람 확인·상호 복원 파일, 정책 버전을 포함한다.
 같은 실행 범위의 입력 하나가 바뀌면 그 범위의 캐시를 보수적으로 무효화한다.
 변경 없는 성공·미확정은 재사용하며 `--retry-failed`는 미확정을 다시 판정한다.
 변경된 결과는 새 키에 저장하고 명시적 실패 재시도는 같은 키의 새 revision에 남긴다.
 `geocode-history-v2.jsonl`은 키·revision 순으로 정렬한 추가형 이력이다. 단일 작성자만 지원한다.
 
-geocode·closure·build 산출물은 envelope v3다. 이전 버전은 `regeneration-required`로 거부하고
+geocode·closure·build 산출물은 envelope v4다. 이전 버전은 `regeneration-required`로 거부하고
 선행 정제 자료와 새 후보 입력을 준비해 세 단계를 재실행한다. 교체 전 기존 파일은
 `history/<stage>-v<version>-<content-hash>.json`에 보존한다.
 옛 상호 중심 `geocode-history.jsonl`은 읽거나 수정하지 않는다.

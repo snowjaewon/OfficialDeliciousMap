@@ -3,7 +3,7 @@
 [이슈 #38](https://github.com/snowjaewon/OfficialDeliciousMap/issues/38)의 실행 계약이다.
 확정 정책은 [부모 스펙 #36](https://github.com/snowjaewon/OfficialDeliciousMap/issues/36)과
 [복원 기준 #30](https://github.com/snowjaewon/OfficialDeliciousMap/issues/30#issuecomment-5614946240)을 따른다.
-업소·좌표 판정은 [로컬 지오코딩](geocoding.md)에 있다. 이 경로에도 외부 HTTP·LLM·과금은 없다.
+업소·좌표 판정은 [지오코딩](geocoding.md)에 있다. 상호 복원 자체에는 외부 HTTP·LLM·과금이 없다.
 
 상호 복원은 원본에서 잘린 상호를 근거 자료와 대조해 동일 업소의 전체 상호로 확인하는 일이다.
 후보 수집이나 검색 순위가 아니라 사람의 확인만 복원명을 확정한다.
