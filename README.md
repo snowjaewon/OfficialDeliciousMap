@@ -40,9 +40,12 @@ uv run python -m deliciousmap fetch --city seoul --raw-root "../원본 보관" -
 uv run python -m deliciousmap geocode --city seoul --retry-failed
 ```
 
-**현재 운영 명령은 `cause=not-implemented`를 출력하고 종료 코드 1을 반환한다.**
-가짜 성공 어댑터는 `tests/fakes.py`에만 있으며 운영 CLI에는 연결하지 않는다.
-실제 게시판 수집·파일 변환·파싱·LLM·검색 API·인허가·사이트 생성·배포는 후속 작업이다.
+`geocode`는 담당자가 준비한 정제 레코드·후보·근거로 업소를 판정한다. `closure`는 현재
+인허가 연결 전이므로 확인된 업소마다 `unknown`을 저장하고, `build`는 전체 장부와
+마커 후보를 `dist/<city>/markers.json`으로 내보낸다. 기관 실행은 `orgs/<org>/`에 분리한다.
+[로컬 지오코딩 사용법과 계약](docs/geocoding.md)을 따른다.
+`fetch`·`headermap`·`parse`·`classify`의 실제 어댑터는 미구현이므로 운영 `run`은 아직
+수집 단계에서 실패한다. 실제 게시판 수집·파일 변환·파싱·LLM·검색 API·인허가·HTML/PWA·배포는 후속 작업이다.
 
 | 옵션 | 의미·기본값 |
 | --- | --- |
@@ -51,7 +54,7 @@ uv run python -m deliciousmap geocode --city seoul --retry-failed
 | `--raw-root` | 저장소 외부 원본 루트. 기본 `../deliciousmap-raw`; 인허가 자료 참조는 그 아래 `licenses/` |
 | `--data-root` | 정제 산출물 루트. 기본 `data/` |
 | `--output-root` | build 출력 루트. 기본 `dist/` |
-| `--retry-failed` | geocode 입력에서 기존 실패의 재시도를 허용. 기본은 성공·실패 모두 재사용; 실제 호출 정책은 어댑터가 구현 |
+| `--retry-failed` | 변경 없는 미확정 결과도 다시 판정하고 실패 재시도 revision을 보존. 성공은 재사용하며 외부 호출은 없음 |
 
 상대 경로는 실행한 저장소 루트 기준이다. 원본 루트가 저장소 내부이면 거부한다.
 도시별 `registry/<city>.py`는 dataclass 선언이며, 확인되지 않은 기관·게시판은 현재 비어 있다.
@@ -60,7 +63,10 @@ uv run python -m deliciousmap geocode --city seoul --retry-failed
 
 단계 실패는 `단계 city=도시 org=기관 cause=원인코드`와 종료 코드 1로 전달하고 후속 실행을 중단한다.
 `org=*`는 도시 전체다. 원인 코드는 `not-implemented`, `invalid-artifact`, `io-error`,
-`adapter-failed`, `unsupported-format`, `service-unavailable`이다. 예외 원문·서비스 응답은 출력하지 않는다.
+`adapter-failed`, `unsupported-format`, `service-unavailable`, `lookup-failed`,
+`regeneration-required`이다. 예외 원문·서비스 응답은 출력하지 않는다.
+조회 오류는 레코드별 결과를 저장한 뒤 `lookup-failed`로 실패한다. 후속 단계를 따로 실행하면
+그 레코드를 보존한 중간 빌드가 가능하다. 이전 버전은 `geocode`→`closure`→`build`를 재실행한다.
 판단 보류와 지오코딩 실패는 유효한 판정 상태이므로 장부용 레코드를 보존하고 build까지 전달한다.
 
 ## 단계 계약과 후속 구현 접점
@@ -68,7 +74,7 @@ uv run python -m deliciousmap geocode --city seoul --retry-failed
 `contracts.py`의 입출력 모델, `pipeline.py`의 `Adapters` Protocol이 공개 경계다.
 `execute(command, ExecutionContext(target, paths), adapters)`에 어댑터를 주입한다.
 CLI를 포함한 통합 테스트에는 `cli.main(argv, cities=..., adapters=...)`를 사용한다.
-기본 어댑터는 없으며 각 도시 스크래퍼와 외부 서비스 구현은 이후에 연결한다.
+기본 `LocalAdapters`는 로컬 지오코딩과 후속 정제 출력에 연결한다. 도시 스크래퍼와 외부 서비스는 후속 작업이다.
 
 | 단계 | 입력 → 출력 |
 | --- | --- |
@@ -76,7 +82,7 @@ CLI를 포함한 통합 테스트에는 `cli.main(argv, cities=..., adapters=...
 | headermap | 원본 참조 → 표별 `HeaderMap`과 공통 캐시 참조 |
 | parse | 원본 참조 + 매핑 → `ParseOutput.records` |
 | classify | 레코드·고유 상호(`merchants`)·도시별 사람 보정 → 레코드별 최종 판정과 근거 |
-| geocode | 식당 판정 상호·이전 성공/실패·재시도 여부 → 좌표 또는 실패와 근거 |
+| geocode | 식당 판정 레코드·범위가 명시된 후보/근거·사람 확인·이전 결과 → 레코드별 동일 업소·좌표 또는 미확정 이유 |
 | closure | 좌표가 있는 마커 후보·외부 인허가 루트 참조 → `open` / `closed` / `unknown` |
 | build | 레코드·판정·좌표·폐업 결과·마커 후보 → 출력 파일 경로와 레코드/후보 수 |
 
@@ -87,18 +93,18 @@ CLI를 포함한 통합 테스트에는 `cli.main(argv, cities=..., adapters=...
 classify 이후에는 입력 파일 SHA-256도 기록해 이전 입력의 판정을 재사용하지 못하게 한다.
 레코드나 사람 보정을 바꾸면 classify부터 후속 단계를 다시 실행한다.
 
-build는 `records.csv`, `parse.json`, `classify.json`, `geocode.json`, `closure.json`과
-적용한 사람 보정만으로 입력을 만들며 원본·수집 메타데이터·API에 접근하지 않는다.
-테스트의 `synthetic.txt`는 전달 검증용이다. 실제 지도 JSON, 마커 집계 알고리즘, HTML/PWA는 구현하지 않았다.
-현재 마커 후보 키는 정규화된 상호(도시는 실행 범위)이며 동일 상호의 실제 업소 식별·별칭 병합은 후속 구현 책임이다.
+build는 `records.csv`, `parse.json`, `classify.json`, `geocode-input.json`, `geocode.json`,
+`closure.json`과 적용한 사람 보정·업소 확인 파일로 재현하며 원본·수집 메타데이터·API에 접근하지 않는다.
+마커는 확인된 업소 식별자로 묶는다. 동일 상호라도 지점·주소가 다르면 분리하고,
+미확정 레코드는 전체 장부에만 남긴다. `markers.json`은 후속 사이트용 정제 입력이며 HTML/PWA는 아니다.
 폐업으로 확인된 후보도 제거하지 않는다.
 
-## 저장 형식 v1
+## 저장 형식
 
 정제 산출물은 `data/<city>/`에 두며, `--org` 실행은 도시 전체 출력을 덮어쓰지 않도록
 `data/<city>/orgs/<org>/`에 분리한다. 기관별 산출물을 도시 전체로 합치는 기능은 후속 작업이다.
 공통 캐시는 `data/_shared/`, 사람 보정은 `data/manual/<city>/classify.jsonl`이다.
-단계 메타데이터 파일은 `<stage>.json`이며 `schema_version=1`, `city`, `org`, 입력 해시인
+단계 메타데이터 파일은 `<stage>.json`이며 `schema_version`(geocode·closure·build는 2, 나머지는 1), `city`, `org`, 입력 해시인
 `dependencies`, 실제 출력인 `payload`를 가진다. `parse.json`에는 레코드를 중복 저장하지 않는다.
 원본의 내용·개인정보를 메타데이터에 넣지 않는다. fetch 메타데이터의 외부 경로는 수집 PC 기준이다.
 
@@ -134,11 +140,14 @@ JSON 객체의 키와 줄의 `(key, revision)`을 정렬하며, 이력의 기존
 유효 판정은 `valid=true`인 가장 큰 revision이다. 검증 실패 이력은 이전 유효 판정을 삭제하지 않는다.
 헤더 검증 실패 시 해당 원본에서 캐시를 우회하는 정책은 실제 headermap 어댑터가 구현한다.
 
-`geocode.json`은 현 실행의 결과이고 `geocode-history.jsonl`은 같은 이력 형식으로
-`상호|도시` 키의 성공·실패를 추가 보존한다. 변경 없는 재실행은 이력을 중복 추가하지 않는다.
+`geocode.json`은 현 실행의 결과이고 `geocode-history-v2.jsonl`은 레코드·범위·후보·근거·
+사람 확인·입력 의존성·정책 버전의 해시 키로 성공·미확정을 추가 보존한다.
+변경 없는 재실행은 이력을 중복 추가하지 않는다. 옛 `geocode-history.jsonl`은 보존만 하며
+동일 업소의 근거로 재사용하지 않는다. 이전 버전 산출물은 재생성 전 `history/`에 보관한다.
 직렬화 도구는 단일 작성자용이다. 동시 쓰기 잠금·실제 LLM/검색 캐시 엔진은 후속 범위다.
 정제 산출물의 파일당 20MB 상한과 원본·인허가 원본·`dist/` 커밋 금지는
-[ADR-0001](docs/adr/0001-commit-refined-artifacts.md)을 따른다. 상한 CI는 후속 작업이다.
+[ADR-0001](docs/adr/0001-commit-refined-artifacts.md)을 따른다. 파일 쓰기는 20,000,000바이트를 초과하면
+분할을 요구하며 실패한다. 상한 CI는 후속 작업이다.
 
 사람 보정의 각 줄은 `schema_version=1`, `city`, `merchant`, `status`
 (`restaurant` / `non_restaurant`), `evidence`, 선택적 `organization`·`source_hash`를 가진다.

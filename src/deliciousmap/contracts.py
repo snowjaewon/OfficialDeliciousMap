@@ -94,9 +94,88 @@ class Classification(Contract):
     evidence: Text
 
 
+class EvidenceScope(Contract):
+    city: Text
+    organization: Text
+    record_id: Text
+    source_hash: Sha256
+
+
+class IdentityFacts(Contract):
+    merchant: Text
+    # None means unknown; an empty branch explicitly means an unbranched business.
+    branch: str | None = None
+    address: Text | None = None
+    source: Text
+
+
+class CandidateSource(Contract):
+    provider: Literal["local", "naver", "license"]
+    source_id: Text
+    reference: Text
+
+
+class PlaceCandidate(Contract):
+    source: CandidateSource
+    merchant: Text
+    branch: str | None = None
+    address: Text | None = None
+    latitude: float | None = Field(default=None, ge=-90, le=90, allow_inf_nan=False)
+    longitude: float | None = Field(default=None, ge=-180, le=180, allow_inf_nan=False)
+
+
+class CandidateLookup(Contract):
+    scope: EvidenceScope
+    status: Literal["ok", "error"]
+    error: Literal["unavailable", "invalid_response", "not_supplied"] | None = None
+    facts: tuple[IdentityFacts, ...] = ()
+    candidates: tuple[PlaceCandidate, ...] = ()
+
+    @model_validator(mode="after")
+    def consistent_lookup(self) -> "CandidateLookup":
+        if (self.status == "error") != (self.error is not None):
+            raise ValueError("lookup errors require an explicit error code")
+        return self
+
+
+class CandidateFile(Contract):
+    schema_version: Literal[1] = 1
+    lookups: tuple[CandidateLookup, ...]
+
+
+class IdentityConfirmation(Contract):
+    scope: EvidenceScope
+    candidate_source: CandidateSource
+    merchant: Text
+    branch: str
+    address: Text
+    evidence: Text
+
+
 class GeocodeResult(Contract):
+    record_id: Text
     merchant: Text
     status: Literal["success", "failed"]
+    reason: Literal[
+        "matched",
+        "human_confirmed",
+        "no_candidates",
+        "missing_address",
+        "unknown_branch",
+        "conflicting_evidence",
+        "ambiguous",
+        "unconfirmed_name",
+        "no_match",
+        "missing_coordinates",
+        "lookup_error",
+        "insufficient_evidence",
+    ]
+    business_id: Sha256 | None = None
+    confirmed_merchant: Text | None = None
+    lookup_key: Sha256
+    dependency_key: Sha256
+    lookup: CandidateLookup
+    confirmation: IdentityConfirmation | None = None
     latitude: float | None = Field(default=None, ge=-90, le=90, allow_inf_nan=False)
     longitude: float | None = Field(default=None, ge=-180, le=180, allow_inf_nan=False)
     evidence: Text
@@ -107,10 +186,25 @@ class GeocodeResult(Contract):
             raise ValueError("successful geocoding requires both coordinates")
         if self.status == "failed" and (self.latitude is not None or self.longitude is not None):
             raise ValueError("failed geocoding cannot carry coordinates")
+        if self.status == "success" and (
+            self.business_id is None
+            or self.confirmed_merchant is None
+            or self.reason not in {"matched", "human_confirmed"}
+        ):
+            raise ValueError("success requires a confirmed business")
+        if self.status == "failed" and (
+            self.business_id is not None
+            or self.confirmed_merchant is not None
+            or self.reason in {"matched", "human_confirmed"}
+        ):
+            raise ValueError("unresolved records cannot be assigned a business")
+        if self.record_id != self.lookup.scope.record_id:
+            raise ValueError("result scope mismatch")
         return self
 
 
 class MarkerCandidate(Contract):
+    business_id: Sha256
     merchant: Text
     record_ids: tuple[str, ...]
     latitude: float
@@ -118,7 +212,7 @@ class MarkerCandidate(Contract):
 
 
 class ClosureResult(Contract):
-    merchant: Text
+    business_id: Sha256
     status: Literal["open", "closed", "unknown"]
     evidence: Text
 
@@ -165,7 +259,10 @@ class ClassifyOutput(Contract):
 
 
 class GeocodeInput(Contract):
-    merchants: tuple[str, ...]
+    dependency_key: Sha256
+    records: tuple[Record, ...]
+    lookups: tuple[CandidateLookup, ...] = ()
+    confirmations: tuple[IdentityConfirmation, ...] = ()
     previous: tuple[GeocodeResult, ...] = ()
     retry_failed: bool = False
 

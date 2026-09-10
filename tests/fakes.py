@@ -1,5 +1,6 @@
 """Synthetic adapters, deliberately unavailable from the production package."""
 
+import json
 from datetime import date
 from decimal import Decimal
 
@@ -18,7 +19,6 @@ from deliciousmap.contracts import (
     FetchOutput,
     GeocodeInput,
     GeocodeOutput,
-    GeocodeResult,
     HeaderMap,
     HeaderMapInput,
     HeaderMapOutput,
@@ -27,6 +27,7 @@ from deliciousmap.contracts import (
     Record,
     SourceRef,
 )
+from deliciousmap.identity import decide_identity
 from deliciousmap.pipeline import ExecutionContext
 from deliciousmap.storage import append_cache, select_cache, write_text
 
@@ -112,6 +113,50 @@ class SyntheticAdapters:
     def classify(self, value: ClassifyInput, context: ExecutionContext) -> ClassifyOutput:
         self.calls.append("classify")
         statuses = {"r0": "restaurant", "r1": "non_restaurant", "r2": "pending", "r3": "restaurant"}
+        write_text(
+            context.paths.city_dir(context.target) / "geocode-input.json",
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "lookups": [
+                        {
+                            "scope": {
+                                "city": context.target.city.slug,
+                                "organization": record.organization,
+                                "record_id": record.record_id,
+                                "source_hash": record.source_hash,
+                            },
+                            "status": "ok",
+                            "facts": [
+                                {
+                                    "merchant": record.merchant,
+                                    "branch": "",
+                                    "address": "합성로 1",
+                                    "source": "https://example.invalid/disclosure",
+                                }
+                            ],
+                            "candidates": [
+                                {
+                                    "source": {
+                                        "provider": "local",
+                                        "source_id": record.record_id,
+                                        "reference": "https://example.invalid/place",
+                                    },
+                                    "merchant": record.merchant,
+                                    "branch": "",
+                                    "address": "합성로 1",
+                                    "latitude": 37.5 if record.record_id == "r0" else None,
+                                    "longitude": 127.0 if record.record_id == "r0" else None,
+                                }
+                            ],
+                        }
+                        for record in value.records
+                        if statuses[record.record_id] == "restaurant"
+                    ],
+                },
+                ensure_ascii=False,
+            ),
+        )
         return ClassifyOutput(
             decisions=tuple(
                 Classification.model_validate(
@@ -127,23 +172,15 @@ class SyntheticAdapters:
 
     def geocode(self, value: GeocodeInput, context: ExecutionContext) -> GeocodeOutput:
         self.calls.append("geocode")
-        assert value.merchants == ("합성 식당", "좌표 없는 식당")
-        generated = (
-            GeocodeResult(
-                merchant=value.merchants[0],
-                status="success",
-                latitude=37.5,
-                longitude=127.0,
-                evidence="synthetic coordinates",
-            ),
-            GeocodeResult(
-                merchant=value.merchants[1], status="failed", evidence="synthetic no match"
-            ),
+        assert tuple(record.merchant for record in value.records) == ("합성 식당", "좌표 없는 식당")
+        generated = tuple(
+            decide_identity(record, lookup, dependency_key=value.dependency_key)
+            for record, lookup in zip(value.records, value.lookups, strict=True)
         )
-        previous = {item.merchant: item for item in value.previous}
+        previous = {item.lookup_key: item for item in value.previous}
         results = []
         for item in generated:
-            cached = previous.get(item.merchant)
+            cached = previous.get(item.lookup_key)
             if cached is not None and (cached.status == "success" or not value.retry_failed):
                 results.append(cached)
             else:
@@ -157,7 +194,9 @@ class SyntheticAdapters:
         return ClosureOutput(
             results=(
                 ClosureResult(
-                    merchant="합성 식당", status="closed", evidence="synthetic license match"
+                    business_id=value.candidates[0].business_id,
+                    status="closed",
+                    evidence="synthetic license match",
                 ),
             )
         )

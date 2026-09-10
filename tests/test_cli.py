@@ -71,11 +71,19 @@ def test_cli_injection_executes_the_selected_organization(tmp_path: Path) -> Non
     assert (context.paths.data_root / "seoul" / "orgs" / "test-org" / "records.csv").exists()
 
 
-@pytest.mark.parametrize(
-    "stage", ["fetch", "headermap", "parse", "classify", "geocode", "closure", "build", "run"]
-)
+@pytest.mark.parametrize("stage", ["fetch", "run"])
 def test_every_real_stage_has_a_nonzero_unimplemented_exit(
     stage: str, capsys: pytest.CaptureFixture[str]
 ) -> None:
     assert main([stage, "--city", "seoul"]) == 1
     assert "cause=not-implemented" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("stage", ["headermap", "parse", "classify", "geocode", "closure", "build"])
+def test_stages_with_missing_refined_inputs_report_io_error(
+    stage: str,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    assert main([stage, "--city", "seoul", "--data-root", str(tmp_path)]) == 1
+    assert "cause=io-error" in capsys.readouterr().err
