@@ -135,73 +135,71 @@ def execute(
     return result
 
 
-def _execute_one(command: str, context: ExecutionContext, adapters: Adapters) -> StageOutput:
-    context.paths.validate()
+def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> StageOutput:
     store = ArtifactStore(context.paths, context.target)
     result: StageOutput
-    for stage in STAGES if command == "run" else (command,):
-        match stage:
-            case "fetch":
-                result = adapters.fetch(FetchInput(context.target), context)
-            case "headermap":
-                fetched = store.load("fetch", FetchOutput)
-                result = adapters.headermap(HeaderMapInput(sources=fetched.sources), context)
-            case "parse":
-                fetched = store.load("fetch", FetchOutput)
-                mapped = store.load("headermap", HeaderMapOutput)
-                result = adapters.parse(
-                    ParseInput(sources=fetched.sources, mappings=mapped.mappings), context
-                )
-                result = ParseOutput.model_validate(result)
-                source_targets = {
-                    (source.source_hash, source.organization) for source in fetched.sources
-                }
-                if any(
-                    (record.source_hash, record.organization) not in source_targets
-                    for record in result.records
-                ):
-                    raise ValueError("record provenance does not match fetched originals")
-            case "classify":
-                parsed = store.load("parse", ParseOutput)
-                result = adapters.classify(
-                    ClassifyInput(records=parsed.records, manual=store.manual()), context
-                )
-            case "geocode":
-                parsed = store.load("parse", ParseOutput)
-                classified = store.load("classify", ClassifyOutput)
-                result = adapters.geocode(
-                    GeocodeInput(
-                        merchants=restaurant_merchants(parsed.records, classified.decisions),
-                        previous=store.previous_geocodes(),
-                        retry_failed=context.retry_failed,
+    match stage:
+        case "fetch":
+            result = adapters.fetch(FetchInput(context.target), context)
+        case "headermap":
+            fetched = store.load("fetch", FetchOutput)
+            result = adapters.headermap(HeaderMapInput(sources=fetched.sources), context)
+        case "parse":
+            fetched = store.load("fetch", FetchOutput)
+            mapped = store.load("headermap", HeaderMapOutput)
+            result = adapters.parse(
+                ParseInput(sources=fetched.sources, mappings=mapped.mappings), context
+            )
+            result = ParseOutput.model_validate(result)
+            source_targets = {
+                (source.source_hash, source.organization) for source in fetched.sources
+            }
+            if any(
+                (record.source_hash, record.organization) not in source_targets
+                for record in result.records
+            ):
+                raise ValueError("record provenance does not match fetched originals")
+        case "classify":
+            parsed = store.load("parse", ParseOutput)
+            result = adapters.classify(
+                ClassifyInput(records=parsed.records, manual=store.manual()), context
+            )
+        case "geocode":
+            parsed = store.load("parse", ParseOutput)
+            classified = store.load("classify", ClassifyOutput)
+            result = adapters.geocode(
+                GeocodeInput(
+                    merchants=restaurant_merchants(parsed.records, classified.decisions),
+                    previous=store.previous_geocodes(),
+                    retry_failed=context.retry_failed,
+                ),
+                context,
+            )
+        case "closure" | "build":
+            parsed = store.load("parse", ParseOutput)
+            classified = store.load("classify", ClassifyOutput)
+            geocoded = store.load("geocode", GeocodeOutput)
+            candidates = marker_candidates(parsed.records, classified.decisions, geocoded)
+            if stage == "closure":
+                result = adapters.closure(
+                    ClosureInput(
+                        candidates=candidates, license_root=context.paths.raw_root / "licenses"
                     ),
                     context,
                 )
-            case "closure" | "build":
-                parsed = store.load("parse", ParseOutput)
-                classified = store.load("classify", ClassifyOutput)
-                geocoded = store.load("geocode", GeocodeOutput)
-                candidates = marker_candidates(parsed.records, classified.decisions, geocoded)
-                if stage == "closure":
-                    result = adapters.closure(
-                        ClosureInput(
-                            candidates=candidates, license_root=context.paths.raw_root / "licenses"
-                        ),
-                        context,
-                    )
-                else:
-                    closed = store.load("closure", ClosureOutput)
-                    result = adapters.build(
-                        BuildInput(
-                            records=parsed.records,
-                            decisions=classified.decisions,
-                            geocodes=geocoded.results,
-                            closures=closed.results,
-                            candidates=candidates,
-                        ),
-                        context,
-                    )
-            case _:
-                raise ValueError("unknown stage")
-        store.save(stage, result)
+            else:
+                closed = store.load("closure", ClosureOutput)
+                result = adapters.build(
+                    BuildInput(
+                        records=parsed.records,
+                        decisions=classified.decisions,
+                        geocodes=geocoded.results,
+                        closures=closed.results,
+                        candidates=candidates,
+                    ),
+                    context,
+                )
+        case _:
+            raise ValueError("unknown stage")
+    store.save(stage, result)
     return result

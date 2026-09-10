@@ -30,6 +30,15 @@ class Target:
     city: City
     org: str | None = None
 
+    def __post_init__(self) -> None:
+        if not re.fullmatch(r"[a-z][a-z0-9-]*", self.city.slug):
+            raise ValueError("invalid city selection")
+        if self.org is not None and (
+            not re.fullmatch(r"[a-z][a-z0-9-]*", self.org)
+            or self.org not in {item.slug for item in self.city.organizations}
+        ):
+            raise ValueError("invalid organization selection")
+
     @property
     def organizations(self) -> tuple[Organization, ...]:
         return tuple(
@@ -40,12 +49,5 @@ class Target:
 def select_target(cities: tuple[City, ...], city_slug: str, org: str | None) -> Target:
     for city in cities:
         if city.slug == city_slug:
-            if not re.fullmatch(r"[a-z][a-z0-9-]*", city_slug):
-                break
-            if org is not None and (
-                not re.fullmatch(r"[a-z][a-z0-9-]*", org)
-                or org not in {item.slug for item in city.organizations}
-            ):
-                break
             return Target(city, org)
     raise ValueError("invalid city or organization selection")

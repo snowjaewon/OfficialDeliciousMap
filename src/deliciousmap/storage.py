@@ -214,8 +214,11 @@ class ArtifactStore:
             for source in output.sources:
                 if source.organization not in organizations:
                     raise ValueError("source organization mismatch")
-                if not source.path.resolve().is_relative_to(self.paths.raw_root.resolve()):
-                    raise ValueError("source outside raw-root")
+                source_path = source.path.resolve()
+                if source_path.is_relative_to(
+                    self.paths.repository.resolve()
+                ) or not source_path.is_relative_to(self.paths.raw_root.resolve()):
+                    raise ValueError("source must be outside repository and within raw-root")
                 boards = {
                     board.slug
                     for org in self.target.organizations

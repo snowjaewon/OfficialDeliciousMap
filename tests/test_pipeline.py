@@ -221,3 +221,34 @@ def test_unexplained_empty_output_is_not_success(tmp_path: Path, stage: str) -> 
     setattr(adapters, stage, lambda *args: output)
     with pytest.raises(PipelineFailure, match=f"{stage} .*cause=invalid-artifact"):
         execute("run", context_at(tmp_path), adapters)
+
+
+def test_original_cannot_be_inside_repo_even_when_raw_root_is_its_parent(tmp_path: Path) -> None:
+    from dataclasses import replace
+
+    from deliciousmap.contracts import FetchInput, FetchOutput
+    from deliciousmap.pipeline import PipelineFailure
+
+    context = context_at(tmp_path)
+    context = replace(context, paths=replace(context.paths, raw_root=tmp_path))
+    adapters = SyntheticAdapters()
+    fetch = adapters.fetch
+
+    def inside(value: FetchInput, current: ExecutionContext) -> FetchOutput:
+        result = fetch(value, current)
+        source = result.sources[0].model_copy(
+            update={"path": current.paths.repository / "inside.xlsx"}
+        )
+        return FetchOutput(sources=(source,))
+
+    adapters.fetch = inside
+    with pytest.raises(PipelineFailure, match="fetch .*cause=invalid-artifact"):
+        execute("run", context, adapters)
+    assert adapters.calls == ["fetch"]
+
+
+def test_public_target_rejects_path_traversal_outside_cli() -> None:
+    from deliciousmap.registry import Target
+
+    with pytest.raises(ValueError, match="selection"):
+        Target(City("../outside", "합성 도시"))
