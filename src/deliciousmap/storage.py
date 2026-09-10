@@ -9,16 +9,21 @@ import re
 import tempfile
 from pathlib import Path
 
+from deliciousmap import identity
 from deliciousmap.contracts import (
     BuildOutput,
     CacheEntry,
+    CandidateFile,
+    CandidateLookup,
     ClassifyOutput,
     ClosureOutput,
     Contract,
+    EvidenceScope,
     FetchOutput,
     GeocodeOutput,
     GeocodeResult,
     HeaderMapOutput,
+    IdentityConfirmation,
     ManualCorrection,
     ParseOutput,
     Record,
@@ -59,12 +64,17 @@ DEPENDENCIES = {
 }
 
 
+class RegenerationRequired(ValueError):
+    """An older contract must be regenerated; its bytes remain available."""
+
+
 def require_exact_keys(actual: list[str], expected: set[str]) -> None:
     if len(actual) != len(set(actual)) or set(actual) != expected:
         raise ValueError("artifact keys must cover exactly the input targets")
 
 
 def write_text(path: Path, content: str) -> None:
+    require_size(content)
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary: Path | None = None
     try:
@@ -77,6 +87,11 @@ def write_text(path: Path, content: str) -> None:
     finally:
         if temporary is not None:
             temporary.unlink(missing_ok=True)
+
+
+def require_size(content: str) -> None:
+    if len(content.encode("utf-8")) > 20_000_000:
+        raise ValueError("artifact exceeds 20MB; partition before writing")
 
 
 def write_records(path: Path, records: tuple[Record, ...]) -> None:
@@ -115,16 +130,20 @@ def read_cache(path: Path) -> tuple[CacheEntry, ...]:
 
 
 def append_cache(path: Path, entry: CacheEntry) -> None:
-    entry = CacheEntry.model_validate(entry)
-    entries = read_cache(path)
-    for existing in entries:
-        if (existing.key, existing.revision) == (entry.key, entry.revision):
-            if existing == entry:
-                return
+    append_cache_entries(path, (entry,))
+
+
+def append_cache_entries(path: Path, additions: tuple[CacheEntry, ...]) -> None:
+    entries = {(entry.key, entry.revision): entry for entry in read_cache(path)}
+    for entry in additions:
+        entry = CacheEntry.model_validate(entry)
+        key = (entry.key, entry.revision)
+        if key in entries and entries[key] != entry:
             raise ValueError("cannot overwrite cache history")
+        entries[key] = entry
     content = "".join(
         json.dumps(item.model_dump(mode="json"), ensure_ascii=False, sort_keys=True) + "\n"
-        for item in sorted((*entries, entry), key=lambda item: (item.key, item.revision))
+        for item in sorted(entries.values(), key=lambda item: (item.key, item.revision))
     )
     write_text(path, content)
 
@@ -141,18 +160,37 @@ class ArtifactStore:
         self.target = target
         self.directory = paths.city_dir(target)
 
-    def save(self, stage: str, output: Contract) -> None:
+    def save(self, stage: str, output: Contract, *, retry_failed: bool = False) -> None:
         output = OUTPUT_MODELS[stage].model_validate(output)
         self._validate(output)
+        payload = output.model_dump(mode="json")
+        if isinstance(output, ParseOutput):
+            payload.pop("records")
+        envelope = {
+            "schema_version": 2 if stage in {"geocode", "closure", "build"} else 1,
+            "city": self.target.city.slug,
+            "org": self.target.org,
+            "dependencies": self._dependencies(stage),
+            "payload": payload,
+        }
+        content = json.dumps(envelope, ensure_ascii=False, sort_keys=True) + "\n"
+        require_size(content)
+        if isinstance(output, ParseOutput):
+            write_records(self.directory / "records.csv", output.records)
         if isinstance(output, GeocodeOutput):
-            cache_path = self.directory / "geocode-history.jsonl"
+            cache_path = self.directory / "geocode-history-v2.jsonl"
+            latest = {entry.key: entry for entry in read_cache(cache_path) if entry.valid}
+            additions = []
             for result in output.results:
-                key = f"{result.merchant}|{self.target.city.slug}"
-                previous = select_cache(cache_path, key)
+                key = result.lookup_key
+                previous = latest.get(key)
                 value = result.model_dump(mode="json")
-                if previous is None or previous.value != value:
-                    append_cache(
-                        cache_path,
+                if (
+                    previous is None
+                    or previous.value != value
+                    or (retry_failed and result.status == "failed")
+                ):
+                    additions.append(
                         CacheEntry(
                             key=key,
                             revision=1 if previous is None else previous.revision + 1,
@@ -161,26 +199,29 @@ class ArtifactStore:
                             value=value,
                         ),
                     )
-        payload = output.model_dump(mode="json")
-        if isinstance(output, ParseOutput):
-            write_records(self.directory / "records.csv", output.records)
-            payload.pop("records")
-        envelope = {
-            "schema_version": 1,
-            "city": self.target.city.slug,
-            "org": self.target.org,
-            "dependencies": self._dependencies(stage),
-            "payload": payload,
-        }
-        write_text(
-            self.directory / f"{stage}.json",
-            json.dumps(envelope, ensure_ascii=False, sort_keys=True) + "\n",
-        )
+            if additions:
+                append_cache_entries(cache_path, tuple(additions))
+        path = self.directory / f"{stage}.json"
+        if path.exists():
+            old = path.read_bytes().decode("utf-8")
+            if json.loads(old)["schema_version"] != envelope["schema_version"]:
+                archive = (
+                    self.directory
+                    / "history"
+                    / (
+                        f"{stage}-v{json.loads(old)['schema_version']}-"
+                        f"{hashlib.sha256(old.encode('utf-8')).hexdigest()}.json"
+                    )
+                )
+                write_text(archive, old)
+        write_text(path, content)
 
     def load[T: Contract](self, stage: str, model: type[T]) -> T:
         envelope = json.loads((self.directory / f"{stage}.json").read_text(encoding="utf-8"))
+        if envelope["schema_version"] != (2 if stage in {"geocode", "closure", "build"} else 1):
+            raise RegenerationRequired("rerun the producing stage for the current contract")
         if (envelope["schema_version"], envelope["city"], envelope["org"]) != (
-            1,
+            2 if stage in {"geocode", "closure", "build"} else 1,
             self.target.city.slug,
             self.target.org,
         ):
@@ -204,6 +245,18 @@ class ArtifactStore:
             result["manual"] = hashlib.sha256(
                 manual.read_bytes() if manual.exists() else b""
             ).hexdigest()
+        if stage == "geocode":
+            for name, path in (
+                ("candidates", self.directory / "geocode-input.json"),
+                (
+                    "confirmations",
+                    self.paths.data_root / "manual" / self.target.city.slug / "geocode.jsonl",
+                ),
+            ):
+                result[name] = hashlib.sha256(
+                    path.read_bytes() if path.exists() else b""
+                ).hexdigest()
+            result["policy"] = identity.POLICY_VERSION
         return result
 
     def _validate(self, output: Contract) -> None:
@@ -256,14 +309,29 @@ class ArtifactStore:
             decisions = self.load("classify", ClassifyOutput).decisions
             included = {item.record_id for item in decisions if item.status == "restaurant"}
             require_exact_keys(
-                [item.merchant for item in output.results],
-                {record.merchant for record in records if record.record_id in included},
+                [item.record_id for item in output.results],
+                included,
             )
+            by_id = {record.record_id: record for record in records}
+            dependency_key = self.geocode_dependency_key()
+            for item in output.results:
+                record = by_id[item.record_id]
+                if item.merchant != record.merchant or item.lookup.scope != self.scope(record):
+                    raise ValueError("geocode record provenance mismatch")
+                if item.dependency_key != dependency_key:
+                    raise ValueError("stale geocode result")
+                if item.lookup_key != identity.lookup_key(
+                    record,
+                    item.lookup,
+                    item.confirmation,
+                    item.dependency_key,
+                ):
+                    raise ValueError("geocode dependency mismatch")
         elif isinstance(output, ClosureOutput):
             geocodes = self.load("geocode", GeocodeOutput).results
             require_exact_keys(
-                [item.merchant for item in output.results],
-                {item.merchant for item in geocodes if item.status == "success"},
+                [item.business_id for item in output.results],
+                {item.business_id for item in geocodes if item.business_id is not None},
             )
         elif isinstance(output, BuildOutput):
             records = self.load("parse", ParseOutput).records
@@ -295,7 +363,56 @@ class ArtifactStore:
 
     def previous_geocodes(self) -> tuple[GeocodeResult, ...]:
         latest: dict[str, GeocodeResult] = {}
-        for entry in read_cache(self.directory / "geocode-history.jsonl"):
+        for entry in read_cache(self.directory / "geocode-history-v2.jsonl"):
             if entry.valid:
                 latest[entry.key] = GeocodeResult.model_validate(entry.value)
         return tuple(latest.values())
+
+    def scope(self, record: Record) -> EvidenceScope:
+        return EvidenceScope(
+            city=self.target.city.slug,
+            organization=record.organization,
+            record_id=record.record_id,
+            source_hash=record.source_hash,
+        )
+
+    def geocode_dependency_key(self) -> str:
+        return identity.digest(self._dependencies("geocode"))
+
+    def candidate_lookups(self, records: tuple[Record, ...]) -> tuple[CandidateLookup, ...]:
+        path = self.directory / "geocode-input.json"
+        supplied = CandidateFile.model_validate_json(path.read_text(encoding="utf-8")).lookups
+        all_records = {
+            record.record_id: record for record in self.load("parse", ParseOutput).records
+        }
+        found: dict[str, CandidateLookup] = {}
+        for lookup in supplied:
+            record = all_records.get(lookup.scope.record_id)
+            if record is None or lookup.scope != self.scope(record) or record.record_id in found:
+                raise ValueError("candidate scope mismatch or duplicate")
+            found[record.record_id] = lookup
+        return tuple(
+            found.get(record.record_id)
+            or CandidateLookup(
+                scope=self.scope(record),
+                status="error",
+                error="not_supplied",
+            )
+            for record in records
+        )
+
+    def confirmations(self, records: tuple[Record, ...]) -> tuple[IdentityConfirmation, ...]:
+        path = self.paths.data_root / "manual" / self.target.city.slug / "geocode.jsonl"
+        if not path.exists():
+            return ()
+        supplied = tuple(
+            IdentityConfirmation.model_validate_json(line)
+            for line in path.read_text(encoding="utf-8").splitlines()
+        )
+        if any(item.scope.city != self.target.city.slug for item in supplied):
+            raise ValueError("confirmation city mismatch")
+        scopes = [item.scope for item in supplied]
+        if len(scopes) != len(set(scopes)):
+            raise ValueError("duplicate confirmation scope")
+        expected = {self.scope(record) for record in records}
+        return tuple(item for item in supplied if item.scope in expected)

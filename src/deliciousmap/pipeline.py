@@ -25,7 +25,7 @@ from deliciousmap.contracts import (
 )
 from deliciousmap.paths import Paths
 from deliciousmap.registry import Target
-from deliciousmap.storage import ArtifactStore
+from deliciousmap.storage import ArtifactStore, RegenerationRequired
 
 STAGES = ("fetch", "headermap", "parse", "classify", "geocode", "closure", "build")
 StageOutput = (
@@ -46,6 +46,8 @@ class FailureCause(StrEnum):
     ADAPTER_FAILED = "adapter-failed"
     UNSUPPORTED_FORMAT = "unsupported-format"
     SERVICE_UNAVAILABLE = "service-unavailable"
+    LOOKUP_FAILED = "lookup-failed"
+    REGENERATION_REQUIRED = "regeneration-required"
 
 
 class AdapterFailure(Exception):
@@ -83,33 +85,38 @@ class Adapters(Protocol):
     def build(self, value: BuildInput, context: ExecutionContext) -> BuildOutput: ...
 
 
-def restaurant_merchants(
+def restaurant_records(
     records: tuple[Record, ...], decisions: tuple[Classification, ...]
-) -> tuple[str, ...]:
+) -> tuple[Record, ...]:
     included = {item.record_id for item in decisions if item.status == "restaurant"}
-    return tuple(
-        dict.fromkeys(record.merchant for record in records if record.record_id in included)
-    )
+    return tuple(record for record in records if record.record_id in included)
 
 
 def marker_candidates(
     records: tuple[Record, ...], decisions: tuple[Classification, ...], geocodes: GeocodeOutput
 ) -> tuple[MarkerCandidate, ...]:
     included = {item.record_id for item in decisions if item.status == "restaurant"}
-    return tuple(
-        MarkerCandidate(
-            merchant=geo.merchant,
-            record_ids=tuple(
-                record.record_id
-                for record in records
-                if record.merchant == geo.merchant and record.record_id in included
-            ),
+    grouped: dict[str, MarkerCandidate] = {}
+    for geo in geocodes.results:
+        if (
+            geo.status != "success"
+            or geo.record_id not in included
+            or geo.business_id is None
+            or geo.latitude is None
+            or geo.longitude is None
+        ):
+            continue
+        previous = grouped.get(geo.business_id)
+        if previous and (previous.latitude, previous.longitude) != (geo.latitude, geo.longitude):
+            raise ValueError("conflicting coordinates for a confirmed business")
+        grouped[geo.business_id] = MarkerCandidate(
+            business_id=geo.business_id,
+            merchant=geo.confirmed_merchant or geo.merchant,
+            record_ids=(*previous.record_ids, geo.record_id) if previous else (geo.record_id,),
             latitude=geo.latitude,
             longitude=geo.longitude,
         )
-        for geo in geocodes.results
-        if geo.status == "success" and geo.latitude is not None and geo.longitude is not None
-    )
+    return tuple(grouped.values())
 
 
 def execute(
@@ -118,14 +125,20 @@ def execute(
     if command not in (*STAGES, "run"):
         raise ValueError("unknown stage")
     context.paths.validate()
+    if adapters is None:
+        from deliciousmap.local import LocalAdapters
+
+        adapters = LocalAdapters()
     result: StageOutput
     for stage in STAGES if command == "run" else (command,):
-        if adapters is None:
-            raise PipelineFailure(stage, context.target, FailureCause.NOT_IMPLEMENTED)
         try:
             result = _execute_one(stage, context, adapters)
         except AdapterFailure as exc:
             raise PipelineFailure(stage, context.target, exc.cause) from None
+        except RegenerationRequired:
+            raise PipelineFailure(
+                stage, context.target, FailureCause.REGENERATION_REQUIRED
+            ) from None
         except (ValueError, TypeError, KeyError):
             raise PipelineFailure(stage, context.target, FailureCause.INVALID_ARTIFACT) from None
         except OSError:
@@ -167,9 +180,13 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
         case "geocode":
             parsed = store.load("parse", ParseOutput)
             classified = store.load("classify", ClassifyOutput)
+            records = restaurant_records(parsed.records, classified.decisions)
             result = adapters.geocode(
                 GeocodeInput(
-                    merchants=restaurant_merchants(parsed.records, classified.decisions),
+                    dependency_key=store.geocode_dependency_key(),
+                    records=records,
+                    lookups=store.candidate_lookups(records),
+                    confirmations=store.confirmations(records),
                     previous=store.previous_geocodes(),
                     retry_failed=context.retry_failed,
                 ),
@@ -201,5 +218,9 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
                 )
         case _:
             raise ValueError("unknown stage")
-    store.save(stage, result)
+    store.save(stage, result, retry_failed=context.retry_failed)
+    if isinstance(result, GeocodeOutput) and any(
+        item.reason == "lookup_error" for item in result.results
+    ):
+        raise AdapterFailure(FailureCause.LOOKUP_FAILED)
     return result
