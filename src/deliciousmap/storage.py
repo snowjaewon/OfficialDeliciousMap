@@ -27,6 +27,7 @@ from deliciousmap.contracts import (
     ManualCorrection,
     NameRestoration,
     ParseOutput,
+    ProviderCandidates,
     Record,
 )
 from deliciousmap.paths import Paths
@@ -54,8 +55,11 @@ OUTPUT_MODELS: dict[str, type[Contract]] = {
     "build": BuildOutput,
 }
 
-# geocode·closure·build은 상호 복원 결과를 포함하는 v3 계약이다.
-SCHEMA_VERSIONS = {"geocode": 3, "closure": 3, "build": 3}
+# geocode·closure·build은 상호 복원 결과와 조회 요청 기록을 포함하는 v4 계약이다.
+SCHEMA_VERSIONS = {"geocode": 4, "closure": 4, "build": 4}
+
+# 제공자 조회 캐시. 확정 업소 판정 이력(geocode-history-v2.jsonl)과 분리해 둔다.
+LOOKUP_CACHE = "geocode-lookup-v1.jsonl"
 
 DEPENDENCIES = {
     "fetch": (),
@@ -274,6 +278,7 @@ class ArtifactStore:
             result["manual"] = file_digest(self.paths.manual(self.target, "classify"))
         if stage == "geocode":
             result["candidates"] = file_digest(self.directory / "geocode-input.json")
+            result["lookups"] = file_digest(self.directory / LOOKUP_CACHE)
             result["confirmations"] = file_digest(self.paths.manual(self.target, "geocode"))
             result["policy"] = identity.POLICY_VERSION
         if stage in {"classify", "geocode"}:
@@ -406,9 +411,39 @@ class ArtifactStore:
     def geocode_dependency_key(self) -> str:
         return identity.digest(self._dependencies("geocode"))
 
+    def cached_candidates(self, key: str) -> CacheEntry | None:
+        """조회 캐시의 유효한 최신 항목. 적중 자체는 업소 확정이 아니다."""
+        return select_cache(self.directory / LOOKUP_CACHE, key)
+
+    def remember_candidates(
+        self,
+        key: str,
+        found: ProviderCandidates,
+        evidence: str,
+        previous: CacheEntry | None,
+    ) -> int:
+        """같은 결과는 다시 쌓지 않고, 달라지면 새 revision으로 이력에 남긴다."""
+        value = ProviderCandidates.model_validate(found).model_dump(mode="json")
+        if previous is not None and previous.value == value:
+            return previous.revision
+        entry = CacheEntry(
+            key=key,
+            revision=1 if previous is None else previous.revision + 1,
+            valid=True,
+            evidence=evidence,
+            value=value,
+        )
+        append_cache(self.directory / LOOKUP_CACHE, entry)
+        return entry.revision
+
     def candidate_lookups(self, records: tuple[Record, ...]) -> tuple[CandidateLookup, ...]:
+        """담당자가 준비한 후보·근거. 파일이 없으면 준비된 조회가 없다는 뜻이다."""
         path = self.directory / "geocode-input.json"
-        supplied = CandidateFile.model_validate_json(path.read_text(encoding="utf-8")).lookups
+        supplied = (
+            CandidateFile.model_validate_json(path.read_text(encoding="utf-8")).lookups
+            if path.exists()
+            else ()
+        )
         all_records = {
             record.record_id: record for record in self.load("parse", ParseOutput).records
         }

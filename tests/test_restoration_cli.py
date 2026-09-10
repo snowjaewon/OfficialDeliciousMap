@@ -479,7 +479,7 @@ def test_run_applies_review_to_classification_and_marker_without_reparsing(
     built = json.loads(
         (context.paths.output_root / "seoul" / "markers.json").read_text(encoding="utf-8")
     )
-    assert built["schema_version"] == 3
+    assert built["schema_version"] == 4
     assert built["candidates"][0]["merchant"] == "합성 식당 본점"
     assert built["records"][0]["merchant"] == "합성 식당"
     assert payload(context, "build")["marker_count"] == 1

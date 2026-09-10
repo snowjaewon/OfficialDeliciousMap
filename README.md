@@ -40,12 +40,22 @@ uv run python -m deliciousmap fetch --city seoul --raw-root "../원본 보관" -
 uv run python -m deliciousmap geocode --city seoul --retry-failed
 ```
 
-`geocode`는 담당자가 준비한 정제 레코드·후보·근거로 업소를 판정한다. `closure`는 현재
+`geocode`는 담당자가 준비한 정제 레코드·후보·근거로 업소를 판정한다. 후보가 없는 레코드는
+검색 키가 있을 때 네이버 지역검색으로 후보를 조회한다. `closure`는 현재
 인허가 연결 전이므로 확인된 업소마다 `unknown`을 저장하고, `build`는 전체 장부와
 마커 후보를 `dist/<city>/markers.json`으로 내보낸다. 기관 실행은 `orgs/<org>/`에 분리한다.
-[로컬 지오코딩 사용법과 계약](docs/geocoding.md)을 따른다.
+[지오코딩 사용법과 계약](docs/geocoding.md)을 따른다.
 `fetch`·`headermap`·`parse`·`classify`의 실제 어댑터는 미구현이므로 운영 `run`은 아직
-수집 단계에서 실패한다. 실제 게시판 수집·파일 변환·파싱·LLM·검색 API·인허가·HTML/PWA·배포는 후속 작업이다.
+수집 단계에서 실패한다. 실제 게시판 수집·파일 변환·파싱·LLM·인허가·HTML/PWA·배포는 후속 작업이다.
+
+네이버 검색 키는 `.env`의 `NAVER_SEARCH_CLIENT_ID`·`NAVER_SEARCH_CLIENT_SECRET`에서 읽는다.
+두 값이 모두 없으면 조회 없이 준비된 후보 파일만 쓰고, 한쪽만 있으면 실행 전에 `configuration:`과
+종료 코드 2로 거부한다. 값은 출력·산출물에 남기지 않는다. 셸에 `.env`를 불러온 뒤 실행한다.
+
+```text
+Git Bash:   set -a; . ./.env; set +a; uv run python -m deliciousmap geocode --city seoul
+PowerShell: Get-Content .env | ForEach-Object { if ($_ -match '^(\w+)=(.*)$') { Set-Item "env:$($Matches[1])" $Matches[2] } }
+```
 
 | 옵션 | 의미·기본값 |
 | --- | --- |
@@ -54,7 +64,7 @@ uv run python -m deliciousmap geocode --city seoul --retry-failed
 | `--raw-root` | 저장소 외부 원본 루트. 기본 `../deliciousmap-raw`; 인허가 자료 참조는 그 아래 `licenses/` |
 | `--data-root` | 정제 산출물 루트. 기본 `data/` |
 | `--output-root` | build 출력 루트. 기본 `dist/` |
-| `--retry-failed` | 변경 없는 미확정 결과도 다시 판정하고 실패 재시도 revision을 보존. 성공은 재사용하며 외부 호출은 없음 |
+| `--retry-failed` | 변경 없는 미확정 결과도 다시 판정하고 실패 재시도 revision을 보존. 실패한 조회만 다시 요청하며 성공한 조회·판정은 재사용 |
 
 상대 경로는 실행한 저장소 루트 기준이다. 원본 루트가 저장소 내부이면 거부한다.
 도시별 `registry/<city>.py`는 dataclass 선언이며, 확인되지 않은 기관·게시판은 현재 비어 있다.
@@ -64,7 +74,7 @@ uv run python -m deliciousmap geocode --city seoul --retry-failed
 단계 실패는 `단계 city=도시 org=기관 cause=원인코드`와 종료 코드 1로 전달하고 후속 실행을 중단한다.
 `org=*`는 도시 전체다. 원인 코드는 `not-implemented`, `invalid-artifact`, `io-error`,
 `adapter-failed`, `unsupported-format`, `service-unavailable`, `lookup-failed`,
-`regeneration-required`이다. 예외 원문·서비스 응답은 출력하지 않는다.
+`regeneration-required`이다. 예외 원문·서비스 응답·비밀값은 출력하지 않는다.
 조회 오류는 레코드별 결과를 저장한 뒤 `lookup-failed`로 실패한다. 후속 단계를 따로 실행하면
 그 레코드를 보존한 중간 빌드가 가능하다. 이전 버전은 `geocode`→`closure`→`build`를 재실행한다.
 판단 보류와 지오코딩 실패는 유효한 판정 상태이므로 장부용 레코드를 보존하고 build까지 전달한다.
@@ -74,7 +84,9 @@ uv run python -m deliciousmap geocode --city seoul --retry-failed
 `contracts.py`의 입출력 모델, `pipeline.py`의 `Adapters` Protocol이 공개 경계다.
 `execute(command, ExecutionContext(target, paths), adapters)`에 어댑터를 주입한다.
 CLI를 포함한 통합 테스트에는 `cli.main(argv, cities=..., adapters=...)`를 사용한다.
-기본 `LocalAdapters`는 로컬 지오코딩과 후속 정제 출력에 연결한다. 도시 스크래퍼와 외부 서비스는 후속 작업이다.
+기본 `LocalAdapters`는 업소 판정과 후속 정제 출력에 연결한다. 후보 조회는 `lookup.CandidateProvider`
+(현재 네이버 지역검색)로 분리하며, 통합 테스트는 `cli.main(argv, transport=...)`로 외부 응답만 대신한다.
+도시 스크래퍼와 나머지 외부 서비스는 후속 작업이다.
 
 | 단계 | 입력 → 출력 |
 | --- | --- |
@@ -82,7 +94,7 @@ CLI를 포함한 통합 테스트에는 `cli.main(argv, cities=..., adapters=...
 | headermap | 원본 참조 → 표별 `HeaderMap`과 공통 캐시 참조 |
 | parse | 원본 참조 + 매핑 → `ParseOutput.records` |
 | classify | 레코드·고유 상호(`merchants`)·도시별 사람 보정 → 레코드별 최종 판정과 근거 |
-| geocode | 식당 판정 레코드·범위가 명시된 후보/근거·사람 확인·이전 결과 → 레코드별 동일 업소·좌표 또는 미확정 이유 |
+| geocode | 식당 판정 레코드·범위가 명시된 후보/근거·조회한 후보·사람 확인·이전 결과 → 레코드별 동일 업소·좌표 또는 미확정 이유 |
 | closure | 좌표가 있는 마커 후보·외부 인허가 루트 참조 → `open` / `closed` / `unknown` |
 | build | 레코드·판정·좌표·폐업 결과·마커 후보 → 출력 파일 경로와 레코드/후보 수 |
 
@@ -106,7 +118,7 @@ build는 `records.csv`, `parse.json`, `classify.json`, `geocode-input.json`, `ge
 공통 캐시는 `data/_shared/`에 둔다. 사람 검토 입력은 의미별로 나누어
 `data/manual/<city>/`의 `classify.jsonl`(사람 보정), `restore.jsonl`(상호 복원),
 `geocode.jsonl`(업소 확인)에 둔다. 자세한 내용은 [상호 복원](docs/restoration.md)에 있다.
-단계 메타데이터 파일은 `<stage>.json`이며 `schema_version`(geocode·closure·build는 3, 나머지는 1), `city`, `org`, 입력 해시인
+단계 메타데이터 파일은 `<stage>.json`이며 `schema_version`(geocode·closure·build는 4, 나머지는 1), `city`, `org`, 입력 해시인
 `dependencies`, 실제 출력인 `payload`를 가진다. `parse.json`에는 레코드를 중복 저장하지 않는다.
 원본의 내용·개인정보를 메타데이터에 넣지 않는다. fetch 메타데이터의 외부 경로는 수집 PC 기준이다.
 
@@ -144,6 +156,8 @@ JSON 객체의 키와 줄의 `(key, revision)`을 정렬하며, 이력의 기존
 
 `geocode.json`은 현 실행의 결과이고 `geocode-history-v2.jsonl`은 레코드·범위·후보·근거·
 사람 확인·입력 의존성·정책 버전의 해시 키로 성공·미확정을 추가 보존한다.
+`geocode-lookup-v1.jsonl`은 제공자·요청 맥락·응답 해석 버전의 해시 키로 조회 결과만 따로 보존한다.
+조회 캐시 적중은 동일 업소 확정이나 사람 확인이 아니며 판정 이력과 섞지 않는다.
 변경 없는 재실행은 이력을 중복 추가하지 않는다. 옛 `geocode-history.jsonl`은 보존만 하며
 동일 업소의 근거로 재사용하지 않는다. 이전 버전 산출물은 재생성 전 `history/`에 보관한다.
 직렬화 도구는 단일 작성자용이다. 동시 쓰기 잠금·실제 LLM/검색 캐시 엔진은 후속 범위다.

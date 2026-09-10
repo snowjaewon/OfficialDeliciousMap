@@ -5,6 +5,7 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
+from deliciousmap import naver
 from deliciousmap.paths import Paths
 from deliciousmap.pipeline import STAGES, Adapters, ExecutionContext, PipelineFailure, execute
 from deliciousmap.registry import CITIES, City, select_target
@@ -15,6 +16,7 @@ def main(
     *,
     cities: tuple[City, ...] = CITIES,
     adapters: Adapters | None = None,
+    transport: naver.Transport | None = None,
 ) -> int:
     parser = argparse.ArgumentParser(prog="deliciousmap")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -50,7 +52,17 @@ def main(
         print(f"selection: {exc}", file=sys.stderr)
         return 2
     try:
-        execute(args.command, ExecutionContext(target, paths, args.retry_failed), adapters)
+        provider = naver.from_environment(transport)
+    except ValueError as exc:
+        # 변수 이름만 알린다. 값은 어디에도 출력하지 않는다.
+        print(f"configuration: {exc}", file=sys.stderr)
+        return 2
+    try:
+        execute(
+            args.command,
+            ExecutionContext(target, paths, args.retry_failed, provider),
+            adapters,
+        )
     except PipelineFailure as exc:
         print(str(exc), file=sys.stderr)
         return 1

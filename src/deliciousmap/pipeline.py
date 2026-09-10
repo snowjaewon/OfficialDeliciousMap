@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Protocol
 
-from deliciousmap import restoration
+from deliciousmap import lookup, restoration
 from deliciousmap.contracts import (
     BuildInput,
     BuildOutput,
@@ -75,6 +75,8 @@ class ExecutionContext:
     target: Target
     paths: Paths
     retry_failed: bool = False
+    # 구성된 후보 조회. 없으면 담당자가 준비한 후보 파일만 사용한다.
+    provider: lookup.CandidateProvider | None = None
 
 
 class Adapters(Protocol):
@@ -195,15 +197,25 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
             restoration.require_agreement(reviewed, confirmations)
             records = restaurant_records(parsed.records, classified.decisions)
             included = {record.record_id for record in records}
+            restorations = tuple(item for item in reviewed if item.record_id in included)
+            # 조회를 먼저 끝내고 의존성 키를 만든다. 새 후보가 이전 판정을 대신하지 못한다.
+            lookups = lookup.resolve(
+                store,
+                records,
+                store.candidate_lookups(records),
+                restorations,
+                context.provider,
+                retry_failed=context.retry_failed,
+            )
             result = adapters.geocode(
                 GeocodeInput(
                     dependency_key=store.geocode_dependency_key(),
                     records=records,
-                    lookups=store.candidate_lookups(records),
+                    lookups=lookups,
                     confirmations=tuple(
                         item for item in confirmations if item.scope.record_id in included
                     ),
-                    restorations=tuple(item for item in reviewed if item.record_id in included),
+                    restorations=restorations,
                     previous=store.previous_geocodes(),
                     retry_failed=context.retry_failed,
                 ),
