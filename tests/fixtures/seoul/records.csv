@@ -1,0 +1,5 @@
+record_id,spent_on,organization,department,merchant,purpose,amount_krw,source_hash,source_location
+r0,2026-01-02,test-org,총무과,합성 식당,업무 협의,1000,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,sheet1:R2
+r1,2026-01-02,test-org,총무과,합성 마트,업무 협의,1000,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,sheet1:R3
+r2,2026-01-02,test-org,총무과,모호한 상호,업무 협의,1000,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,sheet1:R4
+r3,2026-01-02,test-org,총무과,좌표 없는 식당,업무 협의,1000,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,sheet1:R5

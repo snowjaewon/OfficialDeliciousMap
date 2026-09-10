@@ -15,6 +15,8 @@ __pycache__/
 venv/
 .pytest_cache/
 .ruff_cache/
+.mypy_cache/
+.tools/
 *.egg-info/
 
 # Node (사이트 빌드 도구를 쓰게 될 경우)
