@@ -9,9 +9,9 @@ useDefault = true
 [[rules]]
 id = "project-secret-env-assignment"
 description = "프로젝트 비밀 변수에 값이 들어감 (.env 커밋 의심)"
-regex = '''(?i)\b(NAVER_SEARCH_CLIENT_SECRET|NAVER_SEARCH_CLIENT_ID|GEMINI_API_KEY)\s*[:=]\s*["']?([A-Za-z0-9_\-]{8,})["']?'''
+regex = '''(?i)\b(NAVER_SEARCH_CLIENT_SECRET|NAVER_SEARCH_CLIENT_ID|GEMINI_API_KEY|CLOUDFLARE_API_TOKEN|CLOUDFLARE_ACCOUNT_ID)\s*[:=]\s*["']?([A-Za-z0-9_\-]{8,})["']?'''
 secretGroup = 2
-keywords = ["NAVER_SEARCH_CLIENT_SECRET", "NAVER_SEARCH_CLIENT_ID", "GEMINI_API_KEY"]
+keywords = ["NAVER_SEARCH_CLIENT_SECRET", "NAVER_SEARCH_CLIENT_ID", "GEMINI_API_KEY", "CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"]
 
 [allowlist]
 description = "값이 비어 있는 예시 파일과 규칙 파일 자체"
