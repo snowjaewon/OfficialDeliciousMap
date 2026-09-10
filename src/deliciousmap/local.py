@@ -21,7 +21,7 @@ from deliciousmap.contracts import (
 )
 from deliciousmap.identity import decide_identity, lookup_key, reconcile_coordinates
 from deliciousmap.pipeline import AdapterFailure, ExecutionContext, FailureCause
-from deliciousmap.storage import write_text
+from deliciousmap.storage import schema_version, write_text
 
 
 class LocalAdapters:
@@ -84,7 +84,7 @@ class LocalAdapters:
             path,
             json.dumps(
                 {
-                    "schema_version": 3,
+                    "schema_version": schema_version("build"),
                     "city": context.target.city.slug,
                     "org": context.target.org,
                     **value.model_dump(mode="json"),

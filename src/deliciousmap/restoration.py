@@ -6,7 +6,7 @@ from deliciousmap.contracts import (
     Record,
     RestoredName,
 )
-from deliciousmap.identity import digest, normalized
+from deliciousmap.identity import normalized
 
 POLICY_VERSION = "restoration-1"
 
@@ -29,18 +29,18 @@ def applies(entry: NameRestoration, record: Record) -> bool:
 def resolve(
     records: tuple[Record, ...], entries: tuple[NameRestoration, ...]
 ) -> tuple[RestoredName, ...]:
-    """확정된 복원만 돌려준다. 확인이 없는 레코드는 미확정으로 남는다."""
+    """확정된 복원만 돌려준다. 확인이 없는 레코드는 미확정으로 남는다.
+
+    entries는 대상 도시의 확인만 담아야 한다. 도시 검사와 읽기는 저장 모듈이 한다.
+    """
     restored = []
     for record in records:
         applicable = [entry for entry in entries if applies(entry, record)]
         if not applicable:
             continue
         if len({normalized(entry.restored_merchant) for entry in applicable}) != 1:
-            raise ConflictingReview("restoration")
-        chosen = min(
-            applicable,
-            key=lambda entry: (-_specificity(entry), digest(entry.model_dump(mode="json"))),
-        )
+            raise ConflictingReview("restoration name")
+        chosen = _narrowest(applicable)
         restored.append(
             RestoredName(
                 record_id=record.record_id,
@@ -65,8 +65,25 @@ def require_agreement(
             raise ConflictingReview("restoration and identity confirmation")
 
 
-def _specificity(entry: NameRestoration) -> int:
+def _declared(entry: NameRestoration) -> frozenset[str]:
+    """범위를 좁히려고 선언한 항목. 많이 선언할수록 좁은 범위다."""
     scope = entry.scope
-    return sum(
-        field is not None for field in (scope.organization, scope.source_hash, scope.record_id)
+    return frozenset(
+        name
+        for name, value in (
+            ("organization", scope.organization),
+            ("source_hash", scope.source_hash),
+            ("record_id", scope.record_id),
+        )
+        if value is not None
     )
+
+
+def _narrowest(applicable: list[NameRestoration]) -> NameRestoration:
+    """근거를 남길 확인 하나를 고른다. 어느 쪽도 더 좁지 않으면 임의로 고르지 않는다."""
+    chosen = max(applicable, key=lambda entry: len(_declared(entry)))
+    fields = _declared(chosen)
+    others = [entry for entry in applicable if entry is not chosen]
+    if any(_declared(entry) == fields or not _declared(entry) <= fields for entry in others):
+        raise ConflictingReview("restoration scope")
+    return chosen

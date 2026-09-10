@@ -189,17 +189,21 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
         case "geocode":
             parsed = store.load("parse", ParseOutput)
             classified = store.load("classify", ClassifyOutput)
+            # 확인 충돌은 마커 대상이 아닌 레코드에서도 알린다.
+            confirmations = store.confirmations(parsed.records)
+            reviewed = restoration.resolve(parsed.records, store.restorations())
+            restoration.require_agreement(reviewed, confirmations)
             records = restaurant_records(parsed.records, classified.decisions)
-            confirmations = store.confirmations(records)
-            restorations = restoration.resolve(records, store.restorations())
-            restoration.require_agreement(restorations, confirmations)
+            included = {record.record_id for record in records}
             result = adapters.geocode(
                 GeocodeInput(
                     dependency_key=store.geocode_dependency_key(),
                     records=records,
                     lookups=store.candidate_lookups(records),
-                    confirmations=confirmations,
-                    restorations=restorations,
+                    confirmations=tuple(
+                        item for item in confirmations if item.scope.record_id in included
+                    ),
+                    restorations=tuple(item for item in reviewed if item.record_id in included),
                     previous=store.previous_geocodes(),
                     retry_failed=context.retry_failed,
                 ),

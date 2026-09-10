@@ -179,7 +179,7 @@ def test_manual_corrections_from_another_city_are_rejected(tmp_path: Path) -> No
 
     context = context_at(tmp_path)
     write_text(
-        context.paths.manual(context.target),
+        context.paths.manual(context.target, "classify"),
         '{"city":"busan","merchant":"합성 식당","status":"non_restaurant",'
         '"evidence":"synthetic human decision"}\n',
     )

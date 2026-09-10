@@ -271,7 +271,7 @@ class ArtifactStore:
             for name in DEPENDENCIES[stage]
         }
         if stage == "classify":
-            result["manual"] = file_digest(self.paths.manual(self.target))
+            result["manual"] = file_digest(self.paths.manual(self.target, "classify"))
         if stage == "geocode":
             result["candidates"] = file_digest(self.directory / "geocode-input.json")
             result["confirmations"] = file_digest(self.paths.manual(self.target, "geocode"))
@@ -369,7 +369,7 @@ class ArtifactStore:
                 raise ValueError("build must produce files within output-root")
 
     def manual(self) -> tuple[ManualCorrection, ...]:
-        corrections = read_reviews(self.paths.manual(self.target), ManualCorrection)
+        corrections = read_reviews(self.paths.manual(self.target, "classify"), ManualCorrection)
         if any(item.city != self.target.city.slug for item in corrections):
             raise ValueError("manual correction city mismatch")
         return tuple(

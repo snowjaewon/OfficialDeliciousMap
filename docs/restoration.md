@@ -35,6 +35,8 @@
   선언한 항목이 모두 맞는 레코드에만 적용하며 같은 표기의 다른 업소로 번지지 않는다.
   같은 `scope`를 두 줄에 적으면 오류다. 다른 도시의 줄은 그 도시 파일에 둔다.
 - `restored_merchant`: 사람이 확정한 전체 상호. 원본 표기가 이미 완전하면 같은 값을 적어 확인한다.
+  확인 전의 복원 후보는 이 파일에 넣지 않는다. 후보는 조회 결과 그대로 `GeocodeResult.lookup`에
+  남으며 복원명으로 쓰지 않는다.
 - `evidence`: 무엇을 보고 동일 업소로 판단했는지 적는다.
 - `references`: 검토에 쓴 자료의 종류·출처·근거다. `kind`는 `disclosure`(기관의 다른 공개자료),
   `license`(인허가 자료), `place`(지역검색 후보), `other`다. `detail`은 500자 이내로,
@@ -51,6 +53,7 @@
 ## 적용과 실행
 
 기존 공개 CLI 실행에 그대로 반영되며 새 명령이나 수정 화면은 없다.
+저장소 루트에서 PowerShell·Git Bash 공통:
 
 ```text
 uv run python -m deliciousmap classify --city seoul
@@ -72,16 +75,22 @@ uv run python -m deliciousmap build --city seoul
 ## 충돌과 재실행
 
 한 레코드에 적용되는 줄이 여럿이고 확정 복원명이 서로 다르면 임의로 고르지 않는다.
-같은 레코드의 복원명과 업소 확인의 상호가 다를 때도 마찬가지다. 두 경우 모두 산출물을 쓰지 않고
+확정 복원명이 같아도 어느 줄이 더 좁은지 정할 수 없으면 마찬가지다. 한 줄이 다른 모든 줄의
+선언 항목을 포함할 때만 그 줄의 근거·범위를 결과에 남긴다. 예를 들어 도시 범위 줄과
+같은 레코드 범위 줄은 뒤쪽이 좁으므로 충돌이 아니지만, 기관으로만 좁힌 줄과 원본으로만 좁힌 줄은
+어느 쪽도 더 좁지 않으므로 충돌이다.
+
+같은 레코드의 복원명과 업소 확인의 상호가 다를 때도 충돌이다. 판단 보류·비식당 레코드의
+어긋난 확인도 마커 대상이 아니라는 이유로 넘기지 않는다. 모든 경우에 산출물을 쓰지 않고
 `cause=conflicting-review`와 종료 1로 알린다. 담당자가 범위를 좁히거나 내용을 고쳐야 한다.
-확정 복원명이 같고 범위만 다른 줄들은 충돌이 아니며 가장 좁은 범위의 근거를 결과에 남긴다.
 
 `restore.jsonl`의 파일 해시와 `restoration.POLICY_VERSION`은 classify·geocode의 의존성에 들어간다.
 확인을 추가·수정·철회하거나 범위를 바꾸면 이전 판정을 그대로 재사용하지 않고 classify부터 다시 실행한다.
 같은 실행 범위의 다른 업소 결과는 그대로 유지되며 `geocode-history-v2.jsonl`의 이전 이력은 남는다.
 
-geocode·closure·build 산출물과 `markers.json`은 복원 결과를 포함하는 v3다. 이전 v2는
-`regeneration-required`로 거부하고 `history/<stage>-v2-<content-hash>.json`에 보존한 뒤 재실행한다.
+geocode·closure·build 산출물은 v3이며, `markers.json`도 복원 결과를 담은 geocode 판정을
+그대로 싣기 때문에 v3다. 이전 v2는 `regeneration-required`로 거부하고
+`history/<stage>-v2-<content-hash>.json`에 보존한 뒤 재실행한다.
 
 ## 경계
 

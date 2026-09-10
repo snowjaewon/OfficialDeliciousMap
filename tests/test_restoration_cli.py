@@ -52,7 +52,7 @@ def add_record(context: ExecutionContext, record_id: str, **update: str) -> None
     classify_records(context)
 
 
-def restoration(**overrides: object) -> dict:
+def restore_entry(**overrides: object) -> dict:
     entry: dict = {
         "schema_version": 1,
         "scope": {
@@ -106,7 +106,7 @@ def test_confirmed_restoration_matches_without_overwriting_the_original_name(
     assert unconfirmed["reason"] == "unconfirmed_name"
     assert unconfirmed["restoration"] is None
 
-    save_restorations(context, restoration())
+    save_restorations(context, restore_entry())
     assert run_cli(context, "geocode") == 1
     classify_records(context)
     assert run_cli(context, "geocode") == 0
@@ -147,7 +147,9 @@ def test_restoration_scope_does_not_reach_another_business_with_the_same_name(
     save_input(context, truncated_lookup(), other_source_lookup("r2", "b" * 64))
     save_restorations(
         context,
-        restoration(scope={**restoration()["scope"], "record_id": None, "source_hash": "a" * 64}),
+        restore_entry(
+            scope={**restore_entry()["scope"], "record_id": None, "source_hash": "a" * 64}
+        ),
     )
     classify_records(context)
     assert run_cli(context, "geocode") == 0
@@ -169,13 +171,79 @@ def test_conflicting_restorations_are_reported_instead_of_silently_chosen(
     save_input(context, truncated_lookup())
     save_restorations(
         context,
-        restoration(),
-        restoration(
-            scope={**restoration()["scope"], "record_id": None},
+        restore_entry(),
+        restore_entry(
+            scope={**restore_entry()["scope"], "record_id": None},
             restored_merchant="다른 식당 전체 이름",
         ),
     )
     classify_records(context)
+    assert run_cli(context, "geocode") == 1
+    assert "cause=conflicting-review" in capsys.readouterr().err
+    assert not (context.paths.city_dir(context.target) / "geocode.json").exists()
+
+
+def test_the_narrower_review_supplies_the_evidence_when_both_agree(tmp_path: Path) -> None:
+    context = prepare(tmp_path)
+    save_input(context, truncated_lookup())
+    save_restorations(
+        context,
+        restore_entry(
+            scope={**restore_entry()["scope"], "record_id": None}, evidence="도시 범위 확인"
+        ),
+        restore_entry(evidence="레코드 범위에서 다시 확인"),
+    )
+    classify_records(context)
+    assert run_cli(context, "geocode") == 0
+    applied = results(context)["r1"]["restoration"]
+    assert applied["evidence"] == "레코드 범위에서 다시 확인"
+    assert applied["scope"]["record_id"] == "r1"
+
+
+def test_reviews_whose_scopes_do_not_contain_each_other_are_reported(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    context = prepare(tmp_path)
+    save_input(context, truncated_lookup())
+    save_restorations(
+        context,
+        restore_entry(
+            scope={**restore_entry()["scope"], "record_id": None, "organization": "test-org"}
+        ),
+        restore_entry(
+            scope={**restore_entry()["scope"], "record_id": None, "source_hash": "a" * 64}
+        ),
+    )
+    classify_records(context)
+    assert run_cli(context, "geocode") == 1
+    assert "cause=conflicting-review" in capsys.readouterr().err
+    assert not (context.paths.city_dir(context.target) / "geocode.json").exists()
+
+
+def test_conflicting_reviews_on_a_record_outside_the_markers_are_reported(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    context = prepare(tmp_path)
+    add_record(context, "r2")
+    save_input(context, truncated_lookup())
+    save_restorations(context, restore_entry(scope={**restore_entry()["scope"], "record_id": "r2"}))
+    write_text(
+        context.paths.manual(context.target, "geocode"),
+        json.dumps(
+            {
+                "scope": {**truncated_lookup()["scope"], "record_id": "r2"},
+                "candidate_source": truncated_lookup()["candidates"][0]["source"],
+                "merchant": "확인자가 고른 다른 상호",
+                "branch": "부산점",
+                "address": "부산 합성로 10",
+                "evidence": "https://example.invalid/disclosure/verified 담당자 확인",
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+    )
+    # r2는 판단 보류라 마커 대상이 아니지만 어긋난 확인은 그대로 알린다.
+    classify_records(context, {"r2": "pending"})
     assert run_cli(context, "geocode") == 1
     assert "cause=conflicting-review" in capsys.readouterr().err
     assert not (context.paths.city_dir(context.target) / "geocode.json").exists()
@@ -187,7 +255,7 @@ def test_restoration_conflicting_with_an_identity_confirmation_is_reported(
     context = prepare(tmp_path)
     query = truncated_lookup()
     save_input(context, query)
-    save_restorations(context, restoration())
+    save_restorations(context, restore_entry())
     write_text(
         context.paths.manual(context.target, "geocode"),
         json.dumps(
@@ -211,7 +279,7 @@ def test_restoration_conflicting_with_an_identity_confirmation_is_reported(
 def test_restored_name_is_kept_while_the_marker_waits_for_coordinates(tmp_path: Path) -> None:
     context = prepare(tmp_path)
     save_input(context, truncated_lookup(latitude=None, longitude=None))
-    save_restorations(context, restoration())
+    save_restorations(context, restore_entry())
     classify_records(context)
     assert run_cli(context, "geocode") == 0
     result = results(context)["r1"]
@@ -257,7 +325,7 @@ def test_added_changed_and_withdrawn_review_updates_only_its_own_records(tmp_pat
     assert decision("r1")["reason"] == "unconfirmed_name"
     assert unrelated["status"] == "success"
 
-    save_restorations(context, restoration())
+    save_restorations(context, restore_entry())
     assert run_cli(context, "geocode") == 1
     classify_records(context)
     assert run_cli(context, "geocode") == 0
@@ -265,7 +333,7 @@ def test_added_changed_and_withdrawn_review_updates_only_its_own_records(tmp_pat
     assert decision("r2") == unrelated
     assert earlier <= entries()
 
-    save_restorations(context, restoration(restored_merchant="또 다른 전체 이름"))
+    save_restorations(context, restore_entry(restored_merchant="또 다른 전체 이름"))
     classify_records(context)
     assert run_cli(context, "geocode") == 0
     assert decision("r1")["reason"] == "unconfirmed_name"
@@ -318,7 +386,7 @@ def test_restoration_from_another_city_is_rejected(
 ) -> None:
     context = prepare(tmp_path)
     save_input(context, truncated_lookup())
-    save_restorations(context, restoration(scope={**restoration()["scope"], "city": "busan"}))
+    save_restorations(context, restore_entry(scope={**restore_entry()["scope"], "city": "busan"}))
     classify_records(context)
     assert run_cli(context, "geocode") == 1
     assert "cause=invalid-artifact" in capsys.readouterr().err
@@ -330,7 +398,7 @@ def test_a_review_reference_cannot_carry_a_whole_original(
 ) -> None:
     context = prepare(tmp_path)
     save_input(context, truncated_lookup())
-    entry = restoration()
+    entry = restore_entry()
     entry["references"][0]["detail"] = "가" * 501
     save_restorations(context, entry)
     classify_records(context)
@@ -344,7 +412,7 @@ def test_previous_contract_version_is_preserved_and_regenerated(
 ) -> None:
     context = prepare(tmp_path)
     save_input(context, truncated_lookup())
-    save_restorations(context, restoration())
+    save_restorations(context, restore_entry())
     classify_records(context)
     directory = context.paths.city_dir(context.target)
     legacy = json.dumps(
