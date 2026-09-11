@@ -189,7 +189,7 @@ class ProviderCandidates(Contract):
 class ProviderQuery(Contract):
     """조회 하나의 요청 맥락·해석 버전·결과 상태. 후보 사실과 분리해 재사용과 추적에 쓴다."""
 
-    provider: Literal["naver"]
+    provider: Literal["naver", "license"]
     request: Text
     interpretation: Text
     status: Literal["ok", "error"]

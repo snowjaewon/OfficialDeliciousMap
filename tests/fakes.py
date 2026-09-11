@@ -268,3 +268,77 @@ def naver_body(*items: dict[str, str]) -> bytes:
         },
         ensure_ascii=False,
     ).encode("utf-8")
+
+
+# 인허가 조회서비스의 업종별 경로. 마커가 될 수 있는 세 업종만 쓴다.
+LICENSE_SERVICES = ("general_restaurants", "rest_cafes", "bakeries")
+
+
+def license_item(
+    name: str,
+    road_address: str,
+    *,
+    x: str = "391413.5",
+    y: str = "179897.3",
+    management: str = "3250000-101-2026-00001",
+    lot_address: str = "부산 합성동 1-2",
+) -> dict[str, str]:
+    """조회서비스 응답 한 건. 실제 응답처럼 대조에 쓰지 않는 필드도 함께 둔다."""
+    return {
+        "OPN_ATMY_GRP_CD": "3250000",
+        "MNG_NO": management,
+        "BPLC_NM": name,
+        "ROAD_NM_ADDR": road_address,
+        "LOTNO_ADDR": lot_address,
+        "SALS_STTS_NM": "영업/정상",
+        "DTL_SALS_STTS_NM": "영업",
+        "CLSBIZ_YMD": "",
+        "CRD_INFO_X": x,
+        "CRD_INFO_Y": y,
+        "BZSTAT_SE_NM": "한식",
+        "TELNO": "051-000-0000",
+        "LCPMT_YMD": "20200101",
+    }
+
+
+def license_body(*items: dict[str, str], result_code: str = "200") -> bytes:
+    return json.dumps(
+        {
+            "response": {
+                "header": {"resultCode": result_code, "resultMsg": "NORMAL SERVICE"},
+                "body": {
+                    "dataType": "json",
+                    "numOfRows": 100,
+                    "pageNo": 1,
+                    "totalCount": len(items),
+                    "items": {"item": list(items)},
+                },
+            }
+        },
+        ensure_ascii=False,
+    ).encode("utf-8")
+
+
+class FakeLicenseTransport:
+    """인허가 응답만 대신한다. 업종별 경로를 구별하고 조회 회차마다 다음 응답을 준다."""
+
+    def __init__(self, *responses: bytes | Exception, service: str = "general_restaurants") -> None:
+        self.responses = responses or (license_body(),)
+        self.service = service
+        self.urls: list[str] = []
+        self.requests: list[dict[str, str]] = []
+        self.headers: list[dict[str, str]] = []
+        self.rounds: dict[str, int] = {}
+
+    def fetch(self, url: str, params: Mapping[str, str], headers: Mapping[str, str]) -> bytes:
+        self.urls.append(url)
+        self.requests.append(dict(params))
+        self.headers.append(dict(headers))
+        slug = url.rstrip("/").split("/")[-2]
+        self.rounds[slug] = attempt = self.rounds.get(slug, 0) + 1
+        if slug != self.service:
+            return license_body()
+        response = self.responses[min(attempt, len(self.responses)) - 1]
+        if isinstance(response, Exception):
+            raise response
+        return response

@@ -1,11 +1,12 @@
 # 근거 기반 지오코딩과 후보 조회
 
-[이슈 #37](https://github.com/snowjaewon/OfficialDeliciousMap/issues/37)과
-[이슈 #39](https://github.com/snowjaewon/OfficialDeliciousMap/issues/39)의 실행 계약이다.
+[이슈 #37](https://github.com/snowjaewon/OfficialDeliciousMap/issues/37),
+[이슈 #39](https://github.com/snowjaewon/OfficialDeliciousMap/issues/39),
+[이슈 #40](https://github.com/snowjaewon/OfficialDeliciousMap/issues/40)의 실행 계약이다.
 판정 정책은 [부모 스펙 #36](https://github.com/snowjaewon/OfficialDeliciousMap/issues/36)과
 [확정 정책 #33](https://github.com/snowjaewon/OfficialDeliciousMap/issues/33#issuecomment-5615154736)을 따른다.
-정제 자료를 준비한 담당자가 개발자 PC에서 실행하는 경로다. 외부 호출은 네이버 지역검색뿐이고
-LLM·과금 호출은 없다. 검색 키가 없으면 준비된 후보 파일만으로 동작한다.
+정제 자료를 준비한 담당자가 개발자 PC에서 실행하는 경로다. 외부 호출은 네이버 지역검색과
+인허가 조회서비스뿐이고 LLM·과금 호출은 없다. 두 키가 모두 없으면 준비된 후보 파일만으로 동작한다.
 
 ## 실행
 
@@ -60,21 +61,26 @@ uv run python -m deliciousmap build --city seoul
 - `candidates`: 정제된 후보만 넣는다. 후보 순위는 의미가 없고, 공급자 응답 원문·HTML·비밀값은 넣지 않는다.
 - `branch: null`은 지점 미확인, `branch: ""`는 지점이 없는 업소임을 명시적으로 확인한 경우다.
   주소 부재는 `address: null`이다. 좌표는 WGS84 위도/경도의 유한한 숫자이며 누락은 `null`이다.
-- `provider`: 현재 필요한 `local`, `naver`, `license`만 표현한다. 인허가 HTTP 연결은 아직 없다.
+- `provider`: 현재 필요한 `local`, `naver`, `license`만 표현한다.
   각 조회 구현이 상호 표기·주소 형식과 좌표계를 정제해 이 계약에 맞춰 공급한다.
+  담당자가 인허가 자료를 직접 추려 넣을 때도 `provider: "license"`의 같은 계약을 쓴다.
 - `status: "ok", candidates: []`는 정상 조회의 후보 없음이다. 조회 실패는 `status: "error"`와
   `error: "unavailable" | "invalid_response" | "not_supplied"`로 구분한다.
   오류 때 남아 있는 일부 후보가 있어도 자동 채택하지 않는다. 파일에서 빠진 식당 레코드는 `not_supplied`로 저장한다.
 - `queries`: 실행이 수행한 조회의 기록이다. 담당자가 적을 필요는 없고 결과에만 남는다.
 
-## 네이버 조회
+## 제공자 조회
 
-후보가 비어 있고 담당자가 조회 실패를 적어 두지도 않은 레코드만 네이버 지역검색으로 조회한다.
+후보가 비어 있고 담당자가 조회 실패를 적어 두지도 않은 레코드만 조회한다.
 근거만 적고 후보를 비워 둔 항목(`status: "ok"`, `candidates: []`)과 파일에 없는 레코드가 조회 대상이다.
 담당자가 넣은 근거·후보는 그대로 두고 후보만 채운다. 담당자가 적은 조회 실패는 덮지 않는다.
+구성된 제공자는 네이버·인허가 순으로 모두 조회하고, 후보는 출처(`CandidateSource`)를 달아 한 목록에 모은다.
+한 제공자라도 실패하면 그 조회를 `status: "error"`로 남긴다. 성공한 제공자의 후보는 보존하되 채택하지 않는다.
 `data/manual/<city>/restore.jsonl`의 확정 복원명이 있으면 그 이름으로, 없으면 원본 표기로 요청한다.
 요청 맥락의 도시·기관은 질의에 넣지 않는다. 도시는 자료를 공개한 기관의 단위일 뿐이므로
 기관 도시 밖 후보를 거르거나 기관 도시 안 동명이 업소로 바꾸지 않는다.
+
+### 네이버 조회
 
 | 경계 | 내용 |
 | --- | --- |
@@ -91,21 +97,56 @@ uv run python -m deliciousmap build --city seoul
 어댑터는 후보 사실만 공급한다. 업소 채택 규칙은 `identity` 모듈 하나에 두며 제공자마다 복제하지 않는다.
 한 항목이라도 계약으로 옮길 수 없으면 그 조회를 `invalid_response`로 남기고 일부만 조용히 버리지 않는다.
 
+### 인허가 조회
+
+인허가 자료는 공공데이터포털의 행정안전부 식품 조회서비스로 받는다.
+localdata.go.kr은 2026-04-16 종료했으므로 옛 API는 쓰지 않는다. 원본은 저장소 밖에 두고
+정제한 후보·근거·좌표만 남긴다. 근거와 절차는
+[인허가 자료 조사 #5](https://github.com/snowjaewon/OfficialDeliciousMap/issues/5#issuecomment-5613253000)를 따른다.
+
+| 경계 | 내용 |
+| --- | --- |
+| 키 | `.env`의 `DATA_GO_KR_KEY` 하나. 없으면 조회하지 않는다. 서비스마다 활용신청이 필요하고 디코딩 키를 쓴다 |
+| 업종 | `general_restaurants`(일반음식점)·`rest_cafes`(휴게음식점)·`bakeries`(제과점영업). 카페는 휴게음식점, 빵집·떡집은 제과점에만 있다 |
+| 요청 | `apis.data.go.kr/1741000/<업종>/info`에 `cond[BPLC_NM::LIKE]=<질의어>`와 `numOfRows=100`, `pageNo=1`. 한 조회가 업종마다 한 쪽씩 본다 |
+| 해석 | 사업장명(`BPLC_NM`), 도로명(없으면 지번) 주소, `CRD_INFO_X/Y`를 EPSG:5174에서 WGS84로 변환한 좌표 |
+| 오류 | 통신 실패와 `resultCode`가 성공이 아닌 응답은 `unavailable`, 해석 불가는 `invalid_response`. 원문·상태 코드·키는 남기지 않는다 |
+
+한 업종이라도 실패하면 남은 업종을 조회하지 않고 그 조회 전체를 실패로 남긴다.
+좌표정보는 보정계수 없는 Bessel 중부원점TM(EPSG:5174)이며 위경도는 제공하지 않는다.
+`pyproj`의 EPSG 정의로 WGS84로 변환하고, 비어 있거나 숫자가 아닌 값, 원점(`0`), 변환할 수 없는 값,
+변환 결과가 한반도 범위 밖인 값은 좌표계를 확인할 수 없으므로 `null`로 남긴다.
+이때 후보는 남고 판정은 `missing_coordinates`가 된다. 좌표를 임의로 보정하거나 추측하지 않는다.
+지점명 분리와 좌표 범위 확인은 네이버와 같은 공통 규칙(`places`)을 쓴다.
+관리번호(`MNG_NO`)는 `source_id`에만 남는 인허가 자료 안의 번호이며 업소 동일성의 근거가 아니다.
+영업상태·전화번호·인허가일자 같은 제공자 전용 필드는 계약으로 옮기지 않는다.
+결과가 없으면 `items`가 빈 문자열·빈 목록으로, 한 건이면 `item`이 목록 없이 객체 하나로 올 수 있다.
+셋 다 그대로 읽고 0건으로 숨기지 않는다.
+`resultCode`의 성공 값과 공백이 든 질의어의 동작은 실제 키로 확인하지 않았다.
+
+### 조회 캐시와 재사용
+
 조회 결과는 `geocode-lookup-v1.jsonl`에 제공자·요청 맥락(질의어·결과 수)·해석 버전의 해시 키로
-쌓는다. 확정 업소 판정 이력인 `geocode-history-v2.jsonl`과 파일을 나누며, 캐시 적중은 조회를
-아꼈다는 뜻일 뿐 동일 업소 확정이나 사람 확인이 아니다. 같은 키의 결과가 달라지면 새 revision으로
+쌓는다. 제공자가 다르면 키가 달라 항목이 섞이지 않는다. 확정 업소 판정 이력인
+`geocode-history-v2.jsonl`과 파일을 나누며, 캐시 적중은 조회를 아꼈다는 뜻일 뿐
+동일 업소 확정이나 사람 확인이 아니다. 같은 키의 결과가 달라지면 새 revision으로
 남기고, 값이 같으면 다시 쌓지 않는다. 조회 캐시가 바뀌면 geocode 의존성 키가 바뀌어
 그 전 판정을 재사용하지 않는다. `--retry-failed`는 실패한 조회만 다시 요청한다.
 정상 조회의 후보 없음(`no_candidates`)은 실패가 아니므로 다시 요청하지 않는다.
 
-로컬 후보 파일과 네이버 응답이 같은 후보 사실을 주면 같은 업소·좌표·마커가 나와야 한다.
+로컬 후보 파일과 제공자 응답이 같은 후보 사실을 주면 같은 업소·좌표·마커가 나와야 한다.
 공급자 응답의 전화번호·설명·순위 같은 필드는 계약에 옮기지 않는다.
 합성 응답으로만 검증했고 실제 키로는 한 건도 조회하지 않았다. 남은 확인은
-[이슈 #39 검증](validation/issue-39.md)의 제한을 읽는다.
+[이슈 #39 검증](validation/issue-39.md)과 [이슈 #40 검증](validation/issue-40.md)의 제한을 읽는다.
 
 ## 판정과 식별자
 
-자동 채택은 독립 근거의 상호·지점·주소가 일치하고 후보 하나를 특정할 때만 한다.
+자동 채택은 독립 근거의 상호·지점·주소가 일치하고 업소 하나를 특정할 때만 한다.
+한 제공자가 같은 상호·지점·주소의 후보를 여럿 주면 서로 다른 업소일 수 있으므로 `ambiguous`로 남긴다.
+서로 다른 제공자가 같은 상호·지점·주소를 가리키면 근거가 겹친 것으로 보고 한 업소로 다룬다.
+이때 좌표를 준 곳이 하나면 그 좌표로 보강하고, 좌표가 서로 다르면 `conflicting_evidence`로 남겨
+사람이 후보 하나를 확정할 때까지 마커를 보류한다. 제공자별 좌표 오차를 허용 범위로 눙치지 않는다.
+성공한 판정의 `evidence`에는 근거가 겹친 출처를 함께 적는다(`... license+naver`).
 비교 정규화는 Unicode NFC·대소문자·공백 정리에 한정하며, 유사 검색·주소 추정은 하지 않는다.
 잘린 원본과 전체 상호가 다르면 사람 확인 전까지 복원명을 확정하지 않는다.
 확정 복원명이 있으면 원본 표기 대신 그 이름을 근거와 대조한다.
@@ -114,7 +155,7 @@ uv run python -m deliciousmap build --city seoul
 | 식별자 | 용도 |
 | --- | --- |
 | `record_id` + `scope` | 지출 1건과 기관·도시·원본의 맥락. 원본 `merchant`는 바꾸지 않음 |
-| `CandidateSource` | 공급자·출처 내 ID·근거 위치. 확인된 업소 ID와 별개 |
+| `CandidateSource` | 공급자·출처 내 ID·근거 위치. 확인된 업소 ID와 별개이며 제공자 간 ID 비교는 하지 않음 |
 | `business_id` | 확인한 전체 상호·명시된 지점·주소의 정규화 조합을 해시. 마커·폐업 결과 연결 |
 | `lookup_key` | 레코드·조회 결과·사람 확인·상호 복원·의존성·정책 해시. 동명이 업소 간 캐시 전파 방지 |
 

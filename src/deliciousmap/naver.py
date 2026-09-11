@@ -1,17 +1,14 @@
 """네이버 지역검색 어댑터. 인증·요청·응답 해석·제공자 오류를 감추고 후보 사실만 공급한다."""
 
-import html
 import json
 import os
-import re
-import urllib.parse
-import urllib.request
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import Protocol
 
 from deliciousmap.contracts import PlaceCandidate, ProviderCandidates
 from deliciousmap.identity import digest
+from deliciousmap.places import in_korea, plain, split_branch
+from deliciousmap.transport import MAX_RESPONSE_BYTES, HttpTransport, Transport
 
 PROVIDER = "naver"
 # 응답 해석 규칙이 바뀌면 올린다. 조회 캐시는 이 버전을 구별한다.
@@ -24,33 +21,8 @@ CLIENT_ID_VARIABLE = "NAVER_SEARCH_CLIENT_ID"
 CLIENT_SECRET_VARIABLE = "NAVER_SEARCH_CLIENT_SECRET"
 # 지역검색은 한 요청에 최대 5건을 주고 다음 페이지를 제공하지 않는다.
 RESULT_LIMIT = 5
-MAX_RESPONSE_BYTES = 1_000_000
-REQUEST_TIMEOUT = 10.0
-
-_TAG = re.compile(r"<[^>]*>")
-# 마지막 낱말이 지점명이면 상호와 나눈다. 그 밖의 이름은 임의로 쪼개지 않는다.
-_BRANCH = re.compile(r"\S*[가-힣A-Za-z0-9]점")
-# 좌표계 확인용 범위. 지역검색은 WGS84를 10^7배한 정수를 준다.
-_LATITUDE = range(320_000_000, 400_000_000)
-_LONGITUDE = range(1_240_000_000, 1_320_000_000)
-
-
-class Transport(Protocol):
-    """HTTP 경계. 테스트는 이 자리에 응답만 주입하고 어댑터는 그대로 실행한다."""
-
-    def fetch(self, url: str, params: Mapping[str, str], headers: Mapping[str, str]) -> bytes: ...
-
-
-class HttpTransport:
-    def __init__(self, timeout: float = REQUEST_TIMEOUT) -> None:
-        self.timeout = timeout
-
-    def fetch(self, url: str, params: Mapping[str, str], headers: Mapping[str, str]) -> bytes:
-        request = urllib.request.Request(
-            f"{url}?{urllib.parse.urlencode(dict(params))}", headers=dict(headers)
-        )
-        with urllib.request.urlopen(request, timeout=self.timeout) as response:
-            return bytes(response.read(MAX_RESPONSE_BYTES + 1))
+# 지역검색은 WGS84를 10^7배한 정수를 준다.
+COORDINATE_SCALE = 1e7
 
 
 @dataclass(frozen=True)
@@ -123,9 +95,9 @@ def _interpret(body: bytes) -> tuple[PlaceCandidate, ...]:
 def _candidate(item: object) -> PlaceCandidate:
     if not isinstance(item, dict):
         raise TypeError("lookup item must be an object")
-    name = _plain(str(item["title"]))
-    merchant, branch = _split_branch(name)
-    address = _plain(str(item.get("roadAddress") or item.get("address") or "")) or None
+    name = plain(str(item["title"]))
+    merchant, branch = split_branch(name)
+    address = plain(str(item.get("roadAddress") or item.get("address") or "")) or None
     latitude, longitude = _coordinates(item.get("mapy"), item.get("mapx"))
     reference = str(item.get("link") or "").strip() or SEARCH_URL
     return PlaceCandidate.model_validate(
@@ -144,25 +116,13 @@ def _candidate(item: object) -> PlaceCandidate:
     )
 
 
-def _plain(value: str) -> str:
-    """검색어 강조 표시와 문자 참조를 걷어낸다. 표기 자체는 바꾸지 않는다."""
-    return " ".join(html.unescape(_TAG.sub("", value)).split())
-
-
-def _split_branch(name: str) -> tuple[str, str]:
-    """등록된 장소 이름의 지점명만 분리한다. 지점명이 없으면 지점 없는 업소로 본다."""
-    merchant, _, last = name.rpartition(" ")
-    if merchant and _BRANCH.fullmatch(last):
-        return merchant, last
-    return name, ""
-
-
 def _coordinates(mapy: object, mapx: object) -> tuple[float | None, float | None]:
     """좌표계를 확인할 수 있는 값만 경위도로 바꾼다. 그 밖의 값은 추측하지 않는다."""
     try:
-        latitude, longitude = int(str(mapy)), int(str(mapx))
+        latitude = int(str(mapy)) / COORDINATE_SCALE
+        longitude = int(str(mapx)) / COORDINATE_SCALE
     except ValueError:
         return None, None
-    if latitude in _LATITUDE and longitude in _LONGITUDE:
-        return latitude / 1e7, longitude / 1e7
+    if in_korea(latitude, longitude):
+        return latitude, longitude
     return None, None

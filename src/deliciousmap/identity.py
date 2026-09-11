@@ -3,6 +3,7 @@
 import hashlib
 import json
 import unicodedata
+from collections.abc import Sequence
 
 from deliciousmap.contracts import (
     CandidateLookup,
@@ -132,11 +133,22 @@ def decide_identity(
         ]
     if not matches:
         return unresolved("no_match")
-    if len(matches) != 1:
+    # 한 제공자가 같은 표기의 후보를 여럿 주면 서로 다른 업소일 수 있다. 임의로 줄이지 않는다.
+    providers = [candidate.source.provider for candidate in matches]
+    if len(providers) != len(set(providers)):
         return unresolved("ambiguous")
-    candidate = matches[0]
-    if candidate.latitude is None or candidate.longitude is None:
+    # 서로 다른 제공자가 같은 업소를 가리키면 근거가 겹친 것이다. 좌표가 어긋나면 충돌이다.
+    coordinates = {
+        (candidate.latitude, candidate.longitude)
+        for candidate in matches
+        if candidate.latitude is not None and candidate.longitude is not None
+    }
+    if len(coordinates) > 1:
+        return unresolved("conflicting_evidence")
+    if not coordinates:
         return unresolved("missing_coordinates")
+    latitude, longitude = next(iter(coordinates))
+    candidate = matches[0]
     return GeocodeResult.model_validate(
         {
             **common,
@@ -156,19 +168,27 @@ def decide_identity(
                 ]
             ),
             "confirmed_merchant": candidate.merchant,
-            "latitude": candidate.latitude,
-            "longitude": candidate.longitude,
-            "evidence": _evidence(confirmation, restoration),
+            "latitude": latitude,
+            "longitude": longitude,
+            "evidence": _evidence(confirmation, restoration, providers),
         }
     )
 
 
-def _evidence(confirmation: IdentityConfirmation | None, restoration: RestoredName | None) -> str:
+def _evidence(
+    confirmation: IdentityConfirmation | None,
+    restoration: RestoredName | None,
+    providers: Sequence[str],
+) -> str:
     if confirmation is not None:
         return confirmation.evidence
-    if restoration is not None:
-        return "restored-name-branch-address-agreement"
-    return "name-branch-address-agreement"
+    agreement = (
+        "restored-name-branch-address-agreement" if restoration else "name-branch-address-agreement"
+    )
+    if len(providers) == 1:
+        return agreement
+    # 여러 제공자의 근거가 겹쳐 하나의 업소를 가리키면 어느 출처가 일치했는지 함께 남긴다.
+    return f"{agreement} {'+'.join(sorted(providers))}"
 
 
 def reconcile_coordinates(results: tuple[GeocodeResult, ...]) -> tuple[GeocodeResult, ...]:

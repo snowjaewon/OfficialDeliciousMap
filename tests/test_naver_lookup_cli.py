@@ -44,7 +44,7 @@ def run_cli(
             *extra,
         ],
         cities=(context.target.city,),
-        transport=transport,
+        naver_transport=transport,
     )
 
 
