@@ -125,9 +125,12 @@ def test_confirmed_restoration_matches_without_overwriting_the_original_name(
     built = json.loads(
         (context.paths.output_root / "seoul" / "markers.json").read_text(encoding="utf-8")
     )
-    assert built["candidates"][0]["merchant"] == FULL_NAME
-    assert built["candidates"][0]["record_ids"] == ["r1"]
-    assert built["records"][0]["merchant"] == "같은 식당"
+    assert built["markers"][0]["merchant"] == FULL_NAME
+    assert built["markers"][0]["visit_count"] == 1
+    records = json.loads(
+        (context.paths.output_root / "seoul" / "records.json").read_text(encoding="utf-8")
+    )
+    assert records["records"][0]["merchant"] == "같은 식당"
 
 
 def other_source_lookup(record_id: str, source_hash: str) -> dict:
@@ -479,7 +482,10 @@ def test_run_applies_review_to_classification_and_marker_without_reparsing(
     built = json.loads(
         (context.paths.output_root / "seoul" / "markers.json").read_text(encoding="utf-8")
     )
-    assert built["schema_version"] == 4
-    assert built["candidates"][0]["merchant"] == "합성 식당 본점"
-    assert built["records"][0]["merchant"] == "합성 식당"
+    assert built["schema_version"] == 5
+    assert built["markers"][0]["merchant"] == "합성 식당 본점"
+    records = json.loads(
+        (context.paths.output_root / "seoul" / "records.json").read_text(encoding="utf-8")
+    )
+    assert records["records"][0]["merchant"] == "합성 식당"
     assert payload(context, "build")["marker_count"] == 1

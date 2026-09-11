@@ -126,11 +126,80 @@ def test_cli_confirms_evidence_and_builds_actual_out_of_city_marker(tmp_path: Pa
     built = json.loads(
         (context.paths.output_root / "seoul" / "markers.json").read_text(encoding="utf-8")
     )
-    assert built["records"][0]["organization"] == "test-org"
-    assert built["candidates"][0]["record_ids"] == ["r1"]
-    assert built["candidates"][0]["latitude"] == 35.1
-    assert built["closures"][0]["business_id"] == result["business_id"]
-    assert built["closures"][0]["status"] == "unknown"
+    records = json.loads(
+        (context.paths.output_root / "seoul" / "records.json").read_text(encoding="utf-8")
+    )
+    assert records["records"][0]["organization"] == "test-org"
+    assert built["markers"][0]["business_id"] == result["business_id"]
+    assert built["markers"][0]["latitude"] == 35.1
+    assert built["markers"][0]["visit_count"] == 1
+    assert built["markers"][0]["closed"] is False
+
+
+def test_build_separates_map_data_from_complete_record_list(tmp_path: Path) -> None:
+    context = prepare(tmp_path)
+    add_record(context, "r2", "non_restaurant")
+    add_record(context, "r3", "pending")
+    add_record(context, "r4")
+    unresolved = lookup()
+    unresolved["scope"]["record_id"] = "r4"
+    unresolved["facts"] = []
+    unresolved["candidates"] = []
+    save_input(context, lookup(), unresolved)
+    assert run_cli(context, "geocode") == 0
+    assert run_cli(context, "closure") == 0
+    assert run_cli(context, "build") == 0
+
+    directory = context.paths.output_root / "seoul"
+    markers = json.loads((directory / "markers.json").read_text(encoding="utf-8"))
+    records = json.loads((directory / "records.json").read_text(encoding="utf-8"))
+
+    assert "records" not in markers
+    assert markers["markers"] == [
+        {
+            "business_id": markers["markers"][0]["business_id"],
+            "closed": False,
+            "latitude": 35.1,
+            "longitude": 129.1,
+            "merchant": "같은 식당",
+            "visit_count": 1,
+        }
+    ]
+    assert [record["record_id"] for record in records["records"]] == ["r1", "r2", "r3", "r4"]
+    assert [record["classification"] for record in records["records"]] == [
+        "restaurant",
+        "non_restaurant",
+        "pending",
+        "restaurant",
+    ]
+    assert [record["map_status"] for record in records["records"]] == [
+        "mapped",
+        "non_restaurant",
+        "pending",
+        "geocode_failed",
+    ]
+
+
+def test_build_creates_city_entry_page_and_seven_city_landing(tmp_path: Path) -> None:
+    context = prepare(tmp_path)
+    save_input(context, lookup())
+    for stage in ("geocode", "closure", "build"):
+        assert run_cli(context, stage) == 0
+
+    output = context.paths.output_root
+    landing = (output / "index.html").read_text(encoding="utf-8")
+    for city in ("seoul", "busan", "daegu", "incheon", "gwangju", "daejeon", "ulsan"):
+        assert f'href="./{city}/"' in landing
+
+    city_page = (output / "seoul" / "index.html").read_text(encoding="utf-8")
+    assert '<meta property="og:title" content="합성 도시 공무원 맛집 지도">' in city_page
+    assert 'data-city="seoul"' in city_page
+    assert 'data-markers-url="./markers.json"' in city_page
+    assert 'data-records-url="./records.json"' in city_page
+    assert (output / "assets" / "app.js").is_file()
+    assert (output / "assets" / "styles.css").is_file()
+    assert (output / "manifest.webmanifest").is_file()
+    assert (output / "sw.js").is_file()
 
 
 def test_lookup_error_is_saved_and_reported_without_dropping_the_record(
@@ -261,10 +330,8 @@ def test_same_named_branches_and_unresolved_records_keep_separate_links(tmp_path
     built = json.loads(
         (context.paths.output_root / "seoul" / "markers.json").read_text(encoding="utf-8")
     )
-    assert [item["record_ids"] for item in built["candidates"]] == [["r1"], ["r2"]]
-    assert {item["business_id"] for item in built["closures"]} == {
-        item["business_id"] for item in built["candidates"]
-    }
+    assert len({item["business_id"] for item in built["markers"]}) == 2
+    assert [item["visit_count"] for item in built["markers"]] == [1, 1]
 
 
 def test_conflicting_coordinates_for_the_same_business_are_explicitly_unresolved(

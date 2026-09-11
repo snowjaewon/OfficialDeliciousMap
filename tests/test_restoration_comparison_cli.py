@@ -487,6 +487,6 @@ def test_lookup_comparison_confirmation_and_marker_run_through_the_existing_cli(
     markers = json.loads(
         (context.paths.output_root / "seoul" / "markers.json").read_text(encoding="utf-8")
     )
-    assert markers["candidates"][0]["merchant"] == FULL_NAME
-    assert markers["candidates"][0]["record_ids"] == ["r1"]
+    assert markers["markers"][0]["merchant"] == FULL_NAME
+    assert markers["markers"][0]["visit_count"] == 1
     assert len(model.bodies) == 1

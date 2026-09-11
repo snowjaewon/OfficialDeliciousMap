@@ -71,6 +71,12 @@ def markers(context: ExecutionContext) -> dict:
     )
 
 
+def built_records(context: ExecutionContext) -> dict:
+    return json.loads(
+        (context.paths.output_root / "seoul" / "records.json").read_text(encoding="utf-8")
+    )
+
+
 def cache_lines(context: ExecutionContext) -> list[dict]:
     path = context.paths.city_dir(context.target) / "geocode-lookup-v1.jsonl"
     if not path.exists():
@@ -113,9 +119,9 @@ def test_naver_candidates_need_independent_evidence_and_keep_out_of_city_coordin
     for stage in ("closure", "build"):
         assert run_cli(context, stage, transport=transport) == 0
     built = markers(context)
-    assert built["candidates"][0]["record_ids"] == ["r1"]
-    assert built["candidates"][0]["latitude"] == 35.1
-    assert built["records"][0]["organization"] == "test-org"
+    assert built["markers"][0]["visit_count"] == 1
+    assert built["markers"][0]["latitude"] == 35.1
+    assert built_records(context)["records"][0]["organization"] == "test-org"
     assert payload(context, "build")["record_count"] == 1
 
 
@@ -133,8 +139,7 @@ def test_local_and_naver_supplied_facts_reach_the_same_business_and_marker(
     assert len(transport.requests) == 1
     assert geocoded(local)["business_id"] == geocoded(remote)["business_id"]
     assert geocoded(local)["reason"] == geocoded(remote)["reason"] == "matched"
-    assert markers(local)["candidates"] == markers(remote)["candidates"]
-    assert markers(local)["closures"] == markers(remote)["closures"]
+    assert markers(local)["markers"] == markers(remote)["markers"]
 
 
 def test_unchanged_lookup_is_reused_and_stays_apart_from_the_identity_decision(
