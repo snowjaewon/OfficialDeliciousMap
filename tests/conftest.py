@@ -15,5 +15,5 @@ def block_network(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.fixture(autouse=True)
 def block_real_keys(monkeypatch: pytest.MonkeyPatch) -> None:
     """개발자 PC의 실제 키가 테스트에 새어 들어가지 않게 한다."""
-    for name in ("NAVER_SEARCH_CLIENT_ID", "NAVER_SEARCH_CLIENT_SECRET"):
+    for name in ("NAVER_SEARCH_CLIENT_ID", "NAVER_SEARCH_CLIENT_SECRET", "DATA_GO_KR_KEY"):
         monkeypatch.delenv(name, raising=False)

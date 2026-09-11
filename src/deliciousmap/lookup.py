@@ -6,6 +6,7 @@ from deliciousmap.contracts import (
     CacheRef,
     CandidateLookup,
     ProviderCandidates,
+    ProviderQuery,
     Record,
     RestoredName,
 )
@@ -42,12 +43,12 @@ def resolve(
     records: tuple[Record, ...],
     supplied: tuple[CandidateLookup, ...],
     restorations: tuple[RestoredName, ...],
-    provider: CandidateProvider | None,
+    providers: tuple[CandidateProvider, ...],
     *,
     retry_failed: bool = False,
 ) -> tuple[CandidateLookup, ...]:
     """담당자가 후보를 주지 않은 레코드만 조회한다. 기록된 조회 실패는 덮지 않는다."""
-    if provider is None:
+    if not providers:
         return supplied
     restored = {item.record_id: item.restored_merchant for item in restorations}
     resolved = []
@@ -58,30 +59,52 @@ def resolve(
             continue
         # 확정 복원명이 있으면 그 이름으로 조회한다. 도시·기관 맥락은 질의에 넣지 않는다.
         query = restored.get(record.record_id, record.merchant)
-        found, cache = _reuse_or_search(store, provider, query, retry_failed=retry_failed)
         resolved.append(
-            CandidateLookup.model_validate(
+            _merge_provider_lookups(store, prepared, query, providers, retry_failed=retry_failed)
+        )
+    return tuple(resolved)
+
+
+def _merge_provider_lookups(
+    store: ArtifactStore,
+    prepared: CandidateLookup,
+    query: str,
+    providers: tuple[CandidateProvider, ...],
+    *,
+    retry_failed: bool,
+) -> CandidateLookup:
+    """제공자마다 조회하고 후보를 출처와 함께 모은다. 한 곳의 실패도 성공으로 숨기지 않는다."""
+    candidates = list(prepared.candidates)
+    queries = list(prepared.queries)
+    status: str = "ok"
+    error: str | None = None
+    for provider in providers:
+        found, cache = _reuse_or_search(store, provider, query, retry_failed=retry_failed)
+        candidates.extend(found.candidates)
+        queries.append(
+            ProviderQuery.model_validate(
                 {
-                    "scope": prepared.scope,
+                    "provider": provider.provider,
+                    "request": query,
+                    "interpretation": provider.interpretation,
                     "status": found.status,
                     "error": found.error,
-                    "facts": prepared.facts,
-                    "candidates": found.candidates,
-                    "queries": (
-                        *prepared.queries,
-                        {
-                            "provider": provider.provider,
-                            "request": query,
-                            "interpretation": provider.interpretation,
-                            "status": found.status,
-                            "error": found.error,
-                            "cache": cache,
-                        },
-                    ),
+                    "cache": cache,
                 }
             )
         )
-    return tuple(resolved)
+        if found.status == "error" and status != "error":
+            status, error = "error", found.error
+    return CandidateLookup.model_validate(
+        {
+            "scope": prepared.scope,
+            "status": status,
+            "error": error,
+            "facts": prepared.facts,
+            "candidates": tuple(candidates),
+            "queries": tuple(queries),
+        }
+    )
 
 
 def _reuse_or_search(

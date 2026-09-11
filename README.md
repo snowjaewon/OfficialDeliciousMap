@@ -41,16 +41,18 @@ uv run python -m deliciousmap geocode --city seoul --retry-failed
 ```
 
 `geocode`는 담당자가 준비한 정제 레코드·후보·근거로 업소를 판정한다. 후보가 없는 레코드는
-검색 키가 있을 때 네이버 지역검색으로 후보를 조회한다. `closure`는 현재
-인허가 연결 전이므로 확인된 업소마다 `unknown`을 저장하고, `build`는 전체 장부와
+키가 있는 제공자(네이버 지역검색·인허가 조회서비스)로 후보를 조회한다. `closure`는 현재
+폐업 대조 연결 전이므로 확인된 업소마다 `unknown`을 저장하고, `build`는 전체 장부와
 마커 후보를 `dist/<city>/markers.json`으로 내보낸다. 기관 실행은 `orgs/<org>/`에 분리한다.
 [지오코딩 사용법과 계약](docs/geocoding.md)을 따른다.
 `fetch`·`headermap`·`parse`·`classify`의 실제 어댑터는 미구현이므로 운영 `run`은 아직
-수집 단계에서 실패한다. 실제 게시판 수집·파일 변환·파싱·LLM·인허가·HTML/PWA·배포는 후속 작업이다.
+수집 단계에서 실패한다. 실제 게시판 수집·파일 변환·파싱·LLM·인허가 전량 수집·폐업 대조·
+HTML/PWA·배포는 후속 작업이다.
 
-네이버 검색 키는 `.env`의 `NAVER_SEARCH_CLIENT_ID`·`NAVER_SEARCH_CLIENT_SECRET`에서 읽는다.
-두 값이 모두 없으면 조회 없이 준비된 후보 파일만 쓰고, 한쪽만 있으면 실행 전에 `configuration:`과
-종료 코드 2로 거부한다. 값은 출력·산출물에 남기지 않는다. 셸에 `.env`를 불러온 뒤 실행한다.
+조회 키는 `.env`에서 읽는다. 네이버 지역검색은 `NAVER_SEARCH_CLIENT_ID`·`NAVER_SEARCH_CLIENT_SECRET`,
+인허가 조회서비스는 `DATA_GO_KR_KEY`다. 키가 없는 제공자는 조회하지 않고, 모두 없으면 준비된 후보
+파일만 쓴다. 네이버 키가 한쪽만 있으면 실행 전에 `configuration:`과 종료 코드 2로 거부한다.
+값은 출력·산출물에 남기지 않는다. 셸에 `.env`를 불러온 뒤 실행한다.
 
 ```text
 Git Bash:   set -a; . ./.env; set +a; uv run python -m deliciousmap geocode --city seoul
@@ -85,7 +87,8 @@ PowerShell: Get-Content .env | ForEach-Object { if ($_ -match '^(\w+)=(.*)$') { 
 `execute(command, ExecutionContext(target, paths), adapters)`에 어댑터를 주입한다.
 CLI를 포함한 통합 테스트에는 `cli.main(argv, cities=..., adapters=...)`를 사용한다.
 기본 `LocalAdapters`는 업소 판정과 후속 정제 출력에 연결한다. 후보 조회는 `lookup.CandidateProvider`
-(현재 네이버 지역검색)로 분리하며, 통합 테스트는 `cli.main(argv, transport=...)`로 외부 응답만 대신한다.
+(현재 네이버 지역검색·인허가 조회서비스)로 분리하며, 통합 테스트는
+`cli.main(argv, naver_transport=..., license_transport=...)`로 외부 응답만 대신한다.
 도시 스크래퍼와 나머지 외부 서비스는 후속 작업이다.
 
 | 단계 | 입력 → 출력 |

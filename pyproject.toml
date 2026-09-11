@@ -7,7 +7,10 @@ name = "deliciousmap"
 version = "0.1.0"
 description = "Municipal expense pipeline contracts and CLI"
 requires-python = ">=3.12,<3.13"
-dependencies = ["pydantic>=2.12,<3"]
+dependencies = [
+    "pydantic>=2.12,<3",
+    "pyproj>=3.7,<4",
+]
 
 [dependency-groups]
 dev = ["mypy>=1.19,<2", "pytest>=9,<10", "ruff>=0.15,<1"]

@@ -75,8 +75,8 @@ class ExecutionContext:
     target: Target
     paths: Paths
     retry_failed: bool = False
-    # 구성된 후보 조회. 없으면 담당자가 준비한 후보 파일만 사용한다.
-    provider: lookup.CandidateProvider | None = None
+    # 구성된 후보 조회. 비어 있으면 담당자가 준비한 후보 파일만 사용한다.
+    providers: tuple[lookup.CandidateProvider, ...] = ()
 
 
 class Adapters(Protocol):
@@ -204,7 +204,7 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
                 records,
                 store.candidate_lookups(records),
                 restorations,
-                context.provider,
+                context.providers,
                 retry_failed=context.retry_failed,
             )
             result = adapters.geocode(
