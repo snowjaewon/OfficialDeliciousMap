@@ -28,6 +28,7 @@ from deliciousmap.contracts import (
 from deliciousmap.paths import Paths
 from deliciousmap.registry import Target
 from deliciousmap.storage import ArtifactStore, RegenerationRequired
+from deliciousmap.transport import Transport
 
 STAGES = ("fetch", "headermap", "parse", "classify", "geocode", "closure", "build")
 StageOutput = (
@@ -83,6 +84,8 @@ class ExecutionContext:
     comparator: comparison.ComparisonModel | None = None
     # 화면을 렌더링하는 단계만 요구하는 공개 지도 키. CLI가 build·run 전에 확인한다.
     map_key: site.MapKey | None = None
+    # 게시판 요청 경계. 테스트는 이 자리에 응답만 주입하고 수집 규칙은 그대로 실행한다.
+    board_transport: Transport | None = None
 
 
 class Adapters(Protocol):

@@ -46,9 +46,17 @@ uv run python -m deliciousmap geocode --city seoul --retry-failed
 `dist/<city>/markers.json`, 전체 장부를 `dist/<city>/records.json`으로 나누고 도시 카드 랜딩과
 정적 지도 화면·PWA 기본 구성을 함께 만든다. 기관 실행은 데이터 파일만 `orgs/<org>/`에 분리한다.
 [지오코딩 사용법과 계약](docs/geocoding.md)을 따른다.
-`fetch`·`headermap`·`parse`·`classify`의 실제 어댑터는 미구현이므로 운영 `run`은 아직
-수집 단계에서 실패한다. 실제 게시판 수집·파일 변환·파싱·LLM·인허가 전량 수집·폐업 대조·
-실데이터 지도 성능 검증·배포는 후속 작업이다.
+`fetch`는 레지스트리에 선언된 게시판을 실제로 훑어 원본을 `--raw-root` 아래에 내려받고
+출처를 기록한다. 매직 바이트로 원본 컨테이너를 확인하고 게시판이 밝힌 확장자와 대조하므로,
+200으로 온 HTML이나 확장자와 어긋나는 첨부는 저장하지 않고 `unsupported-format`으로 실패한다.
+받아들일 확장자는 게시판마다 실측한 것만 선언하므로 실측하지 않은 형식도 `unsupported-format`이다.
+실측한 구조와 다르거나 통째로 읽을 수 없는 크기의 응답은 `adapter-failed`, 게시판에 닿지 못하면
+`service-unavailable`로 구별해 알린다. 한 기관에 연달아 보내는 요청에는 간격을 둔다.
+이미 받은 원본은 다시 내려받지 않으며, 게시판을 아직 선언하지 않은 도시는 0건 성공이 아니라
+`not-implemented`로 실패한다. 현재 선언된 게시판은 광주광역시청 하나뿐이고
+근거와 첫 실행 규모는 [정찰 기록](docs/validation/issue-51.md)에 있다.
+`headermap`·`parse`·`classify`의 실제 어댑터는 미구현이므로 운영 `run`은 아직 매핑 단계에서 실패한다.
+파일 변환·파싱·LLM·인허가 전량 수집·폐업 대조·실데이터 지도 성능 검증·배포는 후속 작업이다.
 
 조회 키는 `.env`에서 읽는다. 네이버 지역검색은 `NAVER_SEARCH_CLIENT_ID`·`NAVER_SEARCH_CLIENT_SECRET`,
 인허가 조회서비스는 `DATA_GO_KR_KEY`다. 키가 없는 제공자는 조회하지 않고, 모두 없으면 준비된 후보
@@ -71,8 +79,10 @@ PowerShell: Get-Content .env | ForEach-Object { if ($_ -match '^(\w+)=(.*)$') { 
 | `--retry-failed` | 변경 없는 미확정 결과도 다시 판정하고 실패 재시도 revision을 보존. 실패한 조회만 다시 요청하며 성공한 조회·판정은 재사용 |
 
 상대 경로는 실행한 저장소 루트 기준이다. 원본 루트가 저장소 내부이면 거부한다.
-도시별 `registry/<city>.py`는 dataclass 선언이며, 확인되지 않은 기관·게시판은 현재 비어 있다.
-기관을 추가할 때 `Organization`과 `Board`에 검증된 주소와 실제 스크래퍼 클래스를 등록한다.
+도시별 `registry/<city>.py`는 dataclass 선언이며, 광주를 뺀 나머지 도시의 기관·게시판은 아직 비어 있다.
+기관을 추가할 때 `Organization`과 `Board`에 **직접 확인한** 주소와 실제 스크래퍼 클래스를 등록하고,
+확인 방법과 값을 `docs/validation/`에 남긴다. 스크래퍼는 `src/deliciousmap/scrapers/`에 두며
+`boards.BoardScraper`의 계약(첨부 참조만 내고 저장·형식 판정은 하지 않음)을 따른다.
 존재하지 않는 도시·기관 및 잘못된 경로는 실행 전에 종료 코드 2로 거부한다.
 
 단계 실패는 `단계 city=도시 org=기관 cause=원인코드`와 종료 코드 1로 전달하고 후속 실행을 중단한다.
@@ -162,10 +172,10 @@ node --test tests/site_behavior.test.js
 `contracts.py`의 입출력 모델, `pipeline.py`의 `Adapters` Protocol이 공개 경계다.
 `execute(command, ExecutionContext(target, paths), adapters)`에 어댑터를 주입한다.
 CLI를 포함한 통합 테스트에는 `cli.main(argv, cities=..., adapters=...)`를 사용한다.
-기본 `LocalAdapters`는 업소 판정과 후속 정제 출력에 연결한다. 후보 조회는 `lookup.CandidateProvider`
-(현재 네이버 지역검색·인허가 조회서비스)로 분리하며, 통합 테스트는
-`cli.main(argv, naver_transport=..., license_transport=...)`로 외부 응답만 대신한다.
-도시 스크래퍼와 나머지 외부 서비스는 후속 작업이다.
+기본 `LocalAdapters`는 게시판 수집·업소 판정과 후속 정제 출력에 연결한다. 후보 조회는
+`lookup.CandidateProvider`(현재 네이버 지역검색·인허가 조회서비스)로 분리하며, 통합 테스트는
+`cli.main(argv, naver_transport=..., license_transport=..., board_transport=...)`로 외부 응답만 대신한다.
+게시판 요청도 같은 `Transport` 경계를 쓴다. 선언되지 않은 도시의 스크래퍼는 후속 작업이다.
 
 | 단계 | 입력 → 출력 |
 | --- | --- |

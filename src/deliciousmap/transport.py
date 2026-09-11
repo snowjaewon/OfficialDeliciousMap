@@ -1,5 +1,6 @@
 """제공자와 무관한 HTTP 경계. 테스트는 이 자리에 응답만 주입하고 어댑터는 그대로 실행한다."""
 
+import time
 import urllib.parse
 import urllib.request
 from collections.abc import Mapping
@@ -10,6 +11,11 @@ REQUEST_TIMEOUT = 10.0
 # 조회 조건 이름의 대괄호·콜론은 그대로 두고 공백은 %20으로 보낸다. `+`를 공백으로 읽지 않는
 # 제공자가 있어 urlencode의 기본 quote_plus는 쓰지 않는다.
 SAFE_CHARACTERS = "[]:"
+
+
+def query(params: Mapping[str, str]) -> str:
+    """조회 조건을 주소에 싣는 단일 규칙. 주소를 기록하는 쪽도 이 함수를 쓴다."""
+    return urllib.parse.urlencode(dict(params), quote_via=urllib.parse.quote, safe=SAFE_CHARACTERS)
 
 
 class Transport(Protocol):
@@ -23,18 +29,28 @@ class JsonTransport(Protocol):
 
 
 class HttpTransport:
-    def __init__(self, timeout: float = REQUEST_TIMEOUT) -> None:
+    def __init__(
+        self,
+        timeout: float = REQUEST_TIMEOUT,
+        limit: int = MAX_RESPONSE_BYTES,
+        interval: float = 0.0,
+    ) -> None:
         self.timeout = timeout
+        # 조회 응답과 원본 첨부는 크기가 달라 상한을 호출자가 정한다.
+        self.limit = limit
+        # 한 기관에 연달아 요청할 때의 최소 간격. 0이면 기다리지 않는다.
+        self.interval = interval
 
     def fetch(self, url: str, params: Mapping[str, str], headers: Mapping[str, str]) -> bytes:
-        query = urllib.parse.urlencode(
-            dict(params), quote_via=urllib.parse.quote, safe=SAFE_CHARACTERS
-        )
-        request = urllib.request.Request(f"{url}?{query}", headers=dict(headers))
-        with urllib.request.urlopen(request, timeout=self.timeout) as response:
-            return bytes(response.read(MAX_RESPONSE_BYTES + 1))
+        request = urllib.request.Request(f"{url}?{query(params)}", headers=dict(headers))
+        return self._send(request)
 
     def post(self, url: str, body: bytes, headers: Mapping[str, str]) -> bytes:
         request = urllib.request.Request(url, data=body, headers=dict(headers), method="POST")
+        return self._send(request)
+
+    def _send(self, request: urllib.request.Request) -> bytes:
+        if self.interval > 0:
+            time.sleep(self.interval)
         with urllib.request.urlopen(request, timeout=self.timeout) as response:
-            return bytes(response.read(MAX_RESPONSE_BYTES + 1))
+            return bytes(response.read(self.limit + 1))
