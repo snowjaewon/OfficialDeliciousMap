@@ -33,6 +33,8 @@ TOTAL_PAGES = re.compile(r"전체페이지\s*:\s*([\d,]+)")
 
 
 class GwangjuCityBoard:
+    published_suffixes = PUBLISHED_SUFFIXES
+
     def __init__(self, board: "Board", transport: Transport) -> None:
         self.list_url, self.params = boards.endpoint(board.url)
         if not boards.is_identifier(self.params.get(BOARD_PARAMETER, "").replace("_", "")):
@@ -63,7 +65,7 @@ class GwangjuCityBoard:
                 boards.Attachment(
                     post_id=post_id,
                     file_id=file_id,
-                    suffix=boards.suffix_of(filename, PUBLISHED_SUFFIXES),
+                    suffix=boards.suffix_of(filename),
                     url=urllib.parse.urljoin(self.list_url, href),
                     page_url=page_url,
                 )

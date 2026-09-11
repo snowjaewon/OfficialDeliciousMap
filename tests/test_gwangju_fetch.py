@@ -500,3 +500,68 @@ def test_board_requests_do_not_retry_a_rejected_request(monkeypatch: pytest.Monk
     with pytest.raises(boards.BoardUnavailable):
         boards.request(boards.default_transport(), LIST_URL, {"boardId": BOARD_ID})
     assert flaky.calls == 1
+
+
+SPREADSHEETML = (
+    b'<?xml version="1.0"?><?mso-application progid="Excel.Sheet"?>'
+    b'<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"></Workbook>'
+)
+
+
+def test_fetch_accepts_an_xls_that_is_really_spreadsheetml(tmp_path: Path) -> None:
+    """실측: 2019년 글의 `.xls`는 OLE2가 아니라 Excel 2003 XML이다(seq 5962)."""
+    paths = paths_at(tmp_path)
+    responses = board_responses()
+    responses[download(11024, 1)] = SPREADSHEETML
+    assert run_fetch(paths, BoardTransport(responses)) == 0
+    stored = Path(fetch_artifact(paths)["sources"][0]["path"])
+    assert stored.name == "11024-1.xls"
+    assert stored.read_bytes().startswith(b"<?xml")
+
+
+def test_fetch_refuses_xml_that_is_not_a_spreadsheet(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """`<?xml`로 시작한다고 다 원본이 아니다. 표식이 있어야 받는다."""
+    paths = paths_at(tmp_path)
+    responses = board_responses()
+    responses[download(11024, 1)] = b'<?xml version="1.0"?><rss><channel/></rss>'
+    assert run_fetch(paths, BoardTransport(responses)) == 1
+    assert "cause=unsupported-format" in capsys.readouterr().err
+
+
+def unmeasured_report(paths: Paths) -> list[dict[str, Any]]:
+    target = select_target(CITIES, "gwangju", None)
+    path = paths.board_dir(target, "gwangju-city", "expenses") / "unmeasured.jsonl"
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+
+
+def test_fetch_walks_the_whole_board_before_reporting_unmeasured_formats(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """22년치 게시판은 드문 형식이 뒤늦게 나온다. 하나 만날 때마다 멈추면 그만큼 다시 훑는다."""
+    paths = paths_at(tmp_path)
+    responses = board_responses()
+    responses[view_page(11024)] = view_with_suffix(11024, "업무추진비 묶음.zip")
+    responses[view_page(11022)] = view_with_suffix(11022, "업무추진비 문서.doc")
+    assert run_fetch(paths, BoardTransport(responses)) == 1
+    assert "cause=unsupported-format" in capsys.readouterr().err
+    # 첫 게시글에서 멈추지 않고 마지막 쪽의 게시글까지 확인했다.
+    report = unmeasured_report(paths)
+    assert [item["suffix"] for item in report] == [".zip", ".doc"]
+    assert [item["post_id"] for item in report] == ["11024", "11022"]
+
+
+def test_fetch_recollects_a_posting_once_its_format_is_declared(tmp_path: Path) -> None:
+    """실측하지 않은 형식이 있는 게시글은 기록하지 않으므로 선언 뒤 다시 받는다."""
+    paths = paths_at(tmp_path)
+    responses = board_responses()
+    responses[view_page(11024)] = view_with_suffix(11024, "업무추진비 묶음.zip")
+    assert run_fetch(paths, BoardTransport(responses)) == 1
+    again = BoardTransport(board_responses())
+    assert run_fetch(paths, again) == 0
+    assert view_page(11024) in again.requests
+    assert len(fetch_artifact(paths)["sources"]) == 3
+    target = select_target(CITIES, "gwangju", None)
+    board_dir = paths.board_dir(target, "gwangju-city", "expenses")
+    assert not (board_dir / "unmeasured.jsonl").exists()

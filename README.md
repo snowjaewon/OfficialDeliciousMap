@@ -49,7 +49,8 @@ uv run python -m deliciousmap geocode --city seoul --retry-failed
 `fetch`는 레지스트리에 선언된 게시판을 실제로 훑어 원본을 `--raw-root` 아래에 내려받고
 출처를 기록한다. 매직 바이트로 원본 컨테이너를 확인하고 게시판이 밝힌 확장자와 대조하므로,
 200으로 온 HTML이나 확장자와 어긋나는 첨부는 저장하지 않고 `unsupported-format`으로 실패한다.
-받아들일 확장자는 게시판마다 실측한 것만 선언하므로 실측하지 않은 형식도 `unsupported-format`이다.
+받아들일 확장자는 게시판마다 실측한 것만 선언한다. 실측하지 않은 형식은 게시판을 끝까지 훑은 뒤
+저장소 밖 `unmeasured.jsonl`에 모아 적고 한 번에 `unsupported-format`으로 알린다.
 실측한 구조와 다르거나 통째로 읽을 수 없는 크기의 응답은 `adapter-failed`, 게시판에 닿지 못하면
 `service-unavailable`로 구별해 알린다. 기관이 더는 내주지 않는 원본(404·410)은 서비스 장애와
 구별해 수집을 멈추지 않고 `fetch.json`의 `missing`에 남긴다. 일시적 실패(연결 끊김·타임아웃·

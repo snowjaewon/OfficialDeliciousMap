@@ -11,18 +11,22 @@ from deliciousmap.contracts import FetchOutput, MissingOriginal, SourceRef
 from deliciousmap.paths import Paths
 from deliciousmap.pipeline import AdapterFailure, FailureCause
 from deliciousmap.registry import Board, Target
-from deliciousmap.storage import file_digest
+from deliciousmap.storage import file_digest, write_text
 from deliciousmap.transport import Transport
 
 # 수집을 마친 게시글의 추가형 기록. 원본과 함께 저장소 밖에 두며, 중단한 수집을 이어서
 # 할 때 이미 끝낸 게시글의 본문을 다시 열지 않게 한다.
 LEDGER = "collected.jsonl"
+# 실측하지 않은 형식을 만난 첨부의 목록. 게시판을 끝까지 훑은 뒤 한 번에 보고하기 위한 것이며
+# 기록에 남기지 않으므로 형식을 선언하고 다시 실행하면 그 게시글부터 다시 받는다.
+UNMEASURED = "unmeasured.jsonl"
 
 
 def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
     """선택한 기관의 게시판을 훑는다. 수집하지 못한 이유는 0건으로 숨기지 않는다."""
     sources: list[SourceRef] = []
     missing: list[MissingOriginal] = []
+    unmeasured: list[dict[str, str]] = []
     visited: list[str] = []
     held: list[str] = []
     for organization in target.organizations:
@@ -32,10 +36,13 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
         for board in organization.boards:
             visited.append(f"{organization.slug}/{board.slug}")
             directory = paths.board_dir(target, organization.slug, board.slug)
-            _walk(board, directory, transport)
+            unmeasured.extend(_walk(board, directory, transport))
             collected, gone = _ledger(directory)
             sources.extend(_sources(directory, collected, organization.slug, board.slug))
             missing.extend(_missing(gone, organization.slug, board.slug))
+    if unmeasured:
+        # 게시판을 끝까지 훑은 뒤에 한 번에 알린다. 형식을 하나 만날 때마다 멈추지 않는다.
+        raise AdapterFailure(FailureCause.UNSUPPORTED_FORMAT)
     if sources:
         return FetchOutput(sources=tuple(sources), missing=tuple(missing))
     if not visited and not held:
@@ -46,14 +53,32 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
     )
 
 
-def _walk(board: Board, directory: Path, transport: Transport) -> None:
-    """게시판을 훑어 새 게시글의 원본을 내려받고 게시글 단위로 기록한다."""
+def _walk(board: Board, directory: Path, transport: Transport) -> list[dict[str, str]]:
+    """게시판을 훑어 새 게시글의 원본을 내려받고 게시글 단위로 기록한다.
+
+    실측하지 않은 형식은 그 자리에서 멈추지 않고 모아 두었다가 끝에 한 번에 알린다.
+    22년치 게시판은 드문 형식이 뒤늦게 나오므로, 하나 만날 때마다 멈추면 그만큼 다시 훑어야 한다.
+    """
     collected, gone = _ledger(directory)
     done = set(collected) | set(gone)
     scraper: boards.BoardScraper = board.scraper(board, transport)
+    unmeasured: list[dict[str, str]] = []
     try:
         for posting in scraper.postings(lambda post_id: post_id in done):
             stored, lost = [], []
+            published = scraper.published_suffixes
+            unknown = [item for item in posting.attachments if item.suffix not in published]
+            for attachment in unknown:
+                unmeasured.append(
+                    {
+                        "post_id": attachment.post_id,
+                        "url": attachment.page_url,
+                        "suffix": attachment.suffix,
+                    }
+                )
+            if unknown:
+                # 실측하지 않은 형식이 있는 게시글은 기록하지 않는다. 선언한 뒤 다시 받는다.
+                continue
             for attachment in posting.attachments:
                 try:
                     _store(directory / attachment.name, attachment, transport)
@@ -70,6 +95,19 @@ def _walk(board: Board, directory: Path, transport: Transport) -> None:
         raise AdapterFailure(FailureCause.SERVICE_UNAVAILABLE) from None
     except boards.UnreadableBoard:
         raise AdapterFailure(FailureCause.ADAPTER_FAILED) from None
+    _report_unmeasured(directory, unmeasured)
+    return unmeasured
+
+
+def _report_unmeasured(directory: Path, unmeasured: list[dict[str, str]]) -> None:
+    """무엇을 실측해야 하는지 한 곳에 남긴다. 원본과 같이 저장소 밖에 둔다."""
+    path = directory / UNMEASURED
+    if not unmeasured:
+        path.unlink(missing_ok=True)
+        return
+    directory.mkdir(parents=True, exist_ok=True)
+    lines = [json.dumps(item, ensure_ascii=False, sort_keys=True) for item in unmeasured]
+    write_text(path, "".join(f"{line}\n" for line in lines))
 
 
 def _sources(

@@ -1,5 +1,6 @@
 """게시판 해석의 공통 경계. 기관별 스크래퍼가 여기의 계약만 지키면 수집 규칙을 공유한다."""
 
+import re
 import urllib.parse
 from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass
@@ -27,13 +28,8 @@ REQUEST_TIMEOUT = 30.0
 # 0.5초일 때 건당 1.78초로 대기가 56%를 차지해 0.2초로 낮췄다. 합산 약 2.1 req/s이고 여전히
 # 순차 요청이다. 기관이 어디까지 견디는지는 측정하지 않았으므로 더 줄이지 않는다.
 REQUEST_INTERVAL = 0.2
-# 원본으로 받아들이는 컨테이너의 매직 바이트와 그 컨테이너를 쓰는 확장자.
-# 게시판이 밝힌 확장자는 근거가 아니라 대조 대상이다.
-CONTAINERS: tuple[tuple[bytes, frozenset[str]], ...] = (
-    (b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1", frozenset({".xls", ".hwp"})),
-    (b"PK\x03\x04", frozenset({".xlsx", ".hwpx"})),
-    (b"%PDF-", frozenset({".pdf"})),
-)
+# 서명만으로 갈리지 않는 형식이 있어 앞부분에서 표식을 함께 찾는다. 이만큼만 본다.
+MARKER_WINDOW = 4096
 # 수집 주체를 밝힌다. 브라우저를 가장하지 않는다.
 USER_AGENT = "OfficialDeliciousMap/0.1 (+https://github.com/snowjaewon/OfficialDeliciousMap)"
 HEADERS = {"User-Agent": USER_AGENT}
@@ -53,6 +49,38 @@ class UnreadableBoard(Exception):
 
 class OriginalGone(Exception):
     """게시판이 링크한 원본이 기관 쪽에 없다. 다시 요청해도 달라지지 않는다."""
+
+
+@dataclass(frozen=True)
+class Container:
+    """원본으로 받아들이는 형식 하나. 게시판이 밝힌 확장자는 근거가 아니라 대조 대상이다."""
+
+    name: str
+    signature: bytes
+    suffixes: frozenset[str]
+    # 서명이 같은 다른 형식과 가르는 표식. 비어 있으면 서명만으로 판정한다.
+    marker: bytes = b""
+
+    def matches(self, body: bytes) -> bool:
+        if not body.startswith(self.signature):
+            return False
+        return not self.marker or self.marker in body[:MARKER_WINDOW]
+
+
+# 실측으로 확인한 컨테이너만 둔다. `.xls`는 OLE2와 SpreadsheetML 둘 다로 올라온다.
+CONTAINERS: tuple[Container, ...] = (
+    Container("ole2", bytes.fromhex("d0cf11e0a1b11ae1"), frozenset({".xls", ".hwp"})),
+    Container("ooxml", bytes.fromhex("504b0304"), frozenset({".xlsx", ".hwpx"})),
+    Container("pdf", b"%PDF-", frozenset({".pdf"})),
+    Container(
+        "spreadsheetml",
+        b"<?xml",
+        frozenset({".xls", ".xlsx"}),
+        b"urn:schemas-microsoft-com:office:spreadsheet",
+    ),
+)
+# 저장 이름에 쓸 수 있는 확장자의 모양. 게시판이 준 이름을 경로로 그대로 쓰지 않는다.
+SUFFIX = re.compile(r"\.[a-z0-9]{1,8}")
 
 
 def is_identifier(value: str) -> bool:
@@ -75,6 +103,8 @@ class Attachment:
     def __post_init__(self) -> None:
         if not (is_identifier(self.post_id) and is_identifier(self.file_id)):
             raise UnreadableBoard("board supplied an unusable attachment identifier")
+        if self.suffix and not SUFFIX.fullmatch(self.suffix):
+            raise UnreadableBoard("board supplied an unusable attachment extension")
 
     @property
     def name(self) -> str:
@@ -96,6 +126,9 @@ Collected = Callable[[str], bool]
 
 class BoardScraper(Protocol):
     """게시판 하나를 훑어 게시글과 원본 첨부의 참조만 낸다. 저장과 형식 판정은 하지 않는다."""
+
+    # 그 게시판에서 실측한 첨부 확장자. 수집이 이 선언과 대조한다.
+    published_suffixes: frozenset[str]
 
     def __init__(self, board: "Board", transport: Transport) -> None: ...
 
@@ -179,19 +212,16 @@ def request(transport: Transport, url: str, params: Mapping[str, str]) -> bytes:
     return body
 
 
-def suffix_of(filename: str, published: frozenset[str]) -> str:
-    """게시판이 밝힌 형식. 그 기관에서 실측한 형식만 원본으로 받는다."""
-    suffix = PurePosixPath(filename.strip()).suffix.lower()
-    if suffix in published:
-        return suffix
-    raise UnsupportedOriginal("attachment format was not measured for this board")
+def suffix_of(filename: str) -> str:
+    """게시판이 밝힌 형식. 받아들일지는 수집이 스크래퍼의 선언과 대조해 정한다."""
+    return PurePosixPath(filename.strip()).suffix.lower()
 
 
 def require_original(body: bytes, suffix: str) -> None:
     """매직 바이트로 컨테이너를 판정하고 게시판이 밝힌 확장자와 대조한다."""
-    for signature, suffixes in CONTAINERS:
-        if body.startswith(signature):
-            if suffix in suffixes:
+    for container in CONTAINERS:
+        if container.matches(body):
+            if suffix in container.suffixes:
                 return
             raise UnsupportedOriginal("attachment contradicts its declared format")
     raise UnsupportedOriginal("response is not an original container")
