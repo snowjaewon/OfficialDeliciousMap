@@ -75,12 +75,13 @@
 | `node --test tests/site_behavior.test.js` | 9 passed |
 | `uv run python -m deliciousmap --help` | 종료 0 |
 | `git diff --check` | 통과 |
-| gitleaks | **이 PC에 설치되어 있지 않아 실행하지 못함**. 아래 참고 |
+| gitleaks | PR #49의 workflow에서 통과. 로컬 실행은 아래 참고 |
 
 gitleaks 바이너리가 이 개발 환경에 없고 `core.hooksPath`도 설정돼 있지 않아 로컬 검사를 돌리지
 못했다. 대신 `.gitleaks.toml`의 `project-secret-env-assignment` 패턴을 추적 파일 전체에
 `git grep`으로 적용해 `.env.example`·`.gitleaks.toml` 밖에서 값이 들어간 비밀 변수가 없음을
-확인했다. 이것은 gitleaks 전체 규칙의 대체가 아니므로 PR의 `gitleaks` workflow 결과로 확인해야 한다.
+확인했다. 이것은 gitleaks 전체 규칙의 대체가 아니므로 PR의 `gitleaks` workflow로 확인했고,
+[PR #49](https://github.com/snowjaewon/OfficialDeliciousMap/pull/49)의 두 실행이 모두 통과했다.
 새 변수 `NAVER_MAP_CLIENT_ID`는 공개되는 지도 키이므로 `.gitleaks.toml`의 비밀 변수 목록에
 추가하지 않았고, `.env.example`에는 이미 빈 값으로 등록돼 있다.
 
