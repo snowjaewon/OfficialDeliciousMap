@@ -2,6 +2,10 @@
 
 import re
 from dataclasses import dataclass
+from typing import Literal, get_args
+
+# 수집 보류 사유의 단일 출처. CONTEXT.md의 네 가지 외에는 보류로 남기지 않는다.
+HoldReason = Literal["bot_blocked", "drm", "board_lost", "below_threshold"]
 
 
 @dataclass(frozen=True)
@@ -16,6 +20,12 @@ class Organization:
     slug: str
     name: str
     boards: tuple[Board, ...] = ()
+    # 사유를 달고 이번 수집에서 미룬 기관. 상호의 판단 보류와 다른 상태다.
+    hold_reason: HoldReason | None = None
+
+    def __post_init__(self) -> None:
+        if self.hold_reason is not None and self.hold_reason not in get_args(HoldReason):
+            raise ValueError("unknown collection hold reason")
 
 
 @dataclass(frozen=True)

@@ -10,6 +10,7 @@ const {
   renderSearchResults,
   selectMarker,
   summarizeMetrics,
+  viewportBounds,
 } = require("../src/deliciousmap/site_assets/app.js");
 
 class FakeElement {
@@ -180,4 +181,88 @@ test("the record view renders its first hundred rows before requesting more", ()
   assert.equal(list.children.length, 101);
   assert.equal(more.hidden, true);
   assert.match(status.textContent, /전체 101건 · 101건 표시/);
+});
+
+test("a selected restaurant shows where its coordinate came from", async () => {
+  const sheet = new FakeElement();
+  const documentObject = new FakeDocument({ "[data-restaurant-sheet]": sheet });
+  const windowObject = fakeWindow();
+  const config = { map_bounds: { south: 34, west: 126, north: 38, east: 130 } };
+  const marker = {
+    ...markers[1],
+    business_id: "inside",
+    closed: true,
+    coordinate_source: "license",
+  };
+
+  const selection = selectMarker(windowObject, documentObject, config, undefined, marker, {});
+  windowObject.frames.shift()();
+  windowObject.frames.shift()();
+  await selection;
+
+  const lines = sheet.children.map((child) => child.textContent);
+  assert.ok(lines.includes("폐업 확인"));
+  assert.ok(lines.includes("좌표 출처: 인허가 자료"));
+});
+
+test("the record view explains why an unmapped record missed the map", () => {
+  const list = new FakeElement();
+  const status = new FakeElement();
+  const more = new FakeElement();
+  const documentObject = new FakeDocument({
+    "[data-records-list]": list,
+    "[data-records-more]": more,
+    "[data-records-status]": status,
+  });
+
+  renderRecords(documentObject, [
+    {
+      amount_krw: 1000,
+      classification: "restaurant",
+      geocode_reason: "no_candidates",
+      map_status: "geocode_failed",
+      merchant: "좌표 없는 식당",
+      organization: "합성 기관",
+      purpose: "간담회",
+      spent_on: "2026-01-01",
+    },
+    {
+      amount_krw: 1000,
+      classification: "pending",
+      geocode_reason: null,
+      map_status: "pending",
+      merchant: "모호한 상호",
+      organization: "합성 기관",
+      purpose: "간담회",
+      spent_on: "2026-01-01",
+    },
+  ]);
+
+  const first = list.children[0].children.map((child) => child.textContent);
+  assert.ok(first.includes("지오코딩 실패 · 후보 없음"));
+  const second = list.children[1].children.map((child) => child.textContent);
+  assert.ok(second.includes("판단 보류"));
+});
+
+test("city-wide counts survive a map that cannot report its viewport", () => {
+  const bounds = { south: 34, west: 126, north: 38, east: 130 };
+  const working = {
+    map: {
+      getBounds: () => ({
+        getSW: () => ({ lat: () => bounds.south, lng: () => bounds.west }),
+        getNE: () => ({ lat: () => bounds.north, lng: () => bounds.east }),
+      }),
+    },
+  };
+  const broken = {
+    map: {
+      getBounds() {
+        throw new Error("authentication failed");
+      },
+    },
+  };
+
+  assert.deepEqual(viewportBounds(working), bounds);
+  assert.equal(viewportBounds(broken), undefined);
+  assert.equal(viewportBounds(undefined), undefined);
 });

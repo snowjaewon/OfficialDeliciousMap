@@ -13,6 +13,23 @@ from deliciousmap.registry import Target
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 Sha256 = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{64}$")]
 ClassificationStatus = Literal["restaurant", "non_restaurant", "pending"]
+Provider = Literal["local", "naver", "license"]
+# 업소 판정의 결론. 확정된 두 사유 외에는 모두 미확정의 이유다.
+GeocodeReason = Literal[
+    "matched",
+    "human_confirmed",
+    "no_candidates",
+    "missing_address",
+    "unknown_branch",
+    "conflicting_evidence",
+    "ambiguous",
+    "unconfirmed_name",
+    "no_match",
+    "missing_coordinates",
+    "lookup_error",
+    "insufficient_evidence",
+]
+CONFIRMED_REASONS = ("matched", "human_confirmed")
 MapStatus = Literal["mapped", "geocode_failed", "non_restaurant", "pending"]
 # 동일성 판단에 필요한 근거만 남기기 위한 상한. 원본 전체를 옮겨 적는 용도가 아니다.
 Excerpt = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=500)]
@@ -172,7 +189,7 @@ class IdentityFacts(Contract):
 
 
 class CandidateSource(Contract):
-    provider: Literal["local", "naver", "license"]
+    provider: Provider
     source_id: Text
     reference: Text
 
@@ -250,20 +267,7 @@ class GeocodeResult(Contract):
     record_id: Text
     merchant: Text
     status: Literal["success", "failed"]
-    reason: Literal[
-        "matched",
-        "human_confirmed",
-        "no_candidates",
-        "missing_address",
-        "unknown_branch",
-        "conflicting_evidence",
-        "ambiguous",
-        "unconfirmed_name",
-        "no_match",
-        "missing_coordinates",
-        "lookup_error",
-        "insufficient_evidence",
-    ]
+    reason: GeocodeReason
     business_id: Sha256 | None = None
     confirmed_merchant: Text | None = None
     lookup_key: Sha256
@@ -284,13 +288,13 @@ class GeocodeResult(Contract):
         if self.status == "success" and (
             self.business_id is None
             or self.confirmed_merchant is None
-            or self.reason not in {"matched", "human_confirmed"}
+            or self.reason not in CONFIRMED_REASONS
         ):
             raise ValueError("success requires a confirmed business")
         if self.status == "failed" and (
             self.business_id is not None
             or self.confirmed_merchant is not None
-            or self.reason in {"matched", "human_confirmed"}
+            or self.reason in CONFIRMED_REASONS
         ):
             raise ValueError("unresolved records cannot be assigned a business")
         if self.record_id != self.lookup.scope.record_id:
@@ -326,24 +330,48 @@ class PublishedMarker(Contract):
     latitude: float = Field(ge=-90, le=90, allow_inf_nan=False)
     longitude: float = Field(ge=-180, le=180, allow_inf_nan=False)
     closed: bool
+    # 좌표를 준 제공자. 인허가 좌표도 지도에서 구별하지 않고 상세에서만 밝힌다.
+    coordinate_source: Provider
 
 
-class PublishedRecord(Record):
-    """records.json에 공개하는 장부 레코드와 지도 반영 상태."""
+class PublishedRecord(Contract):
+    """records.json에 공개하는 장부 레코드와 지도 반영 상태. 원본 추적 값은 남기지 않는다."""
 
+    record_id: Text
+    spent_on: date
+    organization: Text
+    department: str
+    merchant: Text
+    purpose: str
+    amount_krw: Decimal = Field(allow_inf_nan=False)
     classification: ClassificationStatus
     map_status: MapStatus
+    # 지오코딩을 수행한 레코드만 사유를 가진다. 비식당·판단 보류는 판정 대상이 아니다.
+    geocode_reason: GeocodeReason | None = None
+    # 마커로 묶인 레코드만 업소 식별자를 가진다.
+    business_id: Sha256 | None = None
+
+    @model_validator(mode="after")
+    def consistent_map_status(self) -> "PublishedRecord":
+        mapped = self.map_status == "mapped"
+        if mapped != (self.business_id is not None):
+            raise ValueError("only mapped records belong to a business")
+        if mapped != (self.geocode_reason in CONFIRMED_REASONS):
+            raise ValueError("map status and geocoding reason disagree")
+        if (self.map_status in {"mapped", "geocode_failed"}) != (self.geocode_reason is not None):
+            raise ValueError("only adjudicated records carry a geocoding reason")
+        return self
 
 
 class MarkerFile(Contract):
-    schema_version: Literal[5] = 5
+    schema_version: Literal[6] = 6
     city: Text
     org: str | None = None
     markers: tuple[PublishedMarker, ...]
 
 
 class RecordFile(Contract):
-    schema_version: Literal[5] = 5
+    schema_version: Literal[6] = 6
     city: Text
     org: str | None = None
     records: tuple[PublishedRecord, ...]

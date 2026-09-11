@@ -97,6 +97,17 @@ h1 {
   font-size: 1.7rem;
 }
 
+.city-card.is-pending {
+  color: #6d7f78;
+  background: #eef2ef;
+  box-shadow: none;
+  cursor: default;
+}
+
+.city-card.is-pending span {
+  color: inherit;
+}
+
 .city-card span {
   color: #b24d2d;
   font-size: 0.85rem;
@@ -385,6 +396,31 @@ h1 {
   border-radius: 0.6rem;
   background: #fff0d9;
   color: #7b3c20;
+}
+
+.coordinate-source {
+  color: #52665f;
+  font-size: 0.85rem;
+}
+
+.collection-table {
+  width: 100%;
+  margin-bottom: 0.8rem;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.collection-table th,
+.collection-table td {
+  padding: 0.4rem 0.3rem;
+  border-bottom: 1px solid #dfe6e1;
+  text-align: left;
+  vertical-align: top;
+}
+
+.collection-table thead th {
+  color: #52665f;
+  font-size: 0.8rem;
 }
 
 @media (max-width: 640px) {

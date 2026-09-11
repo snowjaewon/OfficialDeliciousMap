@@ -43,8 +43,8 @@ uv run python -m deliciousmap geocode --city seoul --retry-failed
 `geocode`는 담당자가 준비한 정제 레코드·후보·근거로 업소를 판정한다. 후보가 없는 레코드는
 키가 있는 제공자(네이버 지역검색·인허가 조회서비스)로 후보를 조회한다. `closure`는 현재
 폐업 대조 연결 전이므로 확인된 업소마다 `unknown`을 저장한다. `build`는 지도용 축약 정보를
-`dist/<city>/markers.json`, 전체 레코드를 `dist/<city>/records.json`으로 나누고 정적 지도 화면을
-함께 만든다. 기관 실행은 `orgs/<org>/`에 분리한다.
+`dist/<city>/markers.json`, 전체 장부를 `dist/<city>/records.json`으로 나누고 도시 카드 랜딩과
+정적 지도 화면·PWA 기본 구성을 함께 만든다. 기관 실행은 데이터 파일만 `orgs/<org>/`에 분리한다.
 [지오코딩 사용법과 계약](docs/geocoding.md)을 따른다.
 `fetch`·`headermap`·`parse`·`classify`의 실제 어댑터는 미구현이므로 운영 `run`은 아직
 수집 단계에서 실패한다. 실제 게시판 수집·파일 변환·파싱·LLM·인허가 전량 수집·폐업 대조·
@@ -53,6 +53,7 @@ uv run python -m deliciousmap geocode --city seoul --retry-failed
 조회 키는 `.env`에서 읽는다. 네이버 지역검색은 `NAVER_SEARCH_CLIENT_ID`·`NAVER_SEARCH_CLIENT_SECRET`,
 인허가 조회서비스는 `DATA_GO_KR_KEY`다. 키가 없는 제공자는 조회하지 않고, 모두 없으면 준비된 후보
 파일만 쓴다. 네이버 키가 한쪽만 있으면 실행 전에 `configuration:`과 종료 코드 2로 거부한다.
+`build`·`run`은 공개 가능한 지도 키 `NAVER_MAP_CLIENT_ID`도 요구한다.
 값은 출력·산출물에 남기지 않는다. 셸에 `.env`를 불러온 뒤 실행한다.
 
 ```text
@@ -66,7 +67,7 @@ PowerShell: Get-Content .env | ForEach-Object { if ($_ -match '^(\w+)=(.*)$') { 
 | `--org` | 도시 안의 기관 slug. 생략하면 등록된 기관 전체 |
 | `--raw-root` | 저장소 외부 원본 루트. 기본 `../deliciousmap-raw`; 인허가 자료 참조는 그 아래 `licenses/` |
 | `--data-root` | 정제 산출물 루트. 기본 `data/` |
-| `--output-root` | build 출력 루트. 기본 `dist/` |
+| `--output-root` | build 출력 루트. 기본 `dist/`. `dist/`는 커밋하지 않는다 |
 | `--retry-failed` | 변경 없는 미확정 결과도 다시 판정하고 실패 재시도 revision을 보존. 실패한 조회만 다시 요청하며 성공한 조회·판정은 재사용 |
 
 상대 경로는 실행한 저장소 루트 기준이다. 원본 루트가 저장소 내부이면 거부한다.
@@ -77,7 +78,8 @@ PowerShell: Get-Content .env | ForEach-Object { if ($_ -match '^(\w+)=(.*)$') { 
 단계 실패는 `단계 city=도시 org=기관 cause=원인코드`와 종료 코드 1로 전달하고 후속 실행을 중단한다.
 `org=*`는 도시 전체다. 원인 코드는 `not-implemented`, `invalid-artifact`, `io-error`,
 `adapter-failed`, `unsupported-format`, `service-unavailable`, `lookup-failed`,
-`regeneration-required`이다. 예외 원문·서비스 응답·비밀값은 출력하지 않는다.
+`regeneration-required`, `conflicting-review`, `missing-configuration`이다.
+예외 원문·서비스 응답·비밀값은 출력하지 않는다.
 조회 오류는 레코드별 결과를 저장한 뒤 `lookup-failed`로 실패한다. 후속 단계를 따로 실행하면
 그 레코드를 보존한 중간 빌드가 가능하다. 이전 버전은 `geocode`→`closure`→`build`를 재실행한다.
 판단 보류와 지오코딩 실패는 유효한 판정 상태이므로 장부용 레코드를 보존하고 build까지 전달한다.
@@ -85,15 +87,69 @@ PowerShell: Get-Content .env | ForEach-Object { if ($_ -match '^(\w+)=(.*)$') { 
 ### 정적 지도 화면
 
 도시 전체 build를 실행하면 `dist/index.html`에 7개 도시 랜딩이, `dist/<city>/index.html`에
-선택 도시 화면이 생긴다. 화면은 `markers.json`을 먼저 받아 식당명 검색, 20+ / 10~19 /
-5~9 / 1~4 방문 횟수 필터, 전체 결과와 현재 지도 영역 결과 수, 마커 상세와 네이버 지도 연결을
-제공한다. `records.json`은 장부 탭을 처음 열 때만 받으며 비식당·판단 보류·지오코딩 실패 레코드도
-상태와 함께 표시한다. 한 번에 100건씩 그려 긴 장부의 첫 목록 렌더링을 제한한다.
+선택 도시 화면이 생긴다. 랜딩은 7개 도시 카드를 모두 두되 이미 build한 도시만 링크하고
+나머지는 `준비 중`으로 남겨 미수집 도시를 열 수 있는 것처럼 보이지 않게 한다. 화면은
+`markers.json`을 먼저 받아 식당명 검색, 20+ / 10~19 / 5~9 / 1~4 방문 횟수 필터, 전체 결과와
+현재 지도 영역 결과 수, 마커 상세와 네이버 지도 연결을 제공한다. `records.json`은 장부 탭을
+처음 열 때만 받으며 비식당·판단 보류·지오코딩 실패 레코드도 상태와 사유를 함께 표시한다.
+한 번에 100건씩 그려 긴 장부의 첫 목록 렌더링을 제한한다.
 
-네이버 지도는 `.env`의 공개 가능한 `NAVER_MAP_CLIENT_ID`를 build 시 페이지 설정에 넣는다.
-신규 키의 기본 파라미터는 `ncpKeyId`이며, 구형 키만 `NAVER_MAP_KEY_PARAM=ncpClientId`로 바꾼다.
-키가 없으면 지도 대신 설정 안내를 보이되 전체 검색 집계와 장부 접근은 유지한다. 도시별
-`MapBounds`를 초기 `fitBounds`, 최소 축소 수준, 지도 중심 이동 제한에 함께 사용한다.
+`--org` 실행은 `dist/<city>/orgs/<org>/`에 두 데이터 파일만 낸다. 도시 셸·랜딩·PWA 파일은
+도시 전체 실행에서만 만들며 기관 실행이 이를 덮어쓰지 않는다.
+
+자료 범위 대화상자에 대상 기간(`site.REPORTING_PERIOD`, 현재 2026년 상반기)과 레지스트리에
+선언한 기관별 수집 상태를 적는다. 상태는 `수집 완료`(이번 빌드에 레코드 있음), `레코드 없음`,
+`수집 보류`(`Organization.hold_reason`: 봇 차단·DRM·게시판 유실·공개 기준 미달)이며 어느 쪽도
+집행이 없었다는 뜻이 아니다. 수집 보류 기관이 있을 때만 지도 위에도 짧은 안내를 둔다.
+기관의 수집 보류는 상호의 판단 보류와 다른 상태다. 장부는 레코드의 기관 slug를 담으므로
+진입 페이지가 slug와 기관 이름의 대응을 함께 실어 화면에서 이름으로 보여 준다.
+
+#### 공개 데이터 파일
+
+| 파일 | 내용 |
+| --- | --- |
+| `markers.json` | `schema_version`(6), `city`, `org`, `markers` |
+| `records.json` | `schema_version`(6), `city`, `org`, `records` |
+
+마커 하나는 `business_id`, 확정 상호 `merchant`, `visit_count`(묶인 레코드 수), `latitude`,
+`longitude`, `closed`, `coordinate_source`를 가진다. `coordinate_source`는 좌표를 준 제공자
+(`local`·`naver`·`license`)다. 마커에 묶인 레코드는 좌표가 같으므로 첫 레코드의 판정에서 고르며,
+그 판정이 사람 확인이면 확인한 후보의 제공자, 아니면 결과 좌표와 일치하는 후보의 제공자다.
+여러 제공자의 근거가 같은 좌표로 겹치면 이름 순으로 하나를 밝힌다.
+폐업으로 확인된 마커도 파일에서 빼지 않는다.
+
+장부 레코드 하나는 `record_id`, `spent_on`, `organization`, `department`, `merchant`, `purpose`,
+`amount_krw`와 `classification`(식당·비식당·판단 보류), `map_status`(`mapped`·`geocode_failed`·
+`non_restaurant`·`pending`), 판정한 레코드의 `geocode_reason`, 마커로 묶인 레코드의
+`business_id`를 가진다. 마커 수와 장부 레코드 수는 다를 수 있으며 `BuildOutput`에 그대로 남는다.
+공개 파일에는 화면에 필요한 값만 넣는다. `source_hash`·`source_location`·`lookup_key`·
+`dependency_key`·조회 원문·근거 발췌·사람 확인 파일은 넣지 않는다.
+
+#### 지도 키와 로컬 확인
+
+`build`와 `run`은 공개 가능한 `NAVER_MAP_CLIENT_ID`를 요구하고, 비어 있으면 실행 전에
+`configuration:`과 종료 코드 2로 거부한다. 다른 명령은 이 변수를 요구하지 않는다. 신규 키의
+기본 파라미터는 `ncpKeyId`이며 구형 키만 `NAVER_MAP_KEY_PARAM=ncpClientId`로 바꾼다. 그 밖의
+값은 종료 코드 2로 거부한다. 키는 페이지 설정에만 들어가고 저장소 파일·로그·산출물
+메타데이터에는 남기지 않는다. 키가 잘못되어 지도 인증이 실패하면 지도 자리에 설정 안내를
+띄우고 검색 집계·구간 필터·장부는 계속 제공한다. 도시별 `MapBounds`는 초기 `fitBounds`,
+최소 축소 수준, 지도 중심 이동 제한에 함께 사용한다.
+
+build한 결과는 정적 파일이므로 로컬 서버로 확인한다. 기본 `--output-root`인 `dist/`를 쓴 경우다.
+
+```text
+Git Bash:   set -a; . ./.env; set +a; uv run python -m deliciousmap build --city seoul
+PowerShell: Get-Content .env | ForEach-Object { if ($_ -match '^(\w+)=(.*)$') { Set-Item "env:$($Matches[1])" $Matches[2] } }
+            uv run python -m deliciousmap build --city seoul
+```
+
+```text
+양쪽 공통: uv run python -m http.server 8765 --directory dist --bind 127.0.0.1
+```
+
+브라우저에서 `http://127.0.0.1:8765/`를 열면 도시 카드 랜딩이, `http://127.0.0.1:8765/<city>/`가
+선택 도시 화면이다. `file://`로 열면 `fetch`와 service worker가 동작하지 않으므로 쓰지 않는다.
+확인한 결과는 [이슈 #48 검증](docs/validation/issue-48.md)에 있다.
 
 브라우저 로직 테스트에는 Node.js 20 이상이 필요하며 아래 명령은 외부 패키지를 설치하지 않는다.
 
@@ -131,8 +187,8 @@ classify 이후에는 입력 파일 SHA-256도 기록해 이전 입력의 판정
 build는 `records.csv`, `parse.json`, `classify.json`, `geocode-input.json`, `geocode.json`,
 `closure.json`과 적용한 사람 보정·상호 복원·업소 확인 파일로 재현하며 원본·수집 메타데이터·API에 접근하지 않는다.
 마커는 확인된 업소 식별자로 묶는다. 동일 상호라도 지점·주소가 다르면 분리하고,
-미확정 레코드는 전체 장부에만 남긴다. `markers.json`은 후속 사이트용 정제 입력이며 HTML/PWA는 아니다.
-폐업으로 확인된 후보도 제거하지 않는다.
+미확정 레코드는 전체 장부에만 남긴다. 패키지 안의 정적 자산을 렌더링·복사해 화면을 만들며
+Node 기반 빌드 도구를 쓰지 않는다. 폐업으로 확인된 후보도 제거하지 않는다.
 
 ## 저장 형식
 
@@ -142,7 +198,7 @@ build는 `records.csv`, `parse.json`, `classify.json`, `geocode-input.json`, `ge
 `data/manual/<city>/`의 `classify.jsonl`(사람 보정), `restore.jsonl`(상호 복원),
 `geocode.jsonl`(업소 확인)에 둔다. 자세한 내용은 [상호 복원](docs/restoration.md)에 있다.
 단계 메타데이터 파일은 `<stage>.json`이며 `schema_version`(geocode·closure는 4,
-build는 5, 나머지는 1), `city`, `org`, 입력 해시인
+build는 6, 나머지는 1), `city`, `org`, 입력 해시인
 `dependencies`, 실제 출력인 `payload`를 가진다. `parse.json`에는 레코드를 중복 저장하지 않는다.
 원본의 내용·개인정보를 메타데이터에 넣지 않는다. fetch 메타데이터의 외부 경로는 수집 PC 기준이다.
 
