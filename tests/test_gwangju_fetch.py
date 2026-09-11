@@ -135,6 +135,29 @@ def test_registry_declares_the_measured_city_hall_board() -> None:
     assert f"boardId={BOARD_ID}" in board.url
 
 
+def test_fetch_accepts_every_format_measured_on_this_board(tmp_path: Path) -> None:
+    """이 게시판은 .xls·.xlsx 말고 .hwp·.pdf도 올린다(2026-09-11 실측)."""
+    paths = paths_at(tmp_path)
+    responses = board_responses()
+    hwp = "업무추진비 공개 서식(2020. 10월~12월).hwp"
+    responses[view_page(11022)] = view_with_suffix(11022, hwp)
+    responses[download(11022, 1)] = OLE2
+    responses[view_page(11024)] = view_with_suffix(11024, "2026.3.시책업무추진비 사용 내역.pdf")
+    responses[download(11024, 1)] = PDF
+    assert run_fetch(paths, BoardTransport(responses)) == 0
+    names = [Path(item["path"]).name for item in fetch_artifact(paths)["sources"]]
+    assert names == ["11024-1.pdf", "11022-1.hwp"]
+
+
+def test_fetch_ignores_the_bulk_download_link(tmp_path: Path) -> None:
+    """첨부가 둘 이상인 글의 묶음 내려받기 링크에는 `fileSn`이 없다. 첨부로 세지 않는다."""
+    paths = paths_at(tmp_path)
+    transport = BoardTransport(board_responses())
+    assert run_fetch(paths, transport) == 0
+    assert len(fetch_artifact(paths)["sources"]) == 3
+    assert [key for key in transport.requests if "action=zip" in key] == []
+
+
 def test_fetch_stores_every_attachment_outside_the_repository(tmp_path: Path) -> None:
     paths = paths_at(tmp_path)
     transport = BoardTransport(board_responses())
@@ -290,10 +313,10 @@ def test_fetch_refuses_an_attachment_format_not_measured_for_this_board(
 ) -> None:
     paths = paths_at(tmp_path)
     responses = board_responses()
-    # 광주 게시판에서 실측한 형식은 .xls·.xlsx뿐이다. PDF는 조용히 통과시키지 않는다.
-    responses[view_page(11024)] = view_with_suffix(11024, "2026년 2분기 업무추진비.pdf")
-    # 내용까지 진짜 PDF다. 거절의 이유는 형식 불일치가 아니라 이 게시판에서 실측하지 않은 형식이다.
-    responses[download(11024, 1)] = PDF
+    # 이 게시판에서 실측한 형식은 .xls·.xlsx·.hwp·.pdf다. .hwpx는 실측하지 않았다.
+    responses[view_page(11024)] = view_with_suffix(11024, "2026년 2분기 업무추진비.hwpx")
+    # 내용은 온전한 OOXML 컨테이너다. 거절의 이유는 실측하지 않은 형식이라는 것뿐이다.
+    responses[download(11024, 1)] = OOXML
     assert run_fetch(paths, BoardTransport(responses)) == 1
     assert "cause=unsupported-format" in capsys.readouterr().err
 

@@ -33,9 +33,12 @@
 | 게시글 본문 | `boardView.do?boardId=<boardId>&seq=<seq>` 축약형으로 HTTP 200 | 8건 직접 요청(11024·11023·11021·11018·11015·9000·5000·1) |
 | 페이징 | `movePage=1`·`2`의 md5가 다르고 `seq`가 겹치지 않음 | `md5sum`, 1쪽 11024~11015 / 2쪽 11014~11005 |
 | 첨부 주소 | `fileDownload.do?fileSe=BB&fileKey=<boardId>|<seq>&fileSn=<연번>&boardId=<boardId>&seq=<seq>` | 목록·본문 앵커 |
-| 첨부 | 표본 8건 모두 첨부 1개(`fileSn=1`), 확장자는 `.xls`·`.xlsx` 두 종류 | 본문 8건의 `add_file` 앵커 |
+| 첨부 형식 분포 | 전 범위 표본 80건에서 `.xls` 47 · `.xlsx` 27 · `.hwp` 1, 첨부 없는 글 6건 | `seq` 1~11024를 균등 표본으로 본문 요청 |
+| `.hwp` | seq 7396 `…(2020. 10월~12월).hwp` → `d0cf11e0a1b11ae1`(OLE2), 14,848바이트 | 직접 내려받아 `xxd` |
+| `.pdf` | seq 10943 `2026.3.시책업무추진비 사용 내역….pdf` → `%PDF-1.7`, 49,832바이트 | 직접 내려받아 `xxd` |
+| 묶음 내려받기 | 첨부가 둘 이상인 글에만 `fileDownload.do?action=zip…` 링크가 하나 더 붙고 `fileSn`이 없다 | seq 3071 본문 |
 | 첨부 형식 | `.xls` → `d0cf11e0a1b11ae1`(OLE2), `.xlsx` → `504b0304`(ZIP) | `head -c 32 \| xxd`, 3건 |
-| 확장자 대조 | 표본 3건 모두 확장자와 매직 바이트가 일치 | 위와 같음 |
+| 확장자 대조 | 내려받은 5건 모두 확장자와 매직 바이트가 일치 | 위와 같음 |
 | Referer | 없어도 동일한 원본(43,520바이트, 동일 매직) | Referer 유·무 2회 요청 |
 | User-Agent | 비워도, 프로젝트 UA로도 HTTP 200 | UA 3종 비교 |
 | 응답 인코딩 | UTF-8 (`Content-Type: text/html;charset=UTF-8`) | 응답 헤더 |
@@ -91,7 +94,7 @@
 
 원본 저장 이름은 `<seq>-<fileSn><확장자>`다. 게시판이 준 파일명은 경로로 쓰지 않는다.
 목록에 실린 첨부 링크의 `seq`로 첨부가 달린 게시글만 가려내므로, 첨부 없는 게시글의 본문은 열지 않는다.
-첨부 형식은 이 게시판에서 실측한 `.xls`·`.xlsx`만 받는다. 그 밖의 형식은 컨테이너가 온전하더라도
+첨부 형식은 이 게시판에서 실측한 `.xls`·`.xlsx`·`.hwp`·`.pdf`만 받는다. 그 밖의 형식은 컨테이너가 온전하더라도
 `unsupported-format`으로 알린다. 실패 사유는 셋으로 나눈다: 형식 문제는 `unsupported-format`,
 닿지 못함은 `service-unavailable`, 실측한 구조와 다르거나 통째로 읽을 수 없는 크기는 `adapter-failed`다.
 응답 상한 20MB는 실측 표본(28KB~126KB)보다 두 자리 여유를 둔 값이며, 정제 산출물의 20MB 상한
@@ -118,7 +121,9 @@ fixture(`tests/fixtures/gwangju/`)는 실측한 마크업 구조를 따르되 �
 - 수집 보류 기관은 요청하지 않고 사유를 `empty_reason`에 남기며 종료 0: 최초 보류 처리 부재.
 - 보류 사유는 `CONTEXT.md`의 네 가지만 선언 가능: 기존 계약 회귀 확인.
 - 기관 이름이 실측한 자기 표기와 일치: 최초 통합 전 이름을 선언해 실패.
-- 이 게시판에서 실측하지 않은 형식(내용까지 온전한 PDF)을 거부: 최초 공통 컨테이너 표만 보고 통과해 실패.
+- 이 게시판에서 실측하지 않은 형식(내용까지 온전한 OOXML인 `.hwpx`)을 거부: 최초 공통 컨테이너 표만 보고 통과해 실패.
+- 실측한 네 형식(`.xls`·`.xlsx`·`.hwp`·`.pdf`)을 모두 받아들임: 최초 두 형식만 선언해 실제 수집이 `.pdf`에서 멈춰 실패.
+- 묶음 내려받기 링크(`action=zip`, `fileSn` 없음)를 첨부로 세지 않음: seq 3071 실측 구조를 fixture로 고정.
 - 목록이 전체 페이지 수를 잃으면 `adapter-failed`: 최초 `invalid-artifact`로 산출물 문제처럼 보고해 실패.
 - 통째로 읽을 수 없는 크기의 응답을 `adapter-failed`: 최초 `unsupported-format`으로 사유가 뒤바뀌어 실패.
 - `boardId` 없는 게시판 선언을 만들 때 거부: 최초 수집 도중 `KeyError`가 나 실패.
@@ -132,6 +137,15 @@ fixture(`tests/fixtures/gwangju/`)는 실측한 마크업 구조를 따르되 �
 
 실측 HTML·첨부로도 해석을 확인했다(수집은 하지 않음). 목록 1쪽 100건 중 99건에서 첨부를 찾고,
 전체 페이지 105를 읽고, 실측 첨부 3건은 `require_original`을 통과하고 시청 메인 HTML은 거부된다.
+
+## 첫 운영 수집
+
+2026-09-11 `uv run python -m deliciousmap fetch --city gwangju --raw-root ../deliciousmap-raw`를 실행했다.
+
+첫 시도는 **80개 게시글을 받은 뒤 `unsupported-format`으로 멈췄다.** 원인은 seq 10943의 `.pdf` 첨부였다.
+정찰 표본 8건에 `.pdf`가 없어 선언하지 않았던 것이고, 스크래퍼가 이를 조용히 넘기지 않고 알린 것이다.
+그 뒤 전 범위 표본 80건으로 형식 분포를 다시 실측해 `.hwp`·`.pdf`를 매직 바이트까지 확인하고 선언했다.
+멈춘 시점까지 받은 80건은 `collected.jsonl`에 남아 재실행에서 그대로 재사용했다.
 
 ## 검사
 
@@ -154,8 +168,6 @@ git diff --check             통과
   다만 목록은 매번 다시 훑고, 이미 끝낸 게시글에 나중에 첨부가 더 붙으면 알아차리지 못한다.
 - `headermap`·`parse`·`classify` 어댑터는 그대로 `not-implemented`다. `data/gwangju/` 정제 산출물,
   레코드·마커 수, `markers.json`/`records.json` 크기, 로컬 `build` 확인은 모두 아직 없다.
-- 첨부가 여러 개인 게시글은 실측 표본(8건)에서 발견하지 못했다. 계약상 지원하고 fixture로 검증했으나
-  실제 사례는 확인하지 못했다.
 - OLE2는 `.xls`와 `.hwp`가, ZIP은 `.xlsx`와 `.hwpx`가 공유한다. 컨테이너 안을 열어 둘을 가르는 일은
   `headermap`·`parse`의 몫이다.
 - 목록에 첨부 링크가 없는 게시글은 본문을 열지 않는다(실측: 1쪽 100건 중 99건에 링크가 있다).
