@@ -5,6 +5,7 @@ import pytest
 from deliciousmap.paths import Paths
 from deliciousmap.pipeline import ExecutionContext, execute
 from deliciousmap.registry import Board, City, MapBounds, Organization, select_target
+from deliciousmap.site import MapKey
 from tests.fakes import SyntheticAdapters
 
 
@@ -31,6 +32,7 @@ def context_at(tmp_path: Path, city: str = "seoul") -> ExecutionContext:
             tmp_path / "저장소" / "data",
             tmp_path / "출력 폴더",
         ),
+        map_key=MapKey("synthetic-map-key"),
     )
 
 

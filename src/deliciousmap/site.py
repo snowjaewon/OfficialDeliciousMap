@@ -1,30 +1,104 @@
 """Static site shell generated from refined build inputs."""
 
 import json
-from dataclasses import asdict
+import os
+from collections.abc import Mapping
+from dataclasses import asdict, dataclass
 from html import escape
 from importlib.resources import files
 from pathlib import Path
 
+from deliciousmap.contracts import (
+    ClassificationStatus,
+    GeocodeResult,
+    Provider,
+    PublishedRecord,
+    Record,
+)
 from deliciousmap.registry import CITIES, City
 from deliciousmap.storage import write_text
 
 ASSET_NAMES = ("app.js", "styles.css")
 REPORTING_PERIOD = "2026년 상반기"
+CLIENT_ID_VARIABLE = "NAVER_MAP_CLIENT_ID"
+KEY_PARAM_VARIABLE = "NAVER_MAP_KEY_PARAM"
+# 신규 발급 키는 ncpKeyId, 2026-06 이전의 구형 키만 ncpClientId를 쓴다.
+KEY_PARAMS = ("ncpKeyId", "ncpClientId")
+# 도시 진입 페이지에서 본 공통 자산·랜딩의 위치. 도시 화면은 언제나 한 단계 아래에 둔다.
+SITE_ROOT = "../"
+
+
+@dataclass(frozen=True)
+class MapKey:
+    """브라우저에 공개되는 지도 SDK 키. 비밀값이 아니지만 저장소에는 두지 않는다."""
+
+    client_id: str
+    key_param: str = KEY_PARAMS[0]
+
+    def __post_init__(self) -> None:
+        if not self.client_id.strip():
+            raise ValueError(CLIENT_ID_VARIABLE)
+        if self.key_param not in KEY_PARAMS:
+            raise ValueError(KEY_PARAM_VARIABLE)
+
+
+def map_key_from_environment(environ: Mapping[str, str] | None = None) -> MapKey:
+    """값은 어디에도 출력하지 않고 변수 이름만 알린다."""
+    values = os.environ if environ is None else environ
+    return MapKey(
+        values.get(CLIENT_ID_VARIABLE, "").strip(),
+        values.get(KEY_PARAM_VARIABLE, "").strip() or KEY_PARAMS[0],
+    )
+
+
+def coordinate_source(result: GeocodeResult) -> Provider:
+    """좌표를 준 제공자. 사람이 확인한 건은 확인한 후보의 제공자가 정본이다."""
+    if result.confirmation is not None:
+        return result.confirmation.candidate_source.provider
+    providers = sorted(
+        {
+            candidate.source.provider
+            for candidate in result.lookup.candidates
+            if (candidate.latitude, candidate.longitude) == (result.latitude, result.longitude)
+        }
+    )
+    if not providers:
+        raise ValueError("a confirmed coordinate must come from one of its candidates")
+    # 여러 제공자의 근거가 같은 좌표로 겹치면 이름 순으로 하나를 밝힌다.
+    return providers[0]
+
+
+def published_record(
+    record: Record, classification: ClassificationStatus, geocode: GeocodeResult | None
+) -> PublishedRecord:
+    """장부는 마커가 되지 못한 레코드도 판정 상태·사유와 함께 보존한다."""
+    fields = record.model_dump(mode="json")
+    for provenance in ("source_hash", "source_location"):
+        fields.pop(provenance)
+    if classification != "restaurant":
+        return PublishedRecord.model_validate(
+            {**fields, "classification": classification, "map_status": classification}
+        )
+    if geocode is None:
+        raise ValueError("a restaurant record must carry its geocoding result")
+    return PublishedRecord.model_validate(
+        {
+            **fields,
+            "classification": classification,
+            "map_status": "mapped" if geocode.status == "success" else "geocode_failed",
+            "geocode_reason": geocode.reason,
+            "business_id": geocode.business_id,
+        }
+    )
 
 
 def write_site_shell(
     output_root: Path,
     city: City,
     city_directory: Path,
-    *,
-    naver_map_client_id: str = "",
-    naver_map_key_param: str = "ncpKeyId",
-    site_root: str = "../",
+    map_key: MapKey,
 ) -> tuple[Path, ...]:
     """Write shared assets, the city landing, and one city entry page."""
-    if naver_map_key_param not in {"ncpKeyId", "ncpClientId"}:
-        raise ValueError("invalid NAVER_MAP_KEY_PARAM")
     written: list[Path] = []
     landing = output_root / "index.html"
     write_text(landing, _landing_page())
@@ -48,10 +122,7 @@ def write_site_shell(
     written.append(service_worker)
 
     city_page = city_directory / "index.html"
-    write_text(
-        city_page,
-        _city_page(city, naver_map_client_id, naver_map_key_param, site_root),
-    )
+    write_text(city_page, _city_page(city, map_key))
     written.append(city_page)
     return tuple(written)
 
@@ -88,20 +159,15 @@ def _landing_page() -> str:
 """
 
 
-def _city_page(
-    city: City,
-    naver_map_client_id: str,
-    naver_map_key_param: str,
-    site_root: str,
-) -> str:
+def _city_page(city: City, map_key: MapKey) -> str:
     city_name = escape(city.name)
     config = json.dumps(
         {
             "city": city.slug,
             "map_bounds": asdict(city.map_bounds),
-            "naver_map_client_id": naver_map_client_id,
-            "naver_map_key_param": naver_map_key_param,
-            "site_root": site_root,
+            "naver_map_client_id": map_key.client_id,
+            "naver_map_key_param": map_key.key_param,
+            "site_root": SITE_ROOT,
         },
         ensure_ascii=False,
         sort_keys=True,
@@ -117,12 +183,12 @@ def _city_page(
     <meta property="og:description"
           content="{city_name} 업무추진비 레코드에서 자주 찾은 식당을 확인하세요.">
     <title>{city_name} 공무원 맛집 지도</title>
-    <link rel="manifest" href="{site_root}manifest.webmanifest">
-    <link rel="stylesheet" href="{site_root}assets/styles.css">
+    <link rel="manifest" href="{SITE_ROOT}manifest.webmanifest">
+    <link rel="stylesheet" href="{SITE_ROOT}assets/styles.css">
   </head>
   <body class="city-page">
     <header class="topbar">
-      <a class="back-link" href="{site_root}" aria-label="도시 선택으로 돌아가기">← 도시</a>
+      <a class="back-link" href="{SITE_ROOT}" aria-label="도시 선택으로 돌아가기">← 도시</a>
       <div><p class="eyebrow">{REPORTING_PERIOD}</p><h1>{city_name}</h1></div>
       <button class="source-button" type="button" data-open-sources>자료 범위</button>
     </header>
@@ -171,7 +237,7 @@ def _city_page(
       <p class="collection-warning">현재 수집 상태 정보가 없어 지출 0건으로 판단할 수 없습니다.</p>
     </dialog>
     <script id="site-config" type="application/json">{config}</script>
-    <script src="{site_root}assets/app.js" defer></script>
+    <script src="{SITE_ROOT}assets/app.js" defer></script>
   </body>
 </html>
 """

@@ -2,6 +2,7 @@
 
 import json
 from copy import deepcopy
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -9,12 +10,15 @@ import pytest
 from deliciousmap.cli import main
 from deliciousmap.contracts import Classification, ClassifyOutput, ParseOutput, Record
 from deliciousmap.pipeline import ExecutionContext
+from deliciousmap.registry import Target
 from deliciousmap.storage import ArtifactStore, write_text
 from tests.test_pipeline import context_at
 
 
-def prepare(tmp_path: Path) -> ExecutionContext:
+def prepare(tmp_path: Path, org: str | None = None) -> ExecutionContext:
     context = context_at(tmp_path)
+    if org is not None:
+        context = replace(context, target=Target(context.target.city, org))
     record = Record(
         record_id="r1",
         spent_on="2026-01-02",
@@ -49,6 +53,7 @@ def run_cli(context: ExecutionContext, stage: str, *extra: str) -> int:
             stage,
             "--city",
             context.target.city.slug,
+            *(("--org", context.target.org) if context.target.org else ()),
             "--raw-root",
             str(context.paths.raw_root),
             "--data-root",
@@ -159,6 +164,7 @@ def test_build_separates_map_data_from_complete_record_list(tmp_path: Path) -> N
         {
             "business_id": markers["markers"][0]["business_id"],
             "closed": False,
+            "coordinate_source": "local",
             "latitude": 35.1,
             "longitude": 129.1,
             "merchant": "같은 식당",

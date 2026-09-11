@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Protocol
 
-from deliciousmap import comparison, lookup, restoration
+from deliciousmap import comparison, lookup, restoration, site
 from deliciousmap.budget import Budget
 from deliciousmap.contracts import (
     BuildInput,
@@ -80,6 +80,8 @@ class ExecutionContext:
     providers: tuple[lookup.CandidateProvider, ...] = ()
     # 구성된 후보 비교 모델. 없으면 담당자가 지정해도 비교를 수행하지 않는다.
     comparator: comparison.ComparisonModel | None = None
+    # 화면을 렌더링하는 단계만 요구하는 공개 지도 키. CLI가 build·run 전에 확인한다.
+    map_key: site.MapKey | None = None
 
 
 class Adapters(Protocol):

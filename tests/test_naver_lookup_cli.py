@@ -139,7 +139,11 @@ def test_local_and_naver_supplied_facts_reach_the_same_business_and_marker(
     assert len(transport.requests) == 1
     assert geocoded(local)["business_id"] == geocoded(remote)["business_id"]
     assert geocoded(local)["reason"] == geocoded(remote)["reason"] == "matched"
-    assert markers(local)["markers"] == markers(remote)["markers"]
+    # 같은 업소·같은 마커지만 좌표를 준 제공자는 상세에서 그대로 구별한다.
+    supplied, searched = markers(local)["markers"], markers(remote)["markers"]
+    assert [marker.pop("coordinate_source") for marker in supplied] == ["local"]
+    assert [marker.pop("coordinate_source") for marker in searched] == ["naver"]
+    assert supplied == searched
 
 
 def test_unchanged_lookup_is_reused_and_stays_apart_from_the_identity_decision(

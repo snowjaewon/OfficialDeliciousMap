@@ -1,7 +1,7 @@
 """Local refined-input stages. No HTTP, originals, LLM or budget operations."""
 
 import json
-import os
+from pathlib import Path
 
 from deliciousmap.contracts import (
     BuildInput,
@@ -17,17 +17,15 @@ from deliciousmap.contracts import (
     GeocodeOutput,
     HeaderMapInput,
     HeaderMapOutput,
-    MapStatus,
     MarkerFile,
     ParseInput,
     ParseOutput,
     PublishedMarker,
-    PublishedRecord,
     RecordFile,
 )
 from deliciousmap.identity import decide_identity, lookup_key, reconcile_coordinates
 from deliciousmap.pipeline import AdapterFailure, ExecutionContext, FailureCause
-from deliciousmap.site import write_site_shell
+from deliciousmap.site import coordinate_source, published_record, write_site_shell
 from deliciousmap.storage import write_text
 
 
@@ -88,6 +86,7 @@ class LocalAdapters:
             directory = directory / "orgs" / context.target.org
         marker_path = directory / "markers.json"
         closure_by_business = {item.business_id: item for item in value.closures}
+        geocode_by_record = {item.record_id: item for item in value.geocodes}
         marker_file = MarkerFile(
             city=context.target.city.slug,
             org=context.target.org,
@@ -99,6 +98,8 @@ class LocalAdapters:
                     latitude=candidate.latitude,
                     longitude=candidate.longitude,
                     closed=closure_by_business[candidate.business_id].status == "closed",
+                    # 묶인 레코드는 같은 좌표를 공유하므로 첫 레코드의 근거로 출처를 밝힌다.
+                    coordinate_source=coordinate_source(geocode_by_record[candidate.record_ids[0]]),
                 )
                 for candidate in value.candidates
             ),
@@ -114,26 +115,15 @@ class LocalAdapters:
         )
         record_path = directory / "records.json"
         decision_by_record = {item.record_id: item for item in value.decisions}
-        geocode_by_record = {item.record_id: item for item in value.geocodes}
-
-        def map_status(record_id: str) -> MapStatus:
-            classification = decision_by_record[record_id].status
-            if classification != "restaurant":
-                return classification
-            return (
-                "mapped" if geocode_by_record[record_id].status == "success" else "geocode_failed"
-            )
 
         record_file = RecordFile(
             city=context.target.city.slug,
             org=context.target.org,
             records=tuple(
-                PublishedRecord.model_validate(
-                    {
-                        **record.model_dump(mode="json"),
-                        "classification": decision_by_record[record.record_id].status,
-                        "map_status": map_status(record.record_id),
-                    }
+                published_record(
+                    record,
+                    decision_by_record[record.record_id].status,
+                    geocode_by_record.get(record.record_id),
                 )
                 for record in value.records
             ),
@@ -143,14 +133,14 @@ class LocalAdapters:
             json.dumps(record_file.model_dump(mode="json"), ensure_ascii=False, sort_keys=True)
             + "\n",
         )
-        site_files = write_site_shell(
-            context.paths.output_root,
-            context.target.city,
-            directory,
-            naver_map_client_id=os.environ.get("NAVER_MAP_CLIENT_ID", ""),
-            naver_map_key_param=os.environ.get("NAVER_MAP_KEY_PARAM", "ncpKeyId"),
-            site_root="../../../" if context.target.org else "../",
-        )
+        # 기관 실행은 도시 전체 화면을 덮어쓰지 않도록 데이터 파일만 낸다.
+        site_files: tuple[Path, ...] = ()
+        if context.target.org is None:
+            if context.map_key is None:
+                raise ValueError("the map shell requires a configured public map key")
+            site_files = write_site_shell(
+                context.paths.output_root, context.target.city, directory, context.map_key
+            )
         return BuildOutput(
             files=(marker_path, record_path, *site_files),
             record_count=len(value.records),

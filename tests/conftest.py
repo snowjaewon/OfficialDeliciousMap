@@ -27,3 +27,9 @@ def block_real_keys(monkeypatch: pytest.MonkeyPatch) -> None:
         "GEMINI_OUTPUT_USD_PER_MTOK",
     ):
         monkeypatch.delenv(name, raising=False)
+
+
+@pytest.fixture(autouse=True)
+def public_map_key(monkeypatch: pytest.MonkeyPatch, block_real_keys: None) -> None:
+    """지도 SDK는 공개 키를 요구한다. 실제 키가 아닌 합성 값으로 build를 실행한다."""
+    monkeypatch.setenv("NAVER_MAP_CLIENT_ID", "synthetic-map-key")

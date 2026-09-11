@@ -5,7 +5,7 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-from deliciousmap import gemini, licenses, naver
+from deliciousmap import gemini, licenses, naver, site
 from deliciousmap.lookup import CandidateProvider
 from deliciousmap.paths import Paths
 from deliciousmap.pipeline import STAGES, Adapters, ExecutionContext, PipelineFailure, execute
@@ -61,6 +61,8 @@ def main(
             licenses.from_environment(license_transport),
         )
         comparator = gemini.from_environment(model_transport)
+        # 화면을 만드는 명령만 공개 지도 키를 요구한다. 다른 단계는 영향받지 않는다.
+        map_key = site.map_key_from_environment() if args.command in {"build", "run"} else None
     except ValueError as exc:
         # 변수 이름만 알린다. 값은 어디에도 출력하지 않는다.
         print(f"configuration: {exc}", file=sys.stderr)
@@ -69,7 +71,7 @@ def main(
     try:
         execute(
             args.command,
-            ExecutionContext(target, paths, args.retry_failed, providers, comparator),
+            ExecutionContext(target, paths, args.retry_failed, providers, comparator, map_key),
             adapters,
         )
     except PipelineFailure as exc:
