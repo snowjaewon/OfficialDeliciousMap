@@ -32,6 +32,7 @@ from deliciousmap.contracts import (
     ProviderCandidates,
     Record,
     RestorationProposal,
+    ScopedReview,
 )
 from deliciousmap.paths import Paths
 from deliciousmap.registry import Target
@@ -95,10 +96,7 @@ def read_reviews[T: Contract](path: Path, model: type[T]) -> tuple[T, ...]:
 
 
 def require_scoped_reviews(
-    entries: tuple[NameRestoration, ...]
-    | tuple[IdentityConfirmation, ...]
-    | tuple[ComparisonRequest, ...],
-    city: str,
+    entries: tuple[NameRestoration, ...] | tuple[ScopedReview, ...], city: str
 ) -> None:
     if any(item.scope.city != city for item in entries):
         raise ValueError("review city mismatch")
@@ -499,10 +497,7 @@ class ArtifactStore:
 
     def designations(self, records: tuple[Record, ...]) -> tuple[ComparisonRequest, ...]:
         """담당자가 후보 비교를 지정한 건. 파일이 없으면 지정이 없는 것과 같다."""
-        supplied = read_reviews(self.paths.manual(self.target, "compare"), ComparisonRequest)
-        require_scoped_reviews(supplied, self.target.city.slug)
-        expected = {self.scope(record) for record in records}
-        return tuple(item for item in supplied if item.scope in expected)
+        return self._scoped("compare", ComparisonRequest, records)
 
     def candidate_lookups(self, records: tuple[Record, ...]) -> tuple[CandidateLookup, ...]:
         """담당자가 준비한 후보·근거. 파일이 없으면 준비된 조회가 없다는 뜻이다."""
@@ -532,7 +527,13 @@ class ArtifactStore:
         )
 
     def confirmations(self, records: tuple[Record, ...]) -> tuple[IdentityConfirmation, ...]:
-        supplied = read_reviews(self.paths.manual(self.target, "geocode"), IdentityConfirmation)
+        return self._scoped("geocode", IdentityConfirmation, records)
+
+    def _scoped[T: ScopedReview](
+        self, name: str, model: type[T], records: tuple[Record, ...]
+    ) -> tuple[T, ...]:
+        """레코드 범위를 선언한 검토 입력 중 이 실행의 레코드에 해당하는 줄만 돌려준다."""
+        supplied = read_reviews(self.paths.manual(self.target, name), model)
         require_scoped_reviews(supplied, self.target.city.slug)
         expected = {self.scope(record) for record in records}
         return tuple(item for item in supplied if item.scope in expected)

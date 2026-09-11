@@ -7,17 +7,13 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Literal
 
-from deliciousmap.contracts import LedgerEntry
+from deliciousmap.contracts import LedgerEntry, LlmPurpose
 from deliciousmap.storage import append_ledger, read_ledger
 
-POLICY_VERSION = "budget-1"
 # 프로젝트 전체 기간의 누적 한도. 날짜·월·도시·실행마다 초기화하지 않는다.
 LIMIT_USD = Decimal("15")
 
 Reason = Literal["unknown_prior_usage", "budget_exhausted", "concurrent_execution"]
-Purpose = Literal[
-    "header_mapping", "classification", "extraction_fallback", "restoration_comparison"
-]
 
 
 class BudgetUnavailable(Exception):
@@ -86,7 +82,7 @@ class Budget:
 
     @contextmanager
     def reserve(
-        self, entry_id: str, purpose: Purpose, model: str, ceiling_usd: Decimal, evidence: str
+        self, entry_id: str, purpose: LlmPurpose, model: str, ceiling_usd: Decimal, evidence: str
     ) -> Iterator[Reservation]:
         """예약을 남긴 뒤에만 호출을 허용한다. 잠금은 호출·정산까지 유지해 직렬화한다."""
         if ceiling_usd <= 0:

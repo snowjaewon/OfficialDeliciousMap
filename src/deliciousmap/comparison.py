@@ -1,14 +1,18 @@
 """지정 건의 후보 비교와 제안 보존. 복원명·좌표를 확정하거나 예산을 직접 계산하지 않는다."""
 
+from dataclasses import dataclass
 from decimal import Decimal
 from typing import Protocol
 
-from deliciousmap.budget import Budget, BudgetUnavailable, Purpose
+from deliciousmap.budget import Budget, BudgetUnavailable
 from deliciousmap.contracts import (
     CandidateLookup,
     ComparisonRequest,
+    EvidenceScope,
     GeocodeResult,
+    LlmPurpose,
     ModelReply,
+    PlaceCandidate,
     Record,
     RestorationProposal,
     Usage,
@@ -17,7 +21,9 @@ from deliciousmap.identity import digest, normalized
 from deliciousmap.storage import ArtifactStore, attempt
 
 POLICY_VERSION = "comparison-1"
-PURPOSE: Purpose = "restoration_comparison"
+PURPOSE: LlmPurpose = "restoration_comparison"
+# 상호를 확정하지 못한 판정만 복원 비교의 대상이다. 주소·지점·좌표·조회 문제는 상호 문제가 아니다.
+NAME_UNCONFIRMED = frozenset({"unconfirmed_name", "no_match"})
 
 
 class ComparisonModel(Protocol):
@@ -30,6 +36,41 @@ class ComparisonModel(Protocol):
     def ceiling_usd(self, prompt: str) -> Decimal: ...
     def cost_usd(self, usage: Usage) -> Decimal: ...
     def compare(self, prompt: str) -> ModelReply: ...
+
+
+@dataclass(frozen=True)
+class Subject:
+    """비교 대상 하나를 가리키는 고정 정보. 어떤 답변이 와도 이 범위를 벗어나지 않는다."""
+
+    scope: EvidenceScope
+    merchant: str
+    model: str
+    prompt_version: str
+    request_key: str
+
+    def withheld(self, reason: str) -> RestorationProposal:
+        return self._decided(status="withheld", reason=reason)
+
+    def proposed(self, candidate: PlaceCandidate, rationale: str) -> RestorationProposal:
+        return self._decided(
+            status="proposed",
+            reason="candidate_supported",
+            proposed_merchant=candidate.merchant,
+            candidate_source=candidate.source,
+            rationale=rationale,
+        )
+
+    def _decided(self, **decision: object) -> RestorationProposal:
+        return RestorationProposal.model_validate(
+            {
+                "scope": self.scope,
+                "merchant": self.merchant,
+                "model": self.model,
+                "prompt_version": self.prompt_version,
+                "request_key": self.request_key,
+                **decision,
+            }
+        )
 
 
 def request_key(model: ComparisonModel, designation: ComparisonRequest, prompt: str) -> str:
@@ -70,9 +111,14 @@ def build_prompt(record: Record, lookup: CandidateLookup) -> str:
     return "\n".join(lines)
 
 
-def unresolved(result: GeocodeResult) -> bool:
+def comparable(result: GeocodeResult) -> bool:
     """자료 대조와 사람 검토로도 상호를 확정하지 못한 건만 비교 대상이다."""
-    return result.status == "failed" and result.restoration is None and result.confirmation is None
+    return (
+        result.status == "failed"
+        and result.reason in NAME_UNCONFIRMED
+        and result.restoration is None
+        and result.confirmation is None
+    )
 
 
 def resolve(
@@ -108,9 +154,14 @@ def resolve(
             if proposal.status == "proposed" or not retry_failed:
                 proposals.append(proposal)
                 continue
-        proposal = _compare(
-            budget, model, designation, record, lookup, result, prompt, key, attempt(previous)
+        subject = Subject(
+            scope=designation.scope,
+            merchant=record.merchant,
+            model=model.model,
+            prompt_version=model.prompt_version,
+            request_key=key,
         )
+        proposal = _compare(budget, model, subject, lookup, result, prompt, attempt(previous))
         store.remember_proposal(key, proposal, previous)
         proposals.append(proposal)
     return tuple(proposals)
@@ -119,54 +170,43 @@ def resolve(
 def _compare(
     budget: Budget,
     model: ComparisonModel,
-    designation: ComparisonRequest,
-    record: Record,
+    subject: Subject,
     lookup: CandidateLookup,
     result: GeocodeResult,
     prompt: str,
-    key: str,
     attempt_number: int,
 ) -> RestorationProposal:
     """과금이 일어나는 요청은 모두 공통 예산 모듈을 거친다."""
-    common = {
-        "scope": designation.scope,
-        "merchant": record.merchant,
-        "model": model.model,
-        "prompt_version": model.prompt_version,
-        "request_key": key,
-    }
-    if not unresolved(result):
-        return _withheld(common, "not_unresolved")
+    if not comparable(result):
+        return subject.withheld("not_unresolved")
     if not lookup.candidates:
-        return _withheld(common, "no_candidates")
+        return subject.withheld("no_candidates")
     if len(prompt) > model.max_prompt_chars:
-        return _withheld(common, "oversized_request")
+        return subject.withheld("oversized_request")
     try:
         with budget.reserve(
-            f"{key}-{attempt_number}",
+            f"{subject.request_key}-{attempt_number}",
             PURPOSE,
             model.model,
             model.ceiling_usd(prompt),
-            _reservation_evidence(record),
+            _reservation_evidence(subject),
         ) as reservation:
             reply = model.compare(prompt)
             # 사용량을 확인하지 못한 호출은 예약을 그대로 유지한다.
             if reply.usage is not None:
                 reservation.settle(model.cost_usd(reply.usage), _settlement_evidence(reply.usage))
     except BudgetUnavailable as exc:
-        return _withheld(common, exc.reason)
+        return subject.withheld(exc.reason)
     if reply.status == "error" and reply.error is not None:
-        return _withheld(common, reply.error)
-    return _grounded(common, lookup, reply)
+        return subject.withheld(reply.error)
+    return _grounded(subject, lookup, reply)
 
 
-def _grounded(
-    common: dict[str, object], lookup: CandidateLookup, reply: ModelReply
-) -> RestorationProposal:
+def _grounded(subject: Subject, lookup: CandidateLookup, reply: ModelReply) -> RestorationProposal:
     """제시한 후보를 가리키고 사유를 남긴 답변만 제안이 된다."""
     answer = reply.answer
     if answer is None or not answer.supported:
-        return _withheld(common, "no_supported_candidate")
+        return subject.withheld("no_supported_candidate")
     chosen = next(
         (
             candidate
@@ -177,26 +217,13 @@ def _grounded(
         None,
     )
     if chosen is None or not answer.rationale.strip():
-        return _withheld(common, "ungrounded_response")
-    return RestorationProposal.model_validate(
-        {
-            **common,
-            "status": "proposed",
-            "reason": "candidate_supported",
-            "proposed_merchant": chosen.merchant,
-            "candidate_source": chosen.source,
-            "rationale": answer.rationale.strip()[:500],
-        }
-    )
+        return subject.withheld("ungrounded_response")
+    return subject.proposed(chosen, answer.rationale.strip()[:500])
 
 
-def _withheld(common: dict[str, object], reason: str) -> RestorationProposal:
-    return RestorationProposal.model_validate({**common, "status": "withheld", "reason": reason})
-
-
-def _reservation_evidence(record: Record) -> str:
+def _reservation_evidence(subject: Subject) -> str:
     """상호·주소·응답 원문 없이 어떤 레코드의 비교인지만 남긴다."""
-    return f"restoration comparison for record {record.record_id}"
+    return f"restoration comparison for record {subject.scope.record_id}"
 
 
 def _settlement_evidence(usage: Usage) -> str:

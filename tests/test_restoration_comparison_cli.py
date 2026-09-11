@@ -221,6 +221,23 @@ def test_cases_the_operator_did_not_designate_are_never_sent(
     assert [item["reason"] for item in proposals(context)] == ["not_unresolved"]
 
 
+def test_problems_other_than_an_unconfirmed_name_are_not_compared(
+    tmp_path: Path, configured: None
+) -> None:
+    context = prepare(tmp_path)
+    # 주소 근거가 없는 건이다. 상호 문제가 아니므로 지정해도 모델에 보내지 않는다.
+    address_missing = truncated_lookup()
+    address_missing["facts"][0]["address"] = None
+    save_input(context, address_missing)
+    designate(context, "r1")
+    record_spending(context, "2.50")
+    transport = FakeJsonTransport(gemini_body())
+    assert run_cli(context, "geocode", transport=transport) == 0
+    assert results(context)["r1"]["reason"] == "missing_address"
+    assert transport.bodies == []
+    assert [item["reason"] for item in proposals(context)] == ["not_unresolved"]
+
+
 def test_coordinate_selection_never_calls_the_model(tmp_path: Path, configured: None) -> None:
     context = prepare(tmp_path)
     # 상호는 확정됐고 좌표만 없는 건이다. 좌표 선택은 모델에 맡기지 않는다.

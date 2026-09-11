@@ -9,7 +9,6 @@ from decimal import Decimal, InvalidOperation
 from deliciousmap.contracts import ComparisonAnswer, ModelReply, Usage
 from deliciousmap.transport import MAX_RESPONSE_BYTES, HttpTransport, JsonTransport
 
-PROVIDER = "gemini"
 # 프롬프트·응답 스키마가 바뀌면 올린다. 제안 캐시는 이 버전을 구별한다.
 PROMPT_VERSION = "restoration-compare-1"
 BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
@@ -53,7 +52,6 @@ class Pricing:
 
 
 class GeminiComparator:
-    provider = PROVIDER
     prompt_version = PROMPT_VERSION
     max_prompt_chars = MAX_PROMPT_CHARS
 
@@ -65,8 +63,10 @@ class GeminiComparator:
         self.transport = transport
 
     def ceiling_usd(self, prompt: str) -> Decimal:
-        """요청 하나의 비용 상한. 입력은 문자 수로, 출력은 요청 상한으로 잡는다."""
-        return self.cost_usd(Usage(input_tokens=len(prompt), output_tokens=MAX_OUTPUT_TOKENS))
+        """요청 하나의 비용 상한. 지시문·스키마까지 실제로 보내는 본문 전체를 입력으로 센다."""
+        return self.cost_usd(
+            Usage(input_tokens=len(_body(prompt)), output_tokens=MAX_OUTPUT_TOKENS)
+        )
 
     def cost_usd(self, usage: Usage) -> Decimal:
         return (
@@ -79,7 +79,7 @@ class GeminiComparator:
         try:
             body = self.transport.post(
                 f"{BASE_URL}/{self.model}:generateContent",
-                json.dumps(_request(prompt), ensure_ascii=False).encode("utf-8"),
+                _body(prompt).encode("utf-8"),
                 {KEY_HEADER: self._key, "Content-Type": "application/json"},
             )
         except Exception:
@@ -134,9 +134,9 @@ def from_environment(
     )
 
 
-def _request(prompt: str) -> dict[str, object]:
+def _body(prompt: str) -> str:
     """후보 비교에 필요한 것만 싣는다. 도구·검색 연동은 구성하지 않는다."""
-    return {
+    request = {
         "systemInstruction": {"parts": [{"text": SYSTEM_INSTRUCTION}]},
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],
         "generationConfig": {
@@ -147,6 +147,7 @@ def _request(prompt: str) -> dict[str, object]:
             "thinkingConfig": {"thinkingLevel": THINKING_LEVEL},
         },
     }
+    return json.dumps(request, ensure_ascii=False)
 
 
 def _usage(payload: object) -> Usage | None:

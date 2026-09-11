@@ -148,11 +148,16 @@ class EvidenceScope(Contract):
     source_hash: Sha256
 
 
-class ComparisonRequest(Contract):
+class ScopedReview(Contract):
+    """레코드 범위를 선언한 사람 검토 입력. 다른 레코드·원본·기관에는 적용하지 않는다."""
+
+    scope: EvidenceScope
+
+
+class ComparisonRequest(ScopedReview):
     """data/manual/<city>/compare.jsonl 한 줄. 담당자가 후보 비교를 지정한 미해결 건."""
 
     schema_version: Literal[1] = 1
-    scope: EvidenceScope
     evidence: Text
 
 
@@ -231,8 +236,7 @@ class CandidateFile(Contract):
     lookups: tuple[CandidateLookup, ...]
 
 
-class IdentityConfirmation(Contract):
-    scope: EvidenceScope
+class IdentityConfirmation(ScopedReview):
     candidate_source: CandidateSource
     merchant: Text
     branch: str
@@ -311,6 +315,12 @@ class ClosureResult(Contract):
     evidence: Text
 
 
+# LLM 용도의 단일 출처. 새 용도가 생기면 여기에만 더한다.
+LlmPurpose = Literal[
+    "header_mapping", "classification", "extraction_fallback", "restoration_comparison"
+]
+
+
 class LedgerEntry(Contract):
     """data/_shared/llm-budget.jsonl 한 줄. 공통 LLM 예산의 추가형 이력이며 지우지 않는다."""
 
@@ -318,13 +328,7 @@ class LedgerEntry(Contract):
     # 예약과 정산을 잇는 키. 같은 요청의 두 줄은 같은 값을 쓴다.
     entry_id: Text
     kind: Literal["prior_usage", "reservation", "settlement"]
-    purpose: Literal[
-        "prior_usage",
-        "header_mapping",
-        "classification",
-        "extraction_fallback",
-        "restoration_comparison",
-    ]
+    purpose: Literal["prior_usage"] | LlmPurpose
     # 기존 사용액은 특정 모델의 것이 아니므로 비워 둔다.
     model: str | None = None
     amount_usd: Decimal = Field(ge=0, allow_inf_nan=False)
