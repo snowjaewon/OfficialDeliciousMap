@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 
 const {
   countMarkersInBounds,
+  createMap,
   createRecordsLoader,
   filterMarkers,
   markerInBounds,
@@ -60,6 +61,92 @@ class FakeDocument {
   querySelector(selector) {
     return this.elements[selector];
   }
+
+  getElementById(id) {
+    return this.elements[`#${id}`];
+  }
+}
+
+// 네이버 지도 v3의 겉모습만 흉내 낸다. 이벤트는 테스트가 실제 SDK에서 관찰한 순서대로 직접 보낸다.
+function fakeNaverMaps() {
+  class LatLng {
+    constructor(latitude, longitude) {
+      this.latitude = latitude;
+      this.longitude = longitude;
+    }
+
+    lat() {
+      return this.latitude;
+    }
+
+    lng() {
+      return this.longitude;
+    }
+  }
+
+  class LatLngBounds {
+    constructor(southWest, northEast) {
+      this.southWest = southWest;
+      this.northEast = northEast;
+    }
+
+    getSW() {
+      return this.southWest;
+    }
+
+    getNE() {
+      return this.northEast;
+    }
+  }
+
+  class FakeMap {
+    constructor(element, options) {
+      this.element = element;
+      this.options = { ...options };
+      this.bounds = options.bounds;
+      this.zoom = options.zoom ?? 10;
+      this.listeners = {};
+    }
+
+    fitBounds(bounds) {
+      this.bounds = bounds;
+      this.zoom = 10;
+    }
+
+    getBounds() {
+      return this.bounds;
+    }
+
+    getZoom() {
+      return this.zoom;
+    }
+
+    setOptions(options) {
+      Object.assign(this.options, options);
+    }
+  }
+
+  return {
+    LatLng,
+    LatLngBounds,
+    Map: FakeMap,
+    Marker: class Marker {
+      constructor(options) {
+        this.options = options;
+        this.listeners = {};
+      }
+    },
+    Point: class Point {},
+    Position: { TOP_RIGHT: "top-right" },
+    Event: {
+      addListener(target, name, listener) {
+        (target.listeners[name] ||= []).push(listener);
+      },
+    },
+    emit(target, name) {
+      for (const listener of target.listeners[name] || []) listener({});
+    },
+  };
 }
 
 function fakeWindow() {
@@ -242,6 +329,40 @@ test("the record view explains why an unmapped record missed the map", () => {
   assert.ok(first.includes("지오코딩 실패 · 후보 없음"));
   const second = list.children[1].children.map((child) => child.textContent);
   assert.ok(second.includes("판단 보류"));
+});
+
+test("the city view reports its area and fixes its zoom-out limit as soon as the map initializes", async () => {
+  const sdk = fakeNaverMaps();
+  const windowObject = { document: new FakeDocument({ "#map": new FakeElement() }) };
+  const city = { south: 37.41, west: 126.73, north: 37.72, east: 127.27 };
+  const viewports = [];
+
+  const created = createMap(windowObject, sdk, { map_bounds: city }, [], (bounds) =>
+    viewports.push(bounds),
+  );
+  // 실제 SDK는 첫 화면을 그린 뒤 init만 보내고, 사용자가 움직이기 전까지 idle을 보내지 않는다.
+  sdk.emit(created.map, "init");
+  await Promise.race([
+    created.ready,
+    new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("the map never became ready")), 100);
+    }),
+  ]);
+
+  assert.deepEqual(viewports, [city]);
+  assert.equal(created.map.options.minZoom, 10);
+
+  // 사용자가 처음 한 동작이 축소여도 한계는 도시 전체가 보이던 수준에 머문다.
+  const wider = { south: 37.2, west: 126.5, north: 37.9, east: 127.5 };
+  created.map.zoom = 9;
+  created.map.bounds = new sdk.LatLngBounds(
+    new sdk.LatLng(wider.south, wider.west),
+    new sdk.LatLng(wider.north, wider.east),
+  );
+  sdk.emit(created.map, "idle");
+
+  assert.deepEqual(viewports, [city, wider]);
+  assert.equal(created.map.options.minZoom, 10);
 });
 
 test("city-wide counts survive a map that cannot report its viewport", () => {
