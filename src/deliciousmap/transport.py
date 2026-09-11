@@ -16,6 +16,12 @@ class Transport(Protocol):
     def fetch(self, url: str, params: Mapping[str, str], headers: Mapping[str, str]) -> bytes: ...
 
 
+class JsonTransport(Protocol):
+    """본문을 실어 보내는 경계. 조회용 Transport와 요청 모양이 달라 따로 둔다."""
+
+    def post(self, url: str, body: bytes, headers: Mapping[str, str]) -> bytes: ...
+
+
 class HttpTransport:
     def __init__(self, timeout: float = REQUEST_TIMEOUT) -> None:
         self.timeout = timeout
@@ -25,5 +31,10 @@ class HttpTransport:
             dict(params), quote_via=urllib.parse.quote, safe=SAFE_CHARACTERS
         )
         request = urllib.request.Request(f"{url}?{query}", headers=dict(headers))
+        with urllib.request.urlopen(request, timeout=self.timeout) as response:
+            return bytes(response.read(MAX_RESPONSE_BYTES + 1))
+
+    def post(self, url: str, body: bytes, headers: Mapping[str, str]) -> bytes:
+        request = urllib.request.Request(url, data=body, headers=dict(headers), method="POST")
         with urllib.request.urlopen(request, timeout=self.timeout) as response:
             return bytes(response.read(MAX_RESPONSE_BYTES + 1))

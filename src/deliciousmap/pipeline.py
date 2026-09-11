@@ -4,7 +4,8 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Protocol
 
-from deliciousmap import lookup, restoration
+from deliciousmap import comparison, lookup, restoration
+from deliciousmap.budget import Budget
 from deliciousmap.contracts import (
     BuildInput,
     BuildOutput,
@@ -77,6 +78,8 @@ class ExecutionContext:
     retry_failed: bool = False
     # 구성된 후보 조회. 비어 있으면 담당자가 준비한 후보 파일만 사용한다.
     providers: tuple[lookup.CandidateProvider, ...] = ()
+    # 구성된 후보 비교 모델. 없으면 담당자가 지정해도 비교를 수행하지 않는다.
+    comparator: comparison.ComparisonModel | None = None
 
 
 class Adapters(Protocol):
@@ -221,6 +224,18 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
                 ),
                 context,
             )
+            if context.comparator is not None:
+                # 지정한 미해결 건만 비교하고 제안으로 남긴다. 판정과 마커는 바뀌지 않는다.
+                comparison.resolve(
+                    store,
+                    Budget(context.paths.shared("llm-budget")),
+                    context.comparator,
+                    records,
+                    lookups,
+                    GeocodeOutput.model_validate(result).results,
+                    store.designations(records),
+                    retry_failed=context.retry_failed,
+                )
         case "closure" | "build":
             parsed = store.load("parse", ParseOutput)
             classified = store.load("classify", ClassifyOutput)

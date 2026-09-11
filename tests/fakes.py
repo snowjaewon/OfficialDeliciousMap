@@ -342,3 +342,71 @@ class FakeLicenseTransport:
         if isinstance(response, Exception):
             raise response
         return response
+
+
+def gemini_answer(
+    *,
+    supported: bool = True,
+    candidate_source_id: str = "place-1",
+    restored_merchant: str = "같은 식당 전체 이름",
+    rationale: str = "근거의 지점·주소가 후보와 같다",
+) -> dict[str, object]:
+    """구조화 출력 스키마에 맞춘 모델 답변 한 건."""
+    return {
+        "supported": supported,
+        "candidate_source_id": candidate_source_id,
+        "restored_merchant": restored_merchant,
+        "rationale": rationale,
+    }
+
+
+def gemini_body(
+    answer: dict[str, object] | str | None = None,
+    *,
+    prompt_tokens: int = 120,
+    output_tokens: int = 30,
+    thoughts_tokens: int = 0,
+    finish_reason: str = "STOP",
+    usage: bool = True,
+) -> bytes:
+    """generateContent 응답 한 건. 실제 응답처럼 과금에 쓰지 않는 필드도 함께 둔다."""
+    text = answer if isinstance(answer, str) else json.dumps(answer or gemini_answer())
+    payload: dict[str, object] = {
+        "modelVersion": "gemini-3.6-flash",
+        "responseId": "합성-응답-1",
+        "candidates": [
+            {
+                "content": {"role": "model", "parts": [{"text": text}]},
+                "finishReason": finish_reason,
+                "index": 0,
+            }
+        ],
+    }
+    if usage:
+        payload["usageMetadata"] = {
+            "promptTokenCount": prompt_tokens,
+            "candidatesTokenCount": output_tokens,
+            "thoughtsTokenCount": thoughts_tokens,
+            # totalTokenCount은 앞의 항목을 합친 값이므로 과금에 다시 더하지 않는다.
+            "totalTokenCount": prompt_tokens + output_tokens + thoughts_tokens,
+        }
+    return json.dumps(payload, ensure_ascii=False).encode("utf-8")
+
+
+class FakeJsonTransport:
+    """모델 응답만 대신한다. 요청 구성·응답 해석·사용량 계산은 실제 어댑터가 한다."""
+
+    def __init__(self, *responses: bytes | Exception) -> None:
+        self.responses = responses or (gemini_body(),)
+        self.urls: list[str] = []
+        self.bodies: list[dict] = []
+        self.headers: list[dict[str, str]] = []
+
+    def post(self, url: str, body: bytes, headers: Mapping[str, str]) -> bytes:
+        self.urls.append(url)
+        self.bodies.append(json.loads(body.decode("utf-8")))
+        self.headers.append(dict(headers))
+        response = self.responses[min(len(self.bodies), len(self.responses)) - 1]
+        if isinstance(response, Exception):
+            raise response
+        return response

@@ -148,6 +148,19 @@ class EvidenceScope(Contract):
     source_hash: Sha256
 
 
+class ScopedReview(Contract):
+    """레코드 범위를 선언한 사람 검토 입력. 다른 레코드·원본·기관에는 적용하지 않는다."""
+
+    scope: EvidenceScope
+
+
+class ComparisonRequest(ScopedReview):
+    """data/manual/<city>/compare.jsonl 한 줄. 담당자가 후보 비교를 지정한 미해결 건."""
+
+    schema_version: Literal[1] = 1
+    evidence: Text
+
+
 class IdentityFacts(Contract):
     merchant: Text
     # None means unknown; an empty branch explicitly means an unbranched business.
@@ -223,8 +236,7 @@ class CandidateFile(Contract):
     lookups: tuple[CandidateLookup, ...]
 
 
-class IdentityConfirmation(Contract):
-    scope: EvidenceScope
+class IdentityConfirmation(ScopedReview):
     candidate_source: CandidateSource
     merchant: Text
     branch: str
@@ -301,6 +313,100 @@ class ClosureResult(Contract):
     business_id: Sha256
     status: Literal["open", "closed", "unknown"]
     evidence: Text
+
+
+# LLM 용도의 단일 출처. 새 용도가 생기면 여기에만 더한다.
+LlmPurpose = Literal[
+    "header_mapping", "classification", "extraction_fallback", "restoration_comparison"
+]
+
+
+class LedgerEntry(Contract):
+    """data/_shared/llm-budget.jsonl 한 줄. 공통 LLM 예산의 추가형 이력이며 지우지 않는다."""
+
+    schema_version: Literal[1] = 1
+    # 예약과 정산을 잇는 키. 같은 요청의 두 줄은 같은 값을 쓴다.
+    entry_id: Text
+    kind: Literal["prior_usage", "reservation", "settlement"]
+    purpose: Literal["prior_usage"] | LlmPurpose
+    # 기존 사용액은 특정 모델의 것이 아니므로 비워 둔다.
+    model: str | None = None
+    amount_usd: Decimal = Field(ge=0, allow_inf_nan=False)
+    evidence: Text
+
+
+class Usage(Contract):
+    """제공자가 알린 과금 항목. 합계 필드를 다시 더하지 않는다."""
+
+    input_tokens: int = Field(ge=0)
+    output_tokens: int = Field(ge=0)
+
+
+class ComparisonAnswer(Contract):
+    """모델이 구조화 출력으로 돌려준 답변. 이 자체는 제안도 확정도 아니다."""
+
+    supported: bool
+    candidate_source_id: str
+    restored_merchant: str
+    rationale: str
+
+
+class ModelReply(Contract):
+    """모델 호출 한 번의 결과. 응답 원문·비밀값은 남기지 않는다."""
+
+    status: Literal["ok", "error"]
+    error: Literal["unavailable", "invalid_response", "incomplete_response"] | None = None
+    answer: ComparisonAnswer | None = None
+    # 과금된 실패도 사용량을 알 수 있으면 남긴다.
+    usage: Usage | None = None
+
+    @model_validator(mode="after")
+    def consistent_reply(self) -> "ModelReply":
+        require_error_code(self.status, self.error)
+        if (self.status == "ok") != (self.answer is not None):
+            raise ValueError("a successful reply requires exactly one answer")
+        return self
+
+
+class RestorationProposal(Contract):
+    """모델 비교의 결과. 사람 검토용 제안이며 복원명·좌표를 확정하지 않는다."""
+
+    schema_version: Literal[1] = 1
+    scope: EvidenceScope
+    merchant: Text
+    status: Literal["proposed", "withheld"]
+    reason: Literal[
+        "candidate_supported",
+        "not_unresolved",
+        "no_candidates",
+        "no_supported_candidate",
+        "ungrounded_response",
+        "incomplete_response",
+        "invalid_response",
+        "unavailable",
+        "oversized_request",
+        "budget_exhausted",
+        "unknown_prior_usage",
+        "concurrent_execution",
+    ]
+    proposed_merchant: Text | None = None
+    candidate_source: CandidateSource | None = None
+    rationale: Annotated[str, StringConstraints(strip_whitespace=True, max_length=500)] = ""
+    model: Text
+    prompt_version: Text
+    request_key: Sha256
+    # 사람 확인 경로를 거치기 전에는 언제나 미확정이다.
+    confirmed: Literal[False] = False
+
+    @model_validator(mode="after")
+    def consistent_proposal(self) -> "RestorationProposal":
+        proposed = (self.proposed_merchant, self.candidate_source, bool(self.rationale))
+        if self.status == "proposed":
+            if not all(proposed) or self.reason != "candidate_supported":
+                raise ValueError("a proposal requires a grounded candidate and its rationale")
+        elif any(proposed) or self.reason == "candidate_supported":
+            raise ValueError("a withheld comparison cannot carry a proposed name")
+        return self
 
 
 @dataclass(frozen=True)
