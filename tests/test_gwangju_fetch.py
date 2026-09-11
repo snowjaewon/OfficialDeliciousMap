@@ -3,6 +3,7 @@
 import importlib
 import json
 import sys
+import urllib.error
 from collections.abc import Mapping
 from dataclasses import replace
 from pathlib import Path
@@ -443,3 +444,59 @@ def test_fetch_still_fails_when_the_board_itself_is_unreachable(
     paths = paths_at(tmp_path)
     assert run_fetch(paths, Broken()) == 1  # type: ignore[arg-type]
     assert "cause=service-unavailable" in capsys.readouterr().err
+
+
+class Flaky:
+    """urlopen 자리에서 정해진 만큼 실패한 뒤 응답을 준다."""
+
+    def __init__(self, failures: list[Exception]) -> None:
+        self.failures = failures
+        self.calls = 0
+
+    def __call__(self, request: object, timeout: float | None = None) -> "_Response":
+        self.calls += 1
+        if self.failures:
+            raise self.failures.pop(0)
+        return _Response()
+
+
+def http_error(code: int) -> urllib.error.HTTPError:
+    return urllib.error.HTTPError(LIST_URL, code, "", {}, None)  # type: ignore[arg-type]
+
+
+def send(monkeypatch: pytest.MonkeyPatch, failures: list[Exception]) -> tuple[bytes, Flaky]:
+    waits: list[float] = []
+    monkeypatch.setattr(transport_module.time, "sleep", waits.append)
+    flaky = Flaky(failures)
+    monkeypatch.setattr(transport_module.urllib.request, "urlopen", flaky)
+    return boards.request(boards.default_transport(), LIST_URL, {"boardId": BOARD_ID}), flaky
+
+
+def test_board_requests_retry_a_transient_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    """수만 번 요청하면 일시적 실패를 만난다. 한 번 끊겼다고 수집을 버리지 않는다."""
+    body, flaky = send(monkeypatch, [OSError("connection reset"), http_error(503)])
+    assert body == b"ok"
+    assert flaky.calls == 3
+
+
+def test_board_requests_give_up_after_the_declared_attempts(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    failures: list[Exception] = [OSError("connection reset")] * boards.REQUEST_ATTEMPTS
+    with pytest.raises(boards.BoardUnavailable):
+        send(monkeypatch, failures)
+
+
+def test_board_requests_do_not_retry_a_missing_original(monkeypatch: pytest.MonkeyPatch) -> None:
+    """없는 자원은 다시 물어도 같다. 유실을 일시적 실패로 취급하지 않는다."""
+    with pytest.raises(boards.OriginalGone):
+        send(monkeypatch, [http_error(404)])
+
+
+def test_board_requests_do_not_retry_a_rejected_request(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(transport_module.time, "sleep", lambda _: None)
+    flaky = Flaky([http_error(403)])
+    monkeypatch.setattr(transport_module.urllib.request, "urlopen", flaky)
+    with pytest.raises(boards.BoardUnavailable):
+        boards.request(boards.default_transport(), LIST_URL, {"boardId": BOARD_ID})
+    assert flaky.calls == 1

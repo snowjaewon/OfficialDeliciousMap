@@ -52,7 +52,8 @@ uv run python -m deliciousmap geocode --city seoul --retry-failed
 받아들일 확장자는 게시판마다 실측한 것만 선언하므로 실측하지 않은 형식도 `unsupported-format`이다.
 실측한 구조와 다르거나 통째로 읽을 수 없는 크기의 응답은 `adapter-failed`, 게시판에 닿지 못하면
 `service-unavailable`로 구별해 알린다. 기관이 더는 내주지 않는 원본(404·410)은 서비스 장애와
-구별해 수집을 멈추지 않고 `fetch.json`의 `missing`에 남긴다. 한 기관에 연달아 보내는 요청에는 간격을 둔다.
+구별해 수집을 멈추지 않고 `fetch.json`의 `missing`에 남긴다. 일시적 실패(연결 끊김·타임아웃·
+5xx·429)만 4회까지 2초 배수로 다시 시도하고, 그래도 안 되면 `service-unavailable`로 실패한다. 한 기관에 연달아 보내는 요청에는 간격을 둔다.
 이미 받은 원본은 다시 내려받지 않으며, 게시판을 아직 선언하지 않은 도시는 0건 성공이 아니라
 `not-implemented`로 실패한다. 현재 선언된 게시판은 광주광역시청 하나뿐이고
 근거와 첫 실행 규모는 [정찰 기록](docs/validation/issue-51.md)에 있다.

@@ -16,6 +16,12 @@ if TYPE_CHECKING:  # 레지스트리가 스크래퍼를 선언하므로 실행 �
 # 이 값은 그보다 두 자리 여유가 있다. 넘는 응답은 잘라 쓰지 않고 받지 못한 것으로 알린다.
 # 정제 산출물의 20MB 상한(ADR-0001)과는 다른 이유로 정한 별개의 값이다.
 MAX_RESPONSE_BYTES = 20_000_000
+# 전량 수집은 요청이 수만 번이라 일시적 실패를 만난다. 실측: 2,584번째 게시글에서 한 번 끊겼고
+# 그 주소는 곧바로 다시 200을 주었다. 그런 실패만 이만큼 다시 시도한다.
+REQUEST_ATTEMPTS = 4
+REQUEST_BACKOFF = 2.0
+# 첨부는 목록·본문보다 크고 느릴 수 있어 넉넉히 기다린다.
+REQUEST_TIMEOUT = 30.0
 # 한 기관에 연달아 요청할 때 두는 간격(초). 게시판 전량 수집이 몰아치지 않게 한다.
 # 광주 게시판 실측(2026-09-11): 게시글 하나에 본문·첨부 두 번을 요청하고 왕복이 합쳐 0.78초다.
 # 0.5초일 때 건당 1.78초로 대기가 56%를 차지해 0.2초로 낮췄다. 합산 약 2.1 req/s이고 여전히
@@ -126,7 +132,13 @@ class Document(HTMLParser):
 
 def default_transport() -> Transport:
     """게시판 요청 경계. 원본 첨부의 상한과 기관에 두는 요청 간격을 여기서만 정한다."""
-    return HttpTransport(limit=MAX_RESPONSE_BYTES, interval=REQUEST_INTERVAL)
+    return HttpTransport(
+        timeout=REQUEST_TIMEOUT,
+        limit=MAX_RESPONSE_BYTES,
+        interval=REQUEST_INTERVAL,
+        attempts=REQUEST_ATTEMPTS,
+        backoff=REQUEST_BACKOFF,
+    )
 
 
 def read(body: bytes, encoding: str) -> Document:
