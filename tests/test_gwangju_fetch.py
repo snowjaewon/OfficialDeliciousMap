@@ -136,17 +136,27 @@ def test_registry_declares_the_measured_city_hall_board() -> None:
 
 
 def test_fetch_accepts_every_format_measured_on_this_board(tmp_path: Path) -> None:
-    """이 게시판은 .xls·.xlsx 말고 .hwp·.pdf도 올린다(2026-09-11 실측)."""
+    """이 게시판은 .xls·.xlsx 말고 .hwp·.hwpx·.pdf도 올린다(2026-09-11 실측)."""
     paths = paths_at(tmp_path)
     responses = board_responses()
     hwp = "업무추진비 공개 서식(2020. 10월~12월).hwp"
     responses[view_page(11022)] = view_with_suffix(11022, hwp)
     responses[download(11022, 1)] = OLE2
-    responses[view_page(11024)] = view_with_suffix(11024, "2026.3.시책업무추진비 사용 내역.pdf")
-    responses[download(11024, 1)] = PDF
+    responses[view_page(11024)] = view_with_suffix(11024, "주요참석자 명단.hwpx")
+    responses[download(11024, 1)] = OOXML
     assert run_fetch(paths, BoardTransport(responses)) == 0
     names = [Path(item["path"]).name for item in fetch_artifact(paths)["sources"]]
-    assert names == ["11024-1.pdf", "11022-1.hwp"]
+    assert names == ["11024-1.hwpx", "11022-1.hwp"]
+
+    # 실측한 다섯 번째 형식도 같은 규칙으로 받는다.
+    other = paths_at(tmp_path / "pdf")
+    responses = board_responses()
+    responses[view_page(11024)] = view_with_suffix(11024, "2026.3.시책업무추진비 사용 내역.pdf")
+    responses[download(11024, 1)] = PDF
+    responses[view_page(11022)] = view_with_suffix(11022, "2026 1분기 업무추진비.xls")
+    responses[download(11022, 1)] = OLE2
+    assert run_fetch(other, BoardTransport(responses)) == 0
+    assert Path(fetch_artifact(other)["sources"][0]["path"]).name == "11024-1.pdf"
 
 
 def test_fetch_ignores_the_bulk_download_link(tmp_path: Path) -> None:
@@ -313,9 +323,9 @@ def test_fetch_refuses_an_attachment_format_not_measured_for_this_board(
 ) -> None:
     paths = paths_at(tmp_path)
     responses = board_responses()
-    # 이 게시판에서 실측한 형식은 .xls·.xlsx·.hwp·.pdf다. .hwpx는 실측하지 않았다.
-    responses[view_page(11024)] = view_with_suffix(11024, "2026년 2분기 업무추진비.hwpx")
-    # 내용은 온전한 OOXML 컨테이너다. 거절의 이유는 실측하지 않은 형식이라는 것뿐이다.
+    # 이 게시판에서 실측한 형식은 .xls·.xlsx·.hwp·.hwpx·.pdf다. .zip은 실측하지 않았다.
+    responses[view_page(11024)] = view_with_suffix(11024, "2026년 2분기 업무추진비 묶음.zip")
+    # 내용은 온전한 ZIP 컨테이너다. 거절의 이유는 실측하지 않은 형식이라는 것뿐이다.
     responses[download(11024, 1)] = OOXML
     assert run_fetch(paths, BoardTransport(responses)) == 1
     assert "cause=unsupported-format" in capsys.readouterr().err
