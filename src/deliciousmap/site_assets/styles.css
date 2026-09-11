@@ -216,6 +216,34 @@ h1 {
   font-size: 0.82rem;
 }
 
+.search-results {
+  display: grid;
+  gap: 0.35rem;
+  max-height: 9rem;
+  margin-top: 0.65rem;
+  overflow-y: auto;
+}
+
+.search-results[hidden] {
+  display: none;
+}
+
+.search-result {
+  padding: 0.55rem 0.65rem;
+  border: 1px solid #ddd5c8;
+  border-radius: 0.6rem;
+  background: white;
+  color: #173f35;
+  text-align: left;
+  cursor: pointer;
+}
+
+.map-warning {
+  padding: 0.55rem 0.65rem;
+  margin: 0.65rem 0 0;
+  font-size: 0.75rem;
+}
+
 .map {
   width: 100%;
   min-height: calc(100vh - 8.5rem);
@@ -276,30 +304,30 @@ h1 {
   box-shadow: 0 1rem 3rem rgb(23 63 53 / 20%);
 }
 
-.ledger-panel {
+.records-panel {
   width: min(64rem, calc(100% - 2rem));
   margin: 0 auto;
   padding: 2rem 0 5rem;
 }
 
-.ledger-list {
+.records-list {
   display: grid;
   gap: 0.7rem;
   margin: 1.5rem 0;
 }
 
-.ledger-record {
+.record-card {
   padding: 1rem;
   border: 1px solid #ddd5c8;
   border-radius: 0.85rem;
   background: #fffdf8;
 }
 
-.ledger-record h3 {
+.record-card h3 {
   margin: 0 0 0.35rem;
 }
 
-.ledger-record p {
+.record-card p {
   margin-bottom: 0.35rem;
   color: #52665f;
 }
@@ -313,6 +341,11 @@ h1 {
   background: #e5ece8;
   font-size: 0.75rem;
   font-weight: 750;
+}
+
+.outside-city {
+  color: #7b3c20;
+  font-weight: 700;
 }
 
 .state-geocode_failed,

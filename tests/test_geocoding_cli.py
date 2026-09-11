@@ -126,17 +126,17 @@ def test_cli_confirms_evidence_and_builds_actual_out_of_city_marker(tmp_path: Pa
     built = json.loads(
         (context.paths.output_root / "seoul" / "markers.json").read_text(encoding="utf-8")
     )
-    ledger = json.loads(
-        (context.paths.output_root / "seoul" / "ledger.json").read_text(encoding="utf-8")
+    records = json.loads(
+        (context.paths.output_root / "seoul" / "records.json").read_text(encoding="utf-8")
     )
-    assert ledger["records"][0]["organization"] == "test-org"
+    assert records["records"][0]["organization"] == "test-org"
     assert built["markers"][0]["business_id"] == result["business_id"]
     assert built["markers"][0]["latitude"] == 35.1
     assert built["markers"][0]["visit_count"] == 1
     assert built["markers"][0]["closed"] is False
 
 
-def test_build_separates_map_data_from_complete_ledger(tmp_path: Path) -> None:
+def test_build_separates_map_data_from_complete_record_list(tmp_path: Path) -> None:
     context = prepare(tmp_path)
     add_record(context, "r2", "non_restaurant")
     add_record(context, "r3", "pending")
@@ -152,7 +152,7 @@ def test_build_separates_map_data_from_complete_ledger(tmp_path: Path) -> None:
 
     directory = context.paths.output_root / "seoul"
     markers = json.loads((directory / "markers.json").read_text(encoding="utf-8"))
-    ledger = json.loads((directory / "ledger.json").read_text(encoding="utf-8"))
+    records = json.loads((directory / "records.json").read_text(encoding="utf-8"))
 
     assert "records" not in markers
     assert markers["markers"] == [
@@ -165,14 +165,14 @@ def test_build_separates_map_data_from_complete_ledger(tmp_path: Path) -> None:
             "visit_count": 1,
         }
     ]
-    assert [record["record_id"] for record in ledger["records"]] == ["r1", "r2", "r3", "r4"]
-    assert [record["classification"] for record in ledger["records"]] == [
+    assert [record["record_id"] for record in records["records"]] == ["r1", "r2", "r3", "r4"]
+    assert [record["classification"] for record in records["records"]] == [
         "restaurant",
         "non_restaurant",
         "pending",
         "restaurant",
     ]
-    assert [record["map_status"] for record in ledger["records"]] == [
+    assert [record["map_status"] for record in records["records"]] == [
         "mapped",
         "non_restaurant",
         "pending",
@@ -195,7 +195,7 @@ def test_build_creates_city_entry_page_and_seven_city_landing(tmp_path: Path) ->
     assert '<meta property="og:title" content="합성 도시 공무원 맛집 지도">' in city_page
     assert 'data-city="seoul"' in city_page
     assert 'data-markers-url="./markers.json"' in city_page
-    assert 'data-ledger-url="./ledger.json"' in city_page
+    assert 'data-records-url="./records.json"' in city_page
     assert (output / "assets" / "app.js").is_file()
     assert (output / "assets" / "styles.css").is_file()
     assert (output / "manifest.webmanifest").is_file()

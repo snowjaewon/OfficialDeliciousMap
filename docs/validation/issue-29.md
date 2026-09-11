@@ -5,19 +5,22 @@
 
 ## 구현 결과
 
-- `build` v5는 선택 도시의 축약 마커를 `markers.json`, 전체 장부를 `ledger.json`으로 분리한다.
+- `build` v5는 선택 도시의 축약 마커를 `markers.json`, 전체 장부를 `records.json`으로 분리한다.
   장부에는 비식당·판단 보류·지오코딩 실패 레코드와 지도 포함 상태를 함께 남긴다.
 - build는 7개 도시 랜딩, 도시별 정적 진입 페이지, 공유 CSS·JavaScript, manifest와 service
   worker를 만든다. 도시별 `MapBounds`를 네이버 지도의 초기 `fitBounds`, `minZoom`,
   `maxBounds`에 사용한다.
 - 지도 화면은 선택 도시 전체 마커를 대상으로 식당명 검색과 방문 횟수 구간 필터를 적용하고,
   전체 결과와 현재 지도 영역 결과를 따로 표시한다. 마커 상세에서 방문 횟수·폐업 표시와
-  네이버 지도 링크를 제공한다.
+  네이버 지도 링크를 제공한다. 도시 경계 밖 좌표도 도시 전체 검색 결과에서 선택할 수 있고,
+  지도 이동 제한 밖이라는 안내와 상세를 표시한다.
 - 장부 파일은 장부 탭을 처음 열 때만 요청하며 100건씩 표시한다. 모바일 너비에서는 마커
   상세가 화면 하단 시트로 배치된다.
 - `window.deliciousmapMetrics`에 `marker-data`, `first-ready`, `filter-result`,
-  `marker-selection`, `ledger-first-list`의 최근 200개 시간을 밀리초 단위로 남긴다.
+  `marker-selection`, `records-first-list`의 최근 200개 시간을 밀리초 단위로 남긴다.
   같은 이름의 `deliciousmap:metric` 이벤트도 발생시켜 측정 자동화가 값을 수집할 수 있다.
+  사용자 조작 시간은 이벤트 시각부터 다음 렌더링이 끝날 때까지 재며,
+  `window.deliciousmapMetricsSummary(<이름>)`으로 횟수·두 번째로 느린 값·최대값을 확인한다.
 
 ## 자동 검사
 
@@ -29,12 +32,19 @@
 | `uv run ruff check .` | 통과 |
 | `uv run ruff format --check .` | 통과, 62개 파일 |
 | `uv run mypy src` | 통과, 29개 소스 파일 |
-| `uv run pytest` | 162 passed, 15.42초 |
-| `node --test tests/site_behavior.test.js` | 3 passed |
+| `uv run pytest` | 162 passed, 50.70초 |
+| `node --test tests/site_behavior.test.js` | 6 passed |
 | `uv run python -m deliciousmap --help` | 종료 0 |
 | `uv build --wheel` | 통과, wheel에 4개 정적 자산 포함 |
 | `git diff --check` | 통과 |
-| `gitleaks git --no-banner --redact` | 33개 커밋 검사, 비밀 탐지 없음 |
+| `gitleaks git --no-banner --redact` | 통과, 비밀 탐지 없음 |
+
+## 코드 리뷰
+
+- Standards: 공개 장부 산출물의 `records` 용어, 타입이 있는 공개 JSON 계약, 자료 범위 상수와
+  README의 구현 상태를 보완한 뒤 남은 지적 없음.
+- Spec: 도시 밖 검색 결과 선택·안내, 렌더링 뒤 성능 계측, 장부 100건 페이지 처리의 DOM 행동
+  테스트를 보완한 뒤 구현 가능한 코드·테스트 지적 없음. 아래 실데이터·실기기 항목은 미완료다.
 
 ## 실제 데이터·브라우저 측정 상태
 
@@ -43,7 +53,7 @@
 도시별 정제 산출물의 규모·버전과 전송·파싱·렌더링 성능을 측정할 입력이 없다. 합성 대규모
 입력으로 대신하지 않는다는 결정에 따라 아래 항목은 모두 **미측정**이며 합격으로 판정하지 않는다.
 
-| 도시 | 레코드 | 마커 | markers 크기 | ledger 크기 | 입력 버전 | 상태 |
+| 도시 | 레코드 | 마커 | markers 크기 | records 크기 | 입력 버전 | 상태 |
 | --- | ---: | ---: | ---: | ---: | --- | --- |
 | 서울 | — | — | — | — | — | 정제 산출물 없음 |
 | 부산 | — | — | — | — | — | 정제 산출물 없음 |
@@ -56,6 +66,20 @@
 이 세션의 Computer Use에는 사용할 수 있는 브라우저가 없어 생성 화면의 브라우저 자동화도
 실행하지 못했다. 실제 Android Chrome과 iPhone Safari 기기가 제공되지 않아 기기 사용감,
 OS·브라우저 버전·화면 크기·주사율 역시 미측정이다.
+
+## 닫기 전에 필요한 선행 작업
+
+현재 저장소에서 이슈 #29의 남은 완료 기준은 다음 세 작업이다. 별도 이슈가 만들어져 연결되기
+전까지 모두 #29의 미완료 범위로 유지한다.
+
+1. `feat(pipeline): 7개 도시 기관·게시판과 실제 수집·파싱 구현` — 레지스트리와 운영 어댑터,
+   기관별 수집 상태·보류 사유를 정제 산출물 계약에 추가한다.
+2. `data: 2026년 상반기 7개 도시 정제 산출물 준비` — 검증된 실제 입력과 산출물 해시를 준비한다.
+3. `test(map): 7개 도시 실데이터·Android·iPhone 성능 검증` — 고정 조건 20회 측정, 병목 개선,
+   실기기 사용감과 변경 전후 결과를 기록한다.
+
+이 세션에서는 GitHub에 새 이슈를 만들지 않았으므로 세 작업을 #29에서 분리한 것으로 간주하지
+않는다. 실제 결과가 기록될 때까지 #29를 닫거나 완료로 표시하지 않는다.
 
 ## 실데이터 준비 후 측정 절차
 

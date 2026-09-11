@@ -37,21 +37,24 @@
   }
 
   function countMarkersInBounds(markers, bounds) {
-    return markers.filter(
-      (marker) =>
-        marker.latitude >= bounds.south &&
-        marker.latitude <= bounds.north &&
-        marker.longitude >= bounds.west &&
-        marker.longitude <= bounds.east,
-    ).length;
+    return markers.filter((marker) => markerInBounds(marker, bounds)).length;
   }
 
-  function createLedgerLoader(fetchLedger) {
+  function markerInBounds(marker, bounds) {
+    return (
+      marker.latitude >= bounds.south &&
+      marker.latitude <= bounds.north &&
+      marker.longitude >= bounds.west &&
+      marker.longitude <= bounds.east
+    );
+  }
+
+  function createRecordsLoader(fetchRecords) {
     let request;
-    return function loadLedger() {
+    return function loadRecords(...args) {
       if (!request) {
         request = Promise.resolve()
-          .then(fetchLedger)
+          .then(() => fetchRecords(...args))
           .catch((error) => {
             request = undefined;
             throw error;
@@ -70,6 +73,38 @@
     metrics.push(entry);
     windowObject.deliciousmapMetrics = metrics.slice(-200);
     windowObject.dispatchEvent(new windowObject.CustomEvent("deliciousmap:metric", { detail: entry }));
+  }
+
+  function summarizeMetrics(metrics, name) {
+    const durations = metrics
+      .filter((entry) => entry.name === name && Number.isFinite(entry.duration_ms))
+      .map((entry) => entry.duration_ms)
+      .sort((left, right) => right - left);
+    return {
+      count: durations.length,
+      maximum_ms: durations[0] ?? null,
+      second_slowest_ms: durations[1] ?? null,
+    };
+  }
+
+  function interactionStartedAt(windowObject, event) {
+    const timestamp = event?.domEvent?.timeStamp ?? event?.timeStamp;
+    const now = windowObject.performance.now();
+    if (!Number.isFinite(timestamp)) return now;
+    if (timestamp >= 0 && timestamp <= now + 1000) return timestamp;
+    const relative = timestamp - (windowObject.performance.timeOrigin || 0);
+    return relative >= 0 && relative <= now + 1000 ? relative : now;
+  }
+
+  function recordMetricAfterPaint(windowObject, name, startedAt) {
+    return new Promise((resolve) => {
+      windowObject.requestAnimationFrame(() => {
+        windowObject.requestAnimationFrame(() => {
+          recordMetric(windowObject, name, startedAt);
+          resolve();
+        });
+      });
+    });
   }
 
   async function fetchJson(windowObject, url) {
@@ -103,10 +138,10 @@
     });
   }
 
-  function renderLedger(documentObject, records) {
-    const list = documentObject.querySelector("[data-ledger-list]");
-    const status = documentObject.querySelector("[data-ledger-status]");
-    const more = documentObject.querySelector("[data-ledger-more]");
+  function renderRecords(documentObject, records) {
+    const list = documentObject.querySelector("[data-records-list]");
+    const status = documentObject.querySelector("[data-records-status]");
+    const more = documentObject.querySelector("[data-records-more]");
     const batchSize = 100;
     let shown = 0;
 
@@ -114,7 +149,7 @@
       const fragment = documentObject.createDocumentFragment();
       for (const record of records.slice(shown, shown + batchSize)) {
         const article = documentObject.createElement("article");
-        article.className = "ledger-record";
+        article.className = "record-card";
         const heading = documentObject.createElement("h3");
         heading.textContent = record.merchant;
         const summary = documentObject.createElement("p");
@@ -141,6 +176,32 @@
 
     more.addEventListener("click", appendBatch);
     appendBatch();
+  }
+
+  function renderSearchResults(documentObject, markers, query, onSelect) {
+    const results = documentObject.querySelector("[data-search-results]");
+    if (!normalizeSearch(query)) {
+      results.replaceChildren();
+      results.hidden = true;
+      return;
+    }
+
+    const fragment = documentObject.createDocumentFragment();
+    if (markers.length === 0) {
+      const empty = documentObject.createElement("p");
+      empty.textContent = "검색 결과가 없습니다.";
+      fragment.append(empty);
+    }
+    for (const marker of markers.slice(0, 20)) {
+      const button = documentObject.createElement("button");
+      button.type = "button";
+      button.className = "search-result";
+      button.textContent = `${marker.merchant} · 방문 ${marker.visit_count.toLocaleString("ko-KR")}회`;
+      button.addEventListener("click", (event) => onSelect(marker, event));
+      fragment.append(button);
+    }
+    results.replaceChildren(fragment);
+    results.hidden = false;
   }
 
   function loadNaverMaps(windowObject, config) {
@@ -181,7 +242,7 @@
     };
   }
 
-  function renderRestaurant(documentObject, marker) {
+  function renderRestaurant(documentObject, marker, withinCity) {
     const sheet = documentObject.querySelector("[data-restaurant-sheet]");
     const heading = documentObject.createElement("h2");
     heading.textContent = marker.merchant;
@@ -195,11 +256,29 @@
     link.target = "_blank";
     link.rel = "noopener noreferrer";
     link.textContent = "네이버 지도에서 확인";
-    sheet.replaceChildren(heading, visits, closure, link);
+    const children = [heading, visits, closure, link];
+    if (!withinCity) {
+      const boundaryNotice = documentObject.createElement("p");
+      boundaryNotice.className = "outside-city";
+      boundaryNotice.textContent = "도시 지도 범위 밖의 식당입니다.";
+      children.splice(3, 0, boundaryNotice);
+    }
+    sheet.replaceChildren(...children);
     sheet.hidden = false;
   }
 
-  function createMap(windowObject, naverMaps, config, markers, onViewportChange) {
+  function selectMarker(windowObject, documentObject, config, mapState, marker, event) {
+    const startedAt = interactionStartedAt(windowObject, event);
+    const withinCity = markerInBounds(marker, config.map_bounds);
+    renderRestaurant(documentObject, marker, withinCity);
+    if (mapState && withinCity) {
+      mapState.map.panTo(new mapState.naverMaps.LatLng(marker.latitude, marker.longitude));
+      mapState.map.setZoom(Math.max(mapState.map.getZoom(), 16));
+    }
+    return recordMetricAfterPaint(windowObject, "marker-selection", startedAt);
+  }
+
+  function createMap(windowObject, naverMaps, config, markers, onViewportChange, onSelect) {
     const documentObject = windowObject.document;
     const { south, west, north, east } = config.map_bounds;
     const cityBounds = new naverMaps.LatLngBounds(
@@ -227,11 +306,7 @@
         icon: markerIcon(naverMaps, data),
         title: data.merchant,
       });
-      naverMaps.Event.addListener(overlay, "click", () => {
-        const startedAt = windowObject.performance.now();
-        renderRestaurant(documentObject, data);
-        recordMetric(windowObject, "marker-selection", startedAt);
-      });
+      naverMaps.Event.addListener(overlay, "click", (event) => onSelect(data, event));
       return { data, overlay };
     });
 
@@ -262,6 +337,8 @@
     if (!root.dataset.city) return;
 
     const config = readConfig(documentObject);
+    windowObject.deliciousmapMetricsSummary = (name) =>
+      summarizeMetrics(windowObject.deliciousmapMetrics || [], name);
     setupSourceDialog(documentObject);
     registerServiceWorker(windowObject);
 
@@ -281,6 +358,10 @@
     let filtered = allMarkers;
     let mapState;
 
+    function selectMarkerFromPage(marker, event) {
+      void selectMarker(windowObject, documentObject, config, mapState, marker, event);
+    }
+
     function updateCounts(bounds) {
       totalCount.textContent = filtered.length.toLocaleString("ko-KR");
       viewportCount.textContent = bounds
@@ -289,8 +370,8 @@
     }
 
     function applyFilters() {
-      const startedAt = windowObject.performance.now();
       filtered = filterMarkers(allMarkers, search.value, visitBand);
+      renderSearchResults(documentObject, filtered, search.value, selectMarkerFromPage);
       const visible = new Set(filtered.map((marker) => marker.business_id));
       if (mapState) {
         for (const item of mapState.overlays) {
@@ -300,39 +381,47 @@
       } else {
         updateCounts();
       }
-      recordMetric(windowObject, "filter-result", startedAt);
     }
 
-    search.addEventListener("input", applyFilters);
+    documentObject.querySelector("[data-search-form]").addEventListener("submit", (event) => {
+      event.preventDefault();
+    });
+    search.addEventListener("input", (event) => {
+      const startedAt = interactionStartedAt(windowObject, event);
+      applyFilters();
+      void recordMetricAfterPaint(windowObject, "filter-result", startedAt);
+    });
     for (const button of documentObject.querySelectorAll("[data-visits]")) {
-      button.addEventListener("click", () => {
+      button.addEventListener("click", (event) => {
+        const startedAt = interactionStartedAt(windowObject, event);
         visitBand = button.dataset.visits;
         for (const peer of documentObject.querySelectorAll("[data-visits]")) {
           peer.setAttribute("aria-pressed", String(peer === button));
         }
         applyFilters();
+        void recordMetricAfterPaint(windowObject, "filter-result", startedAt);
       });
     }
     updateCounts();
 
-    const loadLedger = createLedgerLoader(async () => {
-      const startedAt = windowObject.performance.now();
-      const status = documentObject.querySelector("[data-ledger-status]");
+    const loadRecords = createRecordsLoader(async (startedAt) => {
+      const status = documentObject.querySelector("[data-records-status]");
       status.textContent = "장부를 불러오고 있습니다.";
-      const payload = await fetchJson(windowObject, root.dataset.ledgerUrl);
-      if (!Array.isArray(payload.records)) throw new Error("invalid ledger data");
-      renderLedger(documentObject, payload.records);
-      recordMetric(windowObject, "ledger-first-list", startedAt);
+      const payload = await fetchJson(windowObject, root.dataset.recordsUrl);
+      if (!Array.isArray(payload.records)) throw new Error("invalid record data");
+      renderRecords(documentObject, payload.records);
+      await recordMetricAfterPaint(windowObject, "records-first-list", startedAt);
       return payload;
     });
     for (const tab of documentObject.querySelectorAll("[data-tab]")) {
-      tab.addEventListener("click", async () => {
+      tab.addEventListener("click", async (event) => {
+        const startedAt = interactionStartedAt(windowObject, event);
         switchTab(documentObject, tab.dataset.tab);
-        if (tab.dataset.tab === "ledger") {
+        if (tab.dataset.tab === "records") {
           try {
-            await loadLedger();
+            await loadRecords(startedAt);
           } catch (error) {
-            documentObject.querySelector("[data-ledger-status]").textContent =
+            documentObject.querySelector("[data-records-status]").textContent =
               "장부를 불러오지 못했습니다. 다시 시도해 주세요.";
             windowObject.console.error(error);
           }
@@ -343,10 +432,20 @@
     try {
       const mapApi = await mapApiRequest;
       if (mapApi.error) throw mapApi.error;
-      mapState = createMap(windowObject, mapApi.naverMaps, config, allMarkers, updateCounts);
+      mapState = {
+        ...createMap(
+          windowObject,
+          mapApi.naverMaps,
+          config,
+          allMarkers,
+          updateCounts,
+          selectMarkerFromPage,
+        ),
+        naverMaps: mapApi.naverMaps,
+      };
       await mapState.ready;
       applyFilters();
-      recordMetric(windowObject, "first-ready", 0);
+      await recordMetricAfterPaint(windowObject, "first-ready", 0);
     } catch (error) {
       const mapElement = documentObject.getElementById("map");
       const message = documentObject.createElement("p");
@@ -358,5 +457,15 @@
     }
   }
 
-  return { countMarkersInBounds, createLedgerLoader, filterMarkers, start };
+  return {
+    countMarkersInBounds,
+    createRecordsLoader,
+    filterMarkers,
+    markerInBounds,
+    renderRecords,
+    renderSearchResults,
+    selectMarker,
+    start,
+    summarizeMetrics,
+  };
 });

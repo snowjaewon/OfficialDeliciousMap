@@ -12,6 +12,8 @@ from deliciousmap.registry import Target
 
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 Sha256 = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{64}$")]
+ClassificationStatus = Literal["restaurant", "non_restaurant", "pending"]
+MapStatus = Literal["mapped", "geocode_failed", "non_restaurant", "pending"]
 # 동일성 판단에 필요한 근거만 남기기 위한 상한. 원본 전체를 옮겨 적는 용도가 아니다.
 Excerpt = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=500)]
 
@@ -98,7 +100,7 @@ class ManualCorrection(Contract):
 
 class Classification(Contract):
     record_id: Text
-    status: Literal["restaurant", "non_restaurant", "pending"]
+    status: ClassificationStatus
     evidence: Text
 
 
@@ -313,6 +315,38 @@ class ClosureResult(Contract):
     business_id: Sha256
     status: Literal["open", "closed", "unknown"]
     evidence: Text
+
+
+class PublishedMarker(Contract):
+    """markers.json에 공개하는 식당 단위 축약 레코드."""
+
+    business_id: Sha256
+    merchant: Text
+    visit_count: int = Field(ge=1)
+    latitude: float = Field(ge=-90, le=90, allow_inf_nan=False)
+    longitude: float = Field(ge=-180, le=180, allow_inf_nan=False)
+    closed: bool
+
+
+class PublishedRecord(Record):
+    """records.json에 공개하는 장부 레코드와 지도 반영 상태."""
+
+    classification: ClassificationStatus
+    map_status: MapStatus
+
+
+class MarkerFile(Contract):
+    schema_version: Literal[5] = 5
+    city: Text
+    org: str | None = None
+    markers: tuple[PublishedMarker, ...]
+
+
+class RecordFile(Contract):
+    schema_version: Literal[5] = 5
+    city: Text
+    org: str | None = None
+    records: tuple[PublishedRecord, ...]
 
 
 # LLM 용도의 단일 출처. 새 용도가 생기면 여기에만 더한다.

@@ -43,12 +43,12 @@ uv run python -m deliciousmap geocode --city seoul --retry-failed
 `geocode`는 담당자가 준비한 정제 레코드·후보·근거로 업소를 판정한다. 후보가 없는 레코드는
 키가 있는 제공자(네이버 지역검색·인허가 조회서비스)로 후보를 조회한다. `closure`는 현재
 폐업 대조 연결 전이므로 확인된 업소마다 `unknown`을 저장한다. `build`는 지도용 축약 정보를
-`dist/<city>/markers.json`, 전체 레코드를 `dist/<city>/ledger.json`으로 나누고 정적 지도 화면을
+`dist/<city>/markers.json`, 전체 레코드를 `dist/<city>/records.json`으로 나누고 정적 지도 화면을
 함께 만든다. 기관 실행은 `orgs/<org>/`에 분리한다.
 [지오코딩 사용법과 계약](docs/geocoding.md)을 따른다.
 `fetch`·`headermap`·`parse`·`classify`의 실제 어댑터는 미구현이므로 운영 `run`은 아직
 수집 단계에서 실패한다. 실제 게시판 수집·파일 변환·파싱·LLM·인허가 전량 수집·폐업 대조·
-HTML/PWA·배포는 후속 작업이다.
+실데이터 지도 성능 검증·배포는 후속 작업이다.
 
 조회 키는 `.env`에서 읽는다. 네이버 지역검색은 `NAVER_SEARCH_CLIENT_ID`·`NAVER_SEARCH_CLIENT_SECRET`,
 인허가 조회서비스는 `DATA_GO_KR_KEY`다. 키가 없는 제공자는 조회하지 않고, 모두 없으면 준비된 후보
@@ -87,7 +87,7 @@ PowerShell: Get-Content .env | ForEach-Object { if ($_ -match '^(\w+)=(.*)$') { 
 도시 전체 build를 실행하면 `dist/index.html`에 7개 도시 랜딩이, `dist/<city>/index.html`에
 선택 도시 화면이 생긴다. 화면은 `markers.json`을 먼저 받아 식당명 검색, 20+ / 10~19 /
 5~9 / 1~4 방문 횟수 필터, 전체 결과와 현재 지도 영역 결과 수, 마커 상세와 네이버 지도 연결을
-제공한다. `ledger.json`은 장부 탭을 처음 열 때만 받으며 비식당·판단 보류·지오코딩 실패 레코드도
+제공한다. `records.json`은 장부 탭을 처음 열 때만 받으며 비식당·판단 보류·지오코딩 실패 레코드도
 상태와 함께 표시한다. 한 번에 100건씩 그려 긴 장부의 첫 목록 렌더링을 제한한다.
 
 네이버 지도는 `.env`의 공개 가능한 `NAVER_MAP_CLIENT_ID`를 build 시 페이지 설정에 넣는다.

@@ -71,9 +71,9 @@ def markers(context: ExecutionContext) -> dict:
     )
 
 
-def ledger(context: ExecutionContext) -> dict:
+def built_records(context: ExecutionContext) -> dict:
     return json.loads(
-        (context.paths.output_root / "seoul" / "ledger.json").read_text(encoding="utf-8")
+        (context.paths.output_root / "seoul" / "records.json").read_text(encoding="utf-8")
     )
 
 
@@ -121,7 +121,7 @@ def test_naver_candidates_need_independent_evidence_and_keep_out_of_city_coordin
     built = markers(context)
     assert built["markers"][0]["visit_count"] == 1
     assert built["markers"][0]["latitude"] == 35.1
-    assert ledger(context)["records"][0]["organization"] == "test-org"
+    assert built_records(context)["records"][0]["organization"] == "test-org"
     assert payload(context, "build")["record_count"] == 1
 
 

@@ -10,6 +10,7 @@ from deliciousmap.registry import CITIES, City
 from deliciousmap.storage import write_text
 
 ASSET_NAMES = ("app.js", "styles.css")
+REPORTING_PERIOD = "2026년 상반기"
 
 
 def write_site_shell(
@@ -75,7 +76,7 @@ def _landing_page() -> str:
   </head>
   <body class="landing-page">
     <main class="landing-shell">
-      <p class="eyebrow">2026년 상반기 업무추진비</p>
+      <p class="eyebrow">{REPORTING_PERIOD} 업무추진비</p>
       <h1>어느 도시의 맛집을 찾으세요?</h1>
       <p class="lede">공개된 레코드를 모아 공무원이 자주 찾은 식당을 보여줍니다.</p>
       <nav class="city-grid" aria-label="도시 선택">
@@ -107,7 +108,7 @@ def _city_page(
     ).replace("<", r"\u003c")
     return f"""<!doctype html>
 <html lang="ko" data-city="{city.slug}"
-      data-markers-url="./markers.json" data-ledger-url="./ledger.json">
+      data-markers-url="./markers.json" data-records-url="./records.json">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -122,12 +123,12 @@ def _city_page(
   <body class="city-page">
     <header class="topbar">
       <a class="back-link" href="{site_root}" aria-label="도시 선택으로 돌아가기">← 도시</a>
-      <div><p class="eyebrow">2026년 상반기</p><h1>{city_name}</h1></div>
+      <div><p class="eyebrow">{REPORTING_PERIOD}</p><h1>{city_name}</h1></div>
       <button class="source-button" type="button" data-open-sources>자료 범위</button>
     </header>
     <nav class="tabs" aria-label="화면 선택">
       <button type="button" role="tab" aria-selected="true" data-tab="map">지도</button>
-      <button type="button" role="tab" aria-selected="false" data-tab="ledger">장부</button>
+      <button type="button" role="tab" aria-selected="false" data-tab="records">장부</button>
     </nav>
     <main>
       <section class="map-panel" data-panel="map">
@@ -146,22 +147,26 @@ def _city_page(
             <strong data-total-count>0</strong>곳 전체 ·
             <strong data-viewport-count>0</strong>곳 현재 지도 영역
           </p>
+          <div class="search-results" data-search-results hidden></div>
+          <p class="collection-warning map-warning">
+            기관별 수집 상태를 확인할 수 없어 누락 여부를 판단할 수 없습니다.
+          </p>
         </form>
         <div id="map" class="map" aria-label="{city_name} 식당 지도">
           <p class="loading">지도를 준비하고 있습니다.</p>
         </div>
         <aside class="restaurant-sheet" data-restaurant-sheet hidden></aside>
       </section>
-      <section class="ledger-panel" data-panel="ledger" hidden>
+      <section class="records-panel" data-panel="records" hidden>
         <header><p class="eyebrow">마커가 없는 레코드도 포함</p><h2>전체 장부</h2></header>
-        <p class="loading" data-ledger-status>장부 탭을 열면 레코드를 불러옵니다.</p>
-        <div class="ledger-list" data-ledger-list></div>
-        <button class="more-button" type="button" data-ledger-more hidden>다음 레코드 보기</button>
+        <p class="loading" data-records-status>장부 탭을 열면 레코드를 불러옵니다.</p>
+        <div class="records-list" data-records-list></div>
+        <button class="more-button" type="button" data-records-more hidden>다음 레코드 보기</button>
       </section>
     </main>
     <dialog class="source-dialog" data-source-dialog>
       <button type="button" class="dialog-close" data-close-sources aria-label="닫기">×</button>
-      <p class="eyebrow">자료 범위</p><h2>2026년 상반기</h2>
+      <p class="eyebrow">자료 범위</p><h2>{REPORTING_PERIOD}</h2>
       <p>기관별 수집 상태는 실제 정제 산출물이 준비된 뒤 이 화면에 표시됩니다.</p>
       <p class="collection-warning">현재 수집 상태 정보가 없어 지출 0건으로 판단할 수 없습니다.</p>
     </dialog>
