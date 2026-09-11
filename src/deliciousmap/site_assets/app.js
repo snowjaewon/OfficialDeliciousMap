@@ -316,8 +316,11 @@
     renderRestaurant(documentObject, marker, withinCity);
     if (mapState && withinCity) {
       try {
-        mapState.map.panTo(new mapState.naverMaps.LatLng(marker.latitude, marker.longitude));
-        mapState.map.setZoom(Math.max(mapState.map.getZoom(), 16));
+        // panTo 뒤에 setZoom을 부르면 이동이 끊겨 원래 중심에서 확대된다. 좌표와 줌을 한 번에 옮긴다.
+        mapState.map.morph(
+          new mapState.naverMaps.LatLng(marker.latitude, marker.longitude),
+          Math.max(mapState.map.getZoom(), 16),
+        );
       } catch (error) {
         // 지도를 움직이지 못해도 선택한 식당의 상세는 그대로 보여 준다.
         windowObject.console.error(error);
@@ -342,7 +345,6 @@
       zoomControlOptions: { position: naverMaps.Position.TOP_RIGHT },
     });
 
-    let initialZoomLocked = false;
     let markReady;
     const ready = new Promise((resolve) => {
       markReady = resolve;
@@ -358,14 +360,14 @@
       return { data, overlay };
     });
 
-    naverMaps.Event.addListener(map, "idle", () => {
-      if (!initialZoomLocked) {
-        initialZoomLocked = true;
-        map.setOptions({ minZoom: map.getZoom(), maxBounds: cityBounds });
-      }
-      onViewportChange(naverBoundsToPlain(map.getBounds()));
+    const reportViewport = () => onViewportChange(naverBoundsToPlain(map.getBounds()));
+    // SDK는 첫 화면에서 idle 없이 init만 보낸다. 도시 전체가 보이는 이 시점에 축소 한계를 고정한다.
+    naverMaps.Event.addListener(map, "init", () => {
+      map.setOptions({ minZoom: map.getZoom(), maxBounds: cityBounds });
+      reportViewport();
       markReady();
     });
+    naverMaps.Event.addListener(map, "idle", reportViewport);
     map.fitBounds(cityBounds);
     return { map, overlays, ready };
   }
@@ -524,6 +526,7 @@
 
   return {
     countMarkersInBounds,
+    createMap,
     createRecordsLoader,
     filterMarkers,
     markerInBounds,
