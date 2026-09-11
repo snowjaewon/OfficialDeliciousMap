@@ -1,0 +1,9 @@
+{
+  "name": "공무원 맛집 지도",
+  "short_name": "맛집 지도",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f4efe4",
+  "theme_color": "#173f35",
+  "lang": "ko"
+}

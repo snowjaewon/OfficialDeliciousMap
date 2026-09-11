@@ -19,9 +19,24 @@ class Organization:
 
 
 @dataclass(frozen=True)
+class MapBounds:
+    south: float
+    west: float
+    north: float
+    east: float
+
+    def __post_init__(self) -> None:
+        if not (-90 <= self.south < self.north <= 90):
+            raise ValueError("invalid city latitude bounds")
+        if not (-180 <= self.west < self.east <= 180):
+            raise ValueError("invalid city longitude bounds")
+
+
+@dataclass(frozen=True)
 class City:
     slug: str
     name: str
+    map_bounds: MapBounds
     organizations: tuple[Organization, ...] = ()
 
 

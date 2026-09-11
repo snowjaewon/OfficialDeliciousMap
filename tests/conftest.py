@@ -18,6 +18,8 @@ def block_real_keys(monkeypatch: pytest.MonkeyPatch) -> None:
     for name in (
         "NAVER_SEARCH_CLIENT_ID",
         "NAVER_SEARCH_CLIENT_SECRET",
+        "NAVER_MAP_CLIENT_ID",
+        "NAVER_MAP_KEY_PARAM",
         "DATA_GO_KR_KEY",
         "GEMINI_API_KEY",
         "GEMINI_MODEL",

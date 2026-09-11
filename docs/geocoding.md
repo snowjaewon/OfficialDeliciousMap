@@ -209,7 +209,8 @@ localdata.go.kr은 2026-04-16 종료했으므로 옛 API는 쓰지 않는다. �
 변경된 결과는 새 키에 저장하고 명시적 실패 재시도는 같은 키의 새 revision에 남긴다.
 `geocode-history-v2.jsonl`은 키·revision 순으로 정렬한 추가형 이력이다. 단일 작성자만 지원한다.
 
-geocode·closure·build 산출물은 envelope v4다. 이전 버전은 `regeneration-required`로 거부하고
+geocode·closure 산출물은 envelope v4이고 build는 지도·장부 분리 형식인 v5다.
+이전 버전은 `regeneration-required`로 거부하고
 선행 정제 자료와 새 후보 입력을 준비해 세 단계를 재실행한다. 교체 전 기존 파일은
 `history/<stage>-v<version>-<content-hash>.json`에 보존한다.
 옛 상호 중심 `geocode-history.jsonl`은 읽거나 수정하지 않는다.

@@ -4,7 +4,7 @@ import pytest
 
 from deliciousmap.paths import Paths
 from deliciousmap.pipeline import ExecutionContext, execute
-from deliciousmap.registry import Board, City, Organization, select_target
+from deliciousmap.registry import Board, City, MapBounds, Organization, select_target
 from tests.fakes import SyntheticAdapters
 
 
@@ -13,6 +13,7 @@ def context_at(tmp_path: Path, city: str = "seoul") -> ExecutionContext:
         City(
             city,
             "합성 도시",
+            MapBounds(34.8, 126.7, 38.0, 129.4),
             (
                 Organization(
                     "test-org",
@@ -251,4 +252,4 @@ def test_public_target_rejects_path_traversal_outside_cli() -> None:
     from deliciousmap.registry import Target
 
     with pytest.raises(ValueError, match="selection"):
-        Target(City("../outside", "합성 도시"))
+        Target(City("../outside", "합성 도시", MapBounds(34.8, 126.7, 38.0, 129.4)))

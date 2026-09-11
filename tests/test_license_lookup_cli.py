@@ -111,8 +111,8 @@ def test_license_candidates_convert_coordinates_and_reach_the_marker(
 
     for stage in ("closure", "build"):
         assert run_cli(context, stage) == 0
-    assert markers(context)["candidates"][0]["latitude"] == LATITUDE
-    assert markers(context)["candidates"][0]["record_ids"] == ["r1"]
+    assert markers(context)["markers"][0]["latitude"] == LATITUDE
+    assert markers(context)["markers"][0]["visit_count"] == 1
     assert payload(context, "build")["marker_count"] == 1
 
 
@@ -145,8 +145,7 @@ def test_local_and_license_supplied_facts_reach_the_same_business_and_marker(
     assert len(transport.urls) == len(LICENSE_SERVICES)
     assert geocoded(local)["business_id"] == geocoded(remote)["business_id"]
     assert geocoded(local)["reason"] == geocoded(remote)["reason"] == "matched"
-    assert markers(local)["candidates"] == markers(remote)["candidates"]
-    assert markers(local)["closures"] == markers(remote)["closures"]
+    assert markers(local)["markers"] == markers(remote)["markers"]
 
 
 def test_license_coordinates_complete_a_naver_candidate_without_usable_ones(
