@@ -50,7 +50,20 @@ def spend(day: int, merchant: str, amount: float) -> tuple[Cell, ...]:
 )
 def test_terminator_and_punctuation_rows_are_not_expenses(terminator: tuple[Cell, ...]) -> None:
     result = extract(table(spend(5, "합성 식당", 62000.0), terminator), MAPPING, SOURCE)
-    assert (result.candidates, result.excluded_rows) == (1, 1)
+    assert result.candidates == 1
+    # 분모에서 뺀 행은 위치와 종류를 남긴다.
+    assert result.excluded == ("sheet1:R4 blank",)
+
+
+def test_zero_and_negative_amounts_are_kept_and_flagged_for_review() -> None:
+    result = extract(
+        table(spend(5, "합성 식당", 62000.0), spend(6, "합성 식당", -62000.0),
+              spend(7, "합성 카페", 0.0)),
+        MAPPING,
+        SOURCE,
+    )  # fmt: skip
+    assert [str(record.amount_krw) for record in result.records] == ["62000", "-62000", "0"]
+    assert result.review == ("sheet1:R4 non_positive_amount", "sheet1:R5 non_positive_amount")
 
 
 def test_department_falls_back_to_the_source_when_the_table_has_no_such_column() -> None:
@@ -76,7 +89,7 @@ def test_prefixed_subtotals_are_excluded_and_the_grand_total_is_checked() -> Non
         MAPPING,
         SOURCE,
     )
-    assert (result.candidates, result.excluded_rows, result.total_check) == (2, 3, "matched")
+    assert (result.candidates, len(result.excluded), result.total_check) == (2, 3, "matched")
 
 
 def test_unlabeled_total_row_is_recognized_by_its_count() -> None:
@@ -104,6 +117,19 @@ def test_amount_mismatch_still_fails() -> None:
             MAPPING,
             SOURCE,
         )  # fmt: skip
+
+
+@pytest.mark.parametrize("label", ["누계", "1월 누계", "1월 합계", "1분기 계"])
+def test_totals_with_an_unclear_scope_are_not_compared(label: str) -> None:
+    """누계·기간 합계는 이전 표까지 더했을 수 있어 범위를 확정할 수 없다. 대조 불가로 남긴다."""
+    result = extract(
+        table(spend(5, "합성 식당", 62000.0), ("", label, "", "", 999999.0)), MAPPING, SOURCE
+    )
+    assert (result.candidates, result.excluded, result.total_check) == (
+        1,
+        ("sheet1:R4 unclear_total",),
+        "ambiguous",
+    )
 
 
 def test_each_section_is_checked_against_its_own_total() -> None:

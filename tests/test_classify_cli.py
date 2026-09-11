@@ -7,9 +7,7 @@ import pytest
 
 from deliciousmap.storage import write_text
 from tests.gwangju import FakeModel, header_answer, sheet_a, workbook
-from tests.test_parse_cli import DATA, configured, ledger, payload, publish, record_spending, run
-
-__all__ = ["configured"]
+from tests.test_parse_cli import DATA, ledger, payload, publish, record_spending, run
 
 SHEET = sheet_a(
     ("2026-01-05", "합성 식당", "간담회", 4.0, 62000.0),

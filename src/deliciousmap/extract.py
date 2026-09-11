@@ -18,21 +18,24 @@ from deliciousmap.contracts import (
     Record,
     SourceRef,
     SourceReport,
+    TotalCheck,
     UnresolvedSource,
 )
 from deliciousmap.grid import Cell, Table, UnreadableOriginal, UnsupportedFormat, read_tables, text
 from deliciousmap.privacy import scrub, scrub_merchant
 
 # 공백을 지운 셀 글자에 적용한다. `2월 소계`·`합 계`처럼 앞말이 붙거나 띄어 쓴 표기도 있다.
-TOTAL = re.compile(r"(\d{1,2}월|\d분기|\d{4}년)?(합계|총계|누계|총합계|계)")
+TOTAL = re.compile(r"합계|총계|총합계|계")
+# 누계·기간 합계는 앞 표까지 더했거나 일부 구간만 더했을 수 있어 대조 범위를 확정할 수 없다.
+UNCLEAR_TOTAL = re.compile(
+    r"(\d{1,2}월|\d분기|\d{4}년)?누계|(\d{1,2}월|\d분기|\d{4}년)(합계|총계|계)"
+)
 SUBTOTAL = re.compile(r".{0,6}소계")
 # 표 끝을 알리는 행. 원본에서는 글자마다 칸을 나눠 적기도 한다(`이 | 하 | 빈 | 칸`).
 TERMINATOR = re.compile(r"(이하)?(빈칸|여백|없음)\.?")
 # 엑셀 1900 체계의 날짜 일련번호가 2000~2099년에 해당하는 범위.
 SERIAL_RANGE = (36526, 73051)
 EXCEL_EPOCH = datetime(1899, 12, 30)
-
-TotalCheck = Literal["matched", "absent", "ambiguous"]
 
 
 class ValidationFailed(Exception):
@@ -48,7 +51,9 @@ class Extraction:
     records: tuple[Record, ...]
     candidates: int
     out_of_range: int
-    excluded_rows: int
+    # 분모에서 뺀 행의 위치와 종류, 사람이 다시 볼 레코드의 위치와 사유.
+    excluded: tuple[str, ...]
+    review: tuple[str, ...]
     total_check: TotalCheck
 
 
@@ -62,7 +67,7 @@ class _Candidate:
 
 def extract(table: Table, mapping: HeaderMap, source: SourceRef) -> Extraction:
     if mapping.layout == "none":
-        return Extraction((), 0, 0, 0, "absent")
+        return Extraction((), 0, 0, (), (), "absent")
     if mapping.layout != "table":
         raise ValidationFailed(f"{table.name}: unsupported layout")
     columns = mapping.columns
@@ -75,19 +80,24 @@ def extract(table: Table, mapping: HeaderMap, source: SourceRef) -> Extraction:
     # 헤더를 되풀이한 시트는 구역마다 따로 합계를 갖는다. 첫 구역은 헤더 아래 요약 행부터 본다.
     sections: list[_Section] = [_Section()]
     for row in range(max(mapping.header_rows, default=0) + 1, mapping.data_start_row):
-        if _kind(table, mapping, headers, row) == "total":
+        kind = _kind(table, mapping, headers, row)
+        if kind == "total":
             sections[0].totals.append((row, _amount(table.cell(row, columns["amount_krw"]))))
-    excluded = 0
+        elif kind == "unclear_total":
+            sections[0].unclear = True
+    excluded: list[str] = []
     for row in range(mapping.data_start_row, len(table.rows) + 1):
         kind = _kind(table, mapping, headers, row)
         if kind == "candidate":
             sections[-1].candidates.append(_candidate(table, mapping, row))
             continue
-        excluded += 1
+        excluded.append(f"{table.name}:R{row} {kind}")
         if kind == "header":
             sections.append(_Section())
         elif kind == "total":
             sections[-1].totals.append((row, _amount(table.cell(row, columns["amount_krw"]))))
+        elif kind == "unclear_total":
+            sections[-1].unclear = True
     candidates = [item for section in sections for item in section.candidates]
     check = _check_totals(table, sections, mapping.amount_multiplier)
     records = tuple(
@@ -99,7 +109,13 @@ def extract(table: Table, mapping: HeaderMap, source: SourceRef) -> Extraction:
         records=records,
         candidates=len(candidates),
         out_of_range=len(candidates) - len(records),
-        excluded_rows=excluded,
+        excluded=tuple(excluded),
+        # 원본에 실제로 있는 0원·음수는 추출 오류로 단정하지 않고 재검증 리포트의 검토 대상이다.
+        review=tuple(
+            f"{record.source_location} non_positive_amount"
+            for record in records
+            if record.amount_krw <= 0
+        ),
         total_check=check,
     )
 
@@ -135,7 +151,12 @@ def parse_sources(
                 extract(tables[mapping.table], mapping, source)
                 for mapping in by_source[source.source_hash]
             ]
-        except (UnsupportedFormat, UnreadableOriginal, KeyError):
+        except UnsupportedFormat:
+            reports[source.source_hash] = SourceReport(
+                source_hash=source.source_hash, status="unresolved", reason="unsupported_format"
+            )
+            continue
+        except (UnreadableOriginal, KeyError):
             reports[source.source_hash] = SourceReport(
                 source_hash=source.source_hash, status="unresolved", reason="unreadable"
             )
@@ -149,7 +170,7 @@ def parse_sources(
             )
             continue
         candidates = sum(result.candidates for result in results)
-        excluded = sum(result.excluded_rows for result in results)
+        excluded = tuple(row for result in results for row in result.excluded)
         if candidates == 0:
             # 집행 없음을 확인할 근거가 없으므로 0건 통과로 두지 않는다.
             reports[source.source_hash] = SourceReport(
@@ -157,7 +178,7 @@ def parse_sources(
                 status="unresolved",
                 reason="no_candidates",
                 candidates=0,
-                excluded_rows=excluded,
+                excluded=excluded,
             )
             continue
         found = [record for result in results for record in result.records]
@@ -169,7 +190,8 @@ def parse_sources(
             candidates=candidates,
             records=len(found),
             out_of_range=candidates - len(found),
-            excluded_rows=excluded,
+            excluded=excluded,
+            review=tuple(row for result in results for row in result.review),
             total_check="matched"
             if checks == {"matched"}
             else "ambiguous"
@@ -180,6 +202,7 @@ def parse_sources(
         records=tuple(records),
         empty_reason=None if records else "no records in the reporting period",
         sources=tuple(reports.values()),
+        reporting_period=f"{period.START.isoformat()}/{period.END.isoformat()}",
     )
 
 
@@ -206,9 +229,11 @@ def _candidate(table: Table, mapping: HeaderMap, row: int) -> _Candidate:
 class _Section:
     candidates: list[_Candidate] = field(default_factory=list)
     totals: list[tuple[int, Decimal | None]] = field(default_factory=list)
+    # 범위를 확정할 수 없는 누계·기간 합계가 있었다.
+    unclear: bool = False
 
 
-RowKind = Literal["blank", "header", "subtotal", "total", "note", "candidate"]
+RowKind = Literal["blank", "header", "subtotal", "total", "unclear_total", "note", "candidate"]
 
 
 def _kind(table: Table, mapping: HeaderMap, headers: set[tuple[str, ...]], row: int) -> RowKind:
@@ -222,6 +247,8 @@ def _kind(table: Table, mapping: HeaderMap, headers: set[tuple[str, ...]], row: 
     labels = {_compact(value) for value in cells}
     if any(SUBTOTAL.fullmatch(label) for label in labels):
         return "subtotal"
+    if any(UNCLEAR_TOTAL.fullmatch(label) for label in labels):
+        return "unclear_total"
     columns = mapping.columns
     date_columns = [columns[role] for role in ("spent_on", "month", "day") if role in columns]
     identity = [*date_columns, columns["merchant"]]
@@ -237,12 +264,16 @@ def _kind(table: Table, mapping: HeaderMap, headers: set[tuple[str, ...]], row: 
 
 
 def _check_totals(table: Table, sections: list[_Section], multiplier: Decimal) -> TotalCheck:
-    """합계 행은 제 구역의 합이나 표 전체의 합과 정확히 같아야 한다. 소계는 더하지 않는다."""
+    """합계 행은 제 구역의 합이나 표 전체의 합과 정확히 같아야 한다. 소계는 더하지 않는다.
+
+    누계·기간 합계와 금액을 읽을 수 없는 합계는 대조하지 않고 대조 불가로 남긴다.
+    """
     whole = sum((item.amount for section in sections for item in section.candidates), Decimal(0))
     found = [(section, total) for section in sections for total in section.totals]
+    unclear = any(section.unclear for section in sections)
     if not found:
-        return "absent"
-    readable = True
+        return "ambiguous" if unclear else "absent"
+    readable = not unclear
     for section, (row, amount) in found:
         if amount is None:
             readable = False

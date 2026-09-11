@@ -18,9 +18,7 @@ from tests.gwangju import (
     sheet_a,
     workbook,
 )
-from tests.test_parse_cli import DATA, configured, record_spending
-
-__all__ = ["configured"]
+from tests.test_parse_cli import DATA, record_spending
 
 
 def test_declared_gwangju_board_is_the_verified_city_hall_board() -> None:

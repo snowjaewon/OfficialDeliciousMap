@@ -57,9 +57,6 @@ class Table:
         cells = self.rows[row - 1] if 0 < row <= len(self.rows) else ()
         return cells[column] if column < len(cells) else ""
 
-    def blank(self, row: int) -> bool:
-        return all(text(value) == "" for value in self.rows[row - 1])
-
 
 def text(value: Cell) -> str:
     """셀을 사람이 읽는 한 줄 문자열로 옮긴다. 줄바꿈·연속 공백은 공백 하나로 모은다."""
@@ -123,7 +120,7 @@ def _xlsx(content: bytes) -> list[tuple[str, list[tuple[Cell, ...]]]]:
     except zipfile.BadZipFile:
         raise UnsupportedFormat("broken ZIP container") from None
     if "xl/workbook.xml" not in names:
-        # HWPX·첨부 묶음 ZIP 등 엑셀이 아닌 ZIP 컨테이너.
+        # HWPX·원본 묶음 ZIP 등 엑셀이 아닌 ZIP 컨테이너.
         raise UnsupportedFormat("ZIP container without an Excel workbook")
     try:
         with warnings.catch_warnings():

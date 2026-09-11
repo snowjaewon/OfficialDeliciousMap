@@ -371,6 +371,8 @@ class ArtifactStore:
             )
             if any(record.organization not in organizations for record in output.records):
                 raise ValueError("record organization mismatch")
+            if output.sources:
+                self._validate_reports(output)
         elif isinstance(output, ClassifyOutput):
             records = self.load("parse", ParseOutput).records
             require_exact_keys(
@@ -418,6 +420,18 @@ class ArtifactStore:
                 for path in output.files
             ):
                 raise ValueError("build must produce files within output-root")
+
+    def _validate_reports(self, output: ParseOutput) -> None:
+        """원본별 보고는 받은 원본을 한 번씩 모두 덮고, 레코드 수가 실제 레코드와 같아야 한다."""
+        reported = [item.source_hash for item in output.sources]
+        fetched = {source.source_hash for source in self.load("fetch", FetchOutput).sources}
+        if len(reported) != len(set(reported)) or set(reported) != fetched:
+            raise ValueError("parse report must cover every fetched original once")
+        counts: dict[str, int] = {}
+        for record in output.records:
+            counts[record.source_hash] = counts.get(record.source_hash, 0) + 1
+        if any(item.records != counts.get(item.source_hash, 0) for item in output.sources):
+            raise ValueError("parse report record counts do not match the records")
 
     def manual(self) -> tuple[ManualCorrection, ...]:
         corrections = read_reviews(self.paths.manual(self.target, "classify"), ManualCorrection)

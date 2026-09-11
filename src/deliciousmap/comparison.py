@@ -184,17 +184,15 @@ def _compare(
     if len(prompt) > model.max_prompt_chars:
         return subject.withheld("oversized_request")
     try:
-        with budget.reserve(
+        reply = budget.spend(
             f"{subject.request_key}-{attempt_number}",
             PURPOSE,
             model.model,
             model.ceiling_usd(prompt),
             _reservation_evidence(subject),
-        ) as reservation:
-            reply = model.compare(prompt)
-            # 사용량을 확인하지 못한 호출은 예약을 그대로 유지한다.
-            if reply.usage is not None:
-                reservation.settle(model.cost_usd(reply.usage), _settlement_evidence(reply.usage))
+            lambda: model.compare(prompt),
+            model.cost_usd,
+        )
     except BudgetUnavailable as exc:
         return subject.withheld(exc.reason)
     if reply.status == "error" and reply.error is not None:
@@ -224,7 +222,3 @@ def _grounded(subject: Subject, lookup: CandidateLookup, reply: ModelReply) -> R
 def _reservation_evidence(subject: Subject) -> str:
     """상호·주소·응답 원문 없이 어떤 레코드의 비교인지만 남긴다."""
     return f"restoration comparison for record {subject.scope.record_id}"
-
-
-def _settlement_evidence(usage: Usage) -> str:
-    return f"reported usage in={usage.input_tokens} out={usage.output_tokens}"

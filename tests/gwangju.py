@@ -81,13 +81,19 @@ def header_answer(
 ANSWER_B = header_answer(spent_on=2, merchant=6, purpose=3, amount=4)
 
 
-def gemini_reply(answer: object, *, prompt_tokens: int = 1500, output_tokens: int = 200) -> bytes:
+def gemini_reply(
+    answer: object,
+    *,
+    prompt_tokens: int = 1500,
+    output_tokens: int = 200,
+    finish_reason: str = "STOP",
+) -> bytes:
     return json.dumps(
         {
             "candidates": [
                 {
                     "content": {"role": "model", "parts": [{"text": json.dumps(answer)}]},
-                    "finishReason": "STOP",
+                    "finishReason": finish_reason,
                 }
             ],
             "usageMetadata": {
@@ -140,7 +146,8 @@ class FakeModel:
         answer = self.headers.pop(0)
         if isinstance(answer, Exception):
             raise answer
-        return gemini_reply(answer)
+        # 응답 원문을 그대로 주면 잘린 응답 같은 제공자 응답을 흉내 낼 수 있다.
+        return answer if isinstance(answer, bytes) else gemini_reply(answer)
 
     def calls(self, kind: str) -> list[str]:
         return [prompt for name, prompt in self.prompts if name == kind]
@@ -221,7 +228,7 @@ def view_page(post: Post) -> bytes:
 
 @dataclass
 class FakeBoardTransport:
-    """게시판 응답만 대신한다. 요청 구성·목록 넘김·첨부 해석은 실제 게시판 클래스가 한다."""
+    """게시판 응답만 대신한다. 요청 구성·목록 넘김·원본 링크 해석은 실제 게시판 클래스가 한다."""
 
     posts: tuple[Post, ...]
     page_size: int = 100

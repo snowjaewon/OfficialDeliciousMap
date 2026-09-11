@@ -479,11 +479,21 @@ class CachedHeaderMap(Contract):
 
 
 class RecordedAnswer(Contract):
-    """data/<city>/headermap-answers-v1.jsonl 항목의 값. 원본·표 하나에 받은 모델 답 하나."""
+    """data/<city>/headermap-answers-v1.jsonl 항목의 값. 원본·표 하나에 받은 모델 응답 하나.
 
-    answer: HeaderMapAnswer
+    잘리거나 해석할 수 없던 응답도 과금된 시도이므로 사유와 함께 남긴다.
+    """
+
+    answer: HeaderMapAnswer | None = None
+    error: Literal["invalid_response", "incomplete_response"] | None = None
     model: Text
     prompt_version: Text
+
+    @model_validator(mode="after")
+    def answer_or_error(self) -> "RecordedAnswer":
+        if (self.answer is None) == (self.error is None):
+            raise ValueError("a recorded reply is either an answer or an error")
+        return self
 
 
 class HeaderMapReply(Contract):
@@ -630,6 +640,10 @@ class ParseInput(Contract):
     unresolved: tuple[UnresolvedSource, ...] = ()
 
 
+# 합계 대조 결과. 합계가 없거나 범위를 확정할 수 없으면 대조하지 않았다는 뜻이다.
+TotalCheck = Literal["matched", "absent", "ambiguous"]
+
+
 class SourceReport(Contract):
     """원본 하나의 추출 결과. 미해결 원본의 잘 읽힌 일부는 레코드로 확정하지 않는다."""
 
@@ -642,9 +656,11 @@ class SourceReport(Contract):
     records: int = Field(default=0, ge=0)
     # 대상 기간 밖의 유효한 지출. 날짜 파싱 실패와 구별한다.
     out_of_range: int = Field(default=0, ge=0)
-    # 빈 행·반복 헤더·합계처럼 지출 1건이 아니어서 분모에서 뺀 행.
-    excluded_rows: int = Field(default=0, ge=0)
-    total_check: Literal["matched", "absent", "ambiguous"] | None = None
+    # 빈 행·반복 헤더·합계처럼 지출 1건이 아니어서 분모에서 뺀 행의 위치와 종류(`sheet1:R7 total`).
+    excluded: tuple[Text, ...] = ()
+    # 원본에 실제로 있는 0원·음수처럼 재검증 리포트에서 사람이 볼 레코드의 위치와 사유.
+    review: tuple[Text, ...] = ()
+    total_check: TotalCheck | None = None
 
     @model_validator(mode="after")
     def consistent_report(self) -> "SourceReport":
@@ -659,6 +675,8 @@ class ParseOutput(Contract):
     records: tuple[Record, ...]
     empty_reason: Text | None = None
     sources: tuple[SourceReport, ...] = ()
+    # 대상 기간(`시작/끝`). 원본별 범위 밖 건수는 이 기간 밖의 유효한 지출이다.
+    reporting_period: str = ""
 
 
 class ClassifyInput(Contract):

@@ -129,7 +129,7 @@ def _correction(
     rank = max(_specificity(item) for item in matches)
     chosen = {item.status for item in matches if _specificity(item) == rank}
     if len(chosen) > 1:
-        raise ValueError("conflicting manual corrections for one scope")
+        raise ValueError(f"{city}: conflicting manual corrections for record {record.record_id}")
     return next(item for item in matches if _specificity(item) == rank)
 
 
@@ -144,19 +144,15 @@ def _ask(
     if len(prompt) > model.max_prompt_chars:
         return (), "oversized_request"
     try:
-        with budget.reserve(
+        reply = budget.spend(
             f"{PURPOSE}:{uuid.uuid4().hex}",
             PURPOSE,
             model.model,
             model.ceiling_usd(prompt),
             f"classification of {len(batch)} merchants",
-        ) as reservation:
-            reply = model.classify(prompt)
-            if reply.usage is not None:
-                reservation.settle(
-                    model.cost_usd(reply.usage),
-                    f"reported usage in={reply.usage.input_tokens} out={reply.usage.output_tokens}",
-                )
+            lambda: model.classify(prompt),
+            model.cost_usd,
+        )
     except BudgetUnavailable as exc:
         return (), exc.reason
     if reply.answer is None:

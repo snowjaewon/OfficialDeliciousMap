@@ -15,6 +15,7 @@ from tests.gwangju import (
     FakeModel,
     Post,
     city,
+    gemini_reply,
     header_answer,
     sheet_a,
     sheet_b,
@@ -22,15 +23,6 @@ from tests.gwangju import (
 )
 
 DATA = Path("저장소") / "data"
-
-
-@pytest.fixture
-def configured(monkeypatch: pytest.MonkeyPatch) -> None:
-    """개발자 PC의 .env 처럼 모델 키와 확인한 단가가 준비된 상태."""
-    monkeypatch.setenv("GEMINI_API_KEY", "합성-제미나이-키")
-    monkeypatch.setenv("GEMINI_MODEL", "gemini-3.6-flash")
-    monkeypatch.setenv("GEMINI_INPUT_USD_PER_MTOK", "1.50")
-    monkeypatch.setenv("GEMINI_OUTPUT_USD_PER_MTOK", "7.50")
 
 
 def record_spending(root: Path, amount: str = "0.35") -> None:
@@ -89,7 +81,7 @@ def ledger(root: Path) -> list[dict]:
 
 
 def publish(root: Path, *files: tuple[str, bytes], department: str = "합성과") -> list[str]:
-    """게시글마다 첨부 하나를 올리고 fetch한다. 원본 해시를 게시 순서대로 돌려준다."""
+    """게시글마다 원본 하나를 올리고 fetch한다. 원본 해시를 게시 순서대로 돌려준다."""
     posts = tuple(
         Post(
             100 - index,
@@ -164,9 +156,11 @@ def test_verified_mappings_extract_every_candidate_and_reuse_the_header_cache(
         "candidates": 3,
         "records": 2,
         "out_of_range": 1,
-        "excluded_rows": 1,
+        "excluded": ["sheet1:R7 total"],
+        "review": [],
         "total_check": "matched",
     }
+    assert payload(tmp_path, "parse")["reporting_period"] == "2026-01-01/2026-06-30"
 
     spent = [item for item in ledger(tmp_path) if item["purpose"] == "header_mapping"]
     assert [item["kind"] for item in spent] == ["reservation", "settlement"] * 2
@@ -249,6 +243,36 @@ def test_rerun_reuses_recorded_answers_instead_of_asking_again(
     assert [entry["revision"] for entry in entries] == [1, 2]
     assert all(entry["value"]["answer"] == wrong for entry in entries)
     assert source[:16] in entries[0]["evidence"]
+
+
+def test_truncated_reply_is_recorded_and_not_asked_again_automatically(
+    tmp_path: Path, configured: None
+) -> None:
+    """잘린 응답은 자동 재호출하지 않고 파일 단위 미해결로 남긴다. 다음 실행도 과금하지 않는다."""
+    record_spending(tmp_path)
+    (source,) = publish(tmp_path, ("1분기.xls", workbook(QUARTER)))
+    truncated = gemini_reply(header_answer(), finish_reason="MAX_TOKENS")
+    first = FakeModel(headers=[truncated, header_answer()])
+    assert run(tmp_path, "headermap", first) == 0
+    assert len(first.calls("headermap")) == 1
+    expected = [{"source_hash": source, "reason": "incomplete_response", "detail": "sheet1"}]
+    assert payload(tmp_path, "headermap")["unresolved"] == expected
+    again = FakeModel(headers=[header_answer()])
+    assert run(tmp_path, "headermap", again) == 0
+    assert again.prompts == []
+    assert payload(tmp_path, "headermap")["unresolved"] == expected
+
+
+def test_card_layout_is_unsupported_without_a_retry(tmp_path: Path, configured: None) -> None:
+    record_spending(tmp_path)
+    (source,) = publish(tmp_path, ("카드형.xls", workbook(QUARTER)))
+    card = {**header_answer(), "layout": "key_value"}
+    model = FakeModel(headers=[card, header_answer()])
+    assert run(tmp_path, "headermap", model) == 0
+    assert len(model.calls("headermap")) == 1
+    assert payload(tmp_path, "headermap")["unresolved"] == [
+        {"source_hash": source, "reason": "unsupported_layout", "detail": "sheet1"}
+    ]
 
 
 def test_recorded_answer_that_validates_is_used_without_a_model(

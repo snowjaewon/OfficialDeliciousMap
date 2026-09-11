@@ -8,13 +8,15 @@ import os
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation
-from typing import Any
+from typing import Any, get_args
 
 from pydantic import ValidationError
 
 from deliciousmap.contracts import (
     ClassificationAnswer,
     ClassificationReply,
+    ClassificationStatus,
+    ColumnRole,
     ComparisonAnswer,
     HeaderMapAnswer,
     HeaderMapReply,
@@ -89,19 +91,7 @@ HEADER_RESPONSE_SCHEMA = {
                 "type": "OBJECT",
                 "properties": {
                     "column": {"type": "INTEGER"},
-                    "role": {
-                        "type": "STRING",
-                        "enum": [
-                            "spent_on",
-                            "merchant",
-                            "purpose",
-                            "department",
-                            "amount_krw",
-                            "month",
-                            "day",
-                            "time",
-                        ],
-                    },
+                    "role": {"type": "STRING", "enum": list(get_args(ColumnRole))},
                 },
                 "required": ["column", "role"],
             },
@@ -137,10 +127,7 @@ CLASSIFY_RESPONSE_SCHEMA = {
                 "properties": {
                     "index": {"type": "INTEGER"},
                     "merchant": {"type": "STRING"},
-                    "status": {
-                        "type": "STRING",
-                        "enum": ["restaurant", "non_restaurant", "pending"],
-                    },
+                    "status": {"type": "STRING", "enum": list(get_args(ClassificationStatus))},
                     "reason": {"type": "STRING"},
                 },
                 "required": ["index", "merchant", "status", "reason"],
@@ -331,11 +318,27 @@ def settings_from_environment(environ: Mapping[str, str] | None = None) -> Setti
     )
 
 
-def from_environment(
+@dataclass(frozen=True)
+class Models:
+    """구성된 용도별 모델. 셋은 같은 키·모델·단가를 쓴다."""
+
+    comparator: GeminiComparator
+    header_mapper: GeminiHeaderMapper
+    classifier: GeminiClassifier
+
+
+def models_from_environment(
     transport: JsonTransport | None = None, environ: Mapping[str, str] | None = None
-) -> GeminiComparator | None:
+) -> Models | None:
     settings = settings_from_environment(environ)
-    return None if settings is None else GeminiComparator(settings, transport or HttpTransport())
+    if settings is None:
+        return None
+    client = transport or HttpTransport()
+    return Models(
+        GeminiComparator(settings, client),
+        GeminiHeaderMapper(settings, client),
+        GeminiClassifier(settings, client),
+    )
 
 
 def _usage(payload: object) -> Usage | None:

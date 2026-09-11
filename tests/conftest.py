@@ -29,6 +29,15 @@ def block_real_keys(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv(name, raising=False)
 
 
+@pytest.fixture
+def configured(monkeypatch: pytest.MonkeyPatch) -> None:
+    """개발자 PC의 .env 처럼 모델 키와 확인한 단가가 준비된 상태. 값은 합성이다."""
+    monkeypatch.setenv("GEMINI_API_KEY", "합성-제미나이-키")
+    monkeypatch.setenv("GEMINI_MODEL", "gemini-3.6-flash")
+    monkeypatch.setenv("GEMINI_INPUT_USD_PER_MTOK", "1.50")
+    monkeypatch.setenv("GEMINI_OUTPUT_USD_PER_MTOK", "7.50")
+
+
 @pytest.fixture(autouse=True)
 def public_map_key(monkeypatch: pytest.MonkeyPatch, block_real_keys: None) -> None:
     """지도 SDK는 공개 키를 요구한다. 실제 키가 아닌 합성 값으로 build를 실행한다."""

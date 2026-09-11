@@ -66,11 +66,14 @@ uv run python -m deliciousmap geocode --city seoul --retry-failed
 
 - `headermap`: 표마다 공통 헤더 서명 캐시 → 원본별 답변 이력 → Gemini 순으로 매핑을 찾고,
   코드 검증을 통과한 매핑만 쓴다. 표마다 호출은 최초 1회와 실패 사유를 담은 재호출 1회뿐이다.
-- `parse`: xls·xlsx(ISO Strict 포함)를 읽는다. 모든 표가 통과한 원본만 레코드를 내며, 범위 밖·
-  제외 행 수와 미해결 원본의 사유는 `parse.json`의 `sources`에 남긴다. 목적·상호의 개인정보를 지운다.
+  잘리거나 해석할 수 없는 응답과 카드형 표는 다시 묻지 않고 미해결로 남긴다.
+- `parse`: xls·xlsx(ISO Strict 포함)를 읽는다. 모든 표가 통과한 원본만 레코드를 낸다. 원본마다
+  후보·범위 밖 건수, 분모에서 뺀 행의 위치·종류, 0원·음수 레코드의 위치, 미해결 사유를
+  `parse.json`의 `sources`에 남긴다. 목적·상호의 개인정보를 지우고, 경조사 수령인처럼 상호 칸에
+  사람 이름이 적힌 경우 `개인(성명 비공개)`로 가린다.
 - `classify`: 사람 보정 → 도시 무관 LLM 캐시 → Gemini 순. 호출 실패는 판단 보류로 두고 캐시에 남기지 않는다.
 
-PDF·HWP·첨부 묶음 ZIP 원본과 전량 추출 폴백은 파일 단위 미해결로 남으며 후속 작업이다.
+PDF·HWP·원본 묶음 ZIP과 전량 추출 폴백은 파일 단위 미해결로 남으며 후속 작업이다.
 다른 도시·기관, 인허가 전량 수집·폐업 대조, 실데이터 지도 성능 검증·배포도 후속 작업이다.
 
 조회 키는 `.env`에서 읽는다. 네이버 지역검색은 `NAVER_SEARCH_CLIENT_ID`·`NAVER_SEARCH_CLIENT_SECRET`,
@@ -261,11 +264,13 @@ record_id,spent_on,organization,department,merchant,purpose,amount_krw,source_ha
 [폴백 정책](docs/specs/header-mapping-fallback.md)을 따른다. 코드 검증은 표의 지출 후보 전부가
 날짜·금액·상호를 갖추고, 합계 행이 있으면 그 구역 또는 표 전체의 합과 정확히 같아야 통과한다.
 빈 행·반복 헤더·소계·합계·`이하 빈칸` 같은 행은 분모에서 뺀다. 합계 행의 `N건`은 대조하지 않는다.
+`누계`·`N월 합계`처럼 범위를 확정할 수 없는 합계는 대조하지 않고 `total_check=ambiguous`로 남긴다.
 
 공통 캐시는 `headermap.jsonl`(키: 정책 버전과 정규화한 헤더 행 글자의 SHA-256. 행 길이가 열 수다.
 값은 헤더 행·첫 지출 행까지의 거리·열 역할·금액 배수·모델)과 `classify.jsonl`(키: 정규화 상호)이다.
 원본·표마다 받은 헤더 매핑 답은 `data/<city>/headermap-answers-v1.jsonl`에 쌓아, 코드가 바뀌어도
-같은 표를 다시 묻지 않고 기록된 답을 다시 검증한다. 다시 물으려면 담당자가 그 파일을 지운다.
+같은 표를 다시 묻지 않고 기록된 답을 다시 검증한다. 잘리거나 해석할 수 없던 응답도 과금된 시도로
+남긴다. 표마다 호출 한도는 모델·지시문이 바뀌어도 이 이력으로 센다. 다시 물으려면 담당자가 그 파일을 지운다.
 각 줄은 `schema_version=1`, `key`, 양의 정수 `revision`, `valid`, `evidence`, `value`를 가진다.
 JSON 객체의 키와 줄의 `(key, revision)`을 정렬하며, 이력의 기존 값은 수정하거나 삭제하지 않는다.
 같은 키·revision의 동일 항목 재추가는 무동작이고 다른 값이면 실패한다.

@@ -123,22 +123,22 @@ def _map_table(
         if entry.key == key
     ]
     for previous in recorded:
-        mapping, failure = _verified(source, table, previous.answer)
+        _settled(table, previous)
+        mapping, failure = _verified(source, table, previous)
         if mapping is not None:
-            return _accept(stores, table, mapping, previous.model, previous.prompt_version)
+            return _accept(stores, table, mapping, previous)
     if mapper is None:
         raise Unresolved("validation_failed" if recorded else "model_not_configured", table.name)
     # 캐시 미적중이면 최초 호출과 재호출 한 번, 캐시 검증 실패면 재호출 한 번뿐이다.
-    # 같은 모델·지시문으로 이미 받은 답도 한도에 들어간다.
-    limit = 1 if cached is not None else 2
-    used = sum(
-        1
-        for previous in recorded
-        if (previous.model, previous.prompt_version) == (mapper.model, mapper.prompt_version)
-    )
-    for _ in range(used, limit):
+    # 한도는 모델·지시문이 바뀌어도 이 표에 받은 답 전체로 센다.
+    for _ in range(len(recorded), 1 if cached is not None else 2):
+        reply = _ask(mapper, stores.budget, source, table, failure)
+        if reply.status == "error" and reply.error == "unavailable":
+            # 통신 장애는 매핑의 증거가 아니다. 답이 없으므로 이력에 넣지 않는다.
+            raise Unresolved("unavailable", table.name)
         fresh = RecordedAnswer(
-            answer=_ask(mapper, stores.budget, source, table, failure),
+            answer=reply.answer,
+            error=reply.error,
             model=mapper.model,
             prompt_version=mapper.prompt_version,
         )
@@ -154,10 +154,19 @@ def _map_table(
                 value=fresh.model_dump(mode="json"),
             ),
         )
-        mapping, failure = _verified(source, table, fresh.answer)
+        _settled(table, fresh)
+        mapping, failure = _verified(source, table, fresh)
         if mapping is not None:
-            return _accept(stores, table, mapping, fresh.model, fresh.prompt_version)
+            return _accept(stores, table, mapping, fresh)
     raise Unresolved("validation_failed", failure or table.name)
+
+
+def _settled(table: grid.Table, answer: RecordedAnswer) -> None:
+    """잘리거나 해석할 수 없던 응답, 카드형 표는 자동으로 다시 묻지 않고 미해결로 남긴다."""
+    if answer.error is not None:
+        raise Unresolved(answer.error, table.name)
+    if answer.answer is not None and answer.answer.layout == "key_value":
+        raise Unresolved("unsupported_layout", table.name)
 
 
 def answers_key(source: SourceRef, table: grid.Table) -> str:
@@ -165,10 +174,12 @@ def answers_key(source: SourceRef, table: grid.Table) -> str:
 
 
 def _verified(
-    source: SourceRef, table: grid.Table, answer: HeaderMapAnswer
+    source: SourceRef, table: grid.Table, recorded: RecordedAnswer
 ) -> tuple[HeaderMap | None, str | None]:
+    if recorded.answer is None:
+        return None, None
     try:
-        mapping = to_mapping(source, table, answer)
+        mapping = to_mapping(source, table, recorded.answer)
     except ValidationFailed as exc:
         return None, exc.detail
     failure = _failure(source, table, mapping)
@@ -176,13 +187,11 @@ def _verified(
 
 
 def _accept(
-    stores: _Stores, table: grid.Table, mapping: HeaderMap, model: str, prompt_version: str
+    stores: _Stores, table: grid.Table, mapping: HeaderMap, recorded: RecordedAnswer
 ) -> HeaderMap:
     if not mapping.header_rows or mapping.layout != "table":
         return mapping
-    return mapping.model_copy(
-        update={"cache": _remember(stores.cache, table, mapping, model, prompt_version)}
-    )
+    return mapping.model_copy(update={"cache": _remember(stores.cache, table, mapping, recorded)})
 
 
 def to_mapping(source: SourceRef, table: grid.Table, answer: HeaderMapAnswer) -> HeaderMap:
@@ -250,7 +259,7 @@ def _cached(source: SourceRef, table: grid.Table, cache_path: Path) -> HeaderMap
 
 
 def _remember(
-    cache_path: Path, table: grid.Table, mapping: HeaderMap, model: str, prompt_version: str
+    cache_path: Path, table: grid.Table, mapping: HeaderMap, recorded: RecordedAnswer
 ) -> CacheRef | None:
     """검증을 통과한 판정만 쌓는다. 같은 서명의 새 판정은 새 revision이며 옛 판정은 남긴다."""
     if mapping.data_start_row <= max(mapping.header_rows):
@@ -262,8 +271,8 @@ def _remember(
         data_offset=mapping.data_start_row - max(mapping.header_rows),
         columns=mapping.columns,
         amount_multiplier=mapping.amount_multiplier,
-        model=model,
-        prompt_version=prompt_version,
+        model=recorded.model,
+        prompt_version=recorded.prompt_version,
     ).model_dump(mode="json")
     latest = previous[-1] if previous else None
     if latest is not None and latest.valid and latest.value == value:
@@ -272,7 +281,8 @@ def _remember(
         key=key,
         revision=1 if latest is None else latest.revision + 1,
         valid=True,
-        evidence=f"{model}/{prompt_version} verified on {mapping.source_hash[:16]}",
+        evidence=f"{recorded.model}/{recorded.prompt_version} verified on "
+        f"{mapping.source_hash[:16]}",
         value=value,
     )
     append_cache(cache_path, entry)
@@ -285,30 +295,23 @@ def _ask(
     source: SourceRef,
     table: grid.Table,
     failure: str | None,
-) -> HeaderMapAnswer:
-    """과금이 일어나는 요청은 모두 공통 예산을 거친다. 호출 장애는 잘못된 매핑의 증거가 아니다."""
+) -> HeaderMapReply:
+    """과금이 일어나는 요청은 모두 공통 예산을 거친다. 예산이 호출을 막으면 미해결로 남긴다."""
     prompt = build_prompt(table, failure)
     if len(prompt) > mapper.max_prompt_chars:
         raise Unresolved("oversized_request", table.name)
     try:
-        with budget.reserve(
+        return budget.spend(
             f"{PURPOSE}:{source.source_hash[:16]}:{table.name}:{uuid.uuid4().hex[:12]}",
             PURPOSE,
             mapper.model,
             mapper.ceiling_usd(prompt),
             f"header mapping for {source.source_hash[:16]} {table.name}",
-        ) as reservation:
-            reply = mapper.map(prompt)
-            if reply.usage is not None:
-                reservation.settle(
-                    mapper.cost_usd(reply.usage),
-                    f"reported usage in={reply.usage.input_tokens} out={reply.usage.output_tokens}",
-                )
+            lambda: mapper.map(prompt),
+            mapper.cost_usd,
+        )
     except BudgetUnavailable as exc:
         raise Unresolved(exc.reason, table.name) from None
-    if reply.answer is None:
-        raise Unresolved(reply.error or "invalid_response", table.name)
-    return reply.answer
 
 
 def build_prompt(table: grid.Table, failure: str | None = None) -> str:

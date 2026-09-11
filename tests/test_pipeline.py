@@ -255,3 +255,32 @@ def test_public_target_rejects_path_traversal_outside_cli() -> None:
 
     with pytest.raises(ValueError, match="selection"):
         Target(City("../outside", "합성 도시", MapBounds(34.8, 126.7, 38.0, 129.4)))
+
+
+@pytest.mark.parametrize(
+    "report",
+    [
+        # 받지 않은 원본의 보고
+        {"source_hash": "b" * 64, "status": "parsed", "candidates": 4, "records": 4},
+        # 원본별 레코드 수가 실제 레코드와 다름
+        {"source_hash": "a" * 64, "status": "parsed", "candidates": 4, "records": 3},
+        # 미해결 원본인데 레코드가 나옴
+        {"source_hash": "a" * 64, "status": "unresolved", "reason": "validation_failed"},
+    ],
+)
+def test_parse_report_must_account_for_every_record(tmp_path: Path, report: dict) -> None:
+    from deliciousmap.contracts import ParseInput, ParseOutput
+    from deliciousmap.pipeline import PipelineFailure
+
+    context = context_at(tmp_path)
+    adapters = SyntheticAdapters()
+    original = adapters.parse
+
+    def reported(value: ParseInput, context: ExecutionContext) -> ParseOutput:
+        return original(value, context).model_copy(update={"sources": (report,)})
+
+    adapters.parse = reported  # type: ignore[method-assign]
+    for stage in ("fetch", "headermap"):
+        execute(stage, context, adapters)
+    with pytest.raises(PipelineFailure, match=r"parse city=seoul org=\* cause=invalid-artifact"):
+        execute("parse", context, adapters)

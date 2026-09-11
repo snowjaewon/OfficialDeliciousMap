@@ -10,7 +10,7 @@ from deliciousmap.lookup import CandidateProvider
 from deliciousmap.paths import Paths
 from deliciousmap.pipeline import STAGES, Adapters, ExecutionContext, PipelineFailure, execute
 from deliciousmap.registry import CITIES, City, select_target
-from deliciousmap.transport import HttpTransport, JsonTransport, Transport
+from deliciousmap.transport import JsonTransport, Transport
 
 
 def main(
@@ -61,7 +61,7 @@ def main(
             naver.from_environment(naver_transport),
             licenses.from_environment(license_transport),
         )
-        settings = gemini.settings_from_environment()
+        models = gemini.models_from_environment(model_transport)
         # 화면을 만드는 명령만 공개 지도 키를 요구한다. 다른 단계는 영향받지 않는다.
         map_key = site.map_key_from_environment() if args.command in {"build", "run"} else None
     except ValueError as exc:
@@ -69,7 +69,6 @@ def main(
         print(f"configuration: {exc}", file=sys.stderr)
         return 2
     providers = tuple(item for item in configured if item is not None)
-    models = model_transport or HttpTransport()
     try:
         execute(
             args.command,
@@ -78,11 +77,11 @@ def main(
                 paths,
                 args.retry_failed,
                 providers,
-                gemini.GeminiComparator(settings, models) if settings else None,
+                models.comparator if models else None,
                 map_key,
                 board_transport or boards.default_transport(),
-                gemini.GeminiHeaderMapper(settings, models) if settings else None,
-                gemini.GeminiClassifier(settings, models) if settings else None,
+                models.header_mapper if models else None,
+                models.classifier if models else None,
             ),
             adapters,
         )
