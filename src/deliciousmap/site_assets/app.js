@@ -360,15 +360,14 @@
       return { data, overlay };
     });
 
+    const reportViewport = () => onViewportChange(naverBoundsToPlain(map.getBounds()));
     // SDK는 첫 화면에서 idle 없이 init만 보낸다. 도시 전체가 보이는 이 시점에 축소 한계를 고정한다.
     naverMaps.Event.addListener(map, "init", () => {
       map.setOptions({ minZoom: map.getZoom(), maxBounds: cityBounds });
-      onViewportChange(naverBoundsToPlain(map.getBounds()));
+      reportViewport();
       markReady();
     });
-    naverMaps.Event.addListener(map, "idle", () => {
-      onViewportChange(naverBoundsToPlain(map.getBounds()));
-    });
+    naverMaps.Event.addListener(map, "idle", reportViewport);
     map.fitBounds(cityBounds);
     return { map, overlays, ready };
   }

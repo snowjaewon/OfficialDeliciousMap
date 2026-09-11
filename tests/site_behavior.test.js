@@ -163,9 +163,9 @@ function fakeNaverMaps() {
       addListener(target, name, listener) {
         (target.listeners[name] ||= []).push(listener);
       },
-    },
-    emit(target, name) {
-      for (const listener of target.listeners[name] || []) listener({});
+      trigger(target, name) {
+        for (const listener of target.listeners[name] || []) listener({});
+      },
     },
   };
 }
@@ -194,6 +194,8 @@ const markers = [
   { merchant: "한밭 빵집", visit_count: 7, latitude: 36.3, longitude: 127.4 },
   { merchant: "골목 카페", visit_count: 2, latitude: 37.7, longitude: 127.3 },
 ];
+
+const SEOUL_BOUNDS = { south: 37.41, west: 126.73, north: 37.72, east: 127.27 };
 
 test("search and visit bands always use every marker in the selected city", () => {
   assert.deepEqual(filterMarkers(markers, "  바다  ", "all"), [markers[1]]);
@@ -355,35 +357,35 @@ test("the record view explains why an unmapped record missed the map", () => {
 test("the city view reports its area and fixes its zoom-out limit as soon as the map initializes", async () => {
   const sdk = fakeNaverMaps();
   const windowObject = { document: new FakeDocument({ "#map": new FakeElement() }) };
-  const city = { south: 37.41, west: 126.73, north: 37.72, east: 127.27 };
   const viewports = [];
 
-  const created = createMap(windowObject, sdk, { map_bounds: city }, [], (bounds) =>
+  const created = createMap(windowObject, sdk, { map_bounds: SEOUL_BOUNDS }, [], (bounds) =>
     viewports.push(bounds),
   );
   // 실제 SDK는 첫 화면을 그린 뒤 init만 보내고, 사용자가 움직이기 전까지 idle을 보내지 않는다.
-  sdk.emit(created.map, "init");
+  sdk.Event.trigger(created.map, "init");
   await Promise.race([
     created.ready,
     new Promise((_, reject) => {
       setTimeout(() => reject(new Error("the map never became ready")), 100);
     }),
   ]);
+  const cityWideZoom = created.map.getZoom();
 
-  assert.deepEqual(viewports, [city]);
-  assert.equal(created.map.options.minZoom, 10);
+  assert.deepEqual(viewports, [SEOUL_BOUNDS]);
+  assert.equal(created.map.options.minZoom, cityWideZoom);
 
   // 사용자가 처음 한 동작이 축소여도 한계는 도시 전체가 보이던 수준에 머문다.
   const wider = { south: 37.2, west: 126.5, north: 37.9, east: 127.5 };
-  created.map.zoom = 9;
+  created.map.zoom = cityWideZoom - 1;
   created.map.bounds = new sdk.LatLngBounds(
     new sdk.LatLng(wider.south, wider.west),
     new sdk.LatLng(wider.north, wider.east),
   );
-  sdk.emit(created.map, "idle");
+  sdk.Event.trigger(created.map, "idle");
 
-  assert.deepEqual(viewports, [city, wider]);
-  assert.equal(created.map.options.minZoom, 10);
+  assert.deepEqual(viewports, [SEOUL_BOUNDS, wider]);
+  assert.equal(created.map.options.minZoom, cityWideZoom);
 });
 
 test("selecting a restaurant brings the map onto it at street level", async () => {
@@ -391,7 +393,7 @@ test("selecting a restaurant brings the map onto it at street level", async () =
   const sheet = new FakeElement();
   const documentObject = new FakeDocument({ "[data-restaurant-sheet]": sheet });
   const windowObject = fakeWindow();
-  const config = { map_bounds: { south: 37.41, west: 126.73, north: 37.72, east: 127.27 } };
+  const config = { map_bounds: SEOUL_BOUNDS };
   const map = new sdk.Map(new FakeElement(), { center: new sdk.LatLng(37.56, 126.98), zoom: 10 });
   const marker = { ...markers[0], latitude: 37.4979, longitude: 127.0276, business_id: "gangnam" };
 
