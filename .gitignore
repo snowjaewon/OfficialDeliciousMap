@@ -7,6 +7,8 @@
 data/raw/
 dist/
 *.zip
+# 공통 예산 집행 잠금. 실행 중에만 존재한다
+data/_shared/*.lock
 
 # Python
 __pycache__/

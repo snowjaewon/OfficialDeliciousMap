@@ -17,6 +17,7 @@ from deliciousmap.contracts import (
     CandidateLookup,
     ClassifyOutput,
     ClosureOutput,
+    ComparisonRequest,
     Contract,
     EvidenceScope,
     FetchOutput,
@@ -24,11 +25,13 @@ from deliciousmap.contracts import (
     GeocodeResult,
     HeaderMapOutput,
     IdentityConfirmation,
+    LedgerEntry,
     ManualCorrection,
     NameRestoration,
     ParseOutput,
     ProviderCandidates,
     Record,
+    RestorationProposal,
 )
 from deliciousmap.paths import Paths
 from deliciousmap.registry import Target
@@ -60,6 +63,8 @@ SCHEMA_VERSIONS = {"geocode": 4, "closure": 4, "build": 4}
 
 # 제공자 조회 캐시. 확정 업소 판정 이력(geocode-history-v2.jsonl)과 분리해 둔다.
 LOOKUP_CACHE = "geocode-lookup-v1.jsonl"
+# 모델 제안 이력. 사람 확인 입력·업소 판정과 분리해 두며 판정의 의존성에 넣지 않는다.
+PROPOSAL_CACHE = "restore-proposal-v1.jsonl"
 
 DEPENDENCIES = {
     "fetch": (),
@@ -90,7 +95,10 @@ def read_reviews[T: Contract](path: Path, model: type[T]) -> tuple[T, ...]:
 
 
 def require_scoped_reviews(
-    entries: tuple[NameRestoration, ...] | tuple[IdentityConfirmation, ...], city: str
+    entries: tuple[NameRestoration, ...]
+    | tuple[IdentityConfirmation, ...]
+    | tuple[ComparisonRequest, ...],
+    city: str,
 ) -> None:
     if any(item.scope.city != city for item in entries):
         raise ValueError("review city mismatch")
@@ -181,6 +189,40 @@ def append_cache_entries(path: Path, additions: tuple[CacheEntry, ...]) -> None:
         for item in sorted(entries.values(), key=lambda item: (item.key, item.revision))
     )
     write_text(path, content)
+
+
+def read_ledger(path: Path) -> tuple[LedgerEntry, ...]:
+    """공통 예산 장부. 실행·재시작을 가로질러 이어 쓰는 추가형 이력이다."""
+    if not path.exists():
+        return ()
+    entries = tuple(
+        LedgerEntry.model_validate_json(line)
+        for line in path.read_text(encoding="utf-8").splitlines()
+    )
+    identities = [(entry.entry_id, entry.kind) for entry in entries]
+    if len(identities) != len(set(identities)):
+        raise ValueError("budget ledger entries must be unique per request and kind")
+    return entries
+
+
+def append_ledger(path: Path, entry: LedgerEntry) -> None:
+    """집행 순서를 그대로 남긴다. 같은 요청의 같은 항목을 다시 쓰지 않는다."""
+    entry = LedgerEntry.model_validate(entry)
+    entries = read_ledger(path)
+    if any((item.entry_id, item.kind) == (entry.entry_id, entry.kind) for item in entries):
+        raise ValueError("cannot overwrite budget history")
+    write_text(
+        path,
+        "".join(
+            json.dumps(item.model_dump(mode="json"), ensure_ascii=False, sort_keys=True) + "\n"
+            for item in (*entries, entry)
+        ),
+    )
+
+
+def attempt(previous: CacheEntry | None) -> int:
+    """같은 요청을 다시 수행한 횟수. 재시도마다 다른 이력·예약 항목이 된다."""
+    return 1 if previous is None else previous.revision + 1
 
 
 def select_cache(path: Path, key: str) -> CacheEntry | None:
@@ -435,6 +477,32 @@ class ArtifactStore:
         )
         append_cache(self.directory / LOOKUP_CACHE, entry)
         return entry.revision
+
+    def cached_proposal(self, key: str) -> CacheEntry | None:
+        """같은 입력의 유효한 최신 제안. 제안 자체는 복원 확정이 아니다."""
+        return select_cache(self.directory / PROPOSAL_CACHE, key)
+
+    def remember_proposal(
+        self, key: str, proposal: RestorationProposal, previous: CacheEntry | None
+    ) -> int:
+        """새로 수행한 비교마다 revision을 올려 남긴다. 이전 제안은 지우지 않는다."""
+        value = RestorationProposal.model_validate(proposal).model_dump(mode="json")
+        entry = CacheEntry(
+            key=key,
+            revision=attempt(previous),
+            valid=True,
+            evidence=f"{proposal.model}/{proposal.prompt_version} {proposal.reason}",
+            value=value,
+        )
+        append_cache(self.directory / PROPOSAL_CACHE, entry)
+        return entry.revision
+
+    def designations(self, records: tuple[Record, ...]) -> tuple[ComparisonRequest, ...]:
+        """담당자가 후보 비교를 지정한 건. 파일이 없으면 지정이 없는 것과 같다."""
+        supplied = read_reviews(self.paths.manual(self.target, "compare"), ComparisonRequest)
+        require_scoped_reviews(supplied, self.target.city.slug)
+        expected = {self.scope(record) for record in records}
+        return tuple(item for item in supplied if item.scope in expected)
 
     def candidate_lookups(self, records: tuple[Record, ...]) -> tuple[CandidateLookup, ...]:
         """담당자가 준비한 후보·근거. 파일이 없으면 준비된 조회가 없다는 뜻이다."""

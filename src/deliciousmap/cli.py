@@ -5,12 +5,12 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-from deliciousmap import licenses, naver
+from deliciousmap import gemini, licenses, naver
 from deliciousmap.lookup import CandidateProvider
 from deliciousmap.paths import Paths
 from deliciousmap.pipeline import STAGES, Adapters, ExecutionContext, PipelineFailure, execute
 from deliciousmap.registry import CITIES, City, select_target
-from deliciousmap.transport import Transport
+from deliciousmap.transport import JsonTransport, Transport
 
 
 def main(
@@ -20,6 +20,7 @@ def main(
     adapters: Adapters | None = None,
     naver_transport: Transport | None = None,
     license_transport: Transport | None = None,
+    model_transport: JsonTransport | None = None,
 ) -> int:
     parser = argparse.ArgumentParser(prog="deliciousmap")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -59,6 +60,7 @@ def main(
             naver.from_environment(naver_transport),
             licenses.from_environment(license_transport),
         )
+        comparator = gemini.from_environment(model_transport)
     except ValueError as exc:
         # 변수 이름만 알린다. 값은 어디에도 출력하지 않는다.
         print(f"configuration: {exc}", file=sys.stderr)
@@ -67,7 +69,7 @@ def main(
     try:
         execute(
             args.command,
-            ExecutionContext(target, paths, args.retry_failed, providers),
+            ExecutionContext(target, paths, args.retry_failed, providers, comparator),
             adapters,
         )
     except PipelineFailure as exc:
