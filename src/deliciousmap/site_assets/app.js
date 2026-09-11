@@ -316,8 +316,11 @@
     renderRestaurant(documentObject, marker, withinCity);
     if (mapState && withinCity) {
       try {
-        mapState.map.panTo(new mapState.naverMaps.LatLng(marker.latitude, marker.longitude));
-        mapState.map.setZoom(Math.max(mapState.map.getZoom(), 16));
+        // panTo 뒤에 setZoom을 부르면 이동이 끊겨 원래 중심에서 확대된다. 좌표와 줌을 한 번에 옮긴다.
+        mapState.map.morph(
+          new mapState.naverMaps.LatLng(marker.latitude, marker.longitude),
+          Math.max(mapState.map.getZoom(), 16),
+        );
       } catch (error) {
         // 지도를 움직이지 못해도 선택한 식당의 상세는 그대로 보여 준다.
         windowObject.console.error(error);

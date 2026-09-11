@@ -104,8 +104,29 @@ function fakeNaverMaps() {
       this.element = element;
       this.options = { ...options };
       this.bounds = options.bounds;
+      this.center = options.center;
       this.zoom = options.zoom ?? 10;
       this.listeners = {};
+    }
+
+    // panTo는 애니메이션으로 옮긴다. 도중에 setZoom이 오면 이동이 끊기고 원래 중심에서 확대된다.
+    panTo(center) {
+      this.panning = center;
+    }
+
+    setZoom(zoom) {
+      this.panning = undefined;
+      this.zoom = zoom;
+    }
+
+    morph(center, zoom) {
+      this.center = center;
+      this.zoom = zoom;
+    }
+
+    finishAnimation() {
+      if (this.panning) this.center = this.panning;
+      this.panning = undefined;
     }
 
     fitBounds(bounds) {
@@ -363,6 +384,31 @@ test("the city view reports its area and fixes its zoom-out limit as soon as the
 
   assert.deepEqual(viewports, [city, wider]);
   assert.equal(created.map.options.minZoom, 10);
+});
+
+test("selecting a restaurant brings the map onto it at street level", async () => {
+  const sdk = fakeNaverMaps();
+  const sheet = new FakeElement();
+  const documentObject = new FakeDocument({ "[data-restaurant-sheet]": sheet });
+  const windowObject = fakeWindow();
+  const config = { map_bounds: { south: 37.41, west: 126.73, north: 37.72, east: 127.27 } };
+  const map = new sdk.Map(new FakeElement(), { center: new sdk.LatLng(37.56, 126.98), zoom: 10 });
+  const marker = { ...markers[0], latitude: 37.4979, longitude: 127.0276, business_id: "gangnam" };
+
+  const selection = selectMarker(
+    windowObject,
+    documentObject,
+    config,
+    { map, naverMaps: sdk },
+    marker,
+    {},
+  );
+  map.finishAnimation();
+  windowObject.frames.shift()();
+  windowObject.frames.shift()();
+  await selection;
+
+  assert.deepEqual([map.center.lat(), map.center.lng(), map.getZoom()], [37.4979, 127.0276, 16]);
 });
 
 test("city-wide counts survive a map that cannot report its viewport", () => {
