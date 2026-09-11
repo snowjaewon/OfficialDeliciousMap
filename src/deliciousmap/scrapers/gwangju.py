@@ -39,30 +39,35 @@ class GwangjuCityBoard:
         self.view_url = urllib.parse.urljoin(self.list_url, VIEW_PATH)
         self.transport = transport
 
-    def attachments(self) -> Iterator[boards.Attachment]:
+    def postings(self, collected: boards.Collected) -> Iterator[boards.Posting]:
         page = 1
         while True:
             listing = self._read(self.list_url, {**self.params, PAGE_PARAMETER: str(page)})
             for post_id in _posts_with_attachments(listing):
-                yield from self._posting(post_id)
+                if not collected(post_id):
+                    yield self._posting(post_id)
             if page >= _total_pages(listing):
                 return
             page += 1
 
-    def _posting(self, post_id: str) -> Iterator[boards.Attachment]:
+    def _posting(self, post_id: str) -> boards.Posting:
         params = {BOARD_PARAMETER: self.params[BOARD_PARAMETER], POST_PARAMETER: post_id}
         page_url = boards.address(self.view_url, params)
+        attachments = []
         for href, filename in self._read(self.view_url, params).links:
             file_id = _parameter(href, FILE_PATH, FILE_PARAMETER)
             if file_id is None:
                 continue
-            yield boards.Attachment(
-                post_id=post_id,
-                file_id=file_id,
-                suffix=boards.suffix_of(filename, PUBLISHED_SUFFIXES),
-                url=urllib.parse.urljoin(self.list_url, href),
-                page_url=page_url,
+            attachments.append(
+                boards.Attachment(
+                    post_id=post_id,
+                    file_id=file_id,
+                    suffix=boards.suffix_of(filename, PUBLISHED_SUFFIXES),
+                    url=urllib.parse.urljoin(self.list_url, href),
+                    page_url=page_url,
+                )
             )
+        return boards.Posting(post_id, tuple(attachments))
 
     def _read(self, url: str, params: dict[str, str]) -> boards.Document:
         return boards.read(boards.request(self.transport, url, params), ENCODING)

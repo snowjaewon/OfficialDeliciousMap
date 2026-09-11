@@ -1,7 +1,7 @@
 """게시판 해석의 공통 경계. 기관별 스크래퍼가 여기의 계약만 지키면 수집 규칙을 공유한다."""
 
 import urllib.parse
-from collections.abc import Iterator, Mapping
+from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass
 from html.parser import HTMLParser
 from pathlib import PurePosixPath
@@ -69,12 +69,24 @@ class Attachment:
         return f"{self.post_id}-{self.file_id}{self.suffix}"
 
 
+@dataclass(frozen=True)
+class Posting:
+    """게시글 하나와 거기 달린 원본 첨부 전부. 수집 기록의 단위다."""
+
+    post_id: str
+    attachments: tuple[Attachment, ...]
+
+
+# 이미 수집을 마친 게시글인지 묻는다. 참이면 스크래퍼는 본문을 열지 않는다.
+Collected = Callable[[str], bool]
+
+
 class BoardScraper(Protocol):
-    """게시판 하나를 훑어 원본 첨부의 참조만 낸다. 저장과 형식 판정은 하지 않는다."""
+    """게시판 하나를 훑어 게시글과 원본 첨부의 참조만 낸다. 저장과 형식 판정은 하지 않는다."""
 
     def __init__(self, board: "Board", transport: Transport) -> None: ...
 
-    def attachments(self) -> Iterator[Attachment]: ...
+    def postings(self, collected: Collected) -> Iterator[Posting]: ...
 
 
 class Document(HTMLParser):

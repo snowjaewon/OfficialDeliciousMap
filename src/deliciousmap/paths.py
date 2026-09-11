@@ -19,9 +19,12 @@ class Paths:
         base = self.data_root / target.city.slug
         return base / "orgs" / target.org if target.org else base
 
-    def original(self, target: Target, organization: str, board: str, name: str) -> Path:
+    def board_dir(self, target: Target, organization: str, board: str) -> Path:
         """원본은 저장소 밖 raw-root 아래에 도시·기관·게시판으로 나누어 둔다."""
-        return self.raw_root / target.city.slug / organization / board / name
+        return self.raw_root / target.city.slug / organization / board
+
+    def original(self, target: Target, organization: str, board: str, name: str) -> Path:
+        return self.board_dir(target, organization, board) / name
 
     def manual(self, target: Target, name: str) -> Path:
         """사람 보정·상호 복원·업소 확인·비교 지정은 의미가 다르므로 파일을 나눈다."""

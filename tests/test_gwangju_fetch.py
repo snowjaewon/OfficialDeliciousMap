@@ -177,12 +177,26 @@ def test_fetch_walks_every_listed_page_and_skips_postings_without_attachments(
     assert view_page(11023) not in transport.requests
 
 
-def test_fetch_reuses_originals_already_stored(tmp_path: Path) -> None:
+def test_fetch_resumes_without_reopening_collected_postings(tmp_path: Path) -> None:
     paths = paths_at(tmp_path)
     assert run_fetch(paths, BoardTransport(board_responses())) == 0
     again = BoardTransport(board_responses())
     assert run_fetch(paths, again) == 0
-    assert [key for key in again.requests if key.startswith(FILE_URL)] == []
+    # 목록은 다시 훑되 끝낸 게시글의 본문도 첨부도 다시 요청하지 않는다.
+    assert [key for key in again.requests if not key.startswith(LIST_URL)] == []
+    # 이번 실행에서 새로 받은 것이 없어도 출처는 수집 기록 전체를 싣는다.
+    assert len(fetch_artifact(paths)["sources"]) == 3
+
+
+def test_fetch_recollects_a_posting_left_unfinished(tmp_path: Path) -> None:
+    """첨부를 다 받기 전에 멈춘 게시글은 기록되지 않아 다음 실행이 다시 받는다."""
+    paths = paths_at(tmp_path)
+    responses = board_responses()
+    responses[download(11024, 2)] = "<html>일시 오류</html>".encode()
+    assert run_fetch(paths, BoardTransport(responses)) == 1
+    again = BoardTransport(board_responses())
+    assert run_fetch(paths, again) == 0
+    assert view_page(11024) in again.requests
     assert len(fetch_artifact(paths)["sources"]) == 3
 
 
