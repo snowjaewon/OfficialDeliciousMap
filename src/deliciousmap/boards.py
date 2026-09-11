@@ -51,6 +51,10 @@ class OriginalGone(Exception):
     """게시판이 링크한 원본이 기관 쪽에 없다. 다시 요청해도 달라지지 않는다."""
 
 
+class EmptyOriginal(Exception):
+    """게시판이 내용 없는 첨부를 200으로 주었다. 받을 것이 없다는 점에서 유실과 같다."""
+
+
 @dataclass(frozen=True)
 class Container:
     """원본으로 받아들이는 형식 하나. 게시판이 밝힌 확장자는 근거가 아니라 대조 대상이다."""
@@ -219,6 +223,8 @@ def suffix_of(filename: str) -> str:
 
 def require_original(body: bytes, suffix: str) -> None:
     """매직 바이트로 컨테이너를 판정하고 게시판이 밝힌 확장자와 대조한다."""
+    if not body:
+        raise EmptyOriginal("board served an empty attachment")
     for container in CONTAINERS:
         if container.matches(body):
             if suffix in container.suffixes:

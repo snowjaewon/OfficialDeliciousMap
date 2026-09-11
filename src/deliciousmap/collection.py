@@ -65,30 +65,34 @@ def _walk(board: Board, directory: Path, transport: Transport) -> list[dict[str,
     unmeasured: list[dict[str, str]] = []
     try:
         for posting in scraper.postings(lambda post_id: post_id in done):
-            stored, lost = [], []
+            stored, lost, empty = [], [], []
             published = scraper.published_suffixes
             unknown = [item for item in posting.attachments if item.suffix not in published]
-            for attachment in unknown:
-                unmeasured.append(
-                    {
-                        "post_id": attachment.post_id,
-                        "url": attachment.page_url,
-                        "suffix": attachment.suffix,
-                    }
-                )
+            unmeasured.extend(_note(item, "format not measured for this board") for item in unknown)
             if unknown:
                 # 실측하지 않은 형식이 있는 게시글은 기록하지 않는다. 선언한 뒤 다시 받는다.
                 continue
+            rejected = []
             for attachment in posting.attachments:
                 try:
                     _store(directory / attachment.name, attachment, transport)
                 except boards.OriginalGone:
                     # 기관이 더는 내주지 않는 원본이다. 다시 요청해도 같으므로 장부에 남긴다.
                     lost.append(attachment)
+                except boards.EmptyOriginal:
+                    # 200이지만 받을 것이 없다. 유실과 같은 부류로 장부에 남긴다.
+                    empty.append(attachment)
+                except boards.UnsupportedOriginal as reason:
+                    # 내용이 실측한 컨테이너와 다르다. 사람이 봐야 하므로 모아서 알린다.
+                    rejected.append(_note(attachment, str(reason)))
                 else:
                     stored.append(attachment)
+            if rejected:
+                # 사람이 봐야 하는 첨부가 있는 게시글은 기록하지 않는다. 판단한 뒤 다시 받는다.
+                unmeasured.extend(rejected)
+                continue
             # 게시글을 끝낸 뒤에만 기록한다. 중간에 멈추면 그 게시글은 다시 수집한다.
-            _remember(directory, posting, stored, lost)
+            _remember(directory, posting, stored, lost, empty)
     except boards.UnsupportedOriginal:
         raise AdapterFailure(FailureCause.UNSUPPORTED_FORMAT) from None
     except boards.BoardUnavailable:
@@ -97,6 +101,16 @@ def _walk(board: Board, directory: Path, transport: Transport) -> list[dict[str,
         raise AdapterFailure(FailureCause.ADAPTER_FAILED) from None
     _report_unmeasured(directory, unmeasured)
     return unmeasured
+
+
+def _note(attachment: boards.Attachment, reason: str) -> dict[str, str]:
+    """사람이 봐야 하는 첨부 하나. 게시글과 무엇이 걸렸는지만 남긴다."""
+    return {
+        "post_id": attachment.post_id,
+        "url": attachment.page_url,
+        "suffix": attachment.suffix,
+        "reason": reason,
+    }
 
 
 def _report_unmeasured(directory: Path, unmeasured: list[dict[str, str]]) -> None:
@@ -142,10 +156,11 @@ class Collected:
 
 @dataclass(frozen=True)
 class Gone:
-    """게시판이 링크했지만 기관이 내주지 않은 원본. 게시글 주소와 밝힌 이름만 남긴다."""
+    """게시판이 링크했지만 받을 것이 없던 원본. 게시글 주소와 밝힌 이름·사유만 남긴다."""
 
     url: str
-    filenames: tuple[str, ...]
+    # (파일 이름, 사유) 쌍. 사유는 `MissingOriginal.reason`과 같은 값이다.
+    files: tuple[tuple[str, str], ...]
 
 
 def _ledger(directory: Path) -> tuple[dict[str, Collected], dict[str, Gone]]:
@@ -161,7 +176,8 @@ def _ledger(directory: Path) -> tuple[dict[str, Collected], dict[str, Gone]]:
             post_id = str(entry["post_id"])
             url = str(entry["url"])
             files = tuple(str(name) for name in entry["files"])
-            lost = tuple(str(name) for name in entry.get("gone", ()))
+            lost = tuple((str(name), "gone") for name in entry.get("gone", ()))
+            lost += tuple((str(name), "empty") for name in entry.get("empty", ()))
         except (ValueError, KeyError, TypeError):
             continue
         if files:
@@ -174,10 +190,10 @@ def _ledger(directory: Path) -> tuple[dict[str, Collected], dict[str, Gone]]:
 def _missing(gone: dict[str, Gone], organization: str, board: str) -> list[MissingOriginal]:
     return [
         MissingOriginal(
-            organization=organization, board=board, url=entry.url, filename=name, reason="gone"
+            organization=organization, board=board, url=entry.url, filename=name, reason=reason
         )
         for entry in gone.values()
-        for name in entry.filenames
+        for name, reason in entry.files
     ]
 
 
@@ -186,6 +202,7 @@ def _remember(
     posting: boards.Posting,
     stored: list[boards.Attachment],
     lost: list[boards.Attachment],
+    empty: list[boards.Attachment],
 ) -> None:
     if not posting.attachments:
         return
@@ -194,6 +211,7 @@ def _remember(
         "url": posting.attachments[0].page_url,
         "files": [item.name for item in stored],
         "gone": [item.name for item in lost],
+        "empty": [item.name for item in empty],
     }
     directory.mkdir(parents=True, exist_ok=True)
     with (directory / LEDGER).open("a", encoding="utf-8", newline="\n") as stream:

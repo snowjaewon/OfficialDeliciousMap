@@ -484,7 +484,8 @@ class MissingOriginal(Contract):
     # 근거가 되는 게시글 주소와 게시판이 밝힌 파일 이름.
     url: Text
     filename: Text
-    reason: Literal["gone"]
+    # gone: 기관이 404로 답한다. empty: 200이지만 내용이 없다. 둘 다 받을 것이 없다.
+    reason: Literal["gone", "empty"]
 
 
 class FetchOutput(Contract):

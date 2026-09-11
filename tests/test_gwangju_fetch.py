@@ -242,7 +242,12 @@ def test_fetch_refuses_a_response_that_is_not_an_original_container(
     responses[download(11024, 1)] = "<!doctype html><html><body>오류</body></html>".encode()
     assert run_fetch(paths, BoardTransport(responses)) == 1
     assert "cause=unsupported-format" in capsys.readouterr().err
-    assert not (paths.raw_root / "gwangju").exists()
+    # 그 첨부는 저장하지 않고 사람이 볼 목록에 남는다. 나머지 게시글 수집은 막지 않는다.
+    target = select_target(CITIES, "gwangju", None)
+    board_dir = paths.board_dir(target, "gwangju-city", "expenses")
+    assert not (board_dir / "11024-1.xls").exists()
+    assert (board_dir / "11022-1.xls").exists()
+    assert [item["post_id"] for item in unmeasured_report(paths)] == ["11024"]
 
 
 def test_fetch_refuses_an_attachment_whose_signature_contradicts_its_name(
@@ -565,3 +570,30 @@ def test_fetch_recollects_a_posting_once_its_format_is_declared(tmp_path: Path) 
     target = select_target(CITIES, "gwangju", None)
     board_dir = paths.board_dir(target, "gwangju-city", "expenses")
     assert not (board_dir / "unmeasured.jsonl").exists()
+
+
+def test_fetch_records_an_empty_attachment_as_nothing_to_collect(tmp_path: Path) -> None:
+    """실측: seq 2148은 200으로 0바이트를 준다. 404와 마찬가지로 받을 것이 없다."""
+    paths = paths_at(tmp_path)
+    responses = board_responses()
+    responses[download(11024, 1)] = b""
+    assert run_fetch(paths, BoardTransport(responses)) == 0
+    artifact = fetch_artifact(paths)
+    assert [item["reason"] for item in artifact["missing"]] == ["empty"]
+    assert artifact["missing"][0]["filename"] == "11024-1.xls"
+    # 같은 게시글의 다른 첨부와 뒤따르는 게시글은 그대로 받는다.
+    assert [Path(item["path"]).name for item in artifact["sources"]] == [
+        "11024-2.xlsx",
+        "11022-1.xls",
+    ]
+
+
+def test_fetch_does_not_ask_again_for_an_empty_attachment(tmp_path: Path) -> None:
+    paths = paths_at(tmp_path)
+    responses = board_responses()
+    responses[download(11024, 1)] = b""
+    assert run_fetch(paths, BoardTransport(responses)) == 0
+    again = BoardTransport(responses)
+    assert run_fetch(paths, again) == 0
+    assert [key for key in again.requests if not key.startswith(LIST_URL)] == []
+    assert len(fetch_artifact(paths)["missing"]) == 1
