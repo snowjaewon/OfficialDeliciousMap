@@ -27,9 +27,8 @@ from deliciousmap.privacy import scrub, scrub_merchant
 # 공백을 지운 셀 글자에 적용한다. `2월 소계`·`합 계`처럼 앞말이 붙거나 띄어 쓴 표기도 있다.
 TOTAL = re.compile(r"합계|총계|총합계|계")
 # 누계·기간 합계는 앞 표까지 더했거나 일부 구간만 더했을 수 있어 대조 범위를 확정할 수 없다.
-UNCLEAR_TOTAL = re.compile(
-    r"(\d{1,2}월|\d분기|\d{4}년)?누계|(\d{1,2}월|\d분기|\d{4}년)(합계|총계|계)"
-)
+PERIOD = r"(\d{1,2}(~\d{1,2})?월|\d(~\d)?분기|\d{4}년)"
+UNCLEAR_TOTAL = re.compile(rf"{PERIOD}?누계|{PERIOD}(합계|총계|계)")
 SUBTOTAL = re.compile(r".{0,6}소계")
 # 표 끝을 알리는 행. 원본에서는 글자마다 칸을 나눠 적기도 한다(`이 | 하 | 빈 | 칸`).
 TERMINATOR = re.compile(r"(이하)?(빈칸|여백|없음)\.?")
@@ -81,6 +80,9 @@ def extract(table: Table, mapping: HeaderMap, source: SourceRef) -> Extraction:
     sections: list[_Section] = [_Section()]
     for row in range(max(mapping.header_rows, default=0) + 1, mapping.data_start_row):
         kind = _kind(table, mapping, headers, row)
+        if kind == "candidate":
+            # 다른 표에서 배운 시작 위치가 이 표의 첫 지출을 건너뛰게 두지 않는다.
+            raise ValidationFailed(f"{table.name}:R{row} expense before data start")
         if kind == "total":
             sections[0].totals.append((row, _amount(table.cell(row, columns["amount_krw"]))))
         elif kind == "unclear_total":

@@ -109,12 +109,15 @@ def resolve(
 def _map_table(
     source: SourceRef, table: grid.Table, stores: _Stores, mapper: HeaderMapper | None
 ) -> HeaderMap:
-    failure: str | None = None
     cached = _cached(source, table, stores.cache)
-    if cached is not None:
-        failure = _failure(source, table, cached)
-        if failure is None:
-            return cached
+    failures: list[str] = []
+    for candidate in cached:
+        found = _failure(source, table, candidate)
+        if found is None:
+            return candidate
+        failures.append(found)
+    # 캐시가 모두 실패하면 이 원본에서는 쓰지 않는다. 재호출에는 최신 판정의 실패 사유를 싣는다.
+    failure: str | None = failures[0] if failures else None
     # 이미 받은 답은 다시 묻지 않고 현재 코드로 다시 검증한다(호출 이력으로 중복 호출 방지).
     key = answers_key(source, table)
     recorded = [
@@ -131,7 +134,7 @@ def _map_table(
         raise Unresolved("validation_failed" if recorded else "model_not_configured", table.name)
     # 캐시 미적중이면 최초 호출과 재호출 한 번, 캐시 검증 실패면 재호출 한 번뿐이다.
     # 한도는 모델·지시문이 바뀌어도 이 표에 받은 답 전체로 센다.
-    for _ in range(len(recorded), 1 if cached is not None else 2):
+    for _ in range(len(recorded), 1 if cached else 2):
         reply = _ask(mapper, stores.budget, source, table, failure)
         if reply.status == "error" and reply.error == "unavailable":
             # 통신 장애는 매핑의 증거가 아니다. 답이 없으므로 이력에 넣지 않는다.
@@ -234,28 +237,35 @@ def cache_key(table: grid.Table, header_rows: tuple[int, ...]) -> str:
     )
 
 
-def _cached(source: SourceRef, table: grid.Table, cache_path: Path) -> HeaderMap | None:
-    """이 표의 같은 위치 헤더가 캐시 서명과 같으면 적중이다. 적중도 검증 전에는 쓰지 않는다."""
-    latest: dict[str, CacheEntry] = {}
-    for entry in read_cache(cache_path):
-        if entry.valid:
-            latest[entry.key] = entry
-    for entry in latest.values():
+def _cached(source: SourceRef, table: grid.Table, cache_path: Path) -> list[HeaderMap]:
+    """이 표의 같은 위치 헤더가 서명과 같은 캐시 판정들. 최신부터이며 검증 전에는 쓰지 않는다.
+
+    같은 헤더가 원본마다 다른 행에 있거나 요약 행 때문에 첫 지출 위치가 다를 수 있다.
+    그런 변형은 모두 유효한 판정이므로 최신 하나만 보지 않는다.
+    """
+    found: list[HeaderMap] = []
+    seen: list[CachedHeaderMap] = []
+    for entry in reversed(read_cache(cache_path)):
+        if not entry.valid:
+            continue
         value = CachedHeaderMap.model_validate(entry.value)
         rows = value.header_rows
-        if max(rows) > len(table.rows) or cache_key(table, rows) != entry.key:
+        if value in seen or max(rows) > len(table.rows) or cache_key(table, rows) != entry.key:
             continue
-        return HeaderMap(
-            source_hash=source.source_hash,
-            table=table.name,
-            layout="table",
-            header_rows=rows,
-            data_start_row=max(rows) + value.data_offset,
-            columns=value.columns,
-            amount_multiplier=value.amount_multiplier,
-            cache=CacheRef(key=entry.key, revision=entry.revision),
+        seen.append(value)
+        found.append(
+            HeaderMap(
+                source_hash=source.source_hash,
+                table=table.name,
+                layout="table",
+                header_rows=rows,
+                data_start_row=max(rows) + value.data_offset,
+                columns=value.columns,
+                amount_multiplier=value.amount_multiplier,
+                cache=CacheRef(key=entry.key, revision=entry.revision),
+            )
         )
-    return None
+    return found
 
 
 def _remember(
@@ -274,9 +284,11 @@ def _remember(
         model=recorded.model,
         prompt_version=recorded.prompt_version,
     ).model_dump(mode="json")
+    same = next((entry for entry in previous if entry.valid and entry.value == value), None)
+    if same is not None:
+        # 이미 있는 판정을 다시 쌓지 않는다. 쌓으면 변형끼리 번갈아 revision이 늘어난다.
+        return CacheRef(key=key, revision=same.revision)
     latest = previous[-1] if previous else None
-    if latest is not None and latest.valid and latest.value == value:
-        return CacheRef(key=key, revision=latest.revision)
     entry = CacheEntry(
         key=key,
         revision=1 if latest is None else latest.revision + 1,

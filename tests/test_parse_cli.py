@@ -275,6 +275,38 @@ def test_card_layout_is_unsupported_without_a_retry(tmp_path: Path, configured: 
     ]
 
 
+def test_same_header_at_different_rows_reuses_the_cache_without_churn(
+    tmp_path: Path, configured: None
+) -> None:
+    """같은 헤더가 원본마다 다른 행에 있어도 캐시 변형을 모두 보고, 재실행에 이력을 늘리지 않음."""
+    record_spending(tmp_path)
+    shifted = [(), *QUARTER]
+    publish(
+        tmp_path,
+        ("3행 헤더.xls", workbook(QUARTER)),
+        ("4행 헤더.xls", workbook(shifted)),
+        (
+            "3행 헤더 다른 부서.xls",
+            workbook(sheet_a(("2026-03-02", "합성 국밥", "협의", 3.0, 27000.0))),
+        ),
+        (
+            "4행 헤더 다른 부서.xls",
+            workbook([(), *sheet_a(("2026-03-03", "합성 칼국수", "협의", 2.0, 18000.0))]),
+        ),
+    )
+    model = FakeModel(headers=[header_answer(), header_answer(header=4)])
+    assert run(tmp_path, "headermap", model) == 0
+    assert len(model.calls("headermap")) == 2
+    assert payload(tmp_path, "headermap")["unresolved"] == []
+    cache = tmp_path / DATA / "_shared" / "headermap.jsonl"
+    before = cache.read_text(encoding="utf-8")
+    again = FakeModel()
+    assert run(tmp_path, "headermap", again) == 0
+    assert again.prompts == []
+    assert cache.read_text(encoding="utf-8") == before
+    assert len(before.splitlines()) == 2
+
+
 def test_recorded_answer_that_validates_is_used_without_a_model(
     tmp_path: Path, configured: None, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -119,7 +119,7 @@ def test_amount_mismatch_still_fails() -> None:
         )  # fmt: skip
 
 
-@pytest.mark.parametrize("label", ["누계", "1월 누계", "1월 합계", "1분기 계"])
+@pytest.mark.parametrize("label", ["누계", "1월 누계", "1월 합계", "1분기 계", "1~3월 합계"])
 def test_totals_with_an_unclear_scope_are_not_compared(label: str) -> None:
     """누계·기간 합계는 이전 표까지 더했을 수 있어 범위를 확정할 수 없다. 대조 불가로 남긴다."""
     result = extract(
@@ -130,6 +130,16 @@ def test_totals_with_an_unclear_scope_are_not_compared(label: str) -> None:
         ("sheet1:R4 unclear_total",),
         "ambiguous",
     )
+
+
+def test_expense_before_the_data_start_fails_instead_of_being_skipped() -> None:
+    """다른 표에서 배운 데이터 시작 위치가 이 표의 첫 지출을 건너뛰게 두지 않는다."""
+    late = MAPPING.model_copy(update={"data_start_row": 4})
+    with pytest.raises(ValidationFailed, match="sheet1:R3 expense before data start"):
+        extract(table(spend(5, "합성 식당", 62000.0), spend(6, "합성 국밥", 27000.0)), late, SOURCE)
+    # 헤더와 첫 지출 사이의 요약 행은 건너뛰어도 된다.
+    summary = table(("", "계", "", "1건", 27000.0), spend(6, "합성 국밥", 27000.0))
+    assert extract(summary, late, SOURCE).total_check == "matched"
 
 
 def test_each_section_is_checked_against_its_own_total() -> None:
