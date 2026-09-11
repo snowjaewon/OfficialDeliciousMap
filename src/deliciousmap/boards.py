@@ -7,7 +7,7 @@ from html.parser import HTMLParser
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING, Protocol
 
-from deliciousmap.transport import HttpTransport, Transport, query
+from deliciousmap.transport import HttpTransport, ResourceGone, Transport, query
 
 if TYPE_CHECKING:  # 레지스트리가 스크래퍼를 선언하므로 실행 시점에 되짚어 부르지 않는다.
     from deliciousmap.registry.models import Board
@@ -43,6 +43,10 @@ class BoardUnavailable(Exception):
 
 class UnreadableBoard(Exception):
     """응답이 실측한 구조와 다르거나 온전히 받지 못했다. 형식 문제와 구별한다."""
+
+
+class OriginalGone(Exception):
+    """게시판이 링크한 원본이 기관 쪽에 없다. 다시 요청해도 달라지지 않는다."""
 
 
 def is_identifier(value: str) -> bool:
@@ -154,6 +158,8 @@ def request(transport: Transport, url: str, params: Mapping[str, str]) -> bytes:
     """게시판 응답 하나를 받는다. 제공자 오류는 안전한 예외로만 알린다."""
     try:
         body = transport.fetch(url, params, HEADERS)
+    except ResourceGone:
+        raise OriginalGone("board links a file the organization no longer serves") from None
     except Exception:
         raise BoardUnavailable("board request failed") from None
     if len(body) > MAX_RESPONSE_BYTES:

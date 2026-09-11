@@ -476,8 +476,21 @@ class FetchInput:
     target: Target
 
 
+class MissingOriginal(Contract):
+    """게시판이 링크했지만 받지 못한 원본. 0건으로 숨기지 않기 위해 장부처럼 남긴다."""
+
+    organization: Text
+    board: Text
+    # 근거가 되는 게시글 주소와 게시판이 밝힌 파일 이름.
+    url: Text
+    filename: Text
+    reason: Literal["gone"]
+
+
 class FetchOutput(Contract):
     sources: tuple[SourceRef, ...]
+    # 받지 못한 원본. 성공한 수집에도 남을 수 있다.
+    missing: tuple[MissingOriginal, ...] = ()
     empty_reason: Text | None = None
 
 

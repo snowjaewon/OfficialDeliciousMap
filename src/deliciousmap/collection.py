@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from deliciousmap import boards
-from deliciousmap.contracts import FetchOutput, SourceRef
+from deliciousmap.contracts import FetchOutput, MissingOriginal, SourceRef
 from deliciousmap.paths import Paths
 from deliciousmap.pipeline import AdapterFailure, FailureCause
 from deliciousmap.registry import Board, Target
@@ -22,6 +22,7 @@ LEDGER = "collected.jsonl"
 def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
     """선택한 기관의 게시판을 훑는다. 수집하지 못한 이유는 0건으로 숨기지 않는다."""
     sources: list[SourceRef] = []
+    missing: list[MissingOriginal] = []
     visited: list[str] = []
     held: list[str] = []
     for organization in target.organizations:
@@ -32,25 +33,37 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
             visited.append(f"{organization.slug}/{board.slug}")
             directory = paths.board_dir(target, organization.slug, board.slug)
             _walk(board, directory, transport)
-            sources.extend(_sources(directory, organization.slug, board.slug))
+            collected, gone = _ledger(directory)
+            sources.extend(_sources(directory, collected, organization.slug, board.slug))
+            missing.extend(_missing(gone, organization.slug, board.slug))
     if sources:
-        return FetchOutput(sources=tuple(sources))
+        return FetchOutput(sources=tuple(sources), missing=tuple(missing))
     if not visited and not held:
         # 아직 게시판을 선언하지 않은 도시를 수집 완료로 표시하지 않는다.
         raise AdapterFailure(FailureCause.NOT_IMPLEMENTED)
-    return FetchOutput(sources=(), empty_reason=_empty_reason(visited, held))
+    return FetchOutput(
+        sources=(), missing=tuple(missing), empty_reason=_empty_reason(visited, held)
+    )
 
 
 def _walk(board: Board, directory: Path, transport: Transport) -> None:
     """게시판을 훑어 새 게시글의 원본을 내려받고 게시글 단위로 기록한다."""
-    done = _ledger(directory)
+    collected, gone = _ledger(directory)
+    done = set(collected) | set(gone)
     scraper: boards.BoardScraper = board.scraper(board, transport)
     try:
         for posting in scraper.postings(lambda post_id: post_id in done):
+            stored, lost = [], []
             for attachment in posting.attachments:
-                _store(directory / attachment.name, attachment, transport)
-            # 첨부를 모두 저장한 뒤에만 기록한다. 중간에 멈추면 그 게시글은 다시 수집한다.
-            _remember(directory, posting)
+                try:
+                    _store(directory / attachment.name, attachment, transport)
+                except boards.OriginalGone:
+                    # 기관이 더는 내주지 않는 원본이다. 다시 요청해도 같으므로 장부에 남긴다.
+                    lost.append(attachment)
+                else:
+                    stored.append(attachment)
+            # 게시글을 끝낸 뒤에만 기록한다. 중간에 멈추면 그 게시글은 다시 수집한다.
+            _remember(directory, posting, stored, lost)
     except boards.UnsupportedOriginal:
         raise AdapterFailure(FailureCause.UNSUPPORTED_FORMAT) from None
     except boards.BoardUnavailable:
@@ -59,10 +72,12 @@ def _walk(board: Board, directory: Path, transport: Transport) -> None:
         raise AdapterFailure(FailureCause.ADAPTER_FAILED) from None
 
 
-def _sources(directory: Path, organization: str, board: str) -> list[SourceRef]:
+def _sources(
+    directory: Path, collected: dict[str, "Collected"], organization: str, board: str
+) -> list[SourceRef]:
     """수집 기록 전체를 출처로 옮긴다. 이번 실행에서 새로 받은 것만 세지 않는다."""
     references = []
-    for entry in _ledger(directory).values():
+    for entry in collected.values():
         for name in entry.files:
             path = directory / name
             if not path.exists():
@@ -87,30 +102,60 @@ class Collected:
     files: tuple[str, ...]
 
 
-def _ledger(directory: Path) -> dict[str, Collected]:
+@dataclass(frozen=True)
+class Gone:
+    """게시판이 링크했지만 기관이 내주지 않은 원본. 게시글 주소와 밝힌 이름만 남긴다."""
+
+    url: str
+    filenames: tuple[str, ...]
+
+
+def _ledger(directory: Path) -> tuple[dict[str, Collected], dict[str, Gone]]:
     """마지막 줄이 끊긴 기록은 버린다. 그 게시글은 아직 끝내지 못한 것으로 본다."""
     path = directory / LEDGER
+    collected: dict[str, Collected] = {}
+    gone: dict[str, Gone] = {}
     if not path.exists():
-        return {}
-    entries: dict[str, Collected] = {}
+        return collected, gone
     for line in path.read_text(encoding="utf-8").splitlines():
         try:
             entry = json.loads(line)
-            entries[str(entry["post_id"])] = Collected(
-                str(entry["url"]), tuple(str(name) for name in entry["files"])
-            )
+            post_id = str(entry["post_id"])
+            url = str(entry["url"])
+            files = tuple(str(name) for name in entry["files"])
+            lost = tuple(str(name) for name in entry.get("gone", ()))
         except (ValueError, KeyError, TypeError):
             continue
-    return entries
+        if files:
+            collected[post_id] = Collected(url, files)
+        if lost:
+            gone[post_id] = Gone(url, lost)
+    return collected, gone
 
 
-def _remember(directory: Path, posting: boards.Posting) -> None:
+def _missing(gone: dict[str, Gone], organization: str, board: str) -> list[MissingOriginal]:
+    return [
+        MissingOriginal(
+            organization=organization, board=board, url=entry.url, filename=name, reason="gone"
+        )
+        for entry in gone.values()
+        for name in entry.filenames
+    ]
+
+
+def _remember(
+    directory: Path,
+    posting: boards.Posting,
+    stored: list[boards.Attachment],
+    lost: list[boards.Attachment],
+) -> None:
     if not posting.attachments:
         return
     entry = {
         "post_id": posting.post_id,
         "url": posting.attachments[0].page_url,
-        "files": [item.name for item in posting.attachments],
+        "files": [item.name for item in stored],
+        "gone": [item.name for item in lost],
     }
     directory.mkdir(parents=True, exist_ok=True)
     with (directory / LEDGER).open("a", encoding="utf-8", newline="\n") as stream:

@@ -51,7 +51,8 @@ uv run python -m deliciousmap geocode --city seoul --retry-failed
 200으로 온 HTML이나 확장자와 어긋나는 첨부는 저장하지 않고 `unsupported-format`으로 실패한다.
 받아들일 확장자는 게시판마다 실측한 것만 선언하므로 실측하지 않은 형식도 `unsupported-format`이다.
 실측한 구조와 다르거나 통째로 읽을 수 없는 크기의 응답은 `adapter-failed`, 게시판에 닿지 못하면
-`service-unavailable`로 구별해 알린다. 한 기관에 연달아 보내는 요청에는 간격을 둔다.
+`service-unavailable`로 구별해 알린다. 기관이 더는 내주지 않는 원본(404·410)은 서비스 장애와
+구별해 수집을 멈추지 않고 `fetch.json`의 `missing`에 남긴다. 한 기관에 연달아 보내는 요청에는 간격을 둔다.
 이미 받은 원본은 다시 내려받지 않으며, 게시판을 아직 선언하지 않은 도시는 0건 성공이 아니라
 `not-implemented`로 실패한다. 현재 선언된 게시판은 광주광역시청 하나뿐이고
 근거와 첫 실행 규모는 [정찰 기록](docs/validation/issue-51.md)에 있다.
@@ -207,9 +208,10 @@ Node 기반 빌드 도구를 쓰지 않는다. 폐업으로 확인된 후보도 
 공통 캐시는 `data/_shared/`에 둔다. 사람 검토 입력은 의미별로 나누어
 `data/manual/<city>/`의 `classify.jsonl`(사람 보정), `restore.jsonl`(상호 복원),
 `geocode.jsonl`(업소 확인)에 둔다. 자세한 내용은 [상호 복원](docs/restoration.md)에 있다.
-단계 메타데이터 파일은 `<stage>.json`이며 `schema_version`(geocode·closure는 4,
+단계 메타데이터 파일은 `<stage>.json`이며 `schema_version`(fetch는 2, geocode·closure는 4,
 build는 6, 나머지는 1), `city`, `org`, 입력 해시인
-`dependencies`, 실제 출력인 `payload`를 가진다. `parse.json`에는 레코드를 중복 저장하지 않는다.
+`dependencies`, 실제 출력인 `payload`를 가진다. `fetch.json`은 받은 원본의 `sources` 외에
+게시판이 링크했지만 받지 못한 원본을 `missing`(기관·게시판·게시글 주소·파일 이름·사유)에 남긴다. `parse.json`에는 레코드를 중복 저장하지 않는다.
 원본의 내용·개인정보를 메타데이터에 넣지 않는다. fetch 메타데이터의 외부 경로는 수집 PC 기준이다.
 
 레코드 CSV의 열 순서(`storage.RECORD_FIELDS`)는 다음과 같다. UTF-8 BOM 없음, LF 줄바꿈,

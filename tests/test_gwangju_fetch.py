@@ -382,3 +382,64 @@ class _Response:
 
     def read(self, size: int) -> bytes:
         return b"ok"
+
+
+class Gone:
+    """게시판은 링크했지만 기관이 내주지 않는 원본을 흉내 낸다."""
+
+    def __init__(self, responses: dict[str, bytes], gone: set[str]) -> None:
+        self.inner = BoardTransport(responses)
+        self.gone = gone
+
+    @property
+    def requests(self) -> list[str]:
+        return self.inner.requests
+
+    def fetch(self, url: str, params: Mapping[str, str], headers: Mapping[str, str]) -> bytes:
+        key = address(url, params)
+        if key in self.gone:
+            self.inner.requests.append(key)
+            raise transport_module.ResourceGone("gone")
+        return self.inner.fetch(url, params, headers)
+
+
+def test_fetch_records_an_original_the_organization_no_longer_serves(tmp_path: Path) -> None:
+    """404는 서비스 장애가 아니다. 수집을 멈추지 않고 받지 못한 사실을 남긴다."""
+    paths = paths_at(tmp_path)
+    transport = Gone(board_responses(), {download(11024, 2)})
+    assert run_fetch(paths, transport) == 0
+    artifact = fetch_artifact(paths)
+    assert [Path(item["path"]).name for item in artifact["sources"]] == [
+        "11024-1.xls",
+        "11022-1.xls",
+    ]
+    assert len(artifact["missing"]) == 1
+    lost = artifact["missing"][0]
+    assert lost["reason"] == "gone"
+    assert lost["url"] == view_page(11024)
+    assert lost["filename"] == "11024-2.xlsx"
+    # 뒤에 오는 게시글(11022)의 수집이 막히지 않는다.
+    assert download(11022, 1) in transport.requests
+
+
+def test_fetch_does_not_ask_again_for_an_original_known_to_be_gone(tmp_path: Path) -> None:
+    paths = paths_at(tmp_path)
+    assert run_fetch(paths, Gone(board_responses(), {download(11024, 2)})) == 0
+    again = Gone(board_responses(), {download(11024, 2)})
+    assert run_fetch(paths, again) == 0
+    assert [key for key in again.requests if not key.startswith(LIST_URL)] == []
+    assert len(fetch_artifact(paths)["missing"]) == 1
+
+
+def test_fetch_still_fails_when_the_board_itself_is_unreachable(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """자원 없음과 달리 서비스 장애는 그대로 실패로 알린다."""
+
+    class Broken:
+        def fetch(self, url: str, params: Mapping[str, str], headers: Mapping[str, str]) -> bytes:
+            raise OSError("connection reset")
+
+    paths = paths_at(tmp_path)
+    assert run_fetch(paths, Broken()) == 1  # type: ignore[arg-type]
+    assert "cause=service-unavailable" in capsys.readouterr().err

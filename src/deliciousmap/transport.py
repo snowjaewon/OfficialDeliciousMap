@@ -1,6 +1,7 @@
 """제공자와 무관한 HTTP 경계. 테스트는 이 자리에 응답만 주입하고 어댑터는 그대로 실행한다."""
 
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from collections.abc import Mapping
@@ -16,6 +17,14 @@ SAFE_CHARACTERS = "[]:"
 def query(params: Mapping[str, str]) -> str:
     """조회 조건을 주소에 싣는 단일 규칙. 주소를 기록하는 쪽도 이 함수를 쓴다."""
     return urllib.parse.urlencode(dict(params), quote_via=urllib.parse.quote, safe=SAFE_CHARACTERS)
+
+
+# 자원이 없다는 응답은 다시 요청해도 달라지지 않는다. 일시적 실패와 같은 자리에 두지 않는다.
+GONE_STATUSES = frozenset({404, 410})
+
+
+class ResourceGone(Exception):
+    """제공자가 그 자원이 없다고 답했다. 서비스 자체는 살아 있다."""
 
 
 class Transport(Protocol):
@@ -52,5 +61,10 @@ class HttpTransport:
     def _send(self, request: urllib.request.Request) -> bytes:
         if self.interval > 0:
             time.sleep(self.interval)
-        with urllib.request.urlopen(request, timeout=self.timeout) as response:
-            return bytes(response.read(self.limit + 1))
+        try:
+            with urllib.request.urlopen(request, timeout=self.timeout) as response:
+                return bytes(response.read(self.limit + 1))
+        except urllib.error.HTTPError as error:
+            if error.code in GONE_STATUSES:
+                raise ResourceGone("provider reports the resource is gone") from None
+            raise
