@@ -47,8 +47,9 @@ uv run python -m deliciousmap geocode --city seoul --retry-failed
 정적 지도 화면·PWA 기본 구성을 함께 만든다. 기관 실행은 데이터 파일만 `orgs/<org>/`에 분리한다.
 [지오코딩 사용법과 계약](docs/geocoding.md)을 따른다.
 `fetch`는 레지스트리에 선언된 게시판을 실제로 훑어 원본을 `--raw-root` 아래에 내려받고
-출처를 기록한다. 매직 바이트로 원본 컨테이너를 확인하고 게시판이 밝힌 확장자와 대조하므로,
-200으로 온 HTML이나 확장자와 어긋나는 첨부는 저장하지 않고 `unsupported-format`으로 실패한다.
+출처를 기록한다. 매직 바이트로 원본 컨테이너를 판정해 `SourceRef.container`에 남기므로 후속 단계는
+게시판이 붙인 확장자가 아니라 이 값을 본다. 어떤 컨테이너도 아닌 응답(200으로 온 HTML 등)은
+저장하지 않고 `unsupported-format`으로 실패한다.
 받아들일 확장자는 게시판마다 실측한 것만 선언한다. 실측하지 않은 형식은 게시판을 끝까지 훑은 뒤
 저장소 밖 `unmeasured.jsonl`에 모아 적고 한 번에 `unsupported-format`으로 알린다.
 실측한 구조와 다르거나 통째로 읽을 수 없는 크기의 응답은 `adapter-failed`, 게시판에 닿지 못하면
@@ -183,7 +184,7 @@ CLI를 포함한 통합 테스트에는 `cli.main(argv, cities=..., adapters=...
 
 | 단계 | 입력 → 출력 |
 | --- | --- |
-| fetch | `FetchInput.target` → 외부 `SourceRef`(경로·SHA-256·기관·게시판·출처 URL) |
+| fetch | `FetchInput.target` → 외부 `SourceRef`(경로·SHA-256·기관·게시판·출처 URL·컨테이너)와 받지 못한 원본 |
 | headermap | 원본 참조 → 표별 `HeaderMap`과 공통 캐시 참조 |
 | parse | 원본 참조 + 매핑 → `ParseOutput.records` |
 | classify | 레코드·고유 상호(`merchants`)·도시별 사람 보정 → 레코드별 최종 판정과 근거 |

@@ -74,7 +74,7 @@ class Container:
 # 실측으로 확인한 컨테이너만 둔다. `.xls`는 OLE2와 SpreadsheetML 둘 다로 올라온다.
 CONTAINERS: tuple[Container, ...] = (
     Container("ole2", bytes.fromhex("d0cf11e0a1b11ae1"), frozenset({".xls", ".hwp"})),
-    Container("ooxml", bytes.fromhex("504b0304"), frozenset({".xlsx", ".hwpx"})),
+    Container("ooxml", bytes.fromhex("504b0304"), frozenset({".xlsx", ".xlsm", ".hwpx"})),
     Container("pdf", b"%PDF-", frozenset({".pdf"})),
     Container(
         "spreadsheetml",
@@ -221,13 +221,15 @@ def suffix_of(filename: str) -> str:
     return PurePosixPath(filename.strip()).suffix.lower()
 
 
-def require_original(body: bytes, suffix: str) -> None:
-    """매직 바이트로 컨테이너를 판정하고 게시판이 밝힌 확장자와 대조한다."""
+def container_of(body: bytes) -> str:
+    """매직 바이트로 컨테이너를 판정한다. 게시판이 밝힌 확장자는 믿지 않는다.
+
+    실측(2026-09-11): 이 게시판은 OOXML 파일에 `.xls` 이름을 붙여 올리기도 한다(seq 963·857).
+    이름이 어긋난다고 버리면 실제 원본을 잃으므로, 판정한 컨테이너를 출처에 기록해 넘긴다.
+    """
     if not body:
         raise EmptyOriginal("board served an empty attachment")
     for container in CONTAINERS:
         if container.matches(body):
-            if suffix in container.suffixes:
-                return
-            raise UnsupportedOriginal("attachment contradicts its declared format")
+            return container.name
     raise UnsupportedOriginal("response is not an original container")

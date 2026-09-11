@@ -27,7 +27,7 @@ POST_PARAMETER = "seq"
 FILE_PARAMETER = "fileSn"
 # 이 게시판에서 실측한 첨부 형식. 2026-09-11 표본 80건과 첫 운영 수집에서 만난 건을 모두
 # 내려받아 매직 바이트까지 확인했다. 그 밖의 형식이 올라오면 조용히 넘기지 않고 알린다.
-PUBLISHED_SUFFIXES = frozenset({".xls", ".xlsx", ".hwp", ".hwpx", ".pdf"})
+PUBLISHED_SUFFIXES = frozenset({".xls", ".xlsx", ".xlsm", ".hwp", ".hwpx", ".pdf"})
 # 목록이 밝히는 전체 페이지 수. 이 값이 없으면 게시판 구조가 바뀐 것이므로 짐작하지 않는다.
 TOTAL_PAGES = re.compile(r"전체페이지\s*:\s*([\d,]+)")
 

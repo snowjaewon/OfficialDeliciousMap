@@ -250,15 +250,19 @@ def test_fetch_refuses_a_response_that_is_not_an_original_container(
     assert [item["post_id"] for item in unmeasured_report(paths)] == ["11024"]
 
 
-def test_fetch_refuses_an_attachment_whose_signature_contradicts_its_name(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
+def test_fetch_records_the_measured_container_not_the_declared_name(tmp_path: Path) -> None:
+    """실측: 이 게시판은 OOXML 파일에 `.xls` 이름을 붙여 올리기도 한다(seq 963·857).
+
+    이름이 어긋난다고 버리면 실제 원본을 잃는다. 판정한 컨테이너를 출처에 남겨 넘긴다.
+    """
     paths = paths_at(tmp_path)
     responses = board_responses()
-    # 이름은 .xls인데 내용은 OOXML이다. 확장자를 믿고 저장하지 않는다.
     responses[download(11024, 1)] = OOXML
-    assert run_fetch(paths, BoardTransport(responses)) == 1
-    assert "cause=unsupported-format" in capsys.readouterr().err
+    assert run_fetch(paths, BoardTransport(responses)) == 0
+    sources = fetch_artifact(paths)["sources"]
+    assert [item["container"] for item in sources] == ["ooxml", "ooxml", "ole2"]
+    # 저장 이름은 게시판이 밝힌 대로 두되, 실제 형식은 컨테이너가 말한다.
+    assert Path(sources[0]["path"]).name == "11024-1.xls"
 
 
 def test_fetch_reports_a_service_failure_instead_of_an_empty_collection(
@@ -597,3 +601,15 @@ def test_fetch_does_not_ask_again_for_an_empty_attachment(tmp_path: Path) -> Non
     assert run_fetch(paths, again) == 0
     assert [key for key in again.requests if not key.startswith(LIST_URL)] == []
     assert len(fetch_artifact(paths)["missing"]) == 1
+
+
+def test_fetch_accepts_a_macro_enabled_workbook(tmp_path: Path) -> None:
+    """실측: 2013~2014년 인권담당관실 글은 `.xlsm`으로 올라온다(seq 2690 외 4건)."""
+    paths = paths_at(tmp_path)
+    responses = board_responses()
+    responses[view_page(11024)] = view_with_suffix(11024, "2014. 4월 업무추진비내역.xlsm")
+    responses[download(11024, 1)] = OOXML
+    assert run_fetch(paths, BoardTransport(responses)) == 0
+    sources = fetch_artifact(paths)["sources"]
+    assert Path(sources[0]["path"]).name == "11024-1.xlsm"
+    assert sources[0]["container"] == "ooxml"

@@ -74,12 +74,17 @@ class CacheRef(Contract):
     revision: int = Field(ge=1)
 
 
+# 원본의 실제 컨테이너. 게시판이 붙인 확장자가 아니라 매직 바이트로 판정한 값이다.
+Container = Literal["ole2", "ooxml", "pdf", "spreadsheetml"]
+
+
 class SourceRef(Contract):
     path: Path
     source_hash: Sha256
     organization: Text
     board: Text
     url: Text
+    container: Container
 
 
 class HeaderMap(Contract):

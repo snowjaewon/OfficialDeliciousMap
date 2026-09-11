@@ -1,5 +1,6 @@
 """게시판 수집. 스크래퍼가 낸 게시글을 저장소 밖 원본과 그 출처 기록으로 바꾼다."""
 
+import hashlib
 import json
 import os
 import tempfile
@@ -11,7 +12,7 @@ from deliciousmap.contracts import FetchOutput, MissingOriginal, SourceRef
 from deliciousmap.paths import Paths
 from deliciousmap.pipeline import AdapterFailure, FailureCause
 from deliciousmap.registry import Board, Target
-from deliciousmap.storage import file_digest, write_text
+from deliciousmap.storage import write_text
 from deliciousmap.transport import Transport
 
 # 수집을 마친 게시글의 추가형 기록. 원본과 함께 저장소 밖에 두며, 중단한 수집을 이어서
@@ -127,20 +128,25 @@ def _report_unmeasured(directory: Path, unmeasured: list[dict[str, str]]) -> Non
 def _sources(
     directory: Path, collected: dict[str, "Collected"], organization: str, board: str
 ) -> list[SourceRef]:
-    """수집 기록 전체를 출처로 옮긴다. 이번 실행에서 새로 받은 것만 세지 않는다."""
+    """수집 기록 전체를 출처로 옮긴다. 이번 실행에서 새로 받은 것만 세지 않는다.
+
+    컨테이너는 저장한 원본에서 다시 판정한다. 게시판이 붙인 확장자를 그대로 믿지 않는다.
+    """
     references = []
     for entry in collected.values():
         for name in entry.files:
             path = directory / name
             if not path.exists():
                 raise AdapterFailure(FailureCause.IO_ERROR)
+            body = path.read_bytes()
             references.append(
                 SourceRef(
                     path=path,
-                    source_hash=file_digest(path),
+                    source_hash=hashlib.sha256(body).hexdigest(),
                     organization=organization,
                     board=board,
                     url=entry.url,
+                    container=boards.container_of(body),
                 )
             )
     return references
@@ -230,7 +236,8 @@ def _store(destination: Path, attachment: boards.Attachment, transport: Transpor
     if destination.exists():
         return
     body = boards.request(transport, *boards.endpoint(attachment.url))
-    boards.require_original(body, attachment.suffix)
+    # 원본으로 받아들일 수 있는지만 확인한다. 무슨 컨테이너였는지는 출처를 만들 때 다시 읽는다.
+    boards.container_of(body)
     _write(destination, body)
 
 

@@ -52,6 +52,7 @@ class SyntheticAdapters:
                     organization="test-org",
                     board="expenses",
                     url="https://example.invalid/expense/1",
+                    container="ooxml",
                 ),
             )
         )
