@@ -25,7 +25,12 @@ from deliciousmap.contracts import (
 )
 from deliciousmap.identity import decide_identity, lookup_key, reconcile_coordinates
 from deliciousmap.pipeline import AdapterFailure, ExecutionContext, FailureCause
-from deliciousmap.site import coordinate_source, published_record, write_site_shell
+from deliciousmap.site import (
+    coordinate_source,
+    coverage,
+    published_record,
+    write_site_shell,
+)
 from deliciousmap.storage import write_text
 
 
@@ -139,7 +144,11 @@ class LocalAdapters:
             if context.map_key is None:
                 raise ValueError("the map shell requires a configured public map key")
             site_files = write_site_shell(
-                context.paths.output_root, context.target.city, directory, context.map_key
+                context.paths.output_root,
+                context.target.city,
+                directory,
+                context.map_key,
+                coverage(context.target.organizations, value.records),
             )
         return BuildOutput(
             files=(marker_path, record_path, *site_files),

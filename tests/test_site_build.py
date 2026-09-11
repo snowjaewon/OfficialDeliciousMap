@@ -1,11 +1,12 @@
 import json
 import re
 from copy import deepcopy
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
-from deliciousmap.registry import CITIES
+from deliciousmap.registry import CITIES, Organization, Target
 from deliciousmap.storage import write_text
 from tests.test_geocoding_cli import (
     add_record,
@@ -201,3 +202,41 @@ def test_public_files_carry_no_original_or_lookup_provenance(tmp_path: Path) -> 
             assert secret not in content, path
         for value in ("a" * 64, "example.invalid", "합성 분류"):
             assert value not in content, path
+
+
+def with_held_organization(context: "object", reason: str = "bot_blocked") -> "object":
+    """수집 보류 기관이 하나 있는 도시로 바꾼다. 기존 레코드는 그대로 둔다."""
+    city = replace(
+        context.target.city,
+        organizations=(
+            *context.target.city.organizations,
+            Organization("held-org", "보류 기관", hold_reason=reason),
+        ),
+    )
+    return replace(context, target=Target(city, context.target.org))
+
+
+def city_page(context: "object") -> str:
+    path = context.paths.output_root / context.target.city.slug / "index.html"
+    return path.read_text(encoding="utf-8")
+
+
+def test_city_page_publishes_the_period_and_every_organization_status(tmp_path: Path) -> None:
+    context = with_held_organization(build_ready(tmp_path))
+    assert run_cli(context, "build") == 0
+
+    page = city_page(context)
+    assert "2026년 상반기" in page
+    assert "합성 기관" in page and "수집 완료" in page
+    assert "보류 기관" in page and "수집 보류" in page and "봇 차단" in page
+    # 수집 보류 기관이 있으면 지도 위에서도 누락 가능성을 알린다.
+    assert "data-collection-hold" in page
+
+
+def test_city_page_without_a_hold_keeps_the_map_free_of_the_notice(tmp_path: Path) -> None:
+    context = build_ready(tmp_path)
+    assert run_cli(context, "build") == 0
+
+    page = city_page(context)
+    assert "합성 기관" in page and "수집 완료" in page
+    assert "data-collection-hold" not in page

@@ -21,6 +21,40 @@
     1: (count) => count >= 1 && count <= 4,
   };
 
+  // 좌표를 준 자료의 이름. 지도에서 모양으로 구분하지 않고 상세에서만 밝힌다.
+  const COORDINATE_SOURCES = {
+    local: "담당자 준비 자료",
+    naver: "네이버 지역검색",
+    license: "인허가 자료",
+  };
+
+  // 마커가 되지 못한 이유. 판정 상태만으로는 알 수 없는 사유를 장부에서 함께 밝힌다.
+  const GEOCODE_REASONS = {
+    no_candidates: "후보 없음",
+    missing_address: "주소 근거 없음",
+    unknown_branch: "지점 미확인",
+    conflicting_evidence: "근거 충돌",
+    ambiguous: "후보 모호",
+    unconfirmed_name: "상호 미확인",
+    no_match: "일치 후보 없음",
+    missing_coordinates: "좌표 없음",
+    lookup_error: "조회 실패",
+    insufficient_evidence: "근거 부족",
+  };
+
+  const MAP_STATUSES = {
+    mapped: "지도 표시",
+    geocode_failed: "지오코딩 실패",
+    non_restaurant: "비식당",
+    pending: "판단 보류",
+  };
+
+  function recordState(record) {
+    const status = MAP_STATUSES[record.map_status];
+    const reason = GEOCODE_REASONS[record.geocode_reason];
+    return record.map_status === "geocode_failed" && reason ? `${status} · ${reason}` : status;
+  }
+
   function normalizeSearch(value) {
     return String(value).normalize("NFKC").trim().toLocaleLowerCase("ko-KR");
   }
@@ -159,12 +193,7 @@
         purpose.textContent = record.purpose || "목적 미기재";
         const state = documentObject.createElement("span");
         state.className = `record-state state-${record.map_status}`;
-        state.textContent = {
-          mapped: "지도 표시",
-          geocode_failed: "지오코딩 실패",
-          non_restaurant: "비식당",
-          pending: "판단 보류",
-        }[record.map_status];
+        state.textContent = recordState(record);
         article.append(heading, summary, purpose, state);
         fragment.append(article);
       }
@@ -251,12 +280,15 @@
     const closure = documentObject.createElement("p");
     closure.className = marker.closed ? "closed-state" : "open-state";
     closure.textContent = marker.closed ? "폐업 확인" : "폐업 확인 없음";
+    const origin = documentObject.createElement("p");
+    origin.className = "coordinate-source";
+    origin.textContent = `좌표 출처: ${COORDINATE_SOURCES[marker.coordinate_source] ?? "미상"}`;
     const link = documentObject.createElement("a");
     link.href = `https://map.naver.com/p/search/${encodeURIComponent(marker.merchant)}`;
     link.target = "_blank";
     link.rel = "noopener noreferrer";
     link.textContent = "네이버 지도에서 확인";
-    const children = [heading, visits, closure, link];
+    const children = [heading, visits, closure, origin, link];
     if (!withinCity) {
       const boundaryNotice = documentObject.createElement("p");
       boundaryNotice.className = "outside-city";
@@ -462,6 +494,7 @@
     createRecordsLoader,
     filterMarkers,
     markerInBounds,
+    recordState,
     renderRecords,
     renderSearchResults,
     selectMarker,

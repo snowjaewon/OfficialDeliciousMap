@@ -387,6 +387,31 @@ h1 {
   color: #7b3c20;
 }
 
+.coordinate-source {
+  color: #52665f;
+  font-size: 0.85rem;
+}
+
+.collection-table {
+  width: 100%;
+  margin-bottom: 0.8rem;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.collection-table th,
+.collection-table td {
+  padding: 0.4rem 0.3rem;
+  border-bottom: 1px solid #dfe6e1;
+  text-align: left;
+  vertical-align: top;
+}
+
+.collection-table thead th {
+  color: #52665f;
+  font-size: 0.8rem;
+}
+
 @media (max-width: 640px) {
   .topbar {
     grid-template-columns: auto 1fr auto;
