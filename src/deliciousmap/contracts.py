@@ -288,13 +288,13 @@ class GeocodeResult(Contract):
         if self.status == "success" and (
             self.business_id is None
             or self.confirmed_merchant is None
-            or self.reason not in {"matched", "human_confirmed"}
+            or self.reason not in CONFIRMED_REASONS
         ):
             raise ValueError("success requires a confirmed business")
         if self.status == "failed" and (
             self.business_id is not None
             or self.confirmed_merchant is not None
-            or self.reason in {"matched", "human_confirmed"}
+            or self.reason in CONFIRMED_REASONS
         ):
             raise ValueError("unresolved records cannot be assigned a business")
         if self.record_id != self.lookup.scope.record_id:

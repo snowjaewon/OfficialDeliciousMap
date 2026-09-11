@@ -172,7 +172,7 @@
     });
   }
 
-  function renderRecords(documentObject, records) {
+  function renderRecords(documentObject, records, organizations = {}) {
     const list = documentObject.querySelector("[data-records-list]");
     const status = documentObject.querySelector("[data-records-status]");
     const more = documentObject.querySelector("[data-records-more]");
@@ -188,7 +188,8 @@
         heading.textContent = record.merchant;
         const summary = documentObject.createElement("p");
         const amount = new Intl.NumberFormat("ko-KR").format(Number(record.amount_krw));
-        summary.textContent = `${record.spent_on} · ${record.organization} · ${amount}원`;
+        const organization = organizations[record.organization] ?? record.organization;
+        summary.textContent = `${record.spent_on} · ${organization} · ${amount}원`;
         const purpose = documentObject.createElement("p");
         purpose.textContent = record.purpose || "목적 미기재";
         const state = documentObject.createElement("span");
@@ -404,6 +405,7 @@
     let visitBand = "all";
     let filtered = allMarkers;
     let mapState;
+    let mapUnusable = false;
 
     function selectMarkerFromPage(marker, event) {
       void selectMarker(windowObject, documentObject, config, mapState, marker, event);
@@ -435,6 +437,7 @@
 
     function reportUnusableMap(error) {
       // 지도를 쓸 수 없다는 사실을 숨기지 않는다. 검색·집계·장부는 계속 제공한다.
+      mapUnusable = true;
       mapState = undefined;
       const message = documentObject.createElement("p");
       message.className = "map-error";
@@ -475,7 +478,7 @@
       status.textContent = "장부를 불러오고 있습니다.";
       const payload = await fetchJson(windowObject, root.dataset.recordsUrl);
       if (!Array.isArray(payload.records)) throw new Error("invalid record data");
-      renderRecords(documentObject, payload.records);
+      renderRecords(documentObject, payload.records, config.organizations);
       await recordMetricAfterPaint(windowObject, "records-first-list", startedAt);
       return payload;
     });
@@ -498,18 +501,20 @@
     try {
       const mapApi = await mapApiRequest;
       if (mapApi.error) throw mapApi.error;
-      mapState = {
-        ...createMap(
-          windowObject,
-          mapApi.naverMaps,
-          config,
-          allMarkers,
-          updateCounts,
-          selectMarkerFromPage,
-        ),
-        naverMaps: mapApi.naverMaps,
-      };
-      await mapState.ready;
+      // 인증 실패가 지도를 만들기 전에 오면 만들지 않는다. 만든 자리를 다시 덮어쓰지 않기 위해서다.
+      if (mapUnusable) throw new Error("Naver Maps authentication failed");
+      const created = createMap(
+        windowObject,
+        mapApi.naverMaps,
+        config,
+        allMarkers,
+        updateCounts,
+        selectMarkerFromPage,
+      );
+      mapState = { ...created, naverMaps: mapApi.naverMaps };
+      await created.ready;
+      // 기다리는 동안 인증이 실패했으면 안내는 이미 떠 있다.
+      if (mapUnusable) return;
       applyFilters();
       await recordMetricAfterPaint(windowObject, "first-ready", 0);
     } catch (error) {

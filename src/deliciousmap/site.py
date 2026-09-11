@@ -1,4 +1,4 @@
-"""Static site shell generated from refined build inputs."""
+"""dist/에 공개하는 것의 단일 출처. 정제 산출물에서 데이터 파일과 정적 화면을 낸다."""
 
 import json
 import os
@@ -11,13 +11,18 @@ from pathlib import Path
 from typing import Literal
 
 from deliciousmap.contracts import (
+    BuildInput,
     ClassificationStatus,
+    Contract,
     GeocodeResult,
+    MarkerFile,
     Provider,
+    PublishedMarker,
     PublishedRecord,
     Record,
+    RecordFile,
 )
-from deliciousmap.registry import CITIES, City, HoldReason, Organization
+from deliciousmap.registry import CITIES, City, HoldReason, Organization, Target
 from deliciousmap.storage import write_text
 
 ASSET_NAMES = ("app.js", "styles.css")
@@ -62,7 +67,7 @@ def map_key_from_environment(environ: Mapping[str, str] | None = None) -> MapKey
 
 
 @dataclass(frozen=True)
-class OrganizationCoverage:
+class CollectionStatus:
     """기관 하나의 수집 상태. 레코드 없음을 집행 없음으로 읽지 않도록 상태를 구분한다."""
 
     slug: str
@@ -72,13 +77,13 @@ class OrganizationCoverage:
     hold_reason: HoldReason | None = None
 
 
-def coverage(
+def collection_status(
     organizations: tuple[Organization, ...], records: tuple[Record, ...]
-) -> tuple[OrganizationCoverage, ...]:
+) -> tuple[CollectionStatus, ...]:
     """수집 상태는 선언한 보류 사유와 이번 빌드의 레코드 유무에서 계산한다."""
     counts = Counter(record.organization for record in records)
     return tuple(
-        OrganizationCoverage(
+        CollectionStatus(
             slug=organization.slug,
             name=organization.name,
             status=(
@@ -95,9 +100,62 @@ def coverage(
     )
 
 
-def coordinate_source(result: GeocodeResult) -> Provider:
+def write_city_data(directory: Path, target: Target, value: BuildInput) -> tuple[Path, ...]:
+    """지도용 축약 마커와 전체 장부를 따로 낸다. 두 파일의 건수는 다를 수 있다."""
+    marker_path = directory / "markers.json"
+    _write_json(marker_path, _marker_file(target, value))
+    record_path = directory / "records.json"
+    _write_json(record_path, _record_file(target, value))
+    return (marker_path, record_path)
+
+
+def _write_json(path: Path, content: Contract) -> None:
+    payload = content.model_dump(mode="json")
+    write_text(path, json.dumps(payload, ensure_ascii=False, sort_keys=True) + "\n")
+
+
+def _marker_file(target: Target, value: BuildInput) -> MarkerFile:
+    closures = {item.business_id: item for item in value.closures}
+    geocodes = {item.record_id: item for item in value.geocodes}
+    return MarkerFile(
+        city=target.city.slug,
+        org=target.org,
+        markers=tuple(
+            PublishedMarker(
+                business_id=candidate.business_id,
+                merchant=candidate.merchant,
+                visit_count=len(candidate.record_ids),
+                latitude=candidate.latitude,
+                longitude=candidate.longitude,
+                closed=closures[candidate.business_id].status == "closed",
+                # 묶인 레코드는 같은 좌표를 공유하므로 첫 레코드의 근거로 출처를 밝힌다.
+                coordinate_source=_coordinate_source(geocodes[candidate.record_ids[0]]),
+            )
+            for candidate in value.candidates
+        ),
+    )
+
+
+def _record_file(target: Target, value: BuildInput) -> RecordFile:
+    decisions = {item.record_id: item for item in value.decisions}
+    geocodes = {item.record_id: item for item in value.geocodes}
+    return RecordFile(
+        city=target.city.slug,
+        org=target.org,
+        records=tuple(
+            _published_record(
+                record,
+                decisions[record.record_id].status,
+                geocodes.get(record.record_id),
+            )
+            for record in value.records
+        ),
+    )
+
+
+def _coordinate_source(result: GeocodeResult) -> Provider:
     """좌표를 준 제공자. 사람이 확인한 건은 확인한 후보의 제공자가 정본이다."""
-    if result.confirmation is not None:
+    if result.reason == "human_confirmed" and result.confirmation is not None:
         return result.confirmation.candidate_source.provider
     providers = sorted(
         {
@@ -112,7 +170,7 @@ def coordinate_source(result: GeocodeResult) -> Provider:
     return providers[0]
 
 
-def published_record(
+def _published_record(
     record: Record, classification: ClassificationStatus, geocode: GeocodeResult | None
 ) -> PublishedRecord:
     """장부는 마커가 되지 못한 레코드도 판정 상태·사유와 함께 보존한다."""
@@ -141,12 +199,12 @@ def write_site_shell(
     city: City,
     city_directory: Path,
     map_key: MapKey,
-    collection: tuple[OrganizationCoverage, ...],
+    statuses: tuple[CollectionStatus, ...],
 ) -> tuple[Path, ...]:
     """Write shared assets, the city landing, and one city entry page."""
     written: list[Path] = []
     city_page = city_directory / "index.html"
-    write_text(city_page, _city_page(city, map_key, collection))
+    write_text(city_page, _city_page(city, map_key, statuses))
     written.append(city_page)
 
     # 진입 페이지를 먼저 쓰고 랜딩을 만들어, 이번 실행의 도시도 링크 대상이 되게 한다.
@@ -202,31 +260,26 @@ def _landing_page(output_root: Path) -> str:
 """
 
 
-def _map_notice(collection: tuple[OrganizationCoverage, ...]) -> str:
+def _map_notice(statuses: tuple[CollectionStatus, ...]) -> str:
     """수집 보류가 있을 때만 지도 위에 짧게 알린다. 없으면 안내를 두지 않는다."""
-    held = [item for item in collection if item.status == "held"]
-    if not collection:
-        message = "이 도시는 아직 수집 대상 기관이 선언되지 않았습니다."
-    elif held:
-        message = (
-            f"수집 보류 기관 {len(held)}곳이 있어 비어 있는 지역이 집행 없음을 뜻하지 않습니다."
-        )
-    else:
+    held = [item for item in statuses if item.status == "held"]
+    if not held:
         return ""
+    message = f"수집 보류 기관 {len(held)}곳이 있어 비어 있는 지역이 집행 없음을 뜻하지 않습니다."
     return f"""          <p class="collection-warning map-warning" data-collection-hold>
             {escape(message)}
           </p>"""
 
 
-def _collection_table(collection: tuple[OrganizationCoverage, ...]) -> str:
+def _collection_table(statuses: tuple[CollectionStatus, ...]) -> str:
     """기관별 수집 상태. 선언된 기관이 없으면 그 사실을 그대로 적는다."""
-    if not collection:
+    if not statuses:
         return "      <p>등록된 수집 대상 기관이 없습니다.</p>"
     rows = "\n".join(
         f'          <tr><th scope="row">{escape(item.name)}</th>'
         f"<td>{COLLECTION_LABELS[item.status]}</td>"
         f"<td>{escape(_collection_detail(item))}</td></tr>"
-        for item in collection
+        for item in statuses
     )
     return f"""      <table class="collection-table">
         <thead>
@@ -238,9 +291,9 @@ def _collection_table(collection: tuple[OrganizationCoverage, ...]) -> str:
       </table>"""
 
 
-def _collection_detail(item: OrganizationCoverage) -> str:
-    if item.status == "held":
-        return HOLD_REASON_LABELS[item.hold_reason] if item.hold_reason else "사유 미기재"
+def _collection_detail(item: CollectionStatus) -> str:
+    if item.hold_reason is not None:
+        return HOLD_REASON_LABELS[item.hold_reason]
     if item.status == "collected":
         return f"레코드 {item.record_count:,}건"
     return "이번 빌드에 레코드 없음"
@@ -259,11 +312,13 @@ def _city_card(city: City, output_root: Path) -> str:
     )
 
 
-def _city_page(city: City, map_key: MapKey, collection: tuple[OrganizationCoverage, ...]) -> str:
+def _city_page(city: City, map_key: MapKey, statuses: tuple[CollectionStatus, ...]) -> str:
     city_name = escape(city.name)
     config = json.dumps(
         {
             "city": city.slug,
+            # 장부는 레코드의 기관 slug를 담으므로 화면에서 쓸 이름을 함께 내려 준다.
+            "organizations": {item.slug: item.name for item in statuses},
             "map_bounds": asdict(city.map_bounds),
             "naver_map_client_id": map_key.client_id,
             "naver_map_key_param": map_key.key_param,
@@ -314,7 +369,7 @@ def _city_page(city: City, map_key: MapKey, collection: tuple[OrganizationCovera
             <strong data-viewport-count>—</strong>곳 현재 지도 영역
           </p>
           <div class="search-results" data-search-results hidden></div>
-{_map_notice(collection)}
+{_map_notice(statuses)}
         </form>
         <div id="map" class="map" aria-label="{city_name} 식당 지도">
           <p class="loading">지도를 준비하고 있습니다.</p>
@@ -331,7 +386,7 @@ def _city_page(city: City, map_key: MapKey, collection: tuple[OrganizationCovera
     <dialog class="source-dialog" data-source-dialog>
       <button type="button" class="dialog-close" data-close-sources aria-label="닫기">×</button>
       <p class="eyebrow">자료 범위</p><h2>대상 기간 {REPORTING_PERIOD}</h2>
-{_collection_table(collection)}
+{_collection_table(statuses)}
       <p class="collection-warning">
         레코드 없음과 수집 보류는 집행이 없었다는 뜻이 아닙니다.
       </p>

@@ -78,7 +78,8 @@ PowerShell: Get-Content .env | ForEach-Object { if ($_ -match '^(\w+)=(.*)$') { 
 단계 실패는 `단계 city=도시 org=기관 cause=원인코드`와 종료 코드 1로 전달하고 후속 실행을 중단한다.
 `org=*`는 도시 전체다. 원인 코드는 `not-implemented`, `invalid-artifact`, `io-error`,
 `adapter-failed`, `unsupported-format`, `service-unavailable`, `lookup-failed`,
-`regeneration-required`이다. 예외 원문·서비스 응답·비밀값은 출력하지 않는다.
+`regeneration-required`, `conflicting-review`, `missing-configuration`이다.
+예외 원문·서비스 응답·비밀값은 출력하지 않는다.
 조회 오류는 레코드별 결과를 저장한 뒤 `lookup-failed`로 실패한다. 후속 단계를 따로 실행하면
 그 레코드를 보존한 중간 빌드가 가능하다. 이전 버전은 `geocode`→`closure`→`build`를 재실행한다.
 판단 보류와 지오코딩 실패는 유효한 판정 상태이므로 장부용 레코드를 보존하고 build까지 전달한다.
@@ -99,8 +100,9 @@ PowerShell: Get-Content .env | ForEach-Object { if ($_ -match '^(\w+)=(.*)$') { 
 자료 범위 대화상자에 대상 기간(`site.REPORTING_PERIOD`, 현재 2026년 상반기)과 레지스트리에
 선언한 기관별 수집 상태를 적는다. 상태는 `수집 완료`(이번 빌드에 레코드 있음), `레코드 없음`,
 `수집 보류`(`Organization.hold_reason`: 봇 차단·DRM·게시판 유실·공개 기준 미달)이며 어느 쪽도
-집행이 없었다는 뜻이 아니다. 수집 보류 기관이 있거나 선언된 기관이 없으면 지도 위에도 짧은
-안내를 둔다. 기관의 수집 보류는 상호의 판단 보류와 다른 상태다.
+집행이 없었다는 뜻이 아니다. 수집 보류 기관이 있을 때만 지도 위에도 짧은 안내를 둔다.
+기관의 수집 보류는 상호의 판단 보류와 다른 상태다. 장부는 레코드의 기관 slug를 담으므로
+진입 페이지가 slug와 기관 이름의 대응을 함께 실어 화면에서 이름으로 보여 준다.
 
 #### 공개 데이터 파일
 
@@ -111,8 +113,9 @@ PowerShell: Get-Content .env | ForEach-Object { if ($_ -match '^(\w+)=(.*)$') { 
 
 마커 하나는 `business_id`, 확정 상호 `merchant`, `visit_count`(묶인 레코드 수), `latitude`,
 `longitude`, `closed`, `coordinate_source`를 가진다. `coordinate_source`는 좌표를 준 제공자
-(`local`·`naver`·`license`)이며 사람이 확인한 건은 확인한 후보의 제공자, 그 밖에는 결과 좌표와
-일치하는 후보의 제공자다. 여러 제공자의 근거가 같은 좌표로 겹치면 이름 순으로 하나를 밝힌다.
+(`local`·`naver`·`license`)다. 마커에 묶인 레코드는 좌표가 같으므로 첫 레코드의 판정에서 고르며,
+그 판정이 사람 확인이면 확인한 후보의 제공자, 아니면 결과 좌표와 일치하는 후보의 제공자다.
+여러 제공자의 근거가 같은 좌표로 겹치면 이름 순으로 하나를 밝힌다.
 폐업으로 확인된 마커도 파일에서 빼지 않는다.
 
 장부 레코드 하나는 `record_id`, `spent_on`, `organization`, `department`, `merchant`, `purpose`,

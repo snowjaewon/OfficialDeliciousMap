@@ -51,6 +51,7 @@ class FailureCause(StrEnum):
     LOOKUP_FAILED = "lookup-failed"
     REGENERATION_REQUIRED = "regeneration-required"
     CONFLICTING_REVIEW = "conflicting-review"
+    MISSING_CONFIGURATION = "missing-configuration"
 
 
 class AdapterFailure(Exception):

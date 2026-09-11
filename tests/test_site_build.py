@@ -2,11 +2,20 @@ import json
 import re
 from copy import deepcopy
 from dataclasses import replace
+from importlib.resources import files
 from pathlib import Path
+from typing import get_args
 
 import pytest
 
-from deliciousmap.registry import CITIES, Organization, Target
+from deliciousmap.contracts import (
+    CONFIRMED_REASONS,
+    GeocodeReason,
+    MapStatus,
+    Provider,
+)
+from deliciousmap.pipeline import ExecutionContext
+from deliciousmap.registry import CITIES, HoldReason, Organization, Target
 from deliciousmap.storage import write_text
 from tests.test_geocoding_cli import (
     add_record,
@@ -44,11 +53,13 @@ def test_city_page_contains_its_map_bounds_and_public_map_key(
         "map_bounds": {"east": 129.4, "north": 38.0, "south": 34.8, "west": 126.7},
         "naver_map_client_id": "public-test-key",
         "naver_map_key_param": "ncpKeyId",
+        # 장부 화면이 기관 slug 대신 이름을 쓸 수 있게 함께 내려 준다.
+        "organizations": {"test-org": "합성 기관"},
         "site_root": "../",
     }
 
 
-def build_ready(tmp_path: Path) -> "object":
+def build_ready(tmp_path: Path) -> ExecutionContext:
     """build 직전까지의 정제 산출물을 만든다."""
     context = prepare(tmp_path)
     save_input(context, lookup())
@@ -110,7 +121,7 @@ def test_organization_build_writes_data_without_touching_the_city_shell(tmp_path
     assert not (output_root / "seoul" / "index.html").exists()
 
 
-def published(context: "object", name: str) -> dict:
+def published(context: ExecutionContext, name: str) -> dict:
     directory = context.paths.output_root / context.target.city.slug
     if context.target.org:
         directory = directory / "orgs" / context.target.org
@@ -204,7 +215,9 @@ def test_public_files_carry_no_original_or_lookup_provenance(tmp_path: Path) -> 
             assert value not in content, path
 
 
-def with_held_organization(context: "object", reason: str = "bot_blocked") -> "object":
+def with_held_organization(
+    context: ExecutionContext, reason: HoldReason = "bot_blocked"
+) -> ExecutionContext:
     """수집 보류 기관이 하나 있는 도시로 바꾼다. 기존 레코드는 그대로 둔다."""
     city = replace(
         context.target.city,
@@ -216,7 +229,7 @@ def with_held_organization(context: "object", reason: str = "bot_blocked") -> "o
     return replace(context, target=Target(city, context.target.org))
 
 
-def city_page(context: "object") -> str:
+def city_page(context: ExecutionContext) -> str:
     path = context.paths.output_root / context.target.city.slug / "index.html"
     return path.read_text(encoding="utf-8")
 
@@ -252,3 +265,18 @@ def test_landing_keeps_seven_cards_but_links_only_the_cities_it_built(tmp_path: 
     assert 'href="./seoul/"' in landing
     assert [city.slug for city in CITIES if f'href="./{city.slug}/"' in landing] == ["seoul"]
     assert landing.count("준비 중") == len(CITIES) - 1
+
+
+def test_screen_labels_cover_every_published_contract_value() -> None:
+    """계약의 값이 늘면 화면 표기도 함께 늘린다. 빈 표기로 조용히 지나가지 않게 한다."""
+    source = files("deliciousmap.site_assets").joinpath("app.js").read_text(encoding="utf-8")
+
+    def labelled(name: str) -> set[str]:
+        block = re.search(rf"const {name} = \{{(.*?)\n  \}};", source, re.S)
+        assert block is not None, name
+        return set(re.findall(r"^\s*(\w+):", block.group(1), re.M))
+
+    assert labelled("COORDINATE_SOURCES") == set(get_args(Provider))
+    assert labelled("MAP_STATUSES") == set(get_args(MapStatus))
+    # 확정된 두 사유는 지도에 오른 레코드의 것이라 장부에서 따로 적지 않는다.
+    assert labelled("GEOCODE_REASONS") == set(get_args(GeocodeReason)) - set(CONFIRMED_REASONS)
