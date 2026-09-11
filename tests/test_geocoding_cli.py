@@ -194,8 +194,11 @@ def test_build_creates_city_entry_page_and_seven_city_landing(tmp_path: Path) ->
 
     output = context.paths.output_root
     landing = (output / "index.html").read_text(encoding="utf-8")
-    for city in ("seoul", "busan", "daegu", "incheon", "gwangju", "daejeon", "ulsan"):
-        assert f'href="./{city}/"' in landing
+    for city in ("서울", "부산", "대구", "인천", "광주", "대전", "울산"):
+        assert city in landing
+    # 빌드한 도시만 열 수 있다. 나머지는 카드로 남기되 링크하지 않는다.
+    assert 'href="./seoul/"' in landing
+    assert 'href="./busan/"' not in landing
 
     city_page = (output / "seoul" / "index.html").read_text(encoding="utf-8")
     assert '<meta property="og:title" content="합성 도시 공무원 맛집 지도">' in city_page

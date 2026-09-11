@@ -97,6 +97,17 @@ h1 {
   font-size: 1.7rem;
 }
 
+.city-card.is-pending {
+  color: #6d7f78;
+  background: #eef2ef;
+  box-shadow: none;
+  cursor: default;
+}
+
+.city-card.is-pending span {
+  color: inherit;
+}
+
 .city-card span {
   color: #b24d2d;
   font-size: 0.85rem;

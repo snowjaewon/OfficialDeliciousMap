@@ -240,3 +240,15 @@ def test_city_page_without_a_hold_keeps_the_map_free_of_the_notice(tmp_path: Pat
     page = city_page(context)
     assert "합성 기관" in page and "수집 완료" in page
     assert "data-collection-hold" not in page
+
+
+def test_landing_keeps_seven_cards_but_links_only_the_cities_it_built(tmp_path: Path) -> None:
+    context = build_ready(tmp_path)
+    assert run_cli(context, "build") == 0
+
+    landing = (context.paths.output_root / "index.html").read_text(encoding="utf-8")
+    for city in CITIES:
+        assert city.name in landing
+    assert 'href="./seoul/"' in landing
+    assert [city.slug for city in CITIES if f'href="./{city.slug}/"' in landing] == ["seoul"]
+    assert landing.count("준비 중") == len(CITIES) - 1

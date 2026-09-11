@@ -145,8 +145,13 @@ def write_site_shell(
 ) -> tuple[Path, ...]:
     """Write shared assets, the city landing, and one city entry page."""
     written: list[Path] = []
+    city_page = city_directory / "index.html"
+    write_text(city_page, _city_page(city, map_key, collection))
+    written.append(city_page)
+
+    # 진입 페이지를 먼저 쓰고 랜딩을 만들어, 이번 실행의 도시도 링크 대상이 되게 한다.
     landing = output_root / "index.html"
-    write_text(landing, _landing_page())
+    write_text(landing, _landing_page(output_root))
     written.append(landing)
 
     asset_root = output_root / "assets"
@@ -165,19 +170,12 @@ def write_site_shell(
     service_worker = output_root / "sw.js"
     write_text(service_worker, packaged_assets.joinpath("sw.js").read_text(encoding="utf-8"))
     written.append(service_worker)
-
-    city_page = city_directory / "index.html"
-    write_text(city_page, _city_page(city, map_key, collection))
-    written.append(city_page)
     return tuple(written)
 
 
-def _landing_page() -> str:
-    cards = "\n".join(
-        f'          <a class="city-card" href="./{city.slug}/">'
-        f"<strong>{escape(city.name)}</strong><span>지도 열기</span></a>"
-        for city in CITIES
-    )
+def _landing_page(output_root: Path) -> str:
+    """빌드된 도시만 링크한다. 아직 만들지 않은 도시를 열 수 있는 것처럼 보이지 않게 한다."""
+    cards = "\n".join(_city_card(city, output_root) for city in CITIES)
     return f"""<!doctype html>
 <html lang="ko">
   <head>
@@ -248,6 +246,19 @@ def _collection_detail(item: OrganizationCoverage) -> str:
     return "이번 빌드에 레코드 없음"
 
 
+def _city_card(city: City, output_root: Path) -> str:
+    name = escape(city.name)
+    if not (output_root / city.slug / "index.html").is_file():
+        return (
+            '          <p class="city-card is-pending">'
+            f"<strong>{name}</strong><span>준비 중</span></p>"
+        )
+    return (
+        f'          <a class="city-card" href="./{city.slug}/">'
+        f"<strong>{name}</strong><span>지도 열기</span></a>"
+    )
+
+
 def _city_page(city: City, map_key: MapKey, collection: tuple[OrganizationCoverage, ...]) -> str:
     city_name = escape(city.name)
     config = json.dumps(
@@ -300,7 +311,7 @@ def _city_page(city: City, map_key: MapKey, collection: tuple[OrganizationCovera
           </fieldset>
           <p class="result-count" aria-live="polite">
             <strong data-total-count>0</strong>곳 전체 ·
-            <strong data-viewport-count>0</strong>곳 현재 지도 영역
+            <strong data-viewport-count>—</strong>곳 현재 지도 영역
           </p>
           <div class="search-results" data-search-results hidden></div>
 {_map_notice(collection)}

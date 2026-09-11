@@ -10,6 +10,7 @@ const {
   renderSearchResults,
   selectMarker,
   summarizeMetrics,
+  viewportBounds,
 } = require("../src/deliciousmap/site_assets/app.js");
 
 class FakeElement {
@@ -241,4 +242,27 @@ test("the record view explains why an unmapped record missed the map", () => {
   assert.ok(first.includes("지오코딩 실패 · 후보 없음"));
   const second = list.children[1].children.map((child) => child.textContent);
   assert.ok(second.includes("판단 보류"));
+});
+
+test("city-wide counts survive a map that cannot report its viewport", () => {
+  const bounds = { south: 34, west: 126, north: 38, east: 130 };
+  const working = {
+    map: {
+      getBounds: () => ({
+        getSW: () => ({ lat: () => bounds.south, lng: () => bounds.west }),
+        getNE: () => ({ lat: () => bounds.north, lng: () => bounds.east }),
+      }),
+    },
+  };
+  const broken = {
+    map: {
+      getBounds() {
+        throw new Error("authentication failed");
+      },
+    },
+  };
+
+  assert.deepEqual(viewportBounds(working), bounds);
+  assert.equal(viewportBounds(broken), undefined);
+  assert.equal(viewportBounds(undefined), undefined);
 });

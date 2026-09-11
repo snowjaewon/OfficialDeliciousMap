@@ -263,6 +263,16 @@
     };
   }
 
+  function viewportBounds(mapState) {
+    // 지도 인증·초기화가 끝나기 전이나 실패한 뒤에는 현재 영역을 알 수 없다.
+    if (!mapState) return undefined;
+    try {
+      return naverBoundsToPlain(mapState.map.getBounds());
+    } catch (error) {
+      return undefined;
+    }
+  }
+
   function markerIcon(naverMaps, marker) {
     const className = marker.closed ? "map-marker is-closed" : "map-marker";
     return {
@@ -304,8 +314,13 @@
     const withinCity = markerInBounds(marker, config.map_bounds);
     renderRestaurant(documentObject, marker, withinCity);
     if (mapState && withinCity) {
-      mapState.map.panTo(new mapState.naverMaps.LatLng(marker.latitude, marker.longitude));
-      mapState.map.setZoom(Math.max(mapState.map.getZoom(), 16));
+      try {
+        mapState.map.panTo(new mapState.naverMaps.LatLng(marker.latitude, marker.longitude));
+        mapState.map.setZoom(Math.max(mapState.map.getZoom(), 16));
+      } catch (error) {
+        // 지도를 움직이지 못해도 선택한 식당의 상세는 그대로 보여 준다.
+        windowObject.console.error(error);
+      }
     }
     return recordMetricAfterPaint(windowObject, "marker-selection", startedAt);
   }
@@ -395,25 +410,44 @@
     }
 
     function updateCounts(bounds) {
+      // 도시 전체 결과는 지도와 무관하게 언제나 센다. 알 수 없는 현재 영역은 0으로 적지 않는다.
       totalCount.textContent = filtered.length.toLocaleString("ko-KR");
       viewportCount.textContent = bounds
         ? countMarkersInBounds(filtered, bounds).toLocaleString("ko-KR")
-        : "0";
+        : "—";
     }
 
     function applyFilters() {
+      // 검색·필터 결과와 집계는 지도가 없어도 도시 전체를 대상으로 먼저 반영한다.
       filtered = filterMarkers(allMarkers, search.value, visitBand);
       renderSearchResults(documentObject, filtered, search.value, selectMarkerFromPage);
+      updateCounts(viewportBounds(mapState));
+      if (!mapState) return;
       const visible = new Set(filtered.map((marker) => marker.business_id));
-      if (mapState) {
+      try {
         for (const item of mapState.overlays) {
           item.overlay.setMap(visible.has(item.data.business_id) ? mapState.map : null);
         }
-        updateCounts(naverBoundsToPlain(mapState.map.getBounds()));
-      } else {
-        updateCounts();
+      } catch (error) {
+        windowObject.console.error(error);
       }
     }
+
+    function reportUnusableMap(error) {
+      // 지도를 쓸 수 없다는 사실을 숨기지 않는다. 검색·집계·장부는 계속 제공한다.
+      mapState = undefined;
+      const message = documentObject.createElement("p");
+      message.className = "map-error";
+      message.textContent =
+        "네이버 지도 설정을 확인해 주세요. 검색 집계와 장부는 계속 볼 수 있습니다.";
+      documentObject.getElementById("map").replaceChildren(message);
+      windowObject.console.error(error);
+      applyFilters();
+    }
+
+    // 키가 잘못되면 SDK는 내려받아지지만 지도는 동작하지 않는다. 공식 훅으로 그 사실을 받는다.
+    windowObject.navermap_authFailure = () =>
+      reportUnusableMap(new Error("Naver Maps authentication failed"));
 
     documentObject.querySelector("[data-search-form]").addEventListener("submit", (event) => {
       event.preventDefault();
@@ -479,13 +513,7 @@
       applyFilters();
       await recordMetricAfterPaint(windowObject, "first-ready", 0);
     } catch (error) {
-      const mapElement = documentObject.getElementById("map");
-      const message = documentObject.createElement("p");
-      message.className = "map-error";
-      message.textContent =
-        "네이버 지도 설정을 확인해 주세요. 검색 집계와 장부는 계속 볼 수 있습니다.";
-      mapElement.replaceChildren(message);
-      windowObject.console.error(error);
+      reportUnusableMap(error);
     }
   }
 
@@ -500,5 +528,6 @@
     selectMarker,
     start,
     summarizeMetrics,
+    viewportBounds,
   };
 });
