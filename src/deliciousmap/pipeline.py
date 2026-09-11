@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Protocol
 
-from deliciousmap import comparison, lookup, restoration, site
+from deliciousmap import classify, comparison, headermap, lookup, restoration, site
 from deliciousmap.budget import Budget
 from deliciousmap.contracts import (
     BuildInput,
@@ -86,6 +86,9 @@ class ExecutionContext:
     map_key: site.MapKey | None = None
     # 게시판 요청 경계. 테스트는 이 자리에 응답만 주입하고 수집 규칙은 그대로 실행한다.
     board_transport: Transport | None = None
+    # 구성된 헤더 매핑·비식당 판별 모델. 없으면 캐시만 쓰고 나머지는 미해결·판단 보류로 남긴다.
+    header_mapper: headermap.HeaderMapper | None = None
+    classifier: classify.Classifier | None = None
 
 
 class Adapters(Protocol):
@@ -176,7 +179,10 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
             fetched = store.load("fetch", FetchOutput)
             mapped = store.load("headermap", HeaderMapOutput)
             result = adapters.parse(
-                ParseInput(sources=fetched.sources, mappings=mapped.mappings), context
+                ParseInput(
+                    sources=fetched.sources, mappings=mapped.mappings, unresolved=mapped.unresolved
+                ),
+                context,
             )
             result = ParseOutput.model_validate(result)
             source_targets = {

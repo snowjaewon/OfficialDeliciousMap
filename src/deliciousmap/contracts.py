@@ -79,12 +79,16 @@ Container = Literal["ole2", "ooxml", "pdf", "spreadsheetml"]
 
 
 class SourceRef(Contract):
+    # 원본 폴더(--raw-root) 기준 상대 경로. 개발자 PC의 절대 경로를 산출물에 싣지 않는다.
     path: Path
     source_hash: Sha256
     organization: Text
     board: Text
     url: Text
     container: Container
+    # 게시글이 밝힌 작성 부서. 원본에 부서 열이 없을 때 출처 메타데이터로 보완한다.
+    # 게시판 구조에 기대지 않는 스크래퍼는 채우지 않으며, 그때 부서는 표의 열에서만 온다.
+    department: Text | None = None
 
 
 class HeaderMap(Contract):
@@ -429,9 +433,94 @@ class ModelReply(Contract):
 
     @model_validator(mode="after")
     def consistent_reply(self) -> "ModelReply":
-        require_error_code(self.status, self.error)
-        if (self.status == "ok") != (self.answer is not None):
-            raise ValueError("a successful reply requires exactly one answer")
+        require_single_answer(self.status, self.error, self.answer)
+        return self
+
+
+def require_single_answer(status: str, error: str | None, answer: object) -> None:
+    require_error_code(status, error)
+    if (status == "ok") != (answer is not None):
+        raise ValueError("a successful reply requires exactly one answer")
+
+
+ReplyError = Literal["unavailable", "invalid_response", "incomplete_response"]
+# 헤더 매핑이 판정하는 열 역할. 사용자·직위·인원 같은 열은 역할을 주지 않는다.
+ColumnRole = Literal[
+    "spent_on", "merchant", "purpose", "department", "amount_krw", "month", "day", "time"
+]
+
+
+class MappedColumn(Contract):
+    column: int = Field(ge=0)
+    role: ColumnRole
+
+
+class HeaderMapAnswer(Contract):
+    """모델이 표 하나에 대해 돌려준 판정. 코드 검증을 통과해야 헤더 매핑이 된다."""
+
+    layout: Literal["table", "key_value", "none"]
+    header_rows: tuple[Annotated[int, Field(ge=1)], ...]
+    data_start_row: int | None = Field(default=None, ge=1)
+    columns: tuple[MappedColumn, ...]
+    amount_unit: Literal["won", "thousand_won", "unknown"]
+    year_hint: int | None = Field(default=None, ge=1, le=9999)
+
+
+class CachedHeaderMap(Contract):
+    """data/_shared/headermap.jsonl 항목의 값. 원본마다 다른 연도 근거는 싣지 않는다."""
+
+    header_rows: tuple[Annotated[int, Field(ge=1)], ...] = Field(min_length=1)
+    # 마지막 헤더 행에서 첫 지출 행까지의 거리.
+    data_offset: int = Field(ge=1)
+    columns: dict[ColumnRole, Annotated[int, Field(ge=0)]]
+    amount_multiplier: Decimal = Field(gt=0, allow_inf_nan=False)
+    model: Text
+    prompt_version: Text
+
+
+class RecordedAnswer(Contract):
+    """data/<city>/headermap-answers-v1.jsonl 항목의 값. 원본·표 하나에 받은 모델 답 하나."""
+
+    answer: HeaderMapAnswer
+    model: Text
+    prompt_version: Text
+
+
+class HeaderMapReply(Contract):
+    status: Literal["ok", "error"]
+    error: ReplyError | None = None
+    answer: HeaderMapAnswer | None = None
+    usage: Usage | None = None
+
+    @model_validator(mode="after")
+    def consistent_reply(self) -> "HeaderMapReply":
+        require_single_answer(self.status, self.error, self.answer)
+        return self
+
+
+class Verdict(Contract):
+    """상호 하나의 판정. 번호는 요청에 적은 순서이며 상호 표기와 함께 대조한다."""
+
+    index: int = Field(ge=1)
+    merchant: str
+    status: ClassificationStatus
+    # 판정의 짧은 근거(업종 등). 사람 검토용이다.
+    reason: Annotated[str, StringConstraints(strip_whitespace=True, max_length=40)] = ""
+
+
+class ClassificationAnswer(Contract):
+    verdicts: tuple[Verdict, ...]
+
+
+class ClassificationReply(Contract):
+    status: Literal["ok", "error"]
+    error: ReplyError | None = None
+    answer: ClassificationAnswer | None = None
+    usage: Usage | None = None
+
+    @model_validator(mode="after")
+    def consistent_reply(self) -> "ClassificationReply":
+        require_single_answer(self.status, self.error, self.answer)
         return self
 
 
@@ -504,18 +593,72 @@ class HeaderMapInput(Contract):
     sources: tuple[SourceRef, ...]
 
 
+# 원본을 끝내 읽지 못한 사유. 기관의 수집 보류와 달리 원본 해시별 파일 단위 미해결이다.
+UnresolvedReason = Literal[
+    "unsupported_format",
+    "unreadable",
+    "unsupported_layout",
+    "no_table",
+    "model_not_configured",
+    "unavailable",
+    "invalid_response",
+    "incomplete_response",
+    "oversized_request",
+    "budget_exhausted",
+    "unknown_prior_usage",
+    "concurrent_execution",
+    "validation_failed",
+    "no_candidates",
+]
+
+
+class UnresolvedSource(Contract):
+    source_hash: Sha256
+    reason: UnresolvedReason
+    # 어느 표의 어떤 검증이 실패했는지. 원본 내용은 적지 않는다.
+    detail: str = ""
+
+
 class HeaderMapOutput(Contract):
     mappings: tuple[HeaderMap, ...]
+    unresolved: tuple[UnresolvedSource, ...] = ()
 
 
 class ParseInput(Contract):
     sources: tuple[SourceRef, ...]
     mappings: tuple[HeaderMap, ...]
+    unresolved: tuple[UnresolvedSource, ...] = ()
+
+
+class SourceReport(Contract):
+    """원본 하나의 추출 결과. 미해결 원본의 잘 읽힌 일부는 레코드로 확정하지 않는다."""
+
+    source_hash: Sha256
+    status: Literal["parsed", "unresolved"]
+    reason: UnresolvedReason | None = None
+    detail: str = ""
+    # 원본에서 식별한 지출 후보 수. 모르면 None(알 수 없음)이며 0건 손실로 읽지 않는다.
+    candidates: int | None = Field(default=None, ge=0)
+    records: int = Field(default=0, ge=0)
+    # 대상 기간 밖의 유효한 지출. 날짜 파싱 실패와 구별한다.
+    out_of_range: int = Field(default=0, ge=0)
+    # 빈 행·반복 헤더·합계처럼 지출 1건이 아니어서 분모에서 뺀 행.
+    excluded_rows: int = Field(default=0, ge=0)
+    total_check: Literal["matched", "absent", "ambiguous"] | None = None
+
+    @model_validator(mode="after")
+    def consistent_report(self) -> "SourceReport":
+        if (self.status == "unresolved") != (self.reason is not None):
+            raise ValueError("only unresolved originals carry a reason")
+        if self.status == "unresolved" and self.records:
+            raise ValueError("unresolved originals cannot contribute records")
+        return self
 
 
 class ParseOutput(Contract):
     records: tuple[Record, ...]
     empty_reason: Text | None = None
+    sources: tuple[SourceReport, ...] = ()
 
 
 class ClassifyInput(Contract):

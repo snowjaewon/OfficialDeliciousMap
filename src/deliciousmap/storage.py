@@ -336,7 +336,7 @@ class ArtifactStore:
             for source in output.sources:
                 if source.organization not in organizations:
                     raise ValueError("source organization mismatch")
-                source_path = source.path.resolve()
+                source_path = (self.paths.raw_root / source.path).resolve()
                 if source_path.is_relative_to(
                     self.paths.repository.resolve()
                 ) or not source_path.is_relative_to(self.paths.raw_root.resolve()):
@@ -351,9 +351,13 @@ class ArtifactStore:
                     raise ValueError("source board mismatch")
         elif isinstance(output, HeaderMapOutput):
             sources = self.load("fetch", FetchOutput).sources
-            if {item.source_hash for item in output.mappings} != {
-                source.source_hash for source in sources
-            }:
+            mapped = {item.source_hash for item in output.mappings}
+            unresolved = [item.source_hash for item in output.unresolved]
+            if (
+                len(unresolved) != len(set(unresolved))
+                or mapped & set(unresolved)
+                or mapped | set(unresolved) != {source.source_hash for source in sources}
+            ):
                 raise ValueError("mapping must cover all fetched originals")
             identities = [(item.source_hash, item.table) for item in output.mappings]
             if len(identities) != len(set(identities)):

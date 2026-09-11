@@ -10,6 +10,7 @@ from importlib.resources import files
 from pathlib import Path
 from typing import Literal
 
+from deliciousmap import period
 from deliciousmap.contracts import (
     BuildInput,
     ClassificationStatus,
@@ -26,7 +27,7 @@ from deliciousmap.registry import CITIES, City, HoldReason, Organization, Target
 from deliciousmap.storage import write_text
 
 ASSET_NAMES = ("app.js", "styles.css")
-REPORTING_PERIOD = "2026년 상반기"
+REPORTING_PERIOD = period.LABEL
 # 수집 보류 사유의 화면 표기. 사유 자체의 단일 출처는 레지스트리다.
 HOLD_REASON_LABELS: dict[HoldReason, str] = {
     "bot_blocked": "봇 차단",
