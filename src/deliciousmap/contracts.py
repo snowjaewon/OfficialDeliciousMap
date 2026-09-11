@@ -79,7 +79,8 @@ Container = Literal["ole2", "ooxml", "pdf", "spreadsheetml"]
 
 
 class SourceRef(Contract):
-    # 원본 폴더(--raw-root) 기준 상대 경로. 개발자 PC의 절대 경로를 산출물에 싣지 않는다.
+    # 원본이 있는 곳. 상대 경로는 `--raw-root` 기준으로 읽는다. 현재 게시판 수집은 수집 PC의
+    # 경로를 그대로 남기므로, 이 값은 산출물을 만든 PC 밖에서 그대로 쓸 수 없다.
     path: Path
     source_hash: Sha256
     organization: Text
