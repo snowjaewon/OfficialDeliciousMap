@@ -850,6 +850,8 @@ class BuildInput(Contract):
     # 이번 제출이 읽은 원본 수와 뺀 원본의 사유별 수. 화면의 자료 범위가 둘을 같이 낸다.
     target_sources: int = Field(default=0, ge=0)
     excluded_sources: ExcludedSources = ExcludedSources()
+    # 누적 재게시로 합쳐 장부에서 뺀 수. 화면의 자료 범위가 이 수를 함께 낸다.
+    repeated_expenses: RepeatedExpenses = RepeatedExpenses()
 
 
 class BuildOutput(Contract):

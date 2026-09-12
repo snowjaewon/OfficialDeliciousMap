@@ -16,6 +16,7 @@ from deliciousmap.contracts import (
     MapStatus,
     ParseOutput,
     Provider,
+    RepeatedExpenses,
     SourceReport,
 )
 from deliciousmap.pipeline import ExecutionContext
@@ -373,3 +374,57 @@ def test_city_page_omits_the_scope_line_when_no_original_was_counted(tmp_path: P
     context = build_ready(tmp_path)
     assert run_cli(context, "build") == 0
     assert "중 대상" not in city_page(context)
+
+
+def repeated_build(tmp_path: Path, repeated: RepeatedExpenses) -> ExecutionContext:
+    """누적 재게시를 합친 제출. parse의 집계만 바꿔 뒤 단계를 그 위에서 다시 만든다."""
+    context = prepare(tmp_path)
+    store = ArtifactStore(context.paths, context.target)
+    classified = store.load("classify", ClassifyOutput)
+    parsed = store.load("parse", ParseOutput)
+    store.save("parse", parsed.model_copy(update={"repeated_expenses": repeated}))
+    store.save("classify", classified)
+    save_input(context, lookup())
+    for stage in ("geocode", "closure", "build"):
+        assert run_cli(context, stage) == 0
+    return context
+
+
+def test_city_page_tells_that_merging_repeats_shrank_the_ledger(tmp_path: Path) -> None:
+    """합친 수를 밝히지 않으면 장부 건수가 조용히 줄어든 것으로 보인다."""
+    page = city_page(
+        repeated_build(
+            tmp_path,
+            RepeatedExpenses(
+                merged_expenses=117, merged_records=122, unmerged_expenses=2, unmerged_records=2
+            ),
+        )
+    )
+    # 한 묶음이 한 건으로 줄지는 않으므로(ADR-0004) 묶음 수와 뺀 건수를 따로 읽을 수 있어야 한다.
+    assert "같은 지출이 여러 원본에 반복된 117묶음을 합쳐" in page
+    assert "장부에서 122건을 뺐습니다" in page
+    assert "가를 근거가 없어 남긴 2묶음 2건은 장부에 중복으로 보일 수 있습니다" in page
+
+
+def test_city_page_does_not_hide_that_no_group_was_left_unmerged(tmp_path: Path) -> None:
+    """센 뒤의 0은 지어낸 값이 아니라 사실이다. 남긴 묶음이 없다는 것도 밝힌다."""
+    page = city_page(
+        repeated_build(tmp_path, RepeatedExpenses(merged_expenses=1, merged_records=1))
+    )
+    assert "가를 근거가 없어 남긴 묶음은 없습니다" in page
+
+
+def test_city_page_reports_groups_left_whole_even_when_nothing_was_merged(tmp_path: Path) -> None:
+    """합친 것이 없어도 중복으로 보이는 묶음이 남았다면 묶음 수와 건수를 함께 내야 한다."""
+    page = city_page(
+        repeated_build(tmp_path, RepeatedExpenses(unmerged_expenses=3, unmerged_records=7))
+    )
+    assert "반복된 지출 가운데 합친 것은 없습니다" in page
+    assert "가를 근거가 없어 남긴 3묶음 7건" in page
+
+
+def test_city_page_omits_the_repeat_line_when_nothing_was_merged_or_left(tmp_path: Path) -> None:
+    """합친 것도 남긴 것도 없으면 낼 말이 없다. 0묶음이라고 적는 것은 군말이다."""
+    context = build_ready(tmp_path)
+    assert run_cli(context, "build") == 0
+    assert "묶음" not in city_page(context)
