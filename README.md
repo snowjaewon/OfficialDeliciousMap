@@ -277,8 +277,11 @@ Node 기반 빌드 도구를 쓰지 않는다. 폐업으로 확인된 후보도 
 `data/manual/<city>/`의 `classify.jsonl`(사람 보정), `restore.jsonl`(상호 복원),
 `geocode.jsonl`(업소 확인), `compare.jsonl`(후보 비교 지정), `sources.jsonl`(미해결 원본 대조),
 `repeats.jsonl`(재게시 확정)에 둔다. 자세한 내용은 [상호 복원](docs/restoration.md)에 있다.
-각 줄은 계약 하나이며 없는 파일은 검토가 없는 것과 같다. 도시가 맞지 않거나 같은 범위를 두 번
-선언한 줄은 그 단계가 거부한다. `--org` 실행은 그 기관의 줄만 읽는다.
+각 줄은 계약 하나이며 없는 파일은 검토가 없는 것과 같다. 도시가 맞지 않는 줄은 그 단계가 거부하고,
+`--org` 실행은 그 기관에 해당하는 줄만 읽는다(기관을 적지 않은 줄은 도시 전체에 걸린다).
+범위를 선언하는 `restore`·`geocode`·`compare`·`repeats`는 같은 범위를 두 번 선언한 줄을,
+`sources`는 한 원본을 두 번 적은 줄을 거부한다. `classify.jsonl`은 상호 범위가 겹칠 수 있어,
+한 레코드에 서로 다른 판정이 걸릴 때 `classify`가 거부한다.
 커밋된 광주 산출물은 아직 PDF 읽기와 미해결 원본 16개의 사람 최종 확인
 이전이다([#66](https://github.com/snowjaewon/OfficialDeliciousMap/issues/66)). 그 둘을 갖춘
 실행에서 `run --city gwangju`로 다시 만든다.
@@ -287,8 +290,8 @@ Node 기반 빌드 도구를 쓰지 않는다. 폐업으로 확인된 후보도 
 선언하고 `same_expense`/`separate_expenses` 중 하나를 근거와 함께 적는다. 장부에 없는 묶음이나
 그 지출을 싣지 않은 원본을 가리키면 `parse`가 거부한다. 입력을 고치면 `parse`부터 다시 돌린다.
 
-단계 메타데이터 파일은 `<stage>.json`이며 `schema_version`(fetch·parse는 3, geocode·closure는 4,
-build는 6, 나머지는 1), `city`, `org`, 입력 해시인
+단계 메타데이터 파일은 `<stage>.json`이며 `schema_version`(fetch는 3, parse는 4, geocode는 5,
+closure는 4, build는 6, 나머지는 1), `city`, `org`, 입력 해시인
 `dependencies`, 실제 출력인 `payload`를 가진다. `fetch.json`은 받은 원본의 `sources` 외에
 게시판이 링크했지만 받지 못한 원본을 `missing`(기관·게시판·게시글 주소·파일 이름·사유)에 남긴다.
 `sources`·`missing`의 각 줄은 게시판 목록이 밝힌 `posted`(게시일)와 `title`(제목)도 싣고,

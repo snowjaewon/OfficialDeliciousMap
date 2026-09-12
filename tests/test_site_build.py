@@ -438,7 +438,7 @@ def test_city_page_tells_that_a_person_confirmed_the_groups_the_criterion_left(
             ),
         )
     )
-    assert "담당자가 원본을 대조해 같은 지출로 확정한 2묶음 2건도 함께 뺐습니다" in page
+    assert "원본을 다시 대조해 같은 지출로 확정한 2묶음 2건도 함께 뺐습니다" in page
     assert "가를 근거가 없어 남긴 묶음은 없습니다" in page
 
 
@@ -447,7 +447,7 @@ def test_city_page_reports_the_groups_a_person_confirmed_as_separate(tmp_path: P
     page = city_page(
         repeated_build(tmp_path, RepeatedExpenses(separate_expenses=1, separate_records=1))
     )
-    assert "담당자가 원본을 대조해 별개 지출로 확정한 1묶음 1건은 장부에 그대로 남습니다" in page
+    assert "원본을 다시 대조해 별개 지출로 확정한 1묶음 1건은 장부에 그대로 남습니다" in page
 
 
 def test_city_page_says_nothing_about_confirmations_that_were_not_made(tmp_path: Path) -> None:
@@ -455,7 +455,7 @@ def test_city_page_says_nothing_about_confirmations_that_were_not_made(tmp_path:
     page = city_page(
         repeated_build(tmp_path, RepeatedExpenses(merged_expenses=1, merged_records=1))
     )
-    assert "담당자가 원본을 대조해" not in page
+    assert "원본을 다시 대조해" not in page
 
 
 def test_city_page_omits_the_repeat_line_when_nothing_was_merged_or_left(tmp_path: Path) -> None:

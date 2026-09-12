@@ -465,3 +465,47 @@ def test_a_confirmation_counts_only_what_it_merged_beyond_the_criterion() -> Non
     assert merged.tally == RepeatedExpenses(
         merged_expenses=2, merged_records=2, confirmed_expenses=1, confirmed_records=1
     )
+
+
+def test_a_separate_confirmation_speaks_only_for_the_originals_it_names() -> None:
+    """확정이 뒷받침하는 것은 그 줄이 적은 원본들뿐이다. 다른 원본이 남긴 것까지 세지 않는다."""
+    first, second, third = (
+        original(1, "2026-02-02"),
+        original(2, "2026-03-03"),
+        original(3, "2026-04-01"),
+    )
+    records = (
+        spent(first, 4, 5, "합성 식당", 62000),
+        spent(second, 4, 5, "합성 식당", 62000),
+        spent(third, 4, 5, "합성 식당", 62000),
+    )
+    merged = merge_repeats(
+        records, (first, second, third), (confirm(first, second, decision="separate_expenses"),)
+    )
+    assert merged.records == records
+    # 확정이 적은 두 원본은 1건, 확정이 말하지 않은 셋째 원본은 가를 근거가 없어 남은 1건이다.
+    assert merged.tally == RepeatedExpenses(
+        unmerged_expenses=1, unmerged_records=1, separate_expenses=1, separate_records=1
+    )
+
+
+def test_a_repost_relation_that_contradicts_a_separate_confirmation_is_rejected() -> None:
+    """세 번째 원본을 거쳐 이어지면 사람이 가른 두 원본이 한 건이 된다. 조용히 합치지 않는다."""
+    first, second, third = (
+        original(1, "2026-02-02"),
+        original(2, "2026-03-03"),
+        original(3, "2026-04-01"),
+    )
+    records = (
+        spent(first, 4, 5, "합성 식당", 62000),
+        spent(first, 5, 6, "합성 카페", 9000),
+        spent(second, 4, 5, "합성 식당", 62000),
+        spent(second, 5, 7, "합성 국밥", 27000),
+        # 셋째 원본이 앞의 두 원본과 각각 2건씩 함께 실어 기준으로는 셋이 이어진다.
+        spent(third, 4, 5, "합성 식당", 62000),
+        spent(third, 5, 6, "합성 카페", 9000),
+        spent(third, 6, 7, "합성 국밥", 27000),
+    )
+    apart = confirm(first, second, decision="separate_expenses")
+    with pytest.raises(ValueError, match="confirmed to be separate"):
+        merge_repeats(records, (first, second, third), (apart,))

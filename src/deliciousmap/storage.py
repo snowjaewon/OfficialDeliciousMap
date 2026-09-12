@@ -70,9 +70,10 @@ OUTPUT_MODELS: dict[str, type[Contract]] = {
     "build": BuildOutput,
 }
 
-# fetch는 출처·유실에 게시일·제목을 담은 v3, parse는 누적 재게시 병합을 담은 v3,
-# geocode·closure는 조회 요청 기록을 포함하는 v4, build는 좌표 출처·장부 사유를 담은 v6다.
-SCHEMA_VERSIONS = {"fetch": 3, "parse": 3, "geocode": 5, "closure": 4, "build": 6}
+# fetch는 출처·유실에 게시일·제목을 담은 v3, parse는 사람이 확정한 재게시 수를 담은 v4,
+# geocode는 확인한 업소를 담은 v5, closure는 조회 요청 기록을 포함하는 v4,
+# build는 좌표 출처·장부 사유를 담은 v6다.
+SCHEMA_VERSIONS = {"fetch": 3, "parse": 4, "geocode": 5, "closure": 4, "build": 6}
 
 # 제공자 조회 캐시. 확정 업소 판정 이력(geocode-history-v2.jsonl)과 분리해 둔다.
 LOOKUP_CACHE = "geocode-lookup-v1.jsonl"
@@ -612,13 +613,7 @@ class ArtifactStore:
 
     def repeat_confirmations(self) -> tuple[RepeatConfirmation, ...]:
         """사람이 확정한 재게시 여부. 파일이 없으면 확정이 없는 것과 같다."""
-        entries = read_reviews(self.paths.manual(self.target, "repeats"), RepeatConfirmation)
-        require_scoped_reviews(entries, self.target.city.slug)
-        return tuple(
-            item
-            for item in entries
-            if self.target.org is None or item.scope.organization == self.target.org
-        )
+        return self._declared("repeats", RepeatConfirmation)
 
     def manual(self) -> tuple[ManualCorrection, ...]:
         corrections = read_reviews(self.paths.manual(self.target, "classify"), ManualCorrection)
@@ -638,7 +633,7 @@ class ArtifactStore:
         """확정한 업소 확인의 직렬화. 적용 범위 판단은 파일을 보지 않는다."""
         return self._declared("geocode", IdentityConfirmation)
 
-    def _declared[T: NameRestoration | IdentityConfirmation](
+    def _declared[T: NameRestoration | IdentityConfirmation | RepeatConfirmation](
         self, name: str, model: type[T]
     ) -> tuple[T, ...]:
         """범위를 선언한 검토 입력 중 이 실행의 기관에 해당하는 줄만 돌려준다."""

@@ -15,6 +15,7 @@ from typing import Literal, NamedTuple
 
 from deliciousmap import period
 from deliciousmap.contracts import (
+    ExpenseScope,
     HeaderMap,
     ParseOutput,
     Record,
@@ -236,6 +237,11 @@ class ExpenseKey(NamedTuple):
     merchant: str
     amount_krw: Decimal
 
+    @classmethod
+    def of(cls, item: Record | ExpenseScope) -> "ExpenseKey":
+        """레코드와 사람이 선언한 범위에서 같은 칸을 읽는다. 동일성 목록은 이 클래스 하나다."""
+        return cls(*(getattr(item, name) for name in cls._fields))
+
 
 # 원본 하나가 실은 지출과 그 횟수. 재게시 판정은 이 둘을 견주어 한다.
 Carried = Counter[ExpenseKey]
@@ -278,23 +284,30 @@ def merge_repeats(
     carried: dict[str, Carried] = {}
     groups: dict[ExpenseKey, dict[str, list[Record]]] = {}
     for record in records:
-        expense = _expense(record)
+        expense = ExpenseKey.of(record)
         carried.setdefault(record.source_hash, Counter())[expense] += 1
         groups.setdefault(expense, {}).setdefault(record.source_hash, []).append(record)
-    decided = _decided(confirmations, groups)
+    decided = _decisions(confirmations, groups)
     reposted = {
         pair
         for found in groups.values()
         if len(found) > 1
         for pair in combinations(sorted(found, key=published.__getitem__), 2)
-        if _reposted(carried[pair[0]], carried[pair[1]], _apart(decided, pair))
+        if _reposted(carried[pair[0]], carried[pair[1]], _confirmed_separate(decided, pair))
     }
     kept: list[Record] = []
     counted: list[_Counted] = []
     for expense, found in groups.items():
         decision = decided.get(expense)
+        declared = set(decision.scope.sources) if decision else set()
         hashes = sorted(found, key=published.__getitem__)
-        components = _components(hashes, _relation(reposted, decision, hashes))
+        pairs = {pair for pair in combinations(hashes, 2) if set(pair) <= declared}
+        components = _components(hashes, reposted | pairs if _joins(decision) else reposted - pairs)
+        if _separates(decision) and any(len(declared & set(item)) > 1 for item in components):
+            # 다른 원본을 거쳐 이어지면 사람이 가른 두 원본이 한 건이 된다. 확정이 우선이므로
+            # 기준을 조용히 따르지 않고, 그 지출을 다시 읽어야 한다고 알린다(ADR-0006).
+            raise ValueError("a repost relation joins originals confirmed to be separate expenses")
+        keepers: dict[str, int] = {}
         for component in components:
             ranked = sorted(component, key=published.__getitem__)
             # 한 원본이 적은 최대 건수를 남기고, 같으면 가장 먼저 게시된 원본의 것을 남긴다.
@@ -306,17 +319,21 @@ def merge_repeats(
                 for record in found[item]
             )
             kept.extend(record.model_copy(update={"repeats": repeats}) for record in found[keeper])
+            keepers[keeper] = len(found[keeper])
         dropped = _dropped(found, components)
         # 기준이 이미 합쳤을 수는 자동의 몫이다. 확정이 더 합친 만큼만 사람이 적용한 수다.
         merged = _dropped(found, _components(hashes, reposted)) if _joins(decision) else dropped
+        # 별개 지출로 확정해 장부에 남은 수. 확정이 적은 원본들이 남긴 레코드에서 한 몫을 뺀다.
+        apart = [keepers.get(item, 0) for item in declared] if _separates(decision) else []
+        separated = sum(apart) - max(apart, default=0)
         # 한 묶음에 재게시 관계가 아닌 원본이 남아 있으면 가를 근거가 없어 남긴 것이다.
         remaining = sum(len(item) for item in found.values()) - dropped
         counted.append(
             _Counted(
                 merged=merged,
                 confirmed=dropped - merged,
-                left=remaining - max(len(item) for item in found.values()),
-                separated=decision is not None and decision.decision == "separate_expenses",
+                separated=separated,
+                left=remaining - max(len(item) for item in found.values()) - separated,
             )
         )
     position = {record.record_id: index for index, record in enumerate(records)}
@@ -326,12 +343,12 @@ def merge_repeats(
         tally=RepeatedExpenses(
             merged_expenses=sum(1 for item in counted if item.merged),
             merged_records=sum(item.merged for item in counted),
-            unmerged_expenses=sum(1 for item in counted if item.left and not item.separated),
-            unmerged_records=sum(item.left for item in counted if not item.separated),
+            unmerged_expenses=sum(1 for item in counted if item.left),
+            unmerged_records=sum(item.left for item in counted),
             confirmed_expenses=sum(1 for item in counted if item.confirmed),
             confirmed_records=sum(item.confirmed for item in counted),
-            separate_expenses=sum(1 for item in counted if item.left and item.separated),
-            separate_records=sum(item.left for item in counted if item.separated),
+            separate_expenses=sum(1 for item in counted if item.separated),
+            separate_records=sum(item.separated for item in counted),
         ),
     )
 
@@ -339,14 +356,15 @@ def merge_repeats(
 class _Counted(NamedTuple):
     """지출 묶음 하나의 집계. 합치고 남긴 수를 자동 판정과 사람 확정으로 나누어 센다."""
 
+    # 기준이 합친 수와, 확정이 기준보다 더 합친 수.
     merged: int
     confirmed: int
+    # 사람이 별개 지출로 확정해 남긴 수와, 가를 근거가 없어 남긴 수.
+    separated: int
     left: int
-    # 남은 레코드가 사람이 별개 지출로 확정해서 남은 것인지.
-    separated: bool
 
 
-def _decided(
+def _decisions(
     confirmations: tuple[RepeatConfirmation, ...],
     groups: dict[ExpenseKey, dict[str, list[Record]]],
 ) -> dict[ExpenseKey, RepeatConfirmation]:
@@ -357,13 +375,7 @@ def _decided(
     """
     decided: dict[ExpenseKey, RepeatConfirmation] = {}
     for item in confirmations:
-        expense = ExpenseKey(
-            item.scope.organization,
-            item.scope.department,
-            item.scope.spent_on,
-            item.scope.merchant,
-            item.scope.amount_krw,
-        )
+        expense = ExpenseKey.of(item.scope)
         if expense in decided:
             raise ValueError("one expense cannot carry two repeat confirmations")
         if not set(item.scope.sources) <= groups.get(expense, {}).keys():
@@ -372,20 +384,14 @@ def _decided(
     return decided
 
 
-def _relation(
-    reposted: set[tuple[str, str]], decision: RepeatConfirmation | None, ranked: list[str]
-) -> set[tuple[str, str]]:
-    """이 묶음에 적용할 원본 쌍 관계. 사람이 확정한 쌍은 자동 판정을 덮는다."""
-    if decision is None:
-        return reposted
-    sources = set(decision.scope.sources)
-    declared = {pair for pair in combinations(ranked, 2) if set(pair) <= sources}
-    return reposted | declared if decision.decision == "same_expense" else reposted - declared
-
-
 def _joins(decision: RepeatConfirmation | None) -> bool:
     """이 확정이 원본을 잇는 쪽인지. 별개 지출 확정은 잇지 않으므로 기준과 견주지 않는다."""
     return decision is not None and decision.decision == "same_expense"
+
+
+def _separates(decision: RepeatConfirmation | None) -> bool:
+    """이 확정이 원본을 가르는 쪽인지."""
+    return decision is not None and decision.decision == "separate_expenses"
 
 
 def _dropped(found: dict[str, list[Record]], components: list[list[str]]) -> int:
@@ -422,23 +428,15 @@ def _reposted(carried: Carried, other: Carried, apart: set[ExpenseKey]) -> bool:
     return sum(count for expense, count in (carried & other).items() if expense not in apart) >= 2
 
 
-def _apart(decided: dict[ExpenseKey, RepeatConfirmation], pair: tuple[str, str]) -> set[ExpenseKey]:
+def _confirmed_separate(
+    decided: dict[ExpenseKey, RepeatConfirmation], pair: tuple[str, str]
+) -> set[ExpenseKey]:
     """이 원본 쌍에서 사람이 별개 지출로 확정한 묶음. 그 쌍의 재게시 근거가 되지 못한다."""
     return {
         expense
         for expense, item in decided.items()
-        if item.decision == "separate_expenses" and set(pair) <= set(item.scope.sources)
+        if _separates(item) and set(pair) <= set(item.scope.sources)
     }
-
-
-def _expense(record: Record) -> ExpenseKey:
-    return ExpenseKey(
-        record.organization,
-        record.department,
-        record.spent_on,
-        record.merchant,
-        record.amount_krw,
-    )
 
 
 def _candidate(table: Table, mapping: HeaderMap, row: int) -> _Candidate:

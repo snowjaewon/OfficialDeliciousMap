@@ -280,6 +280,10 @@ class RepeatConfirmation(Contract):
     적용하며, 합치더라도 겹친 원본은 레코드의 `repeats`에 모두 남는다. `separate_expenses`도
     확인했다는 사실이 근거이므로 장부에 남기고 집계에서 감추지 않는다([ADR-0006](
     ../../docs/adr/0006-human-confirmed-reposts.md)).
+
+    사람이 직접 쓰거나 에이전트가 써서 사람이 PR로 승인한다(`IdentityConfirmation`과 같다).
+    어느 쪽이든 `evidence`에 두 원본에서 무엇을 대조했는지와 검토 주체를 적고, 원본의 어느
+    부분을 근거로 삼았는지는 `references`에 남긴다.
     """
 
     schema_version: Literal[1] = 1

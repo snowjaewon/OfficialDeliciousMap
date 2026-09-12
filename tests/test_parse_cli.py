@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from deliciousmap.cli import main
+from deliciousmap.contracts import RepeatDecision
 from deliciousmap.storage import write_text
 from tests import pdf
 from tests.gwangju import (
@@ -737,7 +738,7 @@ AGAIN = sheet_a(
 def confirm_repeat(
     root: Path,
     *sources: str,
-    decision: str = "same_expense",
+    decision: RepeatDecision = "same_expense",
     city: str = "gwangju",
     organization: str = ORG,
     merchant: str = "합성 식당",
