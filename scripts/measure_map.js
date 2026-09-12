@@ -93,6 +93,216 @@ function judge(attempts, targetMs, requiredRuns) {
 
 // rAF 간격은 프레임 부드러움의 진단 값이다. 판정은 결정대로 브라우저 성능 기록으로 한다.
 const FRAME_MS = 1000 / 60;
+const STUTTER_FRAME_MS = FRAME_MS * 2;
+const FREEZE_FRAME_MS = 100;
+const LONG_TASK_MS = 50;
+
+const TRACE_CATEGORIES = [
+  "blink.user_timing",
+  "cc",
+  "devtools.timeline",
+  "disabled-by-default-devtools.timeline",
+  "disabled-by-default-devtools.timeline.frame",
+  "gpu",
+  "toplevel",
+  "viz",
+].join(",");
+
+const FRAME_EVENT_NAMES = new Set(["FramePresented", "PresentFrame"]);
+
+function roundMilliseconds(value) {
+  return Number(value.toFixed(1));
+}
+
+function traceEventList(trace) {
+  if (Array.isArray(trace)) return trace;
+  if (typeof trace === "string") return traceEventList(JSON.parse(trace));
+  return Array.isArray(trace?.traceEvents) ? trace.traceEvents : [];
+}
+
+function traceMarkerTimestamp(events, marker) {
+  return events.find(
+    (event) =>
+      event.name === marker ||
+      event.args?.name === marker ||
+      event.args?.data?.name === marker ||
+      event.args?.data?.message === marker,
+  )?.ts;
+}
+
+function traceWindow(events, startMarker, endMarker) {
+  if (!startMarker || !endMarker) return events;
+  const start = traceMarkerTimestamp(events, startMarker);
+  const end = traceMarkerTimestamp(events, endMarker);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return events;
+  return events.filter((event) => !Number.isFinite(event.ts) || (event.ts >= start && event.ts <= end));
+}
+
+function eventDurationMs(event) {
+  return Number.isFinite(event.dur) ? event.dur / 1000 : null;
+}
+
+function completedTraceEvents(events, names) {
+  const completed = [];
+  const open = new Map();
+  const keyFor = (event) =>
+    `${event.name}|${event.pid ?? ""}|${event.tid ?? ""}|${JSON.stringify(event.id2 ?? event.id ?? "")}`;
+  for (const event of events) {
+    if (!names.has(event.name)) continue;
+    if (event.ph === "X" && Number.isFinite(event.dur)) {
+      completed.push(event);
+    } else if (event.ph === "b" || event.ph === "s") {
+      const key = keyFor(event);
+      (open.get(key) ?? open.set(key, []).get(key)).push(event);
+    } else if (event.ph === "e" || event.ph === "f") {
+      const starts = open.get(keyFor(event));
+      const start = starts?.pop();
+      if (start && Number.isFinite(start.ts) && Number.isFinite(event.ts)) {
+        completed.push({ ...start, dur: event.ts - start.ts });
+      }
+    }
+  }
+  return completed;
+}
+
+function traceFrameTimestamps(events) {
+  const presentedFrames = events
+    .filter(
+      (event) =>
+        event.name === "PipelineReporter" &&
+        event.ph === "b" &&
+        event.args?.frame_reporter?.state === "STATE_PRESENTED_ALL" &&
+        Number.isFinite(event.ts),
+    )
+    .map((event) => event.ts);
+  if (presentedFrames.length > 0) {
+    return [...new Set(presentedFrames)].sort((left, right) => left - right);
+  }
+  return [
+    ...new Set(
+      events
+        .filter((event) => FRAME_EVENT_NAMES.has(event.name) && Number.isFinite(event.ts))
+        .map((event) => event.ts),
+    ),
+  ].sort((left, right) => left - right);
+}
+
+function traceSourceUrl(event) {
+  const encoded = JSON.stringify(event.args ?? {});
+  return encoded.match(/https?:\/\/[^"\s]+/i)?.[0] ?? null;
+}
+
+function traceSource(event) {
+  const url = traceSourceUrl(event);
+  if (!url) return "other";
+  if (/\bnaver\.com(?:[/:]|$)/i.test(url)) return "naver_sdk";
+  if (/\b(?:localhost|127\.0\.0\.1)(?::|[/:]|$)/i.test(url)) return "application";
+  return "other";
+}
+
+function sourceSummary(events) {
+  const summary = {
+    application: { count: 0, total_ms: 0, maximum_ms: null },
+    naver_sdk: { count: 0, total_ms: 0, maximum_ms: null },
+    other: { count: 0, total_ms: 0, maximum_ms: null },
+  };
+  for (const event of events) {
+    const duration = eventDurationMs(event);
+    if (duration === null || duration < LONG_TASK_MS) continue;
+    const source = traceSource(event);
+    const bucket = summary[source];
+    bucket.count += 1;
+    bucket.total_ms = roundMilliseconds(bucket.total_ms + duration);
+    bucket.maximum_ms = Math.max(bucket.maximum_ms ?? 0, roundMilliseconds(duration));
+  }
+  const dominant = Object.entries(summary)
+    .filter(([, bucket]) => bucket.count > 0)
+    .sort(([, left], [, right]) => right.total_ms - left.total_ms)[0]?.[0] ?? null;
+  return { ...summary, dominant };
+}
+
+function summarizeTrace(trace, options = {}) {
+  const events = traceWindow(traceEventList(trace), options.startMarker, options.endMarker);
+  const timestamps = traceFrameTimestamps(events);
+  const intervals = timestamps.slice(1).map((timestamp, index) => (timestamp - timestamps[index]) / 1000);
+  const intervalDroppedFrames = intervals.reduce(
+    (total, interval) => total + Math.max(0, Math.round(interval / FRAME_MS) - 1),
+    0,
+  );
+  const pipelineDroppedFrames = events.filter(
+    (event) =>
+      event.name === "PipelineReporter" &&
+      event.ph === "b" &&
+      event.args?.frame_reporter?.state === "STATE_DROPPED",
+  ).length;
+  const stutterCount = intervals.filter((interval) => interval >= STUTTER_FRAME_MS).length;
+  const longestFrame = Math.max(0, ...intervals);
+  const longAnimationEvents = completedTraceEvents(
+    events,
+    new Set(["AnimationFrame", "LongAnimationFrame"]),
+  );
+  const longAnimationFrames = longAnimationEvents
+    .map(eventDurationMs)
+    .filter((duration) => duration !== null && duration >= LONG_TASK_MS);
+  const longTasks = events
+    .filter((event) => /^(?:LongTask|RunTask|Task)$/i.test(event.name ?? ""))
+    .map(eventDurationMs)
+    .filter((duration) => duration !== null && duration >= LONG_TASK_MS);
+  const freezeCount = [
+    ...intervals.filter((interval) => interval >= FREEZE_FRAME_MS),
+    ...longAnimationFrames.filter((duration) => duration >= FREEZE_FRAME_MS),
+    // Long tasks are usually nested in a Long Animation Frame. Count them as
+    // freeze evidence only when the trace has no higher-level animation frame.
+    ...(longAnimationFrames.length === 0
+      ? longTasks.filter((duration) => duration >= FREEZE_FRAME_MS)
+      : []),
+  ].length;
+  const longestLongAnimationFrame = Math.max(0, ...longAnimationFrames);
+  const longestLongTask = Math.max(0, ...longTasks);
+  const measured = intervals.length > 0;
+  const source = sourceSummary(
+    [
+      ...longAnimationEvents,
+      ...events.filter((event) => /^(?:LongTask|RunTask|Task)$/i.test(event.name ?? "")),
+    ],
+  );
+  return {
+    frames: intervals.length,
+    frame_budget_ms: roundMilliseconds(FRAME_MS),
+    delayed_frames: Math.max(intervalDroppedFrames, pipelineDroppedFrames),
+    dropped_frames: pipelineDroppedFrames,
+    stutter_count: stutterCount,
+    freeze_count: freezeCount,
+    longest_frame_ms: measured ? roundMilliseconds(longestFrame) : null,
+    long_animation_frames: longAnimationFrames.length,
+    longest_long_animation_frame_ms:
+      longAnimationFrames.length > 0 ? roundMilliseconds(longestLongAnimationFrame) : null,
+    long_tasks: longTasks.length,
+    longest_long_task_ms: longTasks.length > 0 ? roundMilliseconds(longestLongTask) : null,
+    source,
+    verdict: !measured ? "unmeasured" : stutterCount > 0 || freezeCount > 0 ? "fail" : "pass",
+  };
+}
+
+function judgeTrace(attempts, requiredRuns) {
+  const measured = attempts.filter((attempt) => ["pass", "fail"].includes(attempt.verdict));
+  const stutterRuns = measured.filter(
+    (attempt) => attempt.stutter_count > 0 || attempt.longest_frame_ms >= STUTTER_FRAME_MS,
+  ).length;
+  const freezeRuns = measured.filter(
+    (attempt) => attempt.freeze_count > 0 || attempt.longest_frame_ms >= FREEZE_FRAME_MS,
+  ).length;
+  const longestFrame = Math.max(0, ...measured.map((attempt) => attempt.longest_frame_ms ?? 0));
+  return {
+    runs: measured.length,
+    passing_runs: measured.filter((attempt) => attempt.verdict === "pass").length,
+    stutter_runs: stutterRuns,
+    freeze_runs: freezeRuns,
+    longest_frame_ms: measured.length > 0 ? roundMilliseconds(longestFrame) : null,
+    verdict:
+      measured.length < requiredRuns ? "unmeasured" : stutterRuns > 0 || freezeRuns > 0 ? "fail" : "pass",
+  };
+}
 
 function frameStats(timestamps) {
   const intervals = timestamps.slice(1).map((time, index) => time - timestamps[index]);
@@ -279,8 +489,37 @@ class Cdp {
     return () => this.listeners.delete(listener);
   }
 
+  waitForEvent(method, sessionId = undefined) {
+    return new Promise((resolve, reject) => {
+      const unsubscribe = this.on((message) => {
+        if (message.method !== method || message.sessionId !== sessionId) return;
+        clearTimeout(timer);
+        unsubscribe();
+        resolve(message.params);
+      });
+      const timer = setTimeout(() => {
+        unsubscribe();
+        reject(new Error(`${method}: no event in ${RUN_TIMEOUT_MS}ms`));
+      }, RUN_TIMEOUT_MS);
+    });
+  }
+
   close() {
     this.socket.close();
+  }
+}
+
+async function readTrace(cdp, sessionId, stream) {
+  const chunks = [];
+  try {
+    for (;;) {
+      const result = await cdp.send("IO.read", { handle: stream }, sessionId);
+      chunks.push(result.base64Encoded ? Buffer.from(result.data, "base64") : result.data);
+      if (result.eof) break;
+    }
+    return chunks.join("");
+  } finally {
+    await cdp.send("IO.close", { handle: stream }, sessionId).catch(() => {});
   }
 }
 
@@ -572,6 +811,38 @@ class Page {
     return frameStats(await this.evaluate("window.__measureFrames.stop()"));
   }
 
+  async traceDuring(gesture, traceFile) {
+    await this.cdp.send(
+      "Tracing.start",
+      { categories: TRACE_CATEGORIES, options: "record-until-full", transferMode: "ReturnAsStream" },
+      this.sessionId,
+    );
+    const tracingComplete = this.cdp.waitForEvent("Tracing.tracingComplete", this.sessionId);
+    const marker = `deliciousmap-trace-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const startMarker = `${marker}-start`;
+    const endMarker = `${marker}-end`;
+    await this.evaluate(`console.timeStamp(${JSON.stringify(startMarker)})`);
+    await this.evaluate("window.__measureFrames.start()");
+    let traceText;
+    let timestamps = [];
+    try {
+      await gesture();
+      await sleep(500);
+      await this.evaluate(`console.timeStamp(${JSON.stringify(endMarker)})`);
+    } finally {
+      timestamps = await this.evaluate("window.__measureFrames.stop()").catch(() => []);
+      await this.cdp.send("Tracing.end", {}, this.sessionId);
+      const { stream } = await tracingComplete;
+      traceText = await readTrace(this.cdp, this.sessionId, stream);
+    }
+    fs.mkdirSync(path.dirname(traceFile), { recursive: true });
+    fs.writeFileSync(traceFile, zlib.gzipSync(traceText));
+    return {
+      frames: frameStats(timestamps),
+      trace: summarizeTrace(traceText, { startMarker, endMarker }),
+    };
+  }
+
   async heapUsedBytes() {
     const { metrics } = await this.cdp.send("Performance.getMetrics", {}, this.sessionId);
     return metrics.find((metric) => metric.name === "JSHeapUsedSize")?.value ?? null;
@@ -596,7 +867,7 @@ async function dragMap(page) {
 
 // 캐시 없는 새 컨텍스트에서 한 번 방문하며 첫 방문·장부·검색·필터·선택·프레임을 잰다.
 // 중간 단계가 실패해도 그 전에 잰 값은 run에 남는다.
-async function measureColdRun(context, url, query, run) {
+async function measureColdRun(context, url, query, run, traceDirectory, environmentName, runIndex) {
   const page = await Page.open(context.browser, context.browserContextId);
   try {
     run["first-visit"] = await page.navigate(url);
@@ -625,16 +896,28 @@ async function measureColdRun(context, url, query, run) {
     await page.settle("filter-result", () => page.click('[data-visits="all"]'));
 
     run.frames = {};
-    run.frames.zoom = await page.framesDuring(() => page.wheel("#map", -240, 3, 150));
-    run.frames.drag = await page.framesDuring(() => dragMap(page));
+    run.traces = {};
+    const measureGesture = (name, gesture) =>
+      page.traceDuring(
+        gesture,
+        path.join(traceDirectory, environmentName, `cold-${runIndex}`, `${name}.json.gz`),
+      );
+    const zoom = await measureGesture("zoom", () => page.wheel("#map", -240, 3, 150));
+    run.frames.zoom = zoom.frames;
+    run.traces.zoom = zoom.trace;
+    const drag = await measureGesture("drag", () => dragMap(page));
+    run.frames.drag = drag.frames;
+    run.traces.drag = drag.trace;
 
     const records = await page.measureInteraction("records-first-list", () =>
       page.click('[data-tab="records"]'),
     );
     run["records-first-list"] = records.result;
-    run.frames.scroll = await page.framesDuring(() =>
+    const scroll = await measureGesture("scroll", () =>
       page.wheel("[data-records-list]", 200, 20, 16),
     );
+    run.frames.scroll = scroll.frames;
+    run.traces.scroll = scroll.trace;
     run.heap_used_bytes = await page.heapUsedBytes();
   } finally {
     await page.close();
@@ -659,12 +942,13 @@ function recordAttempt(attempts, name, value) {
   (attempts[name] ??= []).push(value);
 }
 
-async function measureEnvironment(browser, environment, target, log) {
+async function measureEnvironment(browser, environment, target, log, traceDirectory, environmentName) {
   const { url, query, runs } = target;
   const attempts = {};
   // 실패한 회차의 단계와 사유. 값을 얻지 못한 시나리오는 횟수가 모자라 미측정이 된다.
   const failures = [];
   const frames = { zoom: [], drag: [], scroll: [] };
+  const traces = { zoom: [], drag: [], scroll: [] };
   const diagnostics = { first_visit_transferred_bytes: [], heap_used_bytes: [] };
 
   for (let index = 0; index < runs; index += 1) {
@@ -672,7 +956,7 @@ async function measureEnvironment(browser, environment, target, log) {
     try {
       // 첫 방문은 매번 새 컨텍스트라 HTTP 캐시와 서비스 워커가 모두 비어 있다.
       await withContext(browser, environment, (context) =>
-        measureColdRun(context, url, query, run),
+        measureColdRun(context, url, query, run, traceDirectory, environmentName, index + 1),
       );
       log(`cold ${index + 1}/${runs}: first-visit ${run["first-visit"].duration_ms}ms`);
     } catch (error) {
@@ -682,6 +966,7 @@ async function measureEnvironment(browser, environment, target, log) {
     for (const name of Object.keys(SCENARIOS)) if (run[name]) recordAttempt(attempts, name, run[name]);
     for (const gesture of Object.keys(frames)) {
       if (run.frames?.[gesture]) frames[gesture].push(run.frames[gesture]);
+      if (run.traces?.[gesture]) traces[gesture].push(run.traces[gesture]);
     }
     if (run["first-visit"]) {
       diagnostics.first_visit_transferred_bytes.push(run["first-visit"].transferred_bytes);
@@ -727,7 +1012,23 @@ async function measureEnvironment(browser, environment, target, log) {
   for (const [name, scenario] of Object.entries(SCENARIOS)) {
     summaries[name] = judge(attempts[name] ?? [], scenario.target_ms, REQUIRED_RUNS);
   }
-  return { attempts, failures, summaries, frames, diagnostics };
+  const tracing = {
+    source: "CDP Tracing",
+    criteria: {
+      frame_budget_ms: roundMilliseconds(FRAME_MS),
+      stutter_frame_ms: roundMilliseconds(STUTTER_FRAME_MS),
+      freeze_frame_ms: FREEZE_FRAME_MS,
+      long_task_ms: LONG_TASK_MS,
+      verdict: "pass only when all measured attempts have no stutter or freeze; fewer than 20 is unmeasured",
+    },
+    gestures: Object.fromEntries(
+      Object.entries(traces).map(([gesture, attemptsForGesture]) => [
+        gesture,
+        { attempts: attemptsForGesture, summary: judgeTrace(attemptsForGesture, REQUIRED_RUNS) },
+      ]),
+    ),
+  };
+  return { attempts, failures, summaries, frames, tracing, diagnostics };
 }
 
 function describeFile(file) {
@@ -752,6 +1053,19 @@ function chooseQuery(markers) {
   return Array.from(busiest.merchant.normalize("NFKC").trim())[0];
 }
 
+function traceDirectory(requested) {
+  const directory = path.resolve(
+    requested ?? fs.mkdtempSync(path.join(os.tmpdir(), "deliciousmap-traces-")),
+  );
+  const repository = path.resolve(process.cwd());
+  const relative = path.relative(repository, directory);
+  if (relative === "" || (relative !== ".." && !relative.startsWith(`..${path.sep}`))) {
+    throw new Error(`trace directory must be outside the repository: ${directory}`);
+  }
+  fs.mkdirSync(directory, { recursive: true });
+  return directory;
+}
+
 async function main(argv) {
   const { values } = util.parseArgs({
     args: argv,
@@ -762,6 +1076,7 @@ async function main(argv) {
       environments: { type: "string", default: "desktop,mobile" },
       chrome: { type: "string" },
       out: { type: "string" },
+      "trace-dir": { type: "string" },
       headed: { type: "boolean", default: false },
     },
   });
@@ -779,6 +1094,7 @@ async function main(argv) {
   const markers = JSON.parse(fs.readFileSync(markersFile, "utf8")).markers;
   const query = chooseQuery(markers);
   const chromePath = values.chrome ?? process.env.CHROME_PATH ?? DEFAULT_CHROME[process.platform];
+  const tracesPath = traceDirectory(values["trace-dir"]);
 
   const server = createStaticServer(site);
   await new Promise((resolve, reject) => {
@@ -786,6 +1102,7 @@ async function main(argv) {
     server.listen(SITE_PORT, "127.0.0.1", resolve);
   });
   const log = (line) => process.stderr.write(`${line}\n`);
+  log(`trace files: ${tracesPath}`);
   let stop;
   try {
     const launched = await launchChrome(chromePath, values.headed);
@@ -827,13 +1144,28 @@ async function main(argv) {
         input: "CDP mouse and key events; touch emulation only on mobile",
         selection: "first search result, not a map marker tap",
         server: "cache-control: public, max-age=0, must-revalidate + weak ETag + gzip",
+        performance_recording: {
+          source: "CDP Tracing",
+          trace_files: "stored outside the repository; only summaries are written to the result JSON",
+          frame_budget_ms: roundMilliseconds(FRAME_MS),
+          stutter_frame_ms: roundMilliseconds(STUTTER_FRAME_MS),
+          freeze_frame_ms: FREEZE_FRAME_MS,
+          long_task_ms: LONG_TASK_MS,
+        },
         environments: Object.fromEntries(environmentNames.map((name) => [name, ENVIRONMENTS[name]])),
       },
       environments: {},
     };
     for (const name of environmentNames) {
       log(`== ${name}`);
-      result.environments[name] = await measureEnvironment(browser, ENVIRONMENTS[name], target, log);
+      result.environments[name] = await measureEnvironment(
+        browser,
+        ENVIRONMENTS[name],
+        target,
+        log,
+        tracesPath,
+        name,
+      );
     }
     const rows = environmentNames.flatMap((environment) =>
       Object.keys(SCENARIOS).map((scenario) => ({
@@ -865,5 +1197,7 @@ module.exports = {
   createStaticServer,
   frameStats,
   judge,
+  judgeTrace,
   markdownTable,
+  summarizeTrace,
 };

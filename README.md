@@ -217,8 +217,15 @@ node --test tests/site_behavior.test.js tests/measure_map.test.js
 캐시와 서비스 워커를 채운 컨텍스트의 새 탭에서 잰다. 입력·선택 피드백은 Event Timing(16ms
 미만은 16ms로 적음), 결과·상세·장부 첫 목록은 앱의 `window.deliciousmapMetrics`로 잰다.
 식당 선택은 검색 결과 첫 항목을 누르며 지도 마커를 누르는 경로와 실제 터치 입력은 재지 않는다.
-드래그·줌·장부 스크롤의 rAF 간격은 진단 값이며 판정하지 않는다. 20회를 채우지 못한
-시나리오는 `미측정`이다. Chrome 경로는 `--chrome` 또는 `CHROME_PATH`로 바꾼다.
+드래그·줌·장부 스크롤은 각 조작 구간에 CDP `Tracing`을 붙여 브라우저 성능 기록을 남긴다.
+`PipelineReporter`의 표시 프레임과 프레임 간격, Long Animation Frame·긴 작업을 요약하며,
+판정에 쓰지 않은 원본 기록은 저장소 밖의 trace 디렉터리에 gzip 파일로 둔다. 결과 JSON에는
+원본 이벤트가 아니라 요약만 들어간다. 60Hz 기준 한 프레임(16.7ms)의 두 배인 33.3ms
+이상 간격을 끊김, 100ms 이상 간격이나 100ms 이상 Long Animation Frame·긴 작업을 멈춤으로
+판정한다. 20회 모두 끊김·멈춤이 없어야 `충족`이고, 20회를 채우지 못하면 `미측정`이다.
+URL이 `naver.com`이면 네이버 SDK, 로컬 주소이면 애플리케이션, 나머지는 미분류로 긴 작업
+원인을 요약한다. trace 디렉터리는 기본적으로 임시 폴더에 만들며 `--trace-dir`로 저장 위치를
+지정할 수 있지만 저장소 안은 거부한다. Chrome 경로는 `--chrome` 또는 `CHROME_PATH`로 바꾼다.
 
 ## 단계 계약과 후속 구현 접점
 
