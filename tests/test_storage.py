@@ -168,3 +168,33 @@ def test_cache_parts_must_be_numbered_without_gaps_and_keep_pairs_unique(tmp_pat
     )
     with pytest.raises(ValueError, match="repeat"):
         read_cache(path)
+
+
+def test_latest_valid_follows_revision_not_the_order_of_the_parts(tmp_path: Path) -> None:
+    import json
+
+    from deliciousmap.contracts import CacheEntry
+    from deliciousmap.storage import read_cache, select_cache, write_text
+
+    def line(key: str, revision: int, *, valid: bool, status: str) -> str:
+        entry = CacheEntry(
+            key=key,
+            revision=revision,
+            valid=valid,
+            evidence="synthetic",
+            value={"status": status},
+        )
+        return json.dumps(entry.model_dump(mode="json"), ensure_ascii=False, sort_keys=True) + "\n"
+
+    path = tmp_path / "classify.jsonl"
+    # 뒤 조각이 더 낮은 revision을 담아도 유효한 최신 판정은 revision으로 고른다.
+    write_text(
+        path,
+        line("가", 2, valid=True, status="restaurant") + line("나", 3, valid=False, status="-"),
+    )
+    write_text(path.parent / "classify.002.jsonl", line("가", 1, valid=True, status="pending"))
+    assert len(read_cache(path)) == 3
+    chosen = select_cache(path, "가")
+    assert chosen is not None and chosen.revision == 2
+    # 검증 실패 이력은 그 키의 유효 판정을 만들지 않는다.
+    assert select_cache(path, "나") is None

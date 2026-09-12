@@ -138,12 +138,12 @@ def write_text(path: Path, content: str) -> None:
             temporary.unlink(missing_ok=True)
 
 
-def fits(content: str) -> bool:
+def _within_limit(content: str) -> bool:
     return len(content.encode("utf-8")) <= SIZE_LIMIT
 
 
 def require_size(content: str) -> None:
-    if not fits(content):
+    if not _within_limit(content):
         raise ValueError("artifact exceeds 20MB; partition before writing")
 
 
@@ -169,7 +169,7 @@ def read_records(path: Path) -> tuple[Record, ...]:
         return tuple(records)
 
 
-def cache_part(path: Path, number: int) -> Path:
+def _numbered_part(path: Path, number: int) -> Path:
     """첫 조각은 원래 이름 그대로다. 이어지는 조각만 세 자리 번호를 붙인다."""
     if number == 1:
         return path
@@ -186,7 +186,7 @@ def cache_parts(path: Path) -> tuple[Path, ...]:
             raise ValueError("cache parts without the first file of the history")
         return ()
     parts = (path, *found)
-    if list(parts) != [cache_part(path, number) for number in range(1, len(parts) + 1)]:
+    if list(parts) != [_numbered_part(path, number) for number in range(1, len(parts) + 1)]:
         raise ValueError("cache parts must be numbered without gaps")
     return parts
 
@@ -196,7 +196,7 @@ def read_cache(path: Path) -> tuple[CacheEntry, ...]:
     seen: set[tuple[str, int]] = set()
     for part in cache_parts(path):
         found = _read_cache_part(part)
-        identities = {(entry.key, entry.revision) for entry in found}
+        identities = {_cache_order(entry) for entry in found}
         if identities & seen:
             raise ValueError("cache parts must not repeat a key/revision pair")
         seen |= identities
@@ -209,10 +209,28 @@ def _read_cache_part(part: Path) -> tuple[CacheEntry, ...]:
         CacheEntry.model_validate_json(line)
         for line in part.read_text(encoding="utf-8").splitlines()
     )
-    identities = [(entry.key, entry.revision) for entry in entries]
+    identities = [_cache_order(entry) for entry in entries]
     if identities != sorted(set(identities)):
         raise ValueError("cache must have unique, sorted key/revision pairs")
     return entries
+
+
+def latest_valid(entries: Iterable[CacheEntry]) -> dict[str, CacheEntry]:
+    """키마다 `valid=true`인 가장 큰 revision. 조각 사이의 줄 순서에 기대지 않는다."""
+    found: dict[str, CacheEntry] = {}
+    for entry in entries:
+        kept = found.get(entry.key)
+        if entry.valid and (kept is None or entry.revision > kept.revision):
+            found[entry.key] = entry
+    return found
+
+
+def highest_revision(entries: Iterable[CacheEntry]) -> dict[str, int]:
+    """키마다 가장 큰 revision. 다음 revision을 정할 때 쓰며 유효 여부는 보지 않는다."""
+    found: dict[str, int] = {}
+    for entry in entries:
+        found[entry.key] = max(found.get(entry.key, 0), entry.revision)
+    return found
 
 
 def append_cache(path: Path, entry: CacheEntry) -> None:
@@ -220,12 +238,16 @@ def append_cache(path: Path, entry: CacheEntry) -> None:
 
 
 def append_cache_entries(path: Path, additions: tuple[CacheEntry, ...]) -> None:
-    """마지막 조각에만 이어 쓴다. 상한을 넘길 만큼 쌓이면 앞 조각을 그대로 두고 새 조각을 연다."""
-    settled = {(entry.key, entry.revision): entry for entry in read_cache(path)}
+    """마지막 조각에만 이어 쓴다. 이번 배치가 들어가지 않으면 그 조각을 닫고 새 조각을 연다.
+
+    앞 조각은 절대 다시 쓰지 않는다. 마지막 조각은 정렬을 지키려고 통째로 다시 쓴다.
+    그래서 조각이 상한에 딱 차지 않을 수 있는데, 커밋된 앞 조각을 다시 쓰지 않는 대가다.
+    """
+    settled = {_cache_order(entry): entry for entry in read_cache(path)}
     fresh: dict[tuple[str, int], CacheEntry] = {}
     for entry in additions:
         entry = CacheEntry.model_validate(entry)
-        pair = (entry.key, entry.revision)
+        pair = _cache_order(entry)
         kept = settled.get(pair, fresh.get(pair))
         if kept is not None:
             if kept != entry:
@@ -239,11 +261,18 @@ def append_cache_entries(path: Path, additions: tuple[CacheEntry, ...]) -> None:
     if parts:
         carried = sorted((*_read_cache_part(parts[-1]), *added), key=_cache_order)
         merged = _jsonl(carried)
-        if fits(merged):
+        if _within_limit(merged):
             write_text(parts[-1], merged)
             return
-    for offset, chunk in enumerate(_cache_chunks(added)):
-        write_text(cache_part(path, len(parts) + offset + 1), _jsonl(chunk))
+    # 쓰기 전에 모든 조각을 만들어 크기를 확인한다. 일부만 써 두고 실패하지 않는다.
+    opened = [
+        (_numbered_part(path, len(parts) + offset + 1), _jsonl(chunk))
+        for offset, chunk in enumerate(_cache_chunks(added))
+    ]
+    for _, content in opened:
+        require_size(content)
+    for part, content in opened:
+        write_text(part, content)
 
 
 def _cache_order(entry: CacheEntry) -> tuple[str, int]:
@@ -301,9 +330,8 @@ def attempt(previous: CacheEntry | None) -> int:
 
 
 def select_cache(path: Path, key: str) -> CacheEntry | None:
-    return next(
-        (entry for entry in reversed(read_cache(path)) if entry.key == key and entry.valid), None
-    )
+    """그 키의 유효한 최신 판정. 줄 순서가 아니라 revision으로 고른다."""
+    return latest_valid(read_cache(path)).get(key)
 
 
 class ArtifactStore:
@@ -331,7 +359,7 @@ class ArtifactStore:
             write_records(self.directory / "records.csv", output.records)
         if isinstance(output, GeocodeOutput):
             cache_path = self.directory / "geocode-history-v2.jsonl"
-            latest = {entry.key: entry for entry in read_cache(cache_path) if entry.valid}
+            latest = latest_valid(read_cache(cache_path))
             additions = []
             for result in output.results:
                 key = result.lookup_key
@@ -556,11 +584,12 @@ class ArtifactStore:
         )
 
     def previous_geocodes(self) -> tuple[GeocodeResult, ...]:
-        latest: dict[str, GeocodeResult] = {}
-        for entry in read_cache(self.directory / "geocode-history-v2.jsonl"):
-            if entry.valid:
-                latest[entry.key] = GeocodeResult.model_validate(entry.value)
-        return tuple(latest.values())
+        return tuple(
+            GeocodeResult.model_validate(entry.value)
+            for entry in latest_valid(
+                read_cache(self.directory / "geocode-history-v2.jsonl")
+            ).values()
+        )
 
     def scope(self, record: Record) -> EvidenceScope:
         return EvidenceScope(

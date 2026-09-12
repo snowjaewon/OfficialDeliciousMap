@@ -210,7 +210,8 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
             records = restaurant_records(parsed.records, classified.decisions)
             included = {record.record_id for record in records}
             restorations = tuple(item for item in reviewed if item.record_id in included)
-            # 조회를 먼저 끝내고 의존성 키를 만든다. 새 후보가 이전 판정을 대신하지 못한다.
+            # 조회를 먼저 끝낸다. 그 결과가 레코드마다 판정 키에 들어가므로
+            # 조회가 달라진 레코드는 이전 판정을 재사용하지 않는다.
             lookups = lookup.resolve(
                 store,
                 records,
