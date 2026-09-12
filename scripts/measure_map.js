@@ -2,10 +2,13 @@
 
 // 이슈 #22 결정 댓글의 측정 절차를 실제 Chrome으로 반복한다. 목표·횟수의 정본은 그 댓글이다.
 
+const childProcess = require("node:child_process");
 const crypto = require("node:crypto");
 const fs = require("node:fs");
 const http = require("node:http");
+const os = require("node:os");
 const path = require("node:path");
+const util = require("node:util");
 const zlib = require("node:zlib");
 
 const MEGABIT_BYTES = 1000 * 1000 / 8;
@@ -40,13 +43,14 @@ const SCENARIOS = {
   "search-result": { label: "검색 결과", target_ms: 200 },
   "filter-feedback": { label: "필터 버튼 피드백", target_ms: 50 },
   "filter-result": { label: "필터 결과", target_ms: 200 },
-  "selection-feedback": { label: "마커 선택 피드백", target_ms: 50 },
-  "selection-detail": { label: "마커 상세", target_ms: 200 },
+  // 식당 선택은 검색 결과 목록에서 한다. 지도 위 마커를 누르는 경로는 재지 않는다.
+  "selection-feedback": { label: "검색 결과 선택 피드백", target_ms: 50 },
+  "selection-detail": { label: "검색 결과 선택 상세", target_ms: 200 },
 };
 
 const VERDICT_LABELS = { pass: "충족", fail: "미달", unmeasured: "미측정" };
 
-function milliseconds(value) {
+function formatMilliseconds(value) {
   return value === null ? "—" : `${value.toLocaleString("en-US", { maximumFractionDigits: 1 })}ms`;
 }
 
@@ -59,10 +63,10 @@ function markdownTable(rows) {
     const cells = [
       ENVIRONMENT_LABELS[environment],
       SCENARIOS[scenario].label,
-      milliseconds(summary.target_ms),
+      formatMilliseconds(summary.target_ms),
       summary.runs,
-      milliseconds(summary.second_slowest_ms),
-      milliseconds(summary.maximum_ms),
+      formatMilliseconds(summary.second_slowest_ms),
+      formatMilliseconds(summary.maximum_ms),
       VERDICT_LABELS[summary.verdict],
     ];
     lines.push(`| ${cells.join(" | ")} |`);
@@ -93,8 +97,11 @@ const FRAME_MS = 1000 / 60;
 function frameStats(timestamps) {
   const intervals = timestamps.slice(1).map((time, index) => time - timestamps[index]);
   const longest = Math.max(0, ...intervals);
+  // 짝수 개면 위쪽 중앙값을 쓴다. 끊긴 간격이 섞여도 평소 갱신 주기를 가리킨다.
+  const median = [...intervals].sort((left, right) => left - right)[Math.floor(intervals.length / 2)];
   return {
     frames: intervals.length,
+    median_frame_ms: median === undefined ? null : Number(median.toFixed(1)),
     longest_frame_ms: Number(longest.toFixed(1)),
     dropped_frames: intervals.reduce(
       (total, interval) => total + Math.max(0, Math.round(interval / FRAME_MS) - 1),
@@ -164,13 +171,13 @@ function createStaticServer(root) {
 // ---- 여기부터 실제 Chrome을 CDP로 움직인다. 단위 테스트가 아니라 실제 실행으로 확인한다. ----
 
 const REQUIRED_RUNS = 20;
+// 페이지 조건 대기와 CDP 응답 대기 모두 이 시간을 넘기면 그 회차를 실패로 적는다.
 const RUN_TIMEOUT_MS = 60000;
 const SETTLE_MS = 1000;
 // 지도 클라이언트 키의 허용 주소가 이 포트다(#50).
 const SITE_PORT = 8765;
 const DEFAULT_CHROME = {
   win32: "C:/Program Files/Google/Chrome/Application/chrome.exe",
-  darwin: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
   linux: "google-chrome",
 };
 
@@ -222,13 +229,25 @@ class Cdp {
       const message = JSON.parse(event.data);
       const waiter = message.id && this.pending.get(message.id);
       if (waiter) {
-        this.pending.delete(message.id);
+        this.settle(message.id);
         if (message.error) waiter.reject(new Error(`${waiter.method}: ${message.error.message}`));
         else waiter.resolve(message.result);
         return;
       }
       for (const listener of this.listeners) listener(message);
     });
+    // Chrome이 죽으면 기다리던 요청이 영원히 남지 않게 모두 실패시킨다.
+    socket.addEventListener("close", () => {
+      for (const [id, waiter] of this.pending) {
+        this.settle(id);
+        waiter.reject(new Error(`${waiter.method}: CDP connection closed`));
+      }
+    });
+  }
+
+  settle(id) {
+    clearTimeout(this.pending.get(id).timer);
+    this.pending.delete(id);
   }
 
   static async connect(url) {
@@ -245,7 +264,12 @@ class Cdp {
   send(method, params = {}, sessionId = undefined) {
     const id = ++this.nextId;
     return new Promise((resolve, reject) => {
-      this.pending.set(id, { method, resolve, reject });
+      // 페이지 스크립트의 약속이 끝나지 않아도 응답 대기는 제한 시간에서 끊는다.
+      const timer = setTimeout(() => {
+        this.settle(id);
+        reject(new Error(`${method}: no response in ${RUN_TIMEOUT_MS}ms`));
+      }, RUN_TIMEOUT_MS);
+      this.pending.set(id, { method, resolve, reject, timer });
       this.socket.send(JSON.stringify({ id, method, params, sessionId }));
     });
   }
@@ -261,7 +285,15 @@ class Cdp {
 }
 
 async function launchChrome(chromePath, headed) {
-  const profile = fs.mkdtempSync(path.join(require("node:os").tmpdir(), "deliciousmap-measure-"));
+  const profile = fs.mkdtempSync(path.join(os.tmpdir(), "deliciousmap-measure-"));
+  // 정리 실패가 측정 실패를 가리지 않게 경고만 남긴다.
+  const removeProfile = () => {
+    try {
+      fs.rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+    } catch (error) {
+      process.stderr.write(`measure: temporary Chrome profile left at ${profile}\n`);
+    }
+  };
   const args = [
     "--remote-debugging-port=0",
     `--user-data-dir=${profile}`,
@@ -274,25 +306,36 @@ async function launchChrome(chromePath, headed) {
     "about:blank",
   ];
   if (!headed) args.unshift("--headless=new");
-  const child = require("node:child_process").spawn(chromePath, args, { stdio: "ignore" });
+  const child = childProcess.spawn(chromePath, args, { stdio: "ignore" });
+  const exited = new Promise((resolve) => child.once("exit", resolve));
+  const kill = async () => {
+    if (child.exitCode === null) child.kill();
+    await Promise.race([exited, sleep(2000)]);
+    removeProfile();
+  };
+  child.once("error", () => {});
   const portFile = path.join(profile, "DevToolsActivePort");
-  for (let attempt = 0; attempt < 100; attempt += 1) {
-    if (fs.existsSync(portFile)) {
-      const [port, browserPath] = fs.readFileSync(portFile, "utf8").split("\n");
-      if (browserPath) {
-        const cdp = await Cdp.connect(`ws://127.0.0.1:${port}${browserPath.trim()}`);
-        const stop = async () => {
-          cdp.close();
-          child.kill();
-          await sleep(500);
-          fs.rmSync(profile, { recursive: true, force: true, maxRetries: 5 });
-        };
-        return { cdp, stop };
+  try {
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      if (child.exitCode !== null) break;
+      if (fs.existsSync(portFile)) {
+        const [port, browserPath] = fs.readFileSync(portFile, "utf8").split("\n");
+        if (browserPath) {
+          const cdp = await Cdp.connect(`ws://127.0.0.1:${port}${browserPath.trim()}`);
+          const stop = async () => {
+            cdp.close();
+            await kill();
+          };
+          return { cdp, stop };
+        }
       }
+      await sleep(100);
     }
-    await sleep(100);
+  } catch (error) {
+    await kill();
+    throw error;
   }
-  child.kill();
+  await kill();
   throw new Error(`Chrome did not start: ${chromePath}`);
 }
 
@@ -303,11 +346,12 @@ async function attachAutomatically(cdp, environmentFor) {
   const pages = new Map();
   const pageSession = (targetId) => {
     if (!pages.has(targetId)) {
-      let resolve;
-      const promise = new Promise((done) => {
-        resolve = done;
+      const settled = {};
+      settled.promise = new Promise((resolve, reject) => {
+        settled.resolve = resolve;
+        settled.reject = reject;
       });
-      pages.set(targetId, { promise, resolve });
+      pages.set(targetId, settled);
     }
     return pages.get(targetId);
   };
@@ -315,6 +359,7 @@ async function attachAutomatically(cdp, environmentFor) {
     if (message.method !== "Target.attachedToTarget") return;
     const { sessionId, targetInfo, waitingForDebugger } = message.params;
     const environment = environmentFor(targetInfo.browserContextId);
+    const measuredPage = environment && targetInfo.type === "page";
     try {
       if (environment && ["page", "service_worker"].includes(targetInfo.type)) {
         await cdp.send("Network.enable", {}, sessionId);
@@ -322,13 +367,14 @@ async function attachAutomatically(cdp, environmentFor) {
           await cdp.send("Network.emulateNetworkConditions", environment.network, sessionId);
         }
       }
-      if (environment && targetInfo.type === "page") {
-        await preparePage(cdp, sessionId, environment);
-      }
-    } finally {
+      if (measuredPage) await preparePage(cdp, sessionId, environment);
       if (waitingForDebugger) await cdp.send("Runtime.runIfWaitingForDebugger", {}, sessionId);
+      if (measuredPage) pageSession(targetInfo.targetId).resolve(sessionId);
+    } catch (error) {
+      // 조건을 걸지 못한 페이지로 재면 조건 밖 값이 섞이므로 그 회차를 실패로 넘긴다.
+      if (measuredPage) pageSession(targetInfo.targetId).reject(error);
+      else process.stderr.write(`measure: ${targetInfo.type} setup failed: ${error.message}\n`);
     }
-    if (environment && targetInfo.type === "page") pageSession(targetInfo.targetId).resolve(sessionId);
   });
   await cdp.send("Target.setAutoAttach", {
     autoAttach: true,
@@ -373,12 +419,12 @@ class Page {
     });
   }
 
-  static async open(cdp, sessionFor, browserContextId) {
-    const { targetId } = await cdp.send("Target.createTarget", {
+  static async open(browser, browserContextId) {
+    const { targetId } = await browser.cdp.send("Target.createTarget", {
       url: "about:blank",
       browserContextId,
     });
-    return new Page(cdp, await sessionFor(targetId), targetId);
+    return new Page(browser.cdp, await browser.sessionFor(targetId), targetId);
   }
 
   async evaluate(expression) {
@@ -471,6 +517,10 @@ class Page {
 
   // 조작 시작 뒤 Event Timing에 잡힌 가장 긴 입력 처리 시간이 화면 피드백 시간이다.
   async feedbackSince(startedAt) {
+    // 관찰 콜백은 화면 반영 뒤에 온다. 느린 환경에서도 두 프레임과 여유 시간을 기다린 뒤 읽는다.
+    await this.evaluate(
+      "new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(done, 0))))",
+    );
     await sleep(200);
     const durations = await this.evaluate(
       `window.__measureEvents
@@ -490,14 +540,29 @@ class Page {
     return { result: { duration_ms: metric.duration_ms }, feedback };
   }
 
-  async setQuery(value) {
-    const before = await this.metricCount("filter-result");
-    await this.evaluate(`(() => {
-      const input = document.querySelector('[name="query"]');
-      input.value = ${JSON.stringify(value)};
-      input.dispatchEvent(new Event("input"));
-    })()`);
-    await this.metricAfter("filter-result", before);
+  // 재지 않는 조작도 반영이 끝날 때까지 기다려 다음 측정에 섞이지 않게 한다.
+  async settle(metricName, action) {
+    const before = await this.metricCount(metricName);
+    await action();
+    await this.metricAfter(metricName, before);
+  }
+
+  setQuery(value) {
+    return this.settle("filter-result", () =>
+      this.evaluate(`(() => {
+        const input = document.querySelector('[name="query"]');
+        input.value = ${JSON.stringify(value)};
+        input.dispatchEvent(new Event("input"));
+      })()`),
+    );
+  }
+
+  async wheel(selector, deltaY, times, gapMs) {
+    const point = await this.center(selector);
+    for (let step = 0; step < times; step += 1) {
+      await this.mouse("mouseWheel", point, { button: "none", deltaX: 0, deltaY });
+      await sleep(gapMs);
+    }
   }
 
   async framesDuring(gesture) {
@@ -529,27 +594,11 @@ async function dragMap(page) {
   await page.mouse("mouseReleased", { x: start.x - 180, y: start.y - 90 });
 }
 
-async function zoomMap(page) {
-  const point = await page.center("#map");
-  for (let step = 0; step < 3; step += 1) {
-    await page.mouse("mouseWheel", point, { button: "none", deltaX: 0, deltaY: -240 });
-    await sleep(150);
-  }
-}
-
-async function scrollRecords(page) {
-  const point = await page.center("[data-records-list]");
-  for (let step = 0; step < 20; step += 1) {
-    await page.mouse("mouseWheel", point, { button: "none", deltaX: 0, deltaY: 200 });
-    await sleep(16);
-  }
-}
-
 // 캐시 없는 새 컨텍스트에서 한 번 방문하며 첫 방문·장부·검색·필터·선택·프레임을 잰다.
-async function measureColdRun(context, url, query) {
-  const page = await Page.open(context.cdp, context.sessionFor, context.browserContextId);
+// 중간 단계가 실패해도 그 전에 잰 값은 run에 남는다.
+async function measureColdRun(context, url, query, run) {
+  const page = await Page.open(context.browser, context.browserContextId);
   try {
-    const run = {};
     run["first-visit"] = await page.navigate(url);
     // 첫 준비 직후 이어지는 타일 내려받기와 조작 시간이 겹치지 않게 잠시 기다린다.
     await sleep(SETTLE_MS);
@@ -573,35 +622,36 @@ async function measureColdRun(context, url, query) {
     );
     run["filter-result"] = filter.result;
     run["filter-feedback"] = filter.feedback;
-    await page.click('[data-visits="all"]');
+    await page.settle("filter-result", () => page.click('[data-visits="all"]'));
 
-    run.frames = {
-      zoom: await page.framesDuring(() => zoomMap(page)),
-      drag: await page.framesDuring(() => dragMap(page)),
-    };
+    run.frames = {};
+    run.frames.zoom = await page.framesDuring(() => page.wheel("#map", -240, 3, 150));
+    run.frames.drag = await page.framesDuring(() => dragMap(page));
 
     const records = await page.measureInteraction("records-first-list", () =>
       page.click('[data-tab="records"]'),
     );
     run["records-first-list"] = records.result;
-    run.frames.scroll = await page.framesDuring(() => scrollRecords(page));
+    run.frames.scroll = await page.framesDuring(() =>
+      page.wheel("[data-records-list]", 200, 20, 16),
+    );
     run.heap_used_bytes = await page.heapUsedBytes();
-    return run;
   } finally {
     await page.close();
   }
 }
 
-async function withContext(cdp, contexts, sessionFor, environment, work) {
-  const { browserContextId } = await cdp.send("Target.createBrowserContext", {
+// cdp 연결, 컨텍스트별 측정 환경, 페이지 세션 대기를 한 묶음으로 넘긴다.
+async function withContext(browser, environment, work) {
+  const { browserContextId } = await browser.cdp.send("Target.createBrowserContext", {
     disposeOnDetach: true,
   });
-  contexts.set(browserContextId, environment);
+  browser.contexts.set(browserContextId, environment);
   try {
-    return await work({ cdp, sessionFor, browserContextId });
+    return await work({ browser, browserContextId });
   } finally {
-    contexts.delete(browserContextId);
-    await cdp.send("Target.disposeBrowserContext", { browserContextId }).catch(() => {});
+    browser.contexts.delete(browserContextId);
+    await browser.cdp.send("Target.disposeBrowserContext", { browserContextId }).catch(() => {});
   }
 }
 
@@ -609,52 +659,66 @@ function recordAttempt(attempts, name, value) {
   (attempts[name] ??= []).push(value);
 }
 
-async function measureEnvironment(cdp, contexts, sessionFor, environment, url, query, runs, log) {
+async function measureEnvironment(browser, environment, target, log) {
+  const { url, query, runs } = target;
   const attempts = {};
+  // 실패한 회차의 단계와 사유. 값을 얻지 못한 시나리오는 횟수가 모자라 미측정이 된다.
+  const failures = [];
   const frames = { zoom: [], drag: [], scroll: [] };
   const diagnostics = { first_visit_transferred_bytes: [], heap_used_bytes: [] };
 
   for (let index = 0; index < runs; index += 1) {
+    const run = {};
     try {
       // 첫 방문은 매번 새 컨텍스트라 HTTP 캐시와 서비스 워커가 모두 비어 있다.
-      const run = await withContext(cdp, contexts, sessionFor, environment, (context) =>
-        measureColdRun(context, url, query),
+      await withContext(browser, environment, (context) =>
+        measureColdRun(context, url, query, run),
       );
-      for (const name of Object.keys(SCENARIOS)) if (run[name]) recordAttempt(attempts, name, run[name]);
-      for (const gesture of Object.keys(frames)) frames[gesture].push(run.frames[gesture]);
-      diagnostics.first_visit_transferred_bytes.push(run["first-visit"].transferred_bytes);
-      diagnostics.heap_used_bytes.push(run.heap_used_bytes);
       log(`cold ${index + 1}/${runs}: first-visit ${run["first-visit"].duration_ms}ms`);
     } catch (error) {
-      recordAttempt(attempts, "first-visit", { error: error.message });
+      failures.push({ phase: "cold", run: index + 1, error: error.message });
       log(`cold ${index + 1}/${runs}: ${error.message}`);
     }
+    for (const name of Object.keys(SCENARIOS)) if (run[name]) recordAttempt(attempts, name, run[name]);
+    for (const gesture of Object.keys(frames)) {
+      if (run.frames?.[gesture]) frames[gesture].push(run.frames[gesture]);
+    }
+    if (run["first-visit"]) {
+      diagnostics.first_visit_transferred_bytes.push(run["first-visit"].transferred_bytes);
+    }
+    if (run.heap_used_bytes !== undefined) diagnostics.heap_used_bytes.push(run.heap_used_bytes);
   }
 
   // 재방문은 한 컨텍스트에서 캐시와 서비스 워커를 채운 뒤 매번 새 탭으로 연다.
-  await withContext(cdp, contexts, sessionFor, environment, async (context) => {
-    const warm = await Page.open(cdp, sessionFor, context.browserContextId);
+  await withContext(browser, environment, async (context) => {
+    let warm;
     try {
+      warm = await Page.open(browser, context.browserContextId);
       await warm.navigate(url);
       await warm.waitFor(
         "navigator.serviceWorker.ready.then((registration) => Boolean(registration.active))",
         "service worker",
       );
+    } catch (error) {
+      failures.push({ phase: "warm-up", run: 0, error: error.message });
+      log(`warm-up: ${error.message}`);
+      return;
     } finally {
-      await warm.close();
+      await warm?.close();
     }
     for (let index = 0; index < runs; index += 1) {
-      const page = await Page.open(cdp, sessionFor, context.browserContextId);
+      let page;
       try {
+        page = await Page.open(browser, context.browserContextId);
         const visit = await page.navigate(url);
         const controlled = await page.evaluate("Boolean(navigator.serviceWorker.controller)");
         recordAttempt(attempts, "revisit", { ...visit, service_worker: controlled });
         log(`warm ${index + 1}/${runs}: revisit ${visit.duration_ms}ms`);
       } catch (error) {
-        recordAttempt(attempts, "revisit", { error: error.message });
+        failures.push({ phase: "revisit", run: index + 1, error: error.message });
         log(`warm ${index + 1}/${runs}: ${error.message}`);
       } finally {
-        await page.close();
+        await page?.close();
       }
     }
   });
@@ -663,7 +727,7 @@ async function measureEnvironment(cdp, contexts, sessionFor, environment, url, q
   for (const [name, scenario] of Object.entries(SCENARIOS)) {
     summaries[name] = judge(attempts[name] ?? [], scenario.target_ms, REQUIRED_RUNS);
   }
-  return { attempts, summaries, frames, diagnostics };
+  return { attempts, failures, summaries, frames, diagnostics };
 }
 
 function describeFile(file) {
@@ -678,7 +742,7 @@ function describeFile(file) {
 }
 
 function git(args) {
-  return require("node:child_process").execFileSync("git", args, { encoding: "utf8" }).trim();
+  return childProcess.execFileSync("git", args, { encoding: "utf8" }).trim();
 }
 
 // 검색어는 실제 마커의 상호 첫 글자로 정해 결과가 비지 않게 한다.
@@ -689,7 +753,7 @@ function chooseQuery(markers) {
 }
 
 async function main(argv) {
-  const { values } = require("node:util").parseArgs({
+  const { values } = util.parseArgs({
     args: argv,
     options: {
       city: { type: "string" },
@@ -707,6 +771,7 @@ async function main(argv) {
     if (!ENVIRONMENTS[name]) throw new Error(`unknown environment: ${name}`);
   }
   const runs = Number(values.runs);
+  if (!Number.isInteger(runs) || runs < 1) throw new Error(`--runs must be a positive integer`);
   const site = path.resolve(values.site);
   const cityDirectory = path.join(site, values.city);
   const markersFile = path.join(cityDirectory, "markers.json");
@@ -720,15 +785,18 @@ async function main(argv) {
     server.once("error", reject);
     server.listen(SITE_PORT, "127.0.0.1", resolve);
   });
-  const { cdp, stop } = await launchChrome(chromePath, values.headed);
   const log = (line) => process.stderr.write(`${line}\n`);
+  let stop;
   try {
+    const launched = await launchChrome(chromePath, values.headed);
+    stop = launched.stop;
+    const { cdp } = launched;
     const contexts = new Map();
     const sessionFor = await attachAutomatically(cdp, (id) => contexts.get(id));
-    const browser = await cdp.send("Browser.getVersion");
+    const browser = { cdp, contexts, sessionFor };
+    const version = await cdp.send("Browser.getVersion");
     const { gpu } = await cdp.send("SystemInfo.getInfo");
-    const url = `http://127.0.0.1:${SITE_PORT}/${values.city}/`;
-    const os = require("node:os");
+    const target = { url: `http://127.0.0.1:${SITE_PORT}/${values.city}/`, query, runs };
     const result = {
       measured_at: new Date().toISOString(),
       code_commit: git(["rev-parse", "HEAD"]),
@@ -744,25 +812,28 @@ async function main(argv) {
         logical_cpus: os.cpus().length,
         memory_bytes: os.totalmem(),
         node: process.version,
-        browser: browser.product,
+        browser: version.product,
         gpu_renderer: gpu.auxAttributes?.glRenderer ?? null,
         gpu_compositing: gpu.featureStatus?.gpu_compositing ?? null,
         headless: !values.headed,
+        // 헤드리스에는 화면 주사율이 없다. 프레임 값의 median_frame_ms가 실제 갱신 주기다.
+        refresh_rate: values.headed ? "display" : "none (headless)",
       },
       conditions: {
         required_runs: REQUIRED_RUNS,
         runs,
         query,
-        server: "cache-control: public, max-age=0, must-revalidate + ETag",
+        settle_ms: SETTLE_MS,
+        input: "CDP mouse and key events; touch emulation only on mobile",
+        selection: "first search result, not a map marker tap",
+        server: "cache-control: public, max-age=0, must-revalidate + weak ETag + gzip",
         environments: Object.fromEntries(environmentNames.map((name) => [name, ENVIRONMENTS[name]])),
       },
       environments: {},
     };
     for (const name of environmentNames) {
       log(`== ${name}`);
-      result.environments[name] = await measureEnvironment(
-        cdp, contexts, sessionFor, ENVIRONMENTS[name], url, query, runs, log,
-      );
+      result.environments[name] = await measureEnvironment(browser, ENVIRONMENTS[name], target, log);
     }
     const rows = environmentNames.flatMap((environment) =>
       Object.keys(SCENARIOS).map((scenario) => ({
@@ -775,7 +846,8 @@ async function main(argv) {
     if (values.out) fs.writeFileSync(values.out, json);
     process.stdout.write(`${markdownTable(rows)}\n`);
   } finally {
-    await stop();
+    await stop?.();
+    server.closeAllConnections();
     await new Promise((resolve) => server.close(resolve));
   }
 }

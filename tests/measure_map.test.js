@@ -67,9 +67,17 @@ test("프레임 간격에서 60Hz 기준으로 놓친 프레임과 가장 긴 �
 
   assert.deepEqual(frameStats(timestamps), {
     frames: 4,
+    median_frame_ms: 16.7,
     longest_frame_ms: 50,
     dropped_frames: 2,
   });
+});
+
+test("헤드리스에는 화면 주사율이 없으므로 간격 중앙값으로 실제 갱신 주기를 남긴다", () => {
+  // 간격 8.3 · 8.3 · 8.4 · 25ms. 120Hz로 돌던 중 한 번 끊긴 기록이다.
+  const timestamps = [0, 8.3, 16.6, 25, 50];
+
+  assert.equal(frameStats(timestamps).median_frame_ms, 8.4);
 });
 
 async function withSite(files, check) {

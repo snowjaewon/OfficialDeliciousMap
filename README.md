@@ -215,6 +215,7 @@ node --test tests/site_behavior.test.js tests/measure_map.test.js
 재어 표를 출력한다. 첫 방문은 매번 새 브라우저 컨텍스트(캐시·서비스 워커 없음)에서, 재방문은
 캐시와 서비스 워커를 채운 컨텍스트의 새 탭에서 잰다. 입력·선택 피드백은 Event Timing(16ms
 미만은 16ms로 적음), 결과·상세·장부 첫 목록은 앱의 `window.deliciousmapMetrics`로 잰다.
+식당 선택은 검색 결과 첫 항목을 누르며 지도 마커를 누르는 경로와 실제 터치 입력은 재지 않는다.
 드래그·줌·장부 스크롤의 rAF 간격은 진단 값이며 판정하지 않는다. 20회를 채우지 못한
 시나리오는 `미측정`이다. Chrome 경로는 `--chrome` 또는 `CHROME_PATH`로 바꾼다.
 
