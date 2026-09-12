@@ -114,11 +114,15 @@ envelope의 두 칸이 새 해시가 되었다. 달라진 것은 **이력에 줄
 
 ## 자동 검사
 
+아래는 최신 `develop`([#62](https://github.com/snowjaewon/OfficialDeliciousMap/issues/62) 머지 뒤)을
+작업 브랜치에 반영한 상태의 결과다. 이 이슈가 더한 테스트는 5개다.
+
 | 검사 | 결과 |
 | --- | --- |
+| `uv sync --locked` | 통과 |
 | `uv run ruff check .` | 통과 |
-| `uv run ruff format --check .` | 86개 파일 통과 |
+| `uv run ruff format --check .` | 88개 파일 통과 |
 | `uv run mypy src` | 통과, 39개 소스 파일 |
-| `uv run pytest` | **353 passed** (#59 시점 348에서 5개 추가) |
+| `uv run pytest` | **363 passed** |
 | `git diff --check` | 통과 |
 | gitleaks 8.30.1 | pre-commit 훅으로 실행 |
