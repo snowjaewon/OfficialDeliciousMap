@@ -2,7 +2,7 @@
   "report_kind": "trace-summary",
   "measured_at": "2026-09-12T14:27:28.805Z",
   "code_commit": "58b040b3654a6d3dec4cc82719503a479c0b3c16",
-  "summary_parser_commit": "e2dfbab",
+  "summary_parser_commit": "ee4c7c9",
   "worktree_clean": true,
   "city": "gwangju",
   "host": {
