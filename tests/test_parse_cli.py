@@ -683,10 +683,8 @@ def test_cumulative_repost_is_merged_and_both_originals_stay_traceable(
     assert len(payload(tmp_path, "classify")["decisions"]) == 3
 
 
-def test_one_shared_expense_without_containment_is_left_in_the_ledger(
-    tmp_path: Path, configured: None
-) -> None:
-    """포함도 아니고 겹친 지출이 1건뿐이면 가를 근거가 없다. 줄이지 않고 수를 남긴다."""
+def test_a_single_shared_expense_is_left_in_the_ledger(tmp_path: Path, configured: None) -> None:
+    """두 원본이 함께 싣는 지출이 1건뿐이면 가를 근거가 없다. 줄이지 않고 그 수를 남긴다."""
     record_spending(tmp_path)
     first, second = publish(
         tmp_path,

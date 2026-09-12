@@ -216,22 +216,26 @@ def spent(
 
 
 def test_cumulative_repost_keeps_the_first_publication_and_lists_the_later_original() -> None:
-    """누적 파일이 앞 파일을 덮으면(포함) 반복된 지출은 한 건이다. 출처는 모두 남는다."""
+    """누적 파일이 앞 파일의 지출을 다시 실으면 반복된 지출은 한 건이다. 출처는 모두 남는다."""
     month, quarter = original(1, "2026-02-27"), original(2, "2026-04-15")
     records = (
         spent(month, 4, 5, "합성 식당", 62000),
+        spent(month, 5, 6, "합성 카페", 9000),
         spent(quarter, 4, 5, "합성 식당", 62000),
-        spent(quarter, 5, 20, "합성 카페", 9000),
+        spent(quarter, 5, 6, "합성 카페", 9000),
+        spent(quarter, 6, 20, "합성 국밥", 27000),
     )
     merged = merge_repeats(records, (month, quarter))
     assert [record.record_id for record in merged.records] == [
         records[0].record_id,
-        records[2].record_id,
+        records[1].record_id,
+        records[4].record_id,
     ]
     assert merged.records[0].repeats == (
         RecordOrigin(source_hash=quarter.source_hash, location="sheet1:R4"),
     )
-    assert merged.tally == RepeatedExpenses(merged_expenses=1, merged_records=1)
+    assert merged.records[2].repeats == ()
+    assert merged.tally == RepeatedExpenses(merged_expenses=2, merged_records=2)
 
 
 def test_rewritten_purposes_do_not_keep_the_same_expense_twice() -> None:
@@ -265,8 +269,8 @@ def test_repetition_inside_one_original_is_not_reduced() -> None:
     assert merged.tally == RepeatedExpenses()
 
 
-def test_one_shared_expense_without_containment_is_left_alone_and_counted() -> None:
-    """겹친 지출이 1건뿐이고 포함도 아니면 재게시인지 별개 지출인지 가를 근거가 없다."""
+def test_a_single_shared_expense_is_left_alone_and_counted() -> None:
+    """함께 싣는 지출이 1건뿐이면 재게시인지 별개 지출인지 가를 근거가 없다."""
     first, second = original(1, "2026-02-27"), original(2, "2026-03-06")
     records = (
         spent(first, 4, 5, "합성 식당", 62000),
@@ -277,6 +281,19 @@ def test_one_shared_expense_without_containment_is_left_alone_and_counted() -> N
     merged = merge_repeats(records, (first, second))
     assert merged.records == records
     assert all(record.repeats == () for record in merged.records)
+    assert merged.tally == RepeatedExpenses(unmerged_expenses=1, unmerged_records=1)
+
+
+def test_a_wholly_repeated_original_still_needs_two_shared_expenses() -> None:
+    """한 건짜리 원본은 그 한 건이 다른 원본에 있으면 늘 포함이 된다. 그것은 근거가 아니다."""
+    once, later = original(1, "2026-02-27"), original(2, "2026-04-15")
+    records = (
+        spent(once, 4, 5, "합성 식당", 62000),
+        spent(later, 4, 5, "합성 식당", 62000),
+        spent(later, 5, 20, "합성 카페", 9000),
+    )
+    merged = merge_repeats(records, (once, later))
+    assert merged.records == records
     assert merged.tally == RepeatedExpenses(unmerged_expenses=1, unmerged_records=1)
 
 
@@ -311,3 +328,30 @@ def test_other_departments_and_organizations_are_never_the_same_expense() -> Non
     merged = merge_repeats(records, (first, second))
     assert merged.records == records
     assert merged.tally == RepeatedExpenses()
+
+
+def test_a_group_merges_only_the_originals_that_are_reposts_of_each_other() -> None:
+    """한 묶음에 재게시 관계가 아닌 원본이 섞이면 그 원본의 레코드는 남고 수에 드러난다."""
+    first, second, apart = (
+        original(1, "2026-02-27"),
+        original(2, "2026-04-15"),
+        original(3, "2026-05-18"),
+    )
+    records = (
+        spent(first, 4, 5, "합성 식당", 62000),
+        spent(first, 5, 6, "합성 카페", 9000),
+        spent(second, 4, 5, "합성 식당", 62000),
+        spent(second, 5, 6, "합성 카페", 9000),
+        spent(apart, 4, 5, "합성 식당", 62000),
+        spent(apart, 5, 20, "합성 국밥", 27000),
+    )
+    merged = merge_repeats(records, (first, second, apart))
+    assert [record.source_hash for record in merged.records] == [
+        first.source_hash,
+        first.source_hash,
+        apart.source_hash,
+        apart.source_hash,
+    ]
+    assert merged.tally == RepeatedExpenses(
+        merged_expenses=2, merged_records=2, unmerged_expenses=1, unmerged_records=1
+    )

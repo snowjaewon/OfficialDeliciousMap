@@ -64,8 +64,8 @@ class Record(Contract):
     amount_krw: Decimal = Field(allow_inf_nan=False)
     source_hash: Sha256
     source_location: Token
-    # 누적 재게시로 합친 레코드가 같은 지출을 함께 실은 다른 원본들([ADR-0003](
-    # ../../docs/adr/0003-merge-repeated-reposts.md)). 합치지 않은 레코드는 비어 있다.
+    # 이 지출을 함께 실은 다른 원본들. 누적 재게시로 합친 레코드만 가지며([ADR-0003](
+    # ../../docs/adr/0003-merge-repeated-reposts.md)) 행 하나가 아니라 지출 하나의 출처다.
     repeats: tuple[RecordOrigin, ...] = ()
 
     @model_validator(mode="after")

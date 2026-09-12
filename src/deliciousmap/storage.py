@@ -156,11 +156,12 @@ def dump_repeats(origins: tuple[RecordOrigin, ...]) -> str:
 
 
 def load_repeats(raw: str) -> tuple[RecordOrigin, ...]:
-    return tuple(
-        RecordOrigin(source_hash=digest, location=location)
-        for token in raw.split()
-        for digest, _, location in (token.partition(":"),)
-    )
+    """`repeats` 칸을 되읽는다. 해시와 위치를 가르지 못하는 값은 계약 검증이 거부한다."""
+    origins = []
+    for token in raw.split():
+        digest, _, location = token.partition(":")
+        origins.append(RecordOrigin(source_hash=digest, location=location))
+    return tuple(origins)
 
 
 def write_records(path: Path, records: tuple[Record, ...]) -> None:
