@@ -220,9 +220,64 @@ def test_failed_cache_hit_is_asked_once_more_then_left_unresolved(
     assert run(tmp_path, "parse") == 0
     report = {item["source_hash"]: item for item in payload(tmp_path, "parse")["sources"]}
     assert report[bad]["status"] == "unresolved"
-    assert report[bad]["candidates"] is None
+    assert report[bad]["candidates"] == 1
     # 실패한 원본의 일부는 확정하지 않고 다른 원본의 레코드는 보존한다.
     assert {row["source_hash"] for row in records(tmp_path)} == {good}
+
+
+def test_unresolved_original_carries_the_candidate_count_of_every_table(
+    tmp_path: Path, configured: None
+) -> None:
+    """검증에 실패한 원본도 후보 수를 장부에 싣는다. 통과한 시트의 후보까지 함께 센다."""
+    record_spending(tmp_path)
+    broken = sheet_a(
+        ("2026-01-05", "합성 식당", "협의", 4.0, 62000.0),
+        ("2026-01-06", "합성 국밥", "협의", 3.0, 27000.0),
+        total=False,
+    )
+    broken.append(("", "", "계", "", "", "2건", 62000.0, "", ""))
+    passing = sheet_a(("2026-02-03", "합성 카페", "협의", 2.0, 18000.0))
+    (source,) = publish(tmp_path, ("합계 불일치.xls", workbook(broken, passing)))
+    model = FakeModel(headers=[header_answer()] * 3)
+    assert run(tmp_path, "headermap", model) == 0
+    mapped = payload(tmp_path, "headermap")
+    assert mapped["mappings"] == []
+    assert mapped["unresolved"] == [
+        {
+            "source_hash": source,
+            "reason": "validation_failed",
+            "detail": "sheet1:R6 total amount mismatch",
+        }
+    ]
+    # 실패한 시트의 매핑도, 그 뒤 시트의 매핑도 parse까지 간다.
+    assert [item["table"] for item in mapped["rejected"]] == ["sheet1", "sheet2"]
+
+    assert run(tmp_path, "parse") == 0
+    (report,) = payload(tmp_path, "parse")["sources"]
+    assert (report["status"], report["candidates"], report["records"]) == ("unresolved", 3, 0)
+    assert records(tmp_path) == []
+
+
+def test_table_without_a_mapping_leaves_the_candidate_count_unknown(
+    tmp_path: Path, configured: None
+) -> None:
+    """표 하나라도 매핑이 없으면 원본의 후보 수를 모른다. 0건 손실로 바꾸지 않는다."""
+    record_spending(tmp_path)
+    broken = sheet_a(("2026-01-05", "", "협의", 4.0, 62000.0), total=False)
+    passing = sheet_a(("2026-02-03", "합성 카페", "협의", 2.0, 18000.0))
+    (source,) = publish(tmp_path, ("상호 빈칸.xls", workbook(broken, passing)))
+    card = {**header_answer(), "layout": "key_value"}
+    model = FakeModel(headers=[header_answer(), header_answer(), card])
+    assert run(tmp_path, "headermap", model) == 0
+    mapped = payload(tmp_path, "headermap")
+    assert [item["table"] for item in mapped["rejected"]] == ["sheet1"]
+    assert mapped["unresolved"] == [
+        {"source_hash": source, "reason": "validation_failed", "detail": "sheet1:R4 merchant"}
+    ]
+
+    assert run(tmp_path, "parse") == 0
+    (report,) = payload(tmp_path, "parse")["sources"]
+    assert (report["status"], report["candidates"]) == ("unresolved", None)
 
 
 @pytest.mark.parametrize("recovers", [True, False])
@@ -366,6 +421,8 @@ def test_mapping_that_cannot_be_requested_leaves_the_original_unresolved(
     parsed = payload(tmp_path, "parse")
     assert parsed["empty_reason"] == "no records in the reporting period"
     assert parsed["sources"][0]["status"] == "unresolved"
+    # 판정을 받지 못한 표는 후보 수를 모른다. 0건으로 바꾸지 않는다.
+    assert parsed["sources"][0]["candidates"] is None
     assert records(tmp_path) == []
 
 

@@ -183,6 +183,7 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
                     mappings=mapped.mappings,
                     unresolved=mapped.unresolved,
                     confirmations=store.repeat_confirmations(),
+                    rejected=mapped.rejected,
                 ),
                 context,
             )

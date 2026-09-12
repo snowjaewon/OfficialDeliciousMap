@@ -760,12 +760,27 @@ class UnresolvedSource(Contract):
 class HeaderMapOutput(Contract):
     mappings: tuple[HeaderMap, ...]
     unresolved: tuple[UnresolvedSource, ...] = ()
+    # 미해결 원본의 표마다 얻은 매핑. 검증에 실패한 것도, 그 원본의 다른 표가 통과시킨 것도 함께
+    # 싣는다. 레코드로 쓰지 않으며 `parse`가 후보 수를 세는 데만 쓴다(폴백 정책의 분모).
+    rejected: tuple[HeaderMap, ...] = ()
+
+    @model_validator(mode="after")
+    def rejected_belongs_to_unresolved(self) -> "HeaderMapOutput":
+        unresolved = {item.source_hash for item in self.unresolved}
+        if any(item.source_hash not in unresolved for item in self.rejected):
+            raise ValueError("a rejected mapping must belong to an unresolved original")
+        identities = [(item.source_hash, item.table) for item in self.rejected]
+        if len(identities) != len(set(identities)):
+            raise ValueError("duplicate rejected mapping for a table")
+        return self
 
 
 class ParseInput(Contract):
     sources: tuple[SourceRef, ...]
     mappings: tuple[HeaderMap, ...]
     unresolved: tuple[UnresolvedSource, ...] = ()
+    # 미해결 원본의 매핑. 후보 수를 세는 데만 쓰고 레코드는 내지 않는다.
+    rejected: tuple[HeaderMap, ...] = ()
     # 사람이 확정한 재게시 여부. 누적 재게시 병합이 자동 판정보다 먼저 적용한다.
     confirmations: tuple[RepeatConfirmation, ...] = ()
 

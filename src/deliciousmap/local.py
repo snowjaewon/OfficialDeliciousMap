@@ -58,6 +58,7 @@ class LocalAdapters:
             value.unresolved,
             context.paths.raw_root,
             value.confirmations,
+            value.rejected,
         )
 
     def classify(self, value: ClassifyInput, context: ExecutionContext) -> ClassifyOutput:

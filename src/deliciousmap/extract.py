@@ -128,17 +128,57 @@ def extract(table: Table, mapping: HeaderMap, source: SourceRef) -> Extraction:
     )
 
 
+def count_candidates(table: Table, mapping: HeaderMap) -> int | None:
+    """검증에 실패한 매핑으로도 지출 후보만 센다. 값이 온전하지 않다고 후보에서 빼지 않는다.
+
+    폴백 정책의 분모는 추출 성공 레코드가 아니라 원본에서 식별한 지출 후보 전체다. 역할이
+    모자라 후보 범위 자체를 가를 수 없으면 세지 않고 `알 수 없음`으로 돌린다.
+    """
+    if mapping.layout == "none":
+        return 0
+    columns = mapping.columns
+    dated = "spent_on" in columns or {"month", "day"} <= columns.keys()
+    if mapping.layout != "table" or not dated or not {"merchant", "amount_krw"} <= columns.keys():
+        return None
+    headers = {
+        _signature(table.rows[row - 1]) for row in mapping.header_rows if row <= len(table.rows)
+    }
+    # `extract`와 같은 범위를 본다 — 헤더 아래 전부이며, 첫 지출 위치를 잘못 잡아도 세는 수는 같다.
+    return sum(
+        _kind(table, mapping, headers, row) == "candidate"
+        for row in range(max(mapping.header_rows, default=0) + 1, len(table.rows) + 1)
+    )
+
+
+def _unresolved_candidates(rejected: list[HeaderMap], path: Path) -> int | None:
+    """미해결 원본의 후보 수. 표 하나라도 매핑이 없으면 모르는 것이며 0건으로 바꾸지 않는다."""
+    if not rejected:
+        return None
+    try:
+        tables = {table.name: table for table in read_tables(path)}
+    except (UnsupportedFormat, UnreadableOriginal):
+        return None
+    if {mapping.table for mapping in rejected} != set(tables):
+        return None
+    counted = [count_candidates(tables[mapping.table], mapping) for mapping in rejected]
+    return None if any(item is None for item in counted) else sum(item or 0 for item in counted)
+
+
 def parse_sources(
     sources: tuple[SourceRef, ...],
     mappings: tuple[HeaderMap, ...],
     unresolved: tuple[UnresolvedSource, ...],
     raw_root: Path,
     confirmations: tuple[RepeatConfirmation, ...] = (),
+    rejected: tuple[HeaderMap, ...] = (),
 ) -> ParseOutput:
     """원본마다 모든 표가 통과해야 레코드를 낸다. 실패한 원본의 일부만 확정하지 않는다."""
     by_source: dict[str, list[HeaderMap]] = {}
     for mapping in mappings:
         by_source.setdefault(mapping.source_hash, []).append(mapping)
+    unused: dict[str, list[HeaderMap]] = {}
+    for mapping in rejected:
+        unused.setdefault(mapping.source_hash, []).append(mapping)
     failed = {item.source_hash: item for item in unresolved}
     records: list[Record] = []
     reports: dict[str, SourceReport] = {}
@@ -152,6 +192,9 @@ def parse_sources(
                 status="unresolved",
                 reason=item.reason,
                 detail=item.detail,
+                candidates=_unresolved_candidates(
+                    unused.get(source.source_hash, []), raw_root / source.path
+                ),
             )
             continue
         try:
