@@ -11,6 +11,8 @@ from pydantic import BaseModel, ConfigDict, Field, JsonValue, StringConstraints,
 from deliciousmap.registry import Target
 
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+# 공백이 없는 한 낱말. 다른 값과 한 칸에 이어 적는 값(레코드 위치 등)에 쓴다.
+Token = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, pattern=r"^\S+$")]
 Sha256 = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{64}$")]
 ClassificationStatus = Literal["restaurant", "non_restaurant", "pending"]
 Provider = Literal["local", "naver", "license"]
@@ -45,6 +47,13 @@ def require_error_code(status: str, error: str | None) -> None:
         raise ValueError("lookup errors require an explicit error code")
 
 
+class RecordOrigin(Contract):
+    """레코드 하나가 나온 원본과 그 안의 행 위치."""
+
+    source_hash: Sha256
+    location: Token
+
+
 class Record(Contract):
     record_id: Text
     spent_on: date
@@ -54,7 +63,18 @@ class Record(Contract):
     purpose: str
     amount_krw: Decimal = Field(allow_inf_nan=False)
     source_hash: Sha256
-    source_location: Text
+    source_location: Token
+    # 이 지출을 함께 실은 다른 원본들. 누적 재게시로 합친 레코드만 가지며([ADR-0004](
+    # ../../docs/adr/0004-merge-repeated-reposts.md)) 행 하나가 아니라 지출 하나의 출처다.
+    repeats: tuple[RecordOrigin, ...] = ()
+
+    @model_validator(mode="after")
+    def distinct_origins(self) -> "Record":
+        origins = {(self.source_hash, self.source_location)}
+        origins |= {(item.source_hash, item.location) for item in self.repeats}
+        if len(origins) != len(self.repeats) + 1:
+            raise ValueError("a record cannot list the same origin twice")
+        return self
 
 
 class CacheEntry(Contract):
@@ -691,6 +711,9 @@ class SourceReport(Contract):
     records: int = Field(default=0, ge=0)
     # 대상 기간 밖의 유효한 지출. 날짜 파싱 실패와 구별한다.
     out_of_range: int = Field(default=0, ge=0)
+    # 다른 원본이 이미 공개한 지출이어서 합쳐 뺀 레코드 수. `records`는 합친 뒤의 수이며,
+    # 둘을 더하면 이 원본이 실제로 실은 대상 기간 레코드 수다.
+    repeated: int = Field(default=0, ge=0)
     # 빈 행·반복 헤더·합계처럼 지출 1건이 아니어서 분모에서 뺀 행의 위치와 종류(`sheet1:R7 total`).
     excluded: tuple[Text, ...] = ()
     # 원본에 실제로 있는 0원·음수처럼 재검증 리포트에서 사람이 볼 레코드의 위치와 사유.
@@ -722,6 +745,21 @@ class ExcludedSources(Contract):
         return self.posted_out_of_range + self.declared_out_of_range + self.undeclared_in_year
 
 
+class RepeatedExpenses(Contract):
+    """원본을 넘어 반복된 지출의 병합 결과. 합친 수와 가르지 못해 남긴 수를 함께 싣는다.
+
+    기준은 [ADR-0004](../../docs/adr/0004-merge-repeated-reposts.md)이다. `unmerged_expenses`가
+    0이 아니면 재게시인지 별개 지출인지 가를 근거가 없어 남긴 묶음이 그만큼 있다는 뜻이다.
+    """
+
+    # 합친 지출 묶음 수와 그때 뺀 레코드 수.
+    merged_expenses: int = Field(default=0, ge=0)
+    merged_records: int = Field(default=0, ge=0)
+    # 가를 근거가 없어 남긴 묶음 수와 그 묶음들에 원본을 넘어 남은 레코드 수.
+    unmerged_expenses: int = Field(default=0, ge=0)
+    unmerged_records: int = Field(default=0, ge=0)
+
+
 class ParseOutput(Contract):
     records: tuple[Record, ...]
     empty_reason: Text | None = None
@@ -731,6 +769,8 @@ class ParseOutput(Contract):
     # 대상을 고르는 쪽(`ArtifactStore`)이 수집 장부에서 세어 채운다. 어댑터는 대상만 받으므로
     # 이 수를 알지 못한다.
     excluded_sources: ExcludedSources = ExcludedSources()
+    # 누적 재게시로 합친 지출과 가를 근거가 없어 남긴 지출의 수.
+    repeated_expenses: RepeatedExpenses = RepeatedExpenses()
 
 
 class ClassifyInput(Contract):

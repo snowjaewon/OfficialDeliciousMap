@@ -189,7 +189,7 @@ def _published_record(
 ) -> PublishedRecord:
     """장부는 마커가 되지 못한 레코드도 판정 상태·사유와 함께 보존한다."""
     fields = record.model_dump(mode="json")
-    for provenance in ("source_hash", "source_location"):
+    for provenance in ("source_hash", "source_location", "repeats"):
         fields.pop(provenance)
     if classification != "restaurant":
         return PublishedRecord.model_validate(

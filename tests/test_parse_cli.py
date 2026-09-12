@@ -2,7 +2,7 @@
 
 import csv
 import json
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 import pytest
@@ -90,15 +90,20 @@ def ledger(root: Path) -> list[dict]:
 
 
 def publish(
-    root: Path, *files: tuple[str, bytes], department: str = "합성과", org: str | None = None
+    root: Path,
+    *files: tuple[str, bytes],
+    department: str = "합성과",
+    org: str | None = None,
+    posted: tuple[str, ...] = (),
 ) -> list[str]:
     """게시글마다 원본 하나를 올리고 fetch한다. 원본 해시를 게시 순서대로 돌려준다."""
+    days = posted or ("2026-04-01",) * len(files)
     posts = tuple(
         Post(
             100 - index,
             f"2026년 합성 집행내역 {index}",
             department,
-            datetime(2026, 4, 1).date(),
+            date.fromisoformat(days[index]),
             (file,),
         )
         for index, file in enumerate(files)
@@ -175,6 +180,7 @@ def test_verified_mappings_extract_every_candidate_and_reuse_the_header_cache(
         "out_of_range": 1,
         "excluded": ["sheet1:R7 total"],
         "review": [],
+        "repeated": 0,
         "total_check": "matched",
     }
     assert payload(tmp_path, "parse")["reporting_period"] == "2026-01-01/2026-06-30"
@@ -620,3 +626,94 @@ def test_the_same_original_cannot_be_left_twice_with_different_reasons(
     both = path.read_text(encoding="utf-8").replace("merchant_blank", "total_mismatch", 1)
     write_text(path, both)
     assert run(tmp_path, "parse") == 1
+
+
+MONTH = sheet_a(
+    ("2026-01-05\n12:07", "합성 식당", "현안 업무 협의", 4.0, 62000.0),
+    ("2026-01-06\n12:10", "합성 카페", "직원 격려", 2.0, 9000.0),
+)
+CUMULATIVE = sheet_a(
+    ("2026-01-05\n12:07", "합성 식당", "현안 업무 협의 간담회 비용 집행", 4.0, 62000.0),
+    ("2026-01-06\n12:10", "합성 카페", "직원 격려 다과 구입", 2.0, 9000.0),
+    ("2026-03-02\n12:20", "합성 국밥", "협의", 3.0, 27000.0),
+)
+
+
+def test_cumulative_repost_is_merged_and_both_originals_stay_traceable(
+    tmp_path: Path, configured: None
+) -> None:
+    """부서가 1월분을 1분기 누적 파일로 다시 올리면 장부의 건수가 부풀지 않는다(ADR-0004)."""
+    record_spending(tmp_path)
+    month, quarter = publish(
+        tmp_path,
+        ("1월.xls", workbook(MONTH)),
+        ("1분기.xls", workbook(CUMULATIVE)),
+        posted=("2026-02-27", "2026-04-15"),
+    )
+    assert run(tmp_path, "headermap", FakeModel(headers=[header_answer()])) == 0
+    assert run(tmp_path, "parse") == 0
+
+    rows = records(tmp_path)
+    assert [(row["spent_on"], row["merchant"], row["source_hash"]) for row in rows] == [
+        ("2026-01-05", "합성 식당", month),
+        ("2026-01-06", "합성 카페", month),
+        ("2026-03-02", "합성 국밥", quarter),
+    ]
+    # 합친 레코드는 먼저 공개한 원본의 것이고, 겹친 원본은 행 위치까지 남는다.
+    assert [row["repeats"] for row in rows] == [
+        f"{quarter}:sheet1:R4",
+        f"{quarter}:sheet1:R5",
+        "",
+    ]
+    parsed = payload(tmp_path, "parse")
+    assert parsed["repeated_expenses"] == {
+        "merged_expenses": 2,
+        "merged_records": 2,
+        "unmerged_expenses": 0,
+        "unmerged_records": 0,
+    }
+    report = {item["source_hash"]: item for item in parsed["sources"]}
+    # 원본별 보고는 합친 뒤 수와 합쳐서 뺀 수를 함께 낸다. 뺀 것을 0으로 감추지 않는다.
+    assert (report[month]["records"], report[month]["repeated"]) == (2, 0)
+    assert (report[quarter]["records"], report[quarter]["repeated"]) == (1, 2)
+    assert report[quarter]["candidates"] == 3
+
+    # 합친 장부가 그대로 판별·화면으로 이어진다.
+    assert run(tmp_path, "classify", FakeModel()) == 0
+    assert len(payload(tmp_path, "classify")["decisions"]) == 3
+
+
+def test_a_single_shared_expense_is_left_in_the_ledger(tmp_path: Path, configured: None) -> None:
+    """두 원본이 함께 싣는 지출이 1건뿐이면 가를 근거가 없다. 줄이지 않고 그 수를 남긴다."""
+    record_spending(tmp_path)
+    first, second = publish(
+        tmp_path,
+        ("먼저.xls", workbook(MONTH)),
+        (
+            "나중.xls",
+            workbook(
+                sheet_a(
+                    ("2026-01-05\n12:07", "합성 식당", "현안 업무 협의", 4.0, 62000.0),
+                    ("2026-02-10\n12:30", "합성 국밥", "협의", 3.0, 27000.0),
+                )
+            ),
+        ),
+        posted=("2026-02-27", "2026-03-06"),
+    )
+    assert run(tmp_path, "headermap", FakeModel(headers=[header_answer()])) == 0
+    assert run(tmp_path, "parse") == 0
+
+    rows = records(tmp_path)
+    assert [(row["spent_on"], row["source_hash"]) for row in rows] == [
+        ("2026-01-05", first),
+        ("2026-01-06", first),
+        ("2026-01-05", second),
+        ("2026-02-10", second),
+    ]
+    assert {row["repeats"] for row in rows} == {""}
+    assert payload(tmp_path, "parse")["repeated_expenses"] == {
+        "merged_expenses": 0,
+        "merged_records": 0,
+        "unmerged_expenses": 1,
+        "unmerged_records": 1,
+    }
