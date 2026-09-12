@@ -365,7 +365,7 @@ build하지 않는다. 판정은 모두 `python -m deliciousmap.ci`가 하고 �
 | --- | --- |
 | `check-data` | 정제 산출물 파일당 20,000,000바이트 초과, 등록되지 않은 도시 디렉터리, build할 도시 0곳을 실패로 본다. 통과하면 `data/<city>/`가 있는 도시를 레지스트리 순서로 낸다 |
 | `check-dist` | Pages 한도(파일당 25MiB, 20,000개), `site.public_paths`의 화면용 파일 외 파일, 빠진 화면 파일, HTML·`sw.js`·`manifest.webmanifest`의 끊긴 참조를 실패로 본다. 통과하면 `dist/deploy-manifest.json`(상대 경로·SHA256·바이트·commit)을 쓴다 |
-| `preview` | 올린 뒤 배포 고유 URL과 PR alias를 검증하고 결과를 Actions summary에 쓴다. 롤백하지 않는다 |
+| `preview` | 올린 뒤 배포 고유 URL과 PR alias를 검증하고 결과를 Actions summary에 쓴다. build한 커밋은 PR의 임시 merge commit이므로 PR head SHA도 함께 적는다. 롤백하지 않는다 |
 | `production` | 아래 운영 절차 |
 | `wait-check` | 같은 커밋의 다른 workflow 체크(`gitleaks`)가 `success`로 끝날 때까지 기다린다. 실패·취소·건너뜀·15분 초과는 실패다 |
 
@@ -378,13 +378,20 @@ alias는 전파가 늦을 수 있어 10초 간격으로 6번까지 본다.
 운영 절차는 다음 순서다. 운영 job은 한 동시 실행 그룹에서 직렬화하고 진행 중인 실행을 취소하지 않는다.
 
 1. 같은 커밋의 `gitleaks` 성공을 기다린다(`ci-build`는 같은 workflow의 선행 job이다).
-2. 동결 여부와 실행 자격을 본다. `main`이 아닌 ref, 사유 없는 수동 실행, 시간대 없는 동결 시각은
-   종료 코드 2로 거부한다. 업로드 직전의 최신 `main`이 이 커밋이 아니면 올리지 않고 넘어간다.
+2. 실행 자격과 동결을 본다. `main`이 아닌 ref, 사유 없는 수동 실행, 시간대 없는 동결 시각은
+   종료 코드 2로 거부한다. 동결 뒤의 `main` push는 올리지 않고 성공으로 끝낸다.
 3. Pages API로 지금 운영 배포를 찾고, 그 배포가 자기 manifest와 다시 대조되어 통과할 때만 롤백 대상으로
-   보존한다. manifest가 없는 배포(프로젝트를 만들 때 올린 빈 배포 등)는 대상이 아니다.
-4. 올린 뒤 고유 URL → 운영 alias 순으로 검증한다.
-5. 실패하면 보존한 배포로 롤백하고 운영 alias를 그 manifest와 다시 대조한다. 복구가 되어도 실행은
-   실패로 남는다. 롤백 대상이 없거나 재검증도 실패하면 사람이 대응한다.
+   보존하고 기록에 먼저 쓴다. manifest가 없는 배포(프로젝트를 만들 때 올린 빈 배포 등)는 대상이 아니다.
+4. 업로드 직전에 원격 `main`을 다시 본다. 이 커밋보다 앞서 있으면 올리지 않는다. 동결 전에는 더 최신
+   push가 배포하므로 성공이고, 동결 중에는 배포할 실행이 없으므로 실패로 남겨 최신 `main`에서 다시
+   수동 실행하게 한다.
+5. 올린 뒤 고유 URL → 운영 alias 순으로 검증한다.
+6. 검증이 실패하거나 Wrangler가 배포를 확인해 주지 못하면 Pages API의 지금 운영 배포를 다시 본다.
+   보존한 배포가 아니면 그 배포로 롤백하고, 어느 쪽이든 운영 alias를 보존한 manifest와 다시 대조한다.
+   복구가 되어도 실행은 실패로 남는다. 롤백 대상이 없거나 재검증도 실패하면 사람이 대응한다.
+
+대기 중인 운영 job은 같은 그룹의 더 새 job이 오면 GitHub가 취소한다. 취소는 성공으로 보고되지 않으며,
+동결 중에 수동 실행이 이렇게 취소되면 다시 실행한다.
 
 직전 배포 ID·manifest, 새 배포 ID·URL, 검증 결과는 summary와 artifact `release-<SHA>-<시도>`의
 `release.json`에 남는다. 지도 키(`vars.NAVER_MAP_CLIENT_ID`·`vars.NAVER_MAP_KEY_PARAM`)는 build 단계에만,
