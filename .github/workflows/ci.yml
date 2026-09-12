@@ -1,0 +1,160 @@
+name: ci
+
+# 결정: #15 "CI 빌드·배포 흐름", 구현: #53. 판정은 python -m deliciousmap.ci 가 맡는다.
+# ci-build 는 필수 체크라 경로 필터를 두지 않는다. 문서만 바뀐 PR에도 보고되어야 한다.
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 긴급 운영 배포 사유(main에서 실행할 때만 배포한다)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ci-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v10.1.0
+        with:
+          version: "0.12.12"
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - run: uv sync --locked
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy src
+      - run: uv run pytest
+      - run: node --test tests/site_behavior.test.js
+      - run: uv run python -m deliciousmap --help
+      - name: 정제 산출물 크기·입력 검증
+        id: data
+        run: |
+          cities="$(uv run python -m deliciousmap.ci check-data --data-root data)"
+          echo "cities=$(echo $cities)" >> "$GITHUB_OUTPUT"
+      - name: 사이트 build
+        env:
+          # 공개 지도 키는 이 단계에만 넘긴다. 비어 있으면 build가 종료 코드 2로 실패한다.
+          NAVER_MAP_CLIENT_ID: ${{ vars.NAVER_MAP_CLIENT_ID }}
+          NAVER_MAP_KEY_PARAM: ${{ vars.NAVER_MAP_KEY_PARAM }}
+          CITIES: ${{ steps.data.outputs.cities }}
+        run: |
+          for city in $CITIES; do
+            uv run python -m deliciousmap build --city "$city"
+          done
+      - name: dist 검사와 manifest
+        env:
+          CITIES: ${{ steps.data.outputs.cities }}
+        run: |
+          args=()
+          for city in $CITIES; do args+=(--city "$city"); done
+          uv run python -m deliciousmap.ci check-dist --dist dist --commit "$GITHUB_SHA" "${args[@]}"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: site-${{ github.sha }}
+          path: dist/
+          if-no-files-found: error
+          # 재실행하면 같은 커밋의 새 build로 바꿔 둔다. 배포 job은 같은 시도의 것을 받는다.
+          overwrite: true
+
+  preview:
+    name: preview
+    needs: build
+    # 같은 저장소의 PR만 배포한다. fork PR은 비밀값 없이 검사·build만 한다.
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: pages-preview-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v10.1.0
+        with:
+          version: "0.12.12"
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - run: uv sync --locked
+      - uses: actions/download-artifact@v8
+        with:
+          name: site-${{ github.sha }}
+          path: dist
+      - name: 미리보기 배포와 검증
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
+          BRANCH: pr-${{ github.event.pull_request.number }}
+          # build한 커밋(GITHUB_SHA)은 PR의 임시 merge commit이라 PR head를 함께 남긴다.
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: >-
+          uv run python -m deliciousmap.ci preview --dist dist --project "$PROJECT"
+          --branch "$BRANCH" --head "$HEAD_SHA"
+
+  production:
+    name: production
+    needs: build
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      checks: read
+    # 운영 배포와 롤백을 직렬화한다. 진행 중인 실행은 취소하지 않는다.
+    concurrency:
+      group: pages-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v10.1.0
+        with:
+          version: "0.12.12"
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - run: uv sync --locked
+      - uses: actions/download-artifact@v8
+        with:
+          name: site-${{ github.sha }}
+          path: dist
+      - name: 같은 커밋의 gitleaks 성공 확인
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: >-
+          uv run python -m deliciousmap.ci wait-check
+          --repo "$GITHUB_REPOSITORY" --sha "$GITHUB_SHA" --name gitleaks
+      - name: 운영 배포와 검증
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
+          # 제출 동결 시작 시각(ISO 8601, 예: 2026-09-20T18:00:00+09:00). 비어 있으면 동결 전이다.
+          FREEZE_AT: ${{ vars.DEPLOY_FREEZE_AT }}
+          REASON: ${{ inputs.reason }}
+        # 최신 main은 명령이 업로드 직전에 git ls-remote로 확인한다.
+        run: >-
+          uv run python -m deliciousmap.ci production --dist dist --project "$PROJECT"
+          --event "$GITHUB_EVENT_NAME" --ref "$GITHUB_REF"
+          --freeze-at "$FREEZE_AT" --reason "$REASON" --record release.json
+      - name: 배포 기록 보존
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-${{ github.sha }}-${{ github.run_attempt }}
+          path: release.json
+          if-no-files-found: ignore

@@ -1,0 +1,38 @@
+from dataclasses import dataclass
+from pathlib import Path
+
+from deliciousmap.registry import Target
+
+
+@dataclass(frozen=True)
+class Paths:
+    repository: Path
+    raw_root: Path
+    data_root: Path
+    output_root: Path
+
+    def validate(self) -> None:
+        if self.raw_root.resolve().is_relative_to(self.repository.resolve()):
+            raise ValueError("raw-root must be outside the repository")
+
+    def city_dir(self, target: Target) -> Path:
+        base = self.data_root / target.city.slug
+        return base / "orgs" / target.org if target.org else base
+
+    def board_dir(self, target: Target, organization: str, board: str) -> Path:
+        """원본은 저장소 밖 raw-root 아래에 도시·기관·게시판으로 나누어 둔다."""
+        return self.raw_root / target.city.slug / organization / board
+
+    def original(self, target: Target, organization: str, board: str, name: str) -> Path:
+        return self.board_dir(target, organization, board) / name
+
+    def manual(self, target: Target, name: str) -> Path:
+        """사람 보정·상호 복원·업소 확인·비교 지정·미해결 원본 대조는 파일을 나눈다."""
+        if name not in {"classify", "restore", "geocode", "compare", "sources"}:
+            raise ValueError("unknown manual review input")
+        return self.data_root / "manual" / target.city.slug / f"{name}.jsonl"
+
+    def shared(self, name: str) -> Path:
+        if name not in {"headermap", "classify", "llm-budget"}:
+            raise ValueError("unknown shared cache")
+        return self.data_root / "_shared" / f"{name}.jsonl"

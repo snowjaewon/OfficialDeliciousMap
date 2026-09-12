@@ -7,6 +7,10 @@
 data/raw/
 dist/
 *.zip
+# 스키마 bump 때 교체 전 산출물을 보존한 사본. 커밋한 판은 git 이력에 이미 있다
+data/*/history/
+# 공통 예산 집행 잠금. 실행 중에만 존재한다
+data/_shared/*.lock
 
 # Python
 __pycache__/
@@ -15,6 +19,8 @@ __pycache__/
 venv/
 .pytest_cache/
 .ruff_cache/
+.mypy_cache/
+.tools/
 *.egg-info/
 
 # Node (사이트 빌드 도구를 쓰게 될 경우)

@@ -1,0 +1,48 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "deliciousmap"
+version = "0.1.0"
+description = "Municipal expense pipeline contracts and CLI"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "openpyxl>=3.1,<4",
+    "pdfplumber>=0.11,<1",
+    "pydantic>=2.12,<3",
+    "pyproj>=3.7,<4",
+    "xlrd>=2.0.2,<3",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.19,<2",
+    "pytest>=9,<10",
+    "ruff>=0.15,<1",
+    "xlwt>=1.3,<2",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+# 엑셀 읽기 라이브러리는 타입 정보를 싣지 않는다. grid 모듈 안에서만 쓰고 셀 값을 계약 타입으로 옮긴다.
+module = ["xlrd", "xlrd.*", "xlwt", "openpyxl", "openpyxl.*"]
+ignore_missing_imports = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/deliciousmap"]
