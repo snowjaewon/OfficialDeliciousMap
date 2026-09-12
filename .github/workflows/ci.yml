@@ -64,6 +64,8 @@ jobs:
           name: site-${{ github.sha }}
           path: dist/
           if-no-files-found: error
+          # 재실행하면 같은 커밋의 새 build로 바꿔 둔다. 배포 job은 같은 시도의 것을 받는다.
+          overwrite: true
 
   preview:
     name: preview
@@ -96,7 +98,11 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
           BRANCH: pr-${{ github.event.pull_request.number }}
-        run: uv run python -m deliciousmap.ci preview --dist dist --project "$PROJECT" --branch "$BRANCH"
+          # build한 커밋(GITHUB_SHA)은 PR의 임시 merge commit이라 PR head를 함께 남긴다.
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: >-
+          uv run python -m deliciousmap.ci preview --dist dist --project "$PROJECT"
+          --branch "$BRANCH" --head "$HEAD_SHA"
 
   production:
     name: production
@@ -140,11 +146,11 @@ jobs:
           # 제출 동결 시작 시각(ISO 8601, 예: 2026-09-20T18:00:00+09:00). 비어 있으면 동결 전이다.
           FREEZE_AT: ${{ vars.DEPLOY_FREEZE_AT }}
           REASON: ${{ inputs.reason }}
-        run: |
-          main_head="$(git ls-remote origin refs/heads/main | cut -f1)"
-          uv run python -m deliciousmap.ci production --dist dist --project "$PROJECT" \
-            --event "$GITHUB_EVENT_NAME" --ref "$GITHUB_REF" --main-head "$main_head" \
-            --freeze-at "$FREEZE_AT" --reason "$REASON" --record release.json
+        # 최신 main은 명령이 업로드 직전에 git ls-remote로 확인한다.
+        run: >-
+          uv run python -m deliciousmap.ci production --dist dist --project "$PROJECT"
+          --event "$GITHUB_EVENT_NAME" --ref "$GITHUB_REF"
+          --freeze-at "$FREEZE_AT" --reason "$REASON" --record release.json
       - name: 배포 기록 보존
         if: always()
         uses: actions/upload-artifact@v7
