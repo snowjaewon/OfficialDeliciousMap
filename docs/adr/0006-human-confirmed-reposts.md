@@ -63,3 +63,6 @@ status: accepted
   선행 산출물의 해시도 담지 않는다. 입력을 고치면 `parse`부터 다시 돌린다.
 - 확정으로 합친 레코드도 `classify` 이후 단계에서 다른 레코드와 똑같이 다뤄진다. 사람이 확정했다는
   사실은 레코드가 아니라 `repeats.jsonl`과 `parse.json`의 집계에 남는다.
+- 화면의 자료 범위가 확정으로 합친 수와 별개 지출로 확정해 남긴 수를 낸다
+  ([#70](https://github.com/snowjaewon/OfficialDeliciousMap/issues/70)이 낸 줄에 이어 붙인다).
+  확정이 없으면 그 말은 내지 않는다 — 하지 않은 검토의 0건은 군말이다.
