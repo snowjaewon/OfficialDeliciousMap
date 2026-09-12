@@ -418,6 +418,7 @@ test("한 긴 프레임에 네이버와 애플리케이션 작업이 함께 있�
   assert.deepEqual(summary.source.application, { count: 1, total_ms: 60, maximum_ms: 60 });
   assert.deepEqual(summary.source.naver_sdk, { count: 1, total_ms: 60, maximum_ms: 60 });
   assert.equal(summary.source.other.count, 0);
+  assert.equal(summary.source.dominant, "mixed");
 });
 
 test("20회 trace 중 하나라도 끊기면 성능 판정은 미달이다", () => {

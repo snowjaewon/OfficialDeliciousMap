@@ -62,7 +62,7 @@
 | `.venv/Scripts/pytest.exe --basetemp <저장소 밖 임시 경로>` | 422 passed, 55.12초 |
 | `node --test tests/site_behavior.test.js tests/measure_map.test.js` | 35 passed |
 | `git diff --check` | 통과 |
-| `uv run python -m deliciousmap --help` | 종료 0 |
+| `.venv/Scripts/python.exe -m deliciousmap --help` | 종료 0 |
 
 하네스의 요약·판정, 모의 모바일 조건, 프레임 간격 통계, 결과 표, 내장 정적 서버(재검증·304·
 gzip·루트 밖 경로 거부)는 `node:test`로 검증한다. Chrome을 CDP로 움직이는 부분은 단위 테스트가
@@ -188,7 +188,8 @@ gzip·루트 밖 경로 거부)는 `node:test`로 검증한다. Chrome을 CDP로
 (총 1,044.4ms), 드래그는 네이버 SDK 6건(362.2ms)과 애플리케이션 8건(494ms)이 겹친
 구간으로 귀속됐다. 이는 URL이 포함된 스크립트 작업의 원인 단서이지 지도 SDK 전체의
 책임을 증명하지 않는다. 한 긴 프레임 안에 두 출처의 긴 작업이 겹치면 자식 작업을 출처별로
-나눠 세어 한쪽 출처로 임의 귀속하지 않는다. 데스크톱의 끊김과 모바일 장부 스크롤의 멈춤은 긴 작업 URL
+나눠 세어 한쪽 출처로 임의 귀속하지 않으며, 합계가 같으면 `dominant`도 `mixed`로 남긴다.
+데스크톱의 끊김과 모바일 장부 스크롤의 멈춤은 긴 작업 URL
 근거가 없어 미분류로 남겼으며, 다음 개선에서 별도 프로파일링이 필요하다.
 
 ### 원인 진단

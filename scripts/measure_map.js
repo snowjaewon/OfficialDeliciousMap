@@ -270,9 +270,15 @@ function sourceSummary(events, allEvents = events) {
     bucket.total_ms = roundMilliseconds(bucket.total_ms + duration);
     bucket.maximum_ms = Math.max(bucket.maximum_ms ?? 0, roundMilliseconds(duration));
   }
-  const dominant = Object.entries(summary)
-    .filter(([, bucket]) => bucket.count > 0)
-    .sort(([, left], [, right]) => right.total_ms - left.total_ms)[0]?.[0] ?? null;
+  const populated = Object.entries(summary).filter(([, bucket]) => bucket.count > 0);
+  const maximumTotal = Math.max(0, ...populated.map(([, bucket]) => bucket.total_ms));
+  const dominantSources = populated.filter(([, bucket]) => bucket.total_ms === maximumTotal);
+  const dominant =
+    dominantSources.length === 0
+      ? null
+      : dominantSources.length === 1
+        ? dominantSources[0][0]
+        : "mixed";
   return { ...summary, dominant };
 }
 
