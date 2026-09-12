@@ -78,7 +78,9 @@ uv run python -m deliciousmap geocode --city seoul --retry-failed
 - `parse`: xls·xlsx(ISO Strict 포함)를 읽는다. 모든 표가 통과한 원본만 레코드를 낸다. 원본마다
   후보·범위 밖 건수, 분모에서 뺀 행의 위치·종류, 0원·음수 레코드의 위치, 미해결 사유를
   `parse.json`의 `sources`에 남긴다. 목적·상호의 개인정보를 지우고, 경조사 수령인처럼 상호 칸에
-  사람 이름이 적힌 경우 `개인(성명 비공개)`로 가린다.
+  사람 이름이 적힌 경우 `개인(성명 비공개)`로 가린다. 부서가 누적 파일·정정본으로 다시 올려
+  여러 원본에 반복된 지출은 [ADR-0003](docs/adr/0003-merge-repeated-reposts.md)의 기준으로 합치고,
+  가를 근거가 없는 묶음은 남긴 뒤 그 수를 `parse.json`의 `repeated_expenses`에 싣는다.
 - `classify`: 사람 보정 → 도시 무관 LLM 캐시 → Gemini 순. 호출 실패는 판단 보류로 두고 캐시에 남기지 않는다.
 
 PDF·HWP·원본 묶음 ZIP과 전량 추출 폴백은 파일 단위 미해결로 남으며 후속 작업이다.
@@ -241,7 +243,7 @@ Node 기반 빌드 도구를 쓰지 않는다. 폐업으로 확인된 후보도 
 공통 캐시는 `data/_shared/`에 둔다. 사람 검토 입력은 의미별로 나누어
 `data/manual/<city>/`의 `classify.jsonl`(사람 보정), `restore.jsonl`(상호 복원),
 `geocode.jsonl`(업소 확인)에 둔다. 자세한 내용은 [상호 복원](docs/restoration.md)에 있다.
-단계 메타데이터 파일은 `<stage>.json`이며 `schema_version`(fetch는 3, geocode·closure는 4,
+단계 메타데이터 파일은 `<stage>.json`이며 `schema_version`(fetch·parse는 3, geocode·closure는 4,
 build는 6, 나머지는 1), `city`, `org`, 입력 해시인
 `dependencies`, 실제 출력인 `payload`를 가진다. `fetch.json`은 받은 원본의 `sources` 외에
 게시판이 링크했지만 받지 못한 원본을 `missing`(기관·게시판·게시글 주소·파일 이름·사유)에 남긴다.
@@ -254,7 +256,7 @@ build는 6, 나머지는 1), `city`, `org`, 입력 해시인
 표준 CSV 인용을 사용하며 레코드 순서를 유지한다.
 
 ```text
-record_id,spent_on,organization,department,merchant,purpose,amount_krw,source_hash,source_location
+record_id,spent_on,organization,department,merchant,purpose,amount_krw,source_hash,source_location,repeats
 ```
 
 | 필드 | 표현 |
@@ -266,7 +268,8 @@ record_id,spent_on,organization,department,merchant,purpose,amount_krw,source_ha
 | `merchant` | 정규화된 비어 있지 않은 상호 |
 | `amount_krw` | 원 단위 유한 Decimal 문자열. 0·음수 허용; 부동소수점으로 합산하지 않음 |
 | `source_hash` | 원본 SHA-256 소문자 16진수 64자 |
-| `source_location` | 비어 있지 않은 표/행·카드 위치(예: `sheet1:R2`) |
+| `source_location` | 공백 없는 표/행·카드 위치(예: `sheet1:R2`) |
+| `repeats` | 누적 재게시로 합친 레코드가 겹친 원본들. `<해시>:<위치>`를 공백으로 나열하며 합치지 않았으면 빈 값 |
 
 헤더 매핑은 `layout`, 1부터 시작하는 `header_rows`·`data_start_row`, `year_hint`,
 0부터 시작하는 열 번호인 `columns`, 원 단위 변환 배수 `amount_multiplier`를 가진다.

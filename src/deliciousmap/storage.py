@@ -34,6 +34,7 @@ from deliciousmap.contracts import (
     ParseOutput,
     ProviderCandidates,
     Record,
+    RecordOrigin,
     RestorationProposal,
     ScopedReview,
     SourceRef,
@@ -55,6 +56,7 @@ RECORD_FIELDS = (
     "amount_krw",
     "source_hash",
     "source_location",
+    "repeats",
 )
 
 OUTPUT_MODELS: dict[str, type[Contract]] = {
@@ -67,9 +69,9 @@ OUTPUT_MODELS: dict[str, type[Contract]] = {
     "build": BuildOutput,
 }
 
-# fetch는 출처·유실에 게시일·제목을 담은 v3, geocode·closure는 조회 요청 기록을 포함하는 v4,
-# build는 좌표 출처·장부 사유를 담은 v6다.
-SCHEMA_VERSIONS = {"fetch": 3, "parse": 2, "geocode": 4, "closure": 4, "build": 6}
+# fetch는 출처·유실에 게시일·제목을 담은 v3, parse는 누적 재게시 병합을 담은 v3,
+# geocode·closure는 조회 요청 기록을 포함하는 v4, build는 좌표 출처·장부 사유를 담은 v6다.
+SCHEMA_VERSIONS = {"fetch": 3, "parse": 3, "geocode": 4, "closure": 4, "build": 6}
 
 # 제공자 조회 캐시. 확정 업소 판정 이력(geocode-history-v2.jsonl)과 분리해 둔다.
 LOOKUP_CACHE = "geocode-lookup-v1.jsonl"
@@ -148,12 +150,26 @@ def require_size(content: str) -> None:
         raise ValueError("artifact exceeds 20MB; partition before writing")
 
 
+def dump_repeats(origins: tuple[RecordOrigin, ...]) -> str:
+    """`repeats` 칸. 원본 해시와 행 위치를 `:`로 잇고 공백으로 나열한다. 위치에는 공백이 없다."""
+    return " ".join(f"{item.source_hash}:{item.location}" for item in origins)
+
+
+def load_repeats(raw: str) -> tuple[RecordOrigin, ...]:
+    return tuple(
+        RecordOrigin(source_hash=digest, location=location)
+        for token in raw.split()
+        for digest, _, location in (token.partition(":"),)
+    )
+
+
 def write_records(path: Path, records: tuple[Record, ...]) -> None:
     stream = io.StringIO(newline="")
     writer = csv.DictWriter(stream, fieldnames=RECORD_FIELDS, lineterminator="\n")
     writer.writeheader()
     for record in records:
-        writer.writerow(Record.model_validate(record).model_dump(mode="json"))
+        row = Record.model_validate(record).model_dump(mode="json")
+        writer.writerow({**row, "repeats": dump_repeats(record.repeats)})
     write_text(path, stream.getvalue())
 
 
@@ -166,7 +182,9 @@ def read_records(path: Path) -> tuple[Record, ...]:
         for row in reader:
             if not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", row["spent_on"] or ""):
                 raise ValueError("record date must use YYYY-MM-DD")
-            records.append(Record.model_validate(row))
+            records.append(
+                Record.model_validate({**row, "repeats": load_repeats(row["repeats"] or "")})
+            )
         return tuple(records)
 
 

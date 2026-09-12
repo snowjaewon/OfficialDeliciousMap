@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from deliciousmap.contracts import Record
+from deliciousmap.contracts import Record, RecordOrigin
 from deliciousmap.storage import read_records, write_records
 
 
@@ -52,6 +52,11 @@ def test_record_csv_round_trip_preserves_values_order_and_utf8(tmp_path: Path) -
             amount_krw=Decimal("-10"),
             source_hash="b" * 64,
             source_location="sheet1:R3",
+            # 누적 재게시로 합친 레코드는 겹친 원본을 모두 싣는다.
+            repeats=(
+                RecordOrigin(source_hash="c" * 64, location="sheet1:R9"),
+                RecordOrigin(source_hash="d" * 64, location="sheet2:R11"),
+            ),
         ),
     )
     path = tmp_path / "한글 경로" / "records.csv"
@@ -62,9 +67,14 @@ def test_record_csv_round_trip_preserves_values_order_and_utf8(tmp_path: Path) -
     assert (
         content.decode("utf-8").splitlines()[0]
         == "record_id,spent_on,organization,department,merchant,purpose,"
-        "amount_krw,source_hash,source_location"
+        "amount_krw,source_hash,source_location,repeats"
     )
     assert "1200.50" in content.decode("utf-8")
+    assert (
+        content.decode("utf-8")
+        .splitlines()[-1]
+        .endswith(f"{'c' * 64}:sheet1:R9 {'d' * 64}:sheet2:R11")
+    )
 
 
 @pytest.mark.parametrize("invalid_date", ["2026-02-30", "20260102", "1767312000"])

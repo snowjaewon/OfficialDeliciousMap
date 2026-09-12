@@ -6,8 +6,14 @@ from pathlib import Path
 
 import pytest
 
-from deliciousmap.contracts import HeaderMap, SourceRef
-from deliciousmap.extract import ValidationFailed, extract, parse_date
+from deliciousmap.contracts import (
+    HeaderMap,
+    Record,
+    RecordOrigin,
+    RepeatedExpenses,
+    SourceRef,
+)
+from deliciousmap.extract import ValidationFailed, extract, merge_repeats, parse_date
 from deliciousmap.grid import Cell, Table
 
 SOURCE = SourceRef(
@@ -180,3 +186,128 @@ def test_each_section_is_checked_against_its_own_total() -> None:
 )
 def test_dates_seen_in_real_originals(value: str, expected: date) -> None:
     assert parse_date(value) == expected
+
+
+def original(number: int, posted: str) -> SourceRef:
+    """게시일이 다른 합성 원본. 해시는 번호로 구별한다."""
+    return SOURCE.model_copy(
+        update={
+            "source_hash": f"{number:x}" * 64,
+            "path": Path(f"gwangju/gwangju-city/expenses/{number}-1.xls"),
+            "posted": date.fromisoformat(posted),
+        }
+    )
+
+
+def spent(
+    source: SourceRef, row: int, day: int, merchant: str, amount: int, purpose: str = "간담회"
+) -> Record:
+    return Record(
+        record_id=f"{source.source_hash[:16]}-sheet1-R{row}",
+        spent_on=date(2026, 1, day),
+        organization=source.organization,
+        department="합성과",
+        merchant=merchant,
+        purpose=purpose,
+        amount_krw=Decimal(amount),
+        source_hash=source.source_hash,
+        source_location=f"sheet1:R{row}",
+    )
+
+
+def test_cumulative_repost_keeps_the_first_publication_and_lists_the_later_original() -> None:
+    """누적 파일이 앞 파일을 덮으면(포함) 반복된 지출은 한 건이다. 출처는 모두 남는다."""
+    month, quarter = original(1, "2026-02-27"), original(2, "2026-04-15")
+    records = (
+        spent(month, 4, 5, "합성 식당", 62000),
+        spent(quarter, 4, 5, "합성 식당", 62000),
+        spent(quarter, 5, 20, "합성 카페", 9000),
+    )
+    merged = merge_repeats(records, (month, quarter))
+    assert [record.record_id for record in merged.records] == [
+        records[0].record_id,
+        records[2].record_id,
+    ]
+    assert merged.records[0].repeats == (
+        RecordOrigin(source_hash=quarter.source_hash, location="sheet1:R4"),
+    )
+    assert merged.tally == RepeatedExpenses(merged_expenses=1, merged_records=1)
+
+
+def test_rewritten_purposes_do_not_keep_the_same_expense_twice() -> None:
+    """재게시는 집행목적 표기를 다시 쓴다. 목적은 동일성 키가 아니다."""
+    month, quarter = original(1, "2026-02-27"), original(2, "2026-04-15")
+    records = (
+        spent(month, 4, 5, "합성 식당", 62000, "현안 논의"),
+        spent(month, 5, 6, "합성 카페", 9000, "직원 격려"),
+        spent(quarter, 4, 5, "합성 식당", 62000, "현안 논의 간담회 비용 집행"),
+        spent(quarter, 5, 6, "합성 카페", 9000, "직원 격려 다과 구입"),
+        spent(quarter, 6, 20, "합성 국밥", 27000),
+    )
+    merged = merge_repeats(records, (month, quarter))
+    assert [record.source_hash for record in merged.records] == [
+        month.source_hash,
+        month.source_hash,
+        quarter.source_hash,
+    ]
+    assert merged.tally == RepeatedExpenses(merged_expenses=2, merged_records=2)
+
+
+def test_repetition_inside_one_original_is_not_reduced() -> None:
+    """한 장부가 같은 값을 두 번 적었으면 두 번 썼다고 말한 것이다(실측: 경조사 5만 원 두 건)."""
+    source = original(1, "2026-02-27")
+    records = (
+        spent(source, 4, 7, "개인(성명 비공개)", 50000, "직원 부의금 지급"),
+        spent(source, 5, 7, "개인(성명 비공개)", 50000, "직원 부의금 지급"),
+    )
+    merged = merge_repeats(records, (source,))
+    assert merged.records == records
+    assert merged.tally == RepeatedExpenses()
+
+
+def test_one_shared_expense_without_containment_is_left_alone_and_counted() -> None:
+    """겹친 지출이 1건뿐이고 포함도 아니면 재게시인지 별개 지출인지 가를 근거가 없다."""
+    first, second = original(1, "2026-02-27"), original(2, "2026-03-06")
+    records = (
+        spent(first, 4, 5, "합성 식당", 62000),
+        spent(first, 5, 6, "합성 카페", 9000),
+        spent(second, 4, 5, "합성 식당", 62000),
+        spent(second, 5, 7, "합성 국밥", 27000),
+    )
+    merged = merge_repeats(records, (first, second))
+    assert merged.records == records
+    assert all(record.repeats == () for record in merged.records)
+    assert merged.tally == RepeatedExpenses(unmerged_expenses=1, unmerged_records=1)
+
+
+def test_a_repost_that_lists_the_expense_twice_keeps_both() -> None:
+    """겹친 원본들 중 한 원본이 적은 최대 건수를 남긴다. 재게시가 건수를 줄이지 않는다."""
+    first, later = original(1, "2026-02-27"), original(2, "2026-04-15")
+    records = (
+        spent(first, 4, 5, "개인(성명 비공개)", 50000),
+        spent(first, 5, 6, "합성 카페", 9000),
+        spent(later, 4, 5, "개인(성명 비공개)", 50000),
+        spent(later, 5, 5, "개인(성명 비공개)", 50000),
+        spent(later, 6, 6, "합성 카페", 9000),
+    )
+    merged = merge_repeats(records, (first, later))
+    assert [record.source_location for record in merged.records] == [
+        "sheet1:R5",
+        "sheet1:R4",
+        "sheet1:R5",
+    ]
+    assert [record.source_hash for record in merged.records] == [
+        first.source_hash,
+        later.source_hash,
+        later.source_hash,
+    ]
+    assert merged.tally == RepeatedExpenses(merged_expenses=2, merged_records=2)
+
+
+def test_other_departments_and_organizations_are_never_the_same_expense() -> None:
+    first, second = original(1, "2026-02-27"), original(2, "2026-03-06")
+    other = spent(second, 4, 5, "합성 식당", 62000).model_copy(update={"department": "합성2과"})
+    records = (spent(first, 4, 5, "합성 식당", 62000), other)
+    merged = merge_repeats(records, (first, second))
+    assert merged.records == records
+    assert merged.tally == RepeatedExpenses()

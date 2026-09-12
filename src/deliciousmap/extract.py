@@ -5,6 +5,7 @@
 
 import re
 import unicodedata
+from collections import Counter
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
@@ -16,6 +17,8 @@ from deliciousmap.contracts import (
     HeaderMap,
     ParseOutput,
     Record,
+    RecordOrigin,
+    RepeatedExpenses,
     SourceRef,
     SourceReport,
     TotalCheck,
@@ -200,11 +203,128 @@ def parse_sources(
             if "ambiguous" in checks
             else "absent",
         )
+    merged = merge_repeats(tuple(records), sources)
+    kept = Counter(record.source_hash for record in merged.records)
     return ParseOutput(
-        records=tuple(records),
-        empty_reason=None if records else "no records in the reporting period",
-        sources=tuple(reports.values()),
+        records=merged.records,
+        empty_reason=None if merged.records else "no records in the reporting period",
+        sources=tuple(
+            item
+            if item.status == "unresolved"
+            else item.model_copy(
+                update={
+                    "records": kept[item.source_hash],
+                    "repeated": item.records - kept[item.source_hash],
+                }
+            )
+            for item in reports.values()
+        ),
         reporting_period=f"{period.START.isoformat()}/{period.END.isoformat()}",
+        repeated_expenses=merged.tally,
+    )
+
+
+Expense = tuple[str, str, date, str, Decimal]
+
+
+@dataclass(frozen=True)
+class Merge:
+    """누적 재게시를 합친 결과와 그 집계."""
+
+    records: tuple[Record, ...]
+    tally: RepeatedExpenses
+
+
+def merge_repeats(records: tuple[Record, ...], sources: tuple[SourceRef, ...]) -> Merge:
+    """원본을 넘어 반복된 지출을 한 건으로 모은다([ADR-0003](
+    ../../docs/adr/0003-merge-repeated-reposts.md)).
+
+    누적 파일·정정본은 이미 공개한 기간을 다시 싣는다. 두 원본이 같은 장부를 다시 실은 관계일
+    때만 합치고, 가를 근거가 없는 묶음은 줄이지 않고 남긴 수를 집계에 싣는다.
+    """
+    order = {item.source_hash: (item.posted or date.max, item.source_hash) for item in sources}
+    position = {record.record_id: index for index, record in enumerate(records)}
+    carried: dict[str, Counter[Expense]] = {}
+    groups: dict[Expense, dict[str, list[Record]]] = {}
+    for record in records:
+        expense = _expense(record)
+        carried.setdefault(record.source_hash, Counter())[expense] += 1
+        groups.setdefault(expense, {}).setdefault(record.source_hash, []).append(record)
+    kept: list[Record] = []
+    tally = Counter[str]()
+    for found in groups.values():
+        hashes = sorted(found, key=lambda item: order.get(item, (date.max, item)))
+        dropped = 0
+        for component in _components(hashes, carried):
+            ranked = sorted(component, key=lambda item: order.get(item, (date.max, item)))
+            # 한 원본이 적은 최대 건수를 남기고, 같으면 가장 먼저 게시된 원본의 것을 남긴다.
+            first = max(ranked, key=lambda item: len(found[item]))
+            repeats = tuple(
+                RecordOrigin(source_hash=record.source_hash, location=record.source_location)
+                for item in ranked
+                if item != first
+                for record in found[item]
+            )
+            dropped += len(repeats)
+            kept.extend(_with_repeats(found[first], repeats))
+        # 한 묶음에 재게시 관계가 아닌 원본이 남아 있으면 가를 근거가 없어 남긴 것이다.
+        remaining = sum(len(found[item]) for item in hashes) - dropped
+        unmerged = remaining - max(len(found[item]) for item in hashes)
+        tally += Counter(
+            {
+                "merged_expenses": bool(dropped),
+                "merged_records": dropped,
+                "unmerged_expenses": bool(unmerged),
+                "unmerged_records": unmerged,
+            }
+        )
+    return Merge(
+        # 합치기 전 순서를 그대로 둔다. 레코드 차례가 원본·행 순서를 따르게 하기 위해서다.
+        records=tuple(sorted(kept, key=lambda record: position[record.record_id])),
+        tally=RepeatedExpenses(**tally),
+    )
+
+
+def _with_repeats(found: list[Record], repeats: tuple[RecordOrigin, ...]) -> list[Record]:
+    """겹친 출처는 남기는 첫 레코드에 붙인다. 한 원본이 같은 지출을 여러 번 적은 드문 경우다."""
+    if not repeats:
+        return found
+    return [found[0].model_copy(update={"repeats": repeats}), *found[1:]]
+
+
+def _components(hashes: list[str], carried: dict[str, Counter[Expense]]) -> list[list[str]]:
+    """재게시 관계로 이어진 원본끼리 묶는다. 관계는 두 원본씩 보고 이어 붙인다."""
+    components: list[list[str]] = []
+    for source in hashes:
+        joined = [source]
+        apart: list[list[str]] = []
+        for item in components:
+            if _reposted(carried, source, item):
+                joined += item
+            else:
+                apart.append(item)
+        components = [*apart, joined]
+    return components
+
+
+def _reposted(carried: dict[str, Counter[Expense]], source: str, component: list[str]) -> bool:
+    """두 원본이 같은 장부를 다시 실은 관계인지. 포함이거나 같은 지출을 2건 이상 함께 싣는다."""
+    return any(
+        not (carried[source] - carried[other])
+        or not (carried[other] - carried[source])
+        or sum((carried[source] & carried[other]).values()) >= 2
+        for other in component
+    )
+
+
+def _expense(record: Record) -> Expense:
+    """지출 하나의 동일성. 집행목적은 재게시가 다시 쓰므로 넣지 않는다(ADR-0003)."""
+    return (
+        record.organization,
+        record.department,
+        record.spent_on,
+        record.merchant,
+        record.amount_krw,
     )
 
 
