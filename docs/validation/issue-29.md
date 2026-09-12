@@ -209,23 +209,15 @@ JSON에 넣지 않았다.
 
 ## 닫기 전에 남은 것
 
-아래가 끝날 때까지 #29를 닫거나 완료로 표시하지 않는다. GitHub 이슈로 나누지 않았으므로 모두
-#29의 미완료 범위다.
+남은 완료 기준은 아래 후속 이슈로 나눴다(2026-09-12). 각 이슈가 끝나 결과가 이 문서에 기록될 때까지
+#29를 닫거나 완료로 표시하지 않는다.
 
-1. 6개 도시의 기관·게시판과 실제 수집·파싱, 정제 산출물 준비. 광주광역시청 하나만
-   [#51](https://github.com/snowjaewon/OfficialDeliciousMap/issues/51)에서 구현됐다.
-2. 광주 확정 마커가 늘어난 뒤([#73](https://github.com/snowjaewon/OfficialDeliciousMap/issues/73))
-   마커 밀집 구간을 다시 잰다.
-3. 모의 모바일 9개 시나리오 전부를 변동이 작은 호스트에서 다시 잰다. 충족 판정도 잠정이다.
-   개선 전후는 같은 호스트에서 번갈아 20회씩 잰다.
-4. 재방문에 셸을 캐시에서 먼저 내주는 서비스 워커 전략을 시도하고 같은 조건으로 전후를 잰다.
-   배포 뒤 옛 셸이 한 번 보이는 대가가 있으므로 변경할 때 그 판단도 남긴다.
-5. 피드백 미달이 네이버 SDK와 초기 렌더링 CPU 때문으로 확인되면 결정의 개선 수단 밖이다.
-   [결정 티켓](https://github.com/snowjaewon/OfficialDeliciousMap/issues/22)에서 기준이나 수단을 다시 정한다.
-6. 실제 Android Chrome·iPhone Safari 사용감을 기기·OS·브라우저·화면·주사율을 고정해 기록한다.
-   지도 마커를 직접 누르는 선택과 터치 입력도 이때 확인한다.
-7. 드래그·줌·스크롤을 브라우저 성능 기록으로 판정한다. 모의 모바일의 줌·드래그 끊김이 실제
-   기기에서 재현되는지 먼저 본다.
+| 후속 이슈 | 넘긴 범위 |
+| --- | --- |
+| [#75](https://github.com/snowjaewon/OfficialDeliciousMap/issues/75) | 6개 도시의 기관·게시판 수집과 정제 산출물. 광주광역시청은 [#51](https://github.com/snowjaewon/OfficialDeliciousMap/issues/51)에서 구현됐다 |
+| [#76](https://github.com/snowjaewon/OfficialDeliciousMap/issues/76) | 실제 Android Chrome·iPhone Safari 사용감. 지도 마커 직접 선택과 터치 입력 포함 |
+| [#77](https://github.com/snowjaewon/OfficialDeliciousMap/issues/77) | 조용한 호스트에서 모의 모바일 9개 시나리오 재측정(충족 판정 포함), 재방문 서비스 워커 캐시 우선 전략과 번갈아 잰 전후 비교, 준비된 도시와 [#73](https://github.com/snowjaewon/OfficialDeliciousMap/issues/73) 이후 마커 밀집 측정, 필요 시 [#22](https://github.com/snowjaewon/OfficialDeliciousMap/issues/22) 기준 재조정 |
+| [#78](https://github.com/snowjaewon/OfficialDeliciousMap/issues/78) | 드래그·줌·스크롤을 브라우저 성능 기록으로 판정 |
 
 ## 측정 절차
 
