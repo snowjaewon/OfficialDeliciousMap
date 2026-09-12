@@ -9,11 +9,13 @@ import pytest
 
 from deliciousmap.cli import main
 from deliciousmap.storage import write_text
+from tests import pdf
 from tests.gwangju import (
     ANSWER_B,
     FakeBoardTransport,
     FakeModel,
     Post,
+    bundle,
     city,
     gemini_reply,
     header_answer,
@@ -108,6 +110,13 @@ QUARTER = sheet_a(
     ("2025-12-30\n11:46", "합성 복집", "연말 업무 협의", 6.0, 117000.0),
 )
 MAY = sheet_b((datetime(2026, 5, 7, 12, 0), "업무 협의 간담회", 56000.0, "합성 한우촌"))
+# 실제 시의회 게시분 PDF 3개와 같은 모양. 헤더가 첫 줄이고 그 아래가 합계 행이다.
+PDF_PAGE = [
+    ("사용자", "사용일시", "사용장소", "집행목적", "대상인원수\n(명)", "사용금액\n(원)"),
+    ("", "계", "", "2 건", "", "155,000"),
+    ("합성\n전문위원", "2026-01-07 12:22", "합성식당", "현안 간담회", "4", "9 3,000"),
+    ("합성\n전문위원", "2026-01-08 12:22", "합성찻집", "의견공유 간담회", "6", "62,000"),
+]
 
 
 def test_verified_mappings_extract_every_candidate_and_reuse_the_header_cache(
@@ -345,14 +354,61 @@ def test_mapping_that_cannot_be_requested_leaves_the_original_unresolved(
 
 
 def test_unsupported_original_is_not_sent_to_the_model(tmp_path: Path, configured: None) -> None:
+    """엑셀 통합문서가 없는 ZIP 묶음. 안의 원본을 풀지 않고 사유와 함께 미해결로 남긴다."""
     record_spending(tmp_path)
-    (source,) = publish(tmp_path, ("집행내역.pdf", b"%PDF-1.7 synthetic"))
+    (source,) = publish(tmp_path, ("첨부 묶음.hwpx", bundle(("붙임.txt", b"synthetic"))))
     model = FakeModel()
     assert run(tmp_path, "headermap", model) == 0
     assert model.prompts == []
     assert payload(tmp_path, "headermap")["unresolved"] == [
         {"source_hash": source, "reason": "unsupported_format", "detail": ""}
     ]
+
+
+def test_unreadable_pdf_is_left_unresolved_without_a_model(
+    tmp_path: Path, configured: None
+) -> None:
+    """PDF는 읽는 형식이지만 구조가 깨지면 읽지 못한 것으로 남긴다. 모델에 넘기지 않는다."""
+    record_spending(tmp_path)
+    (source,) = publish(tmp_path, ("집행내역.pdf", b"%PDF-1.7 synthetic"))
+    model = FakeModel()
+    assert run(tmp_path, "headermap", model) == 0
+    assert model.prompts == []
+    assert payload(tmp_path, "headermap")["unresolved"] == [
+        {"source_hash": source, "reason": "unreadable", "detail": ""}
+    ]
+
+
+def test_pdf_original_is_mapped_and_extracted_like_a_workbook(
+    tmp_path: Path, configured: None
+) -> None:
+    """실제 원본 3개와 같은 모양의 PDF. 표 위치는 `table1`이고 합계 행도 그대로 대조한다."""
+    record_spending(tmp_path)
+    (source,) = publish(
+        tmp_path,
+        (
+            "집행내역.pdf",
+            pdf.document(PDF_PAGE),
+        ),
+    )
+    answer = header_answer(spent_on=1, merchant=2, purpose=3, amount=5, header=1)
+    model = FakeModel(headers=[answer])
+    assert run(tmp_path, "headermap", model) == 0
+    assert payload(tmp_path, "headermap")["unresolved"] == []
+    assert "시트: 1쪽" in model.calls("headermap")[0]
+
+    assert run(tmp_path, "parse") == 0
+    rows = records(tmp_path)
+    assert [(row["spent_on"], row["merchant"], row["amount_krw"]) for row in rows] == [
+        # 칸 안에서 글자가 벌어져 적힌 금액(`9 3,000`)도 하나의 금액으로 읽는다.
+        ("2026-01-07", "합성식당", "93000"),
+        ("2026-01-08", "합성찻집", "62000"),
+    ]
+    assert rows[0]["source_location"] == "table1:R3"
+    (report,) = payload(tmp_path, "parse")["sources"]
+    assert (report["status"], report["candidates"]) == ("parsed", 2)
+    assert report["total_check"] == "matched"
+    assert report["excluded"] == ["table1:R2 total"]
 
 
 @pytest.mark.parametrize(

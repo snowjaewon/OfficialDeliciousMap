@@ -8,13 +8,17 @@ from datetime import date, datetime, time
 from pathlib import Path
 
 import openpyxl
+import pdfplumber
 import xlrd
 
 # 셀 값. 엑셀의 날짜 셀만 datetime이고 숫자는 float, 나머지는 앞뒤 공백을 둔 문자열이다.
 Cell = str | float | datetime
+# 형식별 읽기가 내는 표 하나. 이름표(시트 이름 또는 나온 쪽)와 자르기 전의 행들이다.
+Block = tuple[str, list[tuple[Cell, ...]]]
 
 OLE2 = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
 ZIP = b"PK\x03\x04"
+PDF = b"%PDF-"
 # 연속 빈 행이 이만큼 이어지면 시트의 끝으로 본다.
 MAX_BLANK_RUN = 1_000
 # ISO/IEC 29500 Strict 이름공간과 같은 뜻의 Transitional 이름공간. 관계 유형은 접두어로 바뀐다.
@@ -37,7 +41,7 @@ STRICT_NAMESPACES = (
 
 
 class UnsupportedFormat(Exception):
-    """이번 구현이 읽지 않는 형식(HWP·HWPX·PDF·ZIP 묶음 등). 자동으로 LLM에 넘기지 않는다."""
+    """이번 구현이 읽지 않는 형식(HWP·HWPX·ZIP 묶음 등). 자동으로 LLM에 넘기지 않는다."""
 
 
 class UnreadableOriginal(Exception):
@@ -46,7 +50,7 @@ class UnreadableOriginal(Exception):
 
 @dataclass(frozen=True)
 class Table:
-    """시트 하나. `name`은 산출물의 위치 표기, `label`은 원본의 시트 이름이다."""
+    """표 하나. `name`은 산출물의 위치 표기, `label`은 원본의 시트 이름이나 나온 쪽이다."""
 
     name: str
     label: str
@@ -68,19 +72,25 @@ def text(value: Cell) -> str:
 
 
 def read_tables(path: Path) -> tuple[Table, ...]:
-    """시트마다 표 하나다. 내용이 없는 시트는 표가 아니며 뒤쪽의 빈 칸·빈 행은 잘라 낸다."""
+    """통합문서는 시트마다, PDF는 괘선으로 나뉜 표마다 표 하나다.
+
+    내용이 없는 시트·표는 표가 아니며 뒤쪽의 빈 칸·빈 행은 잘라 낸다. 위치 표기는
+    통합문서가 `sheet1`, PDF가 `table1`이고 `label`이 시트 이름 또는 나온 쪽을 남긴다.
+    """
     content = path.read_bytes()
     if content.startswith(OLE2):
-        sheets = _legacy(content)
+        prefix, blocks = "sheet", _legacy(content)
     elif content.startswith(ZIP):
-        sheets = _xlsx(content)
+        prefix, blocks = "sheet", _xlsx(content)
+    elif content.startswith(PDF):
+        prefix, blocks = "table", _pdf(content)
     else:
-        raise UnsupportedFormat("not an Excel workbook")
+        raise UnsupportedFormat("not a workbook or PDF")
     tables = []
-    for index, (label, rows) in enumerate(sheets, start=1):
+    for index, (label, rows) in enumerate(blocks, start=1):
         trimmed = _trim(rows)
         if trimmed:
-            tables.append(Table(f"sheet{index}", label, trimmed))
+            tables.append(Table(f"{prefix}{index}", label, trimmed))
     return tuple(tables)
 
 
@@ -93,7 +103,7 @@ def _trim(rows: list[tuple[Cell, ...]]) -> tuple[tuple[Cell, ...], ...]:
     return tuple(cut)
 
 
-def _legacy(content: bytes) -> list[tuple[str, list[tuple[Cell, ...]]]]:
+def _legacy(content: bytes) -> list[Block]:
     try:
         book = xlrd.open_workbook(file_contents=content)
     except xlrd.XLRDError:
@@ -113,7 +123,7 @@ def _legacy(content: bytes) -> list[tuple[str, list[tuple[Cell, ...]]]]:
     ]
 
 
-def _xlsx(content: bytes) -> list[tuple[str, list[tuple[Cell, ...]]]]:
+def _xlsx(content: bytes) -> list[Block]:
     try:
         with zipfile.ZipFile(io.BytesIO(content)) as archive:
             names = set(archive.namelist())
@@ -134,7 +144,7 @@ def _xlsx(content: bytes) -> list[tuple[str, list[tuple[Cell, ...]]]]:
         # 시트를 하나도 못 읽은 통합문서를 빈 원본으로 보고하지 않는다.
         raise UnreadableOriginal("workbook has no readable worksheet")
     try:
-        sheets = []
+        blocks: list[Block] = []
         for sheet in book.worksheets:
             rows: list[tuple[Cell, ...]] = []
             blank_run = 0
@@ -145,11 +155,32 @@ def _xlsx(content: bytes) -> list[tuple[str, list[tuple[Cell, ...]]]]:
                 if blank_run > MAX_BLANK_RUN:
                     break
                 rows.append(cells)
-            sheets.append((sheet.title, rows))
+            blocks.append((sheet.title, rows))
         book.close()
     except Exception:
         raise UnreadableOriginal("workbook could not be read") from None
-    return sheets
+    return blocks
+
+
+def _pdf(content: bytes) -> list[Block]:
+    """괘선으로 칸이 나뉜 표를 격자로 옮긴다. 셀 값은 모두 글자이며 숫자로 바꾸지 않는다.
+
+    글자 층이 없는 스캔본이나 괘선 없는 안내문은 표가 나오지 않는다. 그때는 표 0개로
+    돌려 미해결로 남기며, 집행 없음으로 바꾸지 않는다.
+    """
+    try:
+        with pdfplumber.open(io.BytesIO(content)) as document:
+            return [
+                (
+                    f"{page.page_number}쪽",
+                    [tuple("" if cell is None else cell for cell in row) for row in rows],
+                )
+                for page in document.pages
+                for rows in page.extract_tables()
+            ]
+    except Exception:
+        # 암호가 걸렸거나 구조가 깨진 PDF. 원본 내용은 사유에 담지 않는다.
+        raise UnreadableOriginal("PDF could not be read") from None
 
 
 def _transitional(content: bytes) -> bytes:
