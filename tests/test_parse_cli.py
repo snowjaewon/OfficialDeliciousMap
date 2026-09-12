@@ -25,6 +25,7 @@ from tests.gwangju import (
 )
 
 DATA = Path("저장소") / "data"
+ORG = "gwangju-city"
 
 
 def record_spending(root: Path, amount: str = "0.35") -> None:
@@ -47,13 +48,18 @@ def record_spending(root: Path, amount: str = "0.35") -> None:
 
 
 def run(
-    root: Path, stage: str, model: FakeModel | None = None, board: FakeBoardTransport | None = None
+    root: Path,
+    stage: str,
+    model: FakeModel | None = None,
+    board: FakeBoardTransport | None = None,
+    org: str | None = None,
 ) -> int:
     return main(
         [
             stage,
             "--city",
             "gwangju",
+            *(["--org", org] if org else []),
             "--raw-root",
             str(root / "외부 원본"),
             "--data-root",
@@ -67,8 +73,9 @@ def run(
     )
 
 
-def payload(root: Path, stage: str) -> dict:
-    path = root / DATA / "gwangju" / f"{stage}.json"
+def payload(root: Path, stage: str, org: str | None = None) -> dict:
+    base = root / DATA / "gwangju"
+    path = (base / "orgs" / org if org else base) / f"{stage}.json"
     return json.loads(path.read_text(encoding="utf-8"))["payload"]
 
 
@@ -82,7 +89,9 @@ def ledger(root: Path) -> list[dict]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
 
 
-def publish(root: Path, *files: tuple[str, bytes], department: str = "합성과") -> list[str]:
+def publish(
+    root: Path, *files: tuple[str, bytes], department: str = "합성과", org: str | None = None
+) -> list[str]:
     """게시글마다 원본 하나를 올리고 fetch한다. 원본 해시를 게시 순서대로 돌려준다."""
     posts = tuple(
         Post(
@@ -94,8 +103,8 @@ def publish(root: Path, *files: tuple[str, bytes], department: str = "합성과"
         )
         for index, file in enumerate(files)
     )
-    assert run(root, "fetch", board=FakeBoardTransport(posts)) == 0
-    return [item["source_hash"] for item in payload(root, "fetch")["sources"]]
+    assert run(root, "fetch", board=FakeBoardTransport(posts), org=org) == 0
+    return [item["source_hash"] for item in payload(root, "fetch", org=org)["sources"]]
 
 
 QUARTER = sheet_a(
@@ -521,3 +530,93 @@ def test_a_parse_artifact_from_the_previous_schema_asks_for_a_rerun(
 
     assert run(tmp_path, "classify") == 1
     assert "cause=regeneration-required" in capsys.readouterr().err
+
+
+def review(root: Path, *sources: str, city: str = "gwangju", organization: str = ORG) -> None:
+    """미해결 원본을 전수로 대조하고 남긴 기록. 원본마다 한 줄이다."""
+    write_text(
+        root / DATA / "manual" / city / "sources.jsonl",
+        "".join(
+            json.dumps(
+                {
+                    "city": city,
+                    "organization": organization,
+                    "source_hash": source,
+                    "finding": "merchant_blank",
+                    "candidates": 3,
+                    "rows": ["sheet1:R4"],
+                    "evidence": "원본의 사용장소 칸이 비어 있다(합성)",
+                    "confirmed_by": "합성 검토자",
+                },
+                ensure_ascii=False,
+            )
+            + "\n"
+            for source in sources
+        ),
+    )
+
+
+def test_source_review_keeps_an_unresolved_original_and_its_reason(
+    tmp_path: Path, configured: None
+) -> None:
+    """상호 칸이 빈 지출이 있는 원본. 사람이 전수로 보고 남겨도 장부의 사유는 그대로다."""
+    record_spending(tmp_path)
+    sheet = sheet_a(("2026-01-05", "", "협의", 4.0, 62000.0), total=False)
+    (source,) = publish(tmp_path, ("1분기.xls", workbook(sheet)))
+    assert run(tmp_path, "headermap", FakeModel(headers=[header_answer(), header_answer()])) == 0
+    review(tmp_path, source)
+    assert run(tmp_path, "parse") == 0
+    (report,) = payload(tmp_path, "parse")["sources"]
+    assert (report["status"], report["reason"], report["detail"]) == (
+        "unresolved",
+        "validation_failed",
+        "sheet1:R4 merchant",
+    )
+
+
+def test_source_review_for_an_original_that_now_parses_is_rejected(
+    tmp_path: Path, configured: None
+) -> None:
+    """코드가 읽게 된 원본에 낡은 보류 기록이 남으면 조용히 지나가지 않는다."""
+    record_spending(tmp_path)
+    (source,) = publish(tmp_path, ("1분기.xls", workbook(QUARTER)))
+    assert run(tmp_path, "headermap", FakeModel(headers=[header_answer()])) == 0
+    review(tmp_path, source)
+    assert run(tmp_path, "parse") == 1
+
+
+def test_source_review_from_another_city_is_rejected(tmp_path: Path, configured: None) -> None:
+    record_spending(tmp_path)
+    sheet = sheet_a(("2026-01-05", "", "협의", 4.0, 62000.0), total=False)
+    (source,) = publish(tmp_path, ("1분기.xls", workbook(sheet)))
+    assert run(tmp_path, "headermap", FakeModel(headers=[header_answer(), header_answer()])) == 0
+    review(tmp_path, source)
+    path = tmp_path / DATA / "manual" / "gwangju" / "sources.jsonl"
+    write_text(path, path.read_text(encoding="utf-8").replace('"gwangju"', '"busan"', 1))
+    assert run(tmp_path, "parse") == 1
+
+
+def test_a_review_for_another_organization_is_left_to_that_organization(
+    tmp_path: Path, configured: None
+) -> None:
+    """기관을 좁혀 돌리면 그 기관의 기록만 본다. 다른 기관의 보류 기록은 이 실행의 소관이 아니다."""
+    record_spending(tmp_path)
+    (source,) = publish(tmp_path, ("1분기.xls", workbook(QUARTER)), org=ORG)
+    assert run(tmp_path, "headermap", FakeModel(headers=[header_answer()]), org=ORG) == 0
+    review(tmp_path, source, organization="합성 다른 기관")
+    assert run(tmp_path, "parse", org=ORG) == 0
+
+
+def test_the_same_original_cannot_be_left_twice_with_different_reasons(
+    tmp_path: Path, configured: None
+) -> None:
+    """한 원본에 서로 다른 사유의 기록이 둘이면 어느 쪽이 장부의 사유인지 알 수 없다."""
+    record_spending(tmp_path)
+    sheet = sheet_a(("2026-01-05", "", "협의", 4.0, 62000.0), total=False)
+    (source,) = publish(tmp_path, ("1분기.xls", workbook(sheet)))
+    assert run(tmp_path, "headermap", FakeModel(headers=[header_answer(), header_answer()])) == 0
+    review(tmp_path, source, source)
+    path = tmp_path / DATA / "manual" / "gwangju" / "sources.jsonl"
+    both = path.read_text(encoding="utf-8").replace("merchant_blank", "total_mismatch", 1)
+    write_text(path, both)
+    assert run(tmp_path, "parse") == 1
