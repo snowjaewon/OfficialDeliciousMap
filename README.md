@@ -84,7 +84,8 @@ uv run python -m deliciousmap geocode --city seoul --retry-failed
 - `classify`: 사람 보정 → 도시 무관 LLM 캐시 → Gemini 순. 호출 실패는 판단 보류로 두고 캐시에 남기지 않는다.
 
 PDF·HWP·원본 묶음 ZIP과 전량 추출 폴백은 파일 단위 미해결로 남으며 후속 작업이다.
-다른 도시·기관, 인허가 전량 수집·폐업 대조, 실데이터 지도 성능 검증·배포도 후속 작업이다.
+다른 도시·기관, 인허가 전량 수집·폐업 대조, 실데이터 지도 성능 검증도 후속 작업이다.
+배포는 [CI·배포](#ci배포)에 있다.
 
 조회 키는 `.env`에서 읽는다. 네이버 지역검색은 `NAVER_SEARCH_CLIENT_ID`·`NAVER_SEARCH_CLIENT_SECRET`,
 인허가 조회서비스는 `DATA_GO_KR_KEY`다. 키가 없는 제공자는 조회하지 않고, 모두 없으면 준비된 후보
@@ -327,7 +328,8 @@ JSON 객체의 키와 줄의 `(key, revision)`을 정렬하며, 이력의 기존
 분할을 요구하며 실패한다. 추가형 이력만 예외로, 이번 배치가 마지막 조각에 들어가지 않으면 그
 조각을 그대로 닫고 `<이름>.002.<확장자>`부터 세 자리 번호를 붙인 다음 조각을 연다. 앞 조각은 다시
 쓰지 않고 마지막 조각만 정렬을 지켜 다시 쓴다. 읽는 쪽은 번호 순으로 이어 읽고, 번호가 비었거나
-같은 `(key, revision)`이 두 조각에 있으면 실패한다. 상한 CI는 후속 작업이다.
+같은 `(key, revision)`이 두 조각에 있으면 실패한다. CI는 build 전에 커밋된 파일마다 이 상한을
+다시 검사한다([CI·배포](#ci배포)).
 
 사람 보정의 각 줄은 `schema_version=1`, `city`, `merchant`, `status`
 (`restaurant` / `non_restaurant`), `evidence`, 선택적 `organization`·`source_hash`를 가진다.
@@ -337,6 +339,69 @@ JSON 객체의 키와 줄의 `(key, revision)`을 정렬하며, 이력의 기존
 상호 복원의 각 줄은 `schema_version=1`, 적용 범위인 `scope`, 확정 복원명 `restored_merchant`,
 `evidence`, 선택적 `references`를 가진다. 식당 포함·제외를 정하는 사람 보정과 의미가 다르며
 원본 표기를 덮어쓰지 않는다. 형식과 적용 규칙은 [상호 복원](docs/restoration.md)에 있다.
+
+## CI·배포
+
+[#15 결정](https://github.com/snowjaewon/OfficialDeliciousMap/issues/15#issuecomment-5611503849)을
+[#53](https://github.com/snowjaewon/OfficialDeliciousMap/issues/53)이 구현했다. GitHub Actions가
+커밋된 정제 산출물로 사이트를 build하고 Cloudflare Pages 프로젝트에 Wrangler Direct Upload로 올린다.
+CI는 `build`만 호출하며 수집·파싱·지오코딩·LLM과 검색·Gemini 키를 쓰지 않는다.
+workflow는 `.github/workflows/ci.yml`(`ci-build`·`preview`·`production`)과 기존 `gitleaks.yml`이다.
+
+| 실행 | ci-build | 배포 |
+| --- | --- | --- |
+| `develop`·`main` 대상 PR | 실행 | 같은 저장소 PR만 미리보기(`pr-<번호>` branch). fork PR은 배포하지 않음 |
+| `develop` push | 실행 | 없음 |
+| `main` push | 실행 | 동결 전이면 운영. 동결 뒤에는 검사만 |
+| `main`에서 수동 실행(사유 입력) | 실행 | 동결과 무관하게 같은 절차로 운영 |
+
+`ci-build`는 두 필수 체크(`gitleaks`·`ci-build`) 중 하나라 경로 필터를 두지 않는다. 순서는 위의
+설치·검증 명령과 `node --test tests/site_behavior.test.js` → 정제 산출물 검사 → 도시별 `build` →
+`dist/` 검사와 manifest → artifact(`site-<SHA>`)다. 배포 job은 이 artifact를 받아 올릴 뿐 다시
+build하지 않는다. 판정은 모두 `python -m deliciousmap.ci`가 하고 테스트는 `tests/test_ci.py`·
+`tests/test_deploy.py`가 가짜 Pages·응답으로 네트워크 없이 검증한다.
+
+| 명령 | 판정 |
+| --- | --- |
+| `check-data` | 정제 산출물 파일당 20,000,000바이트 초과, 등록되지 않은 도시 디렉터리, build할 도시 0곳을 실패로 본다. 통과하면 `data/<city>/`가 있는 도시를 레지스트리 순서로 낸다 |
+| `check-dist` | Pages 한도(파일당 25MiB, 20,000개), `site.public_paths`의 화면용 파일 외 파일, 빠진 화면 파일, HTML·`sw.js`·`manifest.webmanifest`의 끊긴 참조를 실패로 본다. 통과하면 `dist/deploy-manifest.json`(상대 경로·SHA256·바이트·commit)을 쓴다 |
+| `preview` | 올린 뒤 배포 고유 URL과 PR alias를 검증하고 결과를 Actions summary에 쓴다. build한 커밋은 PR의 임시 merge commit이므로 PR head SHA도 함께 적는다. 롤백하지 않는다 |
+| `production` | 아래 운영 절차 |
+| `wait-check` | 같은 커밋의 다른 workflow 체크(`gitleaks`)가 `success`로 끝날 때까지 기다린다. 실패·취소·건너뜀·15분 초과는 실패다 |
+
+배포 검증은 배포 주소에서 manifest를 받아 빌드한 것과 같은지 보고, manifest의 파일을 모두 내려받아
+압축을 푼 본문의 SHA256을 대조한다. 첫 화면은 build한 도시만 링크해야 하고, 7개 도시 진입 주소는
+build한 도시만 도시 화면이어야 하며, `markers.json`·`records.json`은 `application/json`이면서 그
+도시의 목록을 담아야 한다. Pages는 없는 경로에 첫 화면 HTML을 200으로 주므로 상태 코드만 보지 않는다.
+alias는 전파가 늦을 수 있어 10초 간격으로 6번까지 본다.
+
+운영 절차는 다음 순서다. 운영 job은 한 동시 실행 그룹에서 직렬화하고 진행 중인 실행을 취소하지 않는다.
+
+1. 같은 커밋의 `gitleaks` 성공을 기다린다(`ci-build`는 같은 workflow의 선행 job이다).
+2. 실행 자격과 동결을 본다. `main`이 아닌 ref, 사유 없는 수동 실행, 시간대 없는 동결 시각은
+   종료 코드 2로 거부한다. 동결 뒤의 `main` push는 올리지 않고 성공으로 끝낸다.
+3. Pages API로 지금 운영 배포를 찾고, 그 배포가 자기 manifest와 다시 대조되어 통과할 때만 롤백 대상으로
+   보존하고 기록에 먼저 쓴다. manifest가 없는 배포(프로젝트를 만들 때 올린 빈 배포 등)는 대상이 아니다.
+4. 업로드 직전에 원격 `main`을 다시 본다. 이 커밋보다 앞서 있으면 올리지 않는다. 동결 전에는 더 최신
+   push가 배포하므로 성공이고, 동결 중에는 배포할 실행이 없으므로 실패로 남겨 최신 `main`에서 다시
+   수동 실행하게 한다.
+5. 올린 뒤 고유 URL → 운영 alias 순으로 검증한다.
+6. 검증이 실패하거나 Wrangler가 배포를 확인해 주지 못하면 Pages API의 지금 운영 배포를 다시 본다.
+   보존한 배포가 아니면 그 배포로 롤백하고, 어느 쪽이든 운영 alias를 보존한 manifest와 다시 대조한다.
+   복구가 되어도 실행은 실패로 남는다. 롤백 대상이 없거나 재검증도 실패하면 사람이 대응한다.
+
+대기 중인 운영 job은 같은 그룹의 더 새 job이 오면 GitHub가 취소한다. 취소는 성공으로 보고되지 않으며,
+동결 중에 수동 실행이 이렇게 취소되면 다시 실행한다.
+
+직전 배포 ID·manifest, 새 배포 ID·URL, 검증 결과는 summary와 artifact `release-<SHA>-<시도>`의
+`release.json`에 남는다. 지도 키(`vars.NAVER_MAP_CLIENT_ID`·`vars.NAVER_MAP_KEY_PARAM`)는 build 단계에만,
+Cloudflare 비밀값(`CLOUDFLARE_API_TOKEN`·`CLOUDFLARE_ACCOUNT_ID`)은 배포 단계에만 넘긴다. 배포 대상은
+`vars.CLOUDFLARE_PAGES_PROJECT`, 운영 branch와 alias 주소는 Pages 프로젝트 설정에서 읽는다.
+
+제출 동결은 `vars.DEPLOY_FREEZE_AT`에 실제 제출 시각을 `2026-09-20T18:00:00+09:00`처럼 시간대와 함께
+넣어 켠다. 그 뒤 `main` push는 검사만 한다. 링크 장애·치명적 오류는 PR로 `main`에 합친 뒤 Actions의
+`ci` workflow를 `main`에서 수동 실행하고 사유를 적는다. 동결은 `main` 잠금이 아니며 태그를 남기는
+것만으로 배포가 멈추지 않는다. 실제 실행 결과는 [#53 검증](docs/validation/issue-53.md)에 있다.
 
 ## 라이선스
 
