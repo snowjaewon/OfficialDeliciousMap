@@ -52,13 +52,7 @@ class LocalAdapters:
         )
 
     def parse(self, value: ParseInput, context: ExecutionContext) -> ParseOutput:
-        return extract.parse_sources(
-            value.sources,
-            value.mappings,
-            value.unresolved,
-            context.paths.raw_root,
-            value.confirmations,
-        )
+        return extract.parse_sources(value, context.paths.raw_root)
 
     def classify(self, value: ClassifyInput, context: ExecutionContext) -> ClassifyOutput:
         return classify.resolve(

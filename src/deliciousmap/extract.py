@@ -17,6 +17,7 @@ from deliciousmap import period
 from deliciousmap.contracts import (
     ExpenseScope,
     HeaderMap,
+    ParseInput,
     ParseOutput,
     Record,
     RecordOrigin,
@@ -25,7 +26,6 @@ from deliciousmap.contracts import (
     SourceRef,
     SourceReport,
     TotalCheck,
-    UnresolvedSource,
 )
 from deliciousmap.grid import Cell, Table, UnreadableOriginal, UnsupportedFormat, read_tables, text
 from deliciousmap.privacy import scrub, scrub_merchant
@@ -128,34 +128,96 @@ def extract(table: Table, mapping: HeaderMap, source: SourceRef) -> Extraction:
     )
 
 
-def parse_sources(
-    sources: tuple[SourceRef, ...],
-    mappings: tuple[HeaderMap, ...],
-    unresolved: tuple[UnresolvedSource, ...],
-    raw_root: Path,
-    confirmations: tuple[RepeatConfirmation, ...] = (),
-) -> ParseOutput:
+@dataclass(frozen=True)
+class _Denominator:
+    """폴백 정책의 분모 하나. 지출 후보 수와 분모에서 뺀 행의 위치·종류다."""
+
+    candidates: int
+    excluded: tuple[str, ...]
+
+
+def _denominator(table: Table, mapping: HeaderMap) -> _Denominator | None:
+    """쓰지 않기로 한 매핑으로도 분모만 센다. 값이 온전하지 않다고 후보에서 빼지 않는다.
+
+    분모는 추출 성공 레코드가 아니라 원본에서 식별한 지출 후보 전체다. 역할이 모자라 후보를
+    가를 수 없거나 후보가 하나도 없으면 세지 않는다 — 쓰지 않기로 한 판정의 0건은 집행 없음의
+    증거가 아니며(`layout=none`도 마찬가지다), 알 수 없음으로 남긴다.
+    """
+    columns = mapping.columns
+    dated = "spent_on" in columns or {"month", "day"} <= columns.keys()
+    if mapping.layout != "table" or not dated or not {"merchant", "amount_krw"} <= columns.keys():
+        return None
+    headers = {
+        _signature(table.rows[row - 1]) for row in mapping.header_rows if row <= len(table.rows)
+    }
+    candidates = 0
+    excluded: list[str] = []
+    # `extract`와 같은 범위인 헤더 아래 전부를 본다. 첫 지출 위치를 잘못 잡은 판정에서는
+    # `extract`가 실패로 끝내는 행까지 세므로 분모가 더 클 수는 있고, 모자라지는 않는다.
+    for row in range(max(mapping.header_rows, default=0) + 1, len(table.rows) + 1):
+        kind = _kind(table, mapping, headers, row)
+        if kind == "candidate":
+            candidates += 1
+        else:
+            excluded.append(f"{table.name}:R{row} {kind}")
+    return _Denominator(candidates, tuple(excluded)) if candidates else None
+
+
+def _unresolved_denominator(mappings: list[HeaderMap], path: Path) -> _Denominator | None:
+    """미해결 원본의 분모. 표 하나라도 세지 못하면 이 원본의 후보 수는 알 수 없음이다."""
+    if not mappings:
+        return None
+    try:
+        tables = _tables(path)
+    except (UnsupportedFormat, UnreadableOriginal):
+        return None
+    if {mapping.table for mapping in mappings} != set(tables):
+        return None
+    candidates = 0
+    excluded: list[str] = []
+    for mapping in mappings:
+        found = _denominator(tables[mapping.table], mapping)
+        if found is None:
+            return None
+        candidates += found.candidates
+        excluded.extend(found.excluded)
+    return _Denominator(candidates, tuple(excluded))
+
+
+def _tables(path: Path) -> dict[str, Table]:
+    return {table.name: table for table in read_tables(path)}
+
+
+def parse_sources(value: ParseInput, raw_root: Path) -> ParseOutput:
     """원본마다 모든 표가 통과해야 레코드를 낸다. 실패한 원본의 일부만 확정하지 않는다."""
     by_source: dict[str, list[HeaderMap]] = {}
-    for mapping in mappings:
+    for mapping in value.mappings:
         by_source.setdefault(mapping.source_hash, []).append(mapping)
-    failed = {item.source_hash: item for item in unresolved}
+    unused: dict[str, list[HeaderMap]] = {}
+    for mapping in value.unresolved_mappings:
+        unused.setdefault(mapping.source_hash, []).append(mapping)
+    failed = {item.source_hash: item for item in value.unresolved}
     records: list[Record] = []
     reports: dict[str, SourceReport] = {}
-    for source in sources:
+    for source in value.sources:
         if source.source_hash in reports:
             continue
         if source.source_hash in failed:
             item = failed[source.source_hash]
+            counted = _unresolved_denominator(
+                unused.get(source.source_hash, []), raw_root / source.path
+            )
             reports[source.source_hash] = SourceReport(
                 source_hash=source.source_hash,
                 status="unresolved",
                 reason=item.reason,
                 detail=item.detail,
+                candidates=counted.candidates if counted else None,
+                excluded=counted.excluded if counted else (),
             )
             continue
         try:
-            tables = {table.name: table for table in read_tables(raw_root / source.path)}
+            tables = _tables(raw_root / source.path)
             results = [
                 extract(tables[mapping.table], mapping, source)
                 for mapping in by_source[source.source_hash]
@@ -207,7 +269,7 @@ def parse_sources(
             if "ambiguous" in checks
             else "absent",
         )
-    merged = merge_repeats(tuple(records), sources, confirmations)
+    merged = merge_repeats(tuple(records), value.sources, value.confirmations)
     kept = Counter(record.source_hash for record in merged.records)
     return ParseOutput(
         records=merged.records,
