@@ -1,11 +1,13 @@
-const CACHE_NAME = "deliciousmap-shell-v2";
-const SHELL = ["./", "./assets/app.js", "./assets/styles.css", "./manifest.webmanifest"];
-const SHELL_PATHS = new Set(["/assets/app.js", "/assets/styles.css", "/manifest.webmanifest"]);
+const SHELL_CACHE_NAME = "deliciousmap-shell-v2";
+const DATA_CACHE_NAME = "deliciousmap-data-v1";
+const SHELL_ASSETS = ["assets/app.js", "assets/styles.css", "manifest.webmanifest"];
+const SHELL = ["./", ...SHELL_ASSETS.map((asset) => `./${asset}`)];
+const SHELL_PATHS = new Set(SHELL_ASSETS.map((asset) => `/${asset}`));
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
-      .open(CACHE_NAME)
+      .open(SHELL_CACHE_NAME)
       .then((cache) => cache.addAll(SHELL)),
   );
 });
@@ -14,7 +16,13 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
+      .then((keys) =>
+        Promise.all(
+          keys
+            .filter((key) => key.startsWith("deliciousmap-shell-") && key !== SHELL_CACHE_NAME)
+            .map((key) => caches.delete(key)),
+        ),
+      )
       .then(() => self.clients.claim()),
   );
 });
@@ -27,6 +35,7 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(cachedShell(event));
     return;
   }
+  if (!isDataRequest(url)) return;
   event.respondWith(freshData(event.request));
 });
 
@@ -34,8 +43,12 @@ function isShellRequest(request, url) {
   return request.mode === "navigate" || SHELL_PATHS.has(url.pathname);
 }
 
+function isDataRequest(url) {
+  return url.pathname.endsWith("/markers.json") || url.pathname.endsWith("/records.json");
+}
+
 async function cachedShell(event) {
-  const cache = await caches.open(CACHE_NAME);
+  const cache = await caches.open(SHELL_CACHE_NAME);
   const cached = await cache.match(event.request);
   const refresh = fetchAndCache(cache, event.request);
   if (cached) {
@@ -46,9 +59,11 @@ async function cachedShell(event) {
 }
 
 async function freshData(request) {
-  const cache = await caches.open(CACHE_NAME);
+  const cache = await caches.open(DATA_CACHE_NAME);
   try {
-    return await fetchAndCache(cache, request);
+    const response = await fetchAndCache(cache, request);
+    if (response.ok) return response;
+    return (await cache.match(request)) || response;
   } catch (error) {
     const cached = await cache.match(request);
     if (cached) return cached;

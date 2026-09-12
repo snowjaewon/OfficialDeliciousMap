@@ -9,12 +9,12 @@ const vm = require("node:vm");
 const WORKER_FILE = path.join(__dirname, "../src/deliciousmap/site_assets/sw.js");
 const ORIGIN = "https://map.example";
 
-function fakeResponse(body) {
+function fakeResponse(body, { ok = true } = {}) {
   return {
     body,
-    ok: true,
+    ok,
     clone() {
-      return fakeResponse(body);
+      return fakeResponse(body, { ok });
     },
   };
 }
@@ -37,6 +37,7 @@ function workerHarness({ entries = {}, fetchImpl }) {
   const listeners = {};
   const deleted = [];
   const precached = [];
+  const opened = [];
   let claimed = false;
   const stored = new Map(
     Object.entries(entries).map(([url, response]) => [new URL(url, ORIGIN).href, response]),
@@ -56,9 +57,12 @@ function workerHarness({ entries = {}, fetchImpl }) {
         deleted.push(name);
         return true;
       },
-      keys: async () => ["deliciousmap-shell-v1"],
+      keys: async () => ["deliciousmap-shell-v1", "deliciousmap-data-v1"],
       match: cache.match,
-      open: async () => cache,
+      open: async (name) => {
+        opened.push(name);
+        return cache;
+      },
     },
     fetch: fetchImpl,
     self: {
@@ -100,6 +104,7 @@ function workerHarness({ entries = {}, fetchImpl }) {
       return Promise.all(lifetime);
     },
     deleted,
+    opened,
     precached,
     get claimed() {
       return claimed;
@@ -124,6 +129,7 @@ test("cached city shell responds before its background refresh finishes", async 
   ]);
 
   assert.equal(firstSettled, oldShell);
+  assert.deepEqual(harness.opened, ["deliciousmap-shell-v2"]);
   network.resolve(freshShell);
   await new Promise((resolve) => setImmediate(resolve));
   assert.equal(harness.stored.get(`${ORIGIN}/gwangju/`).body, "fresh shell");
@@ -145,6 +151,35 @@ test("markers stay network-first while a successful response refreshes the offli
 
   assert.equal(first.body, "fresh markers");
   assert.equal(second.body, "fresh markers");
+  assert.deepEqual(harness.opened, ["deliciousmap-data-v1", "deliciousmap-data-v1"]);
+});
+
+test("an HTTP data error uses the last successful marker response when available", async () => {
+  const harness = workerHarness({
+    entries: { "/gwangju/markers.json": fakeResponse("cached markers") },
+    fetchImpl: async () => fakeResponse("server error", { ok: false }),
+  });
+
+  const response = await harness.dispatchFetch(request("/gwangju/markers.json")).response;
+
+  assert.equal(response.body, "cached markers");
+  assert.deepEqual(harness.opened, ["deliciousmap-data-v1"]);
+});
+
+test("unrelated same-origin resources remain outside the worker cache policy", async () => {
+  let requests = 0;
+  const harness = workerHarness({
+    fetchImpl: async () => {
+      requests += 1;
+      return fakeResponse("favicon");
+    },
+  });
+
+  const event = harness.dispatchFetch(request("/favicon.ico"));
+
+  assert.equal(event.response, undefined);
+  assert.equal(requests, 0);
+  assert.deepEqual(harness.opened, []);
 });
 
 test("activate removes old shell versions and claims open pages", async () => {
@@ -153,6 +188,7 @@ test("activate removes old shell versions and claims open pages", async () => {
   await harness.dispatchLifecycle("activate");
 
   assert.deepEqual(harness.deleted, ["deliciousmap-shell-v1"]);
+  assert.deepEqual(harness.opened, []);
   assert.equal(harness.claimed, true);
 });
 
@@ -161,6 +197,7 @@ test("install precaches the current shell", async () => {
 
   await harness.dispatchLifecycle("install");
 
+  assert.deepEqual(harness.opened, ["deliciousmap-shell-v2"]);
   assert.deepEqual(harness.precached, [
     "./",
     "./assets/app.js",
