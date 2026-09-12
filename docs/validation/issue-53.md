@@ -118,20 +118,40 @@ PR #80에서 `gh pr checks 80 --required`가 두 체크를 필수로 보였고 �
 
 ### 지도 인증
 
-#50의 방법대로 Chrome으로 `/gwangju/`를 열었다.
+#50의 방법대로 Chrome으로 `/gwangju/`를 열었다. 키 값은 어디에도 기록하지 않았다.
 
-| 주소 | 등록 | 실제 인증 |
+**처음에는 실패했고, 원인은 도메인이 아니라 키였다.** 처음 연 두 주소
+(`pr-80.…`, 배포 고유 URL `7756c1f4.…`)에서 SDK가 `navermap_authFailure`를 불렀다.
+콘솔에는 `Error: Naver Maps authentication failed`가 찍혔고, 지도 자리에 "인증이 실패했습니다" 타일이 떴다.
+화면은 설계대로 "네이버 지도 설정을 확인해 주세요" 안내를 띄우고, 검색 집계(12곳)와 장부는 계속
+제공했다. 처음에는 하위 도메인이 등록되지 않은 탓으로 보았다. 사용자가 콘솔에
+`http://*.officialdeliciousmap.pages.dev`와 `http://pr-80.officialdeliciousmap.pages.dev`를 추가했다
+(사용자 보고). 그래도 실패했다. 원인은 이렇게 가렸다.
+
+- 브라우저의 인증 요청 `oapi.map.naver.com/v3/auth`는 `503`·`401`이었다. 같은 PC에서 curl로 `.env` 키를
+  넣은 같은 요청은 `200`이었다. 헤더를 브라우저와 똑같이 맞춰도, 공인 IP가 같아도 결과는 같았다.
+- 확장이 없는 새 프로필 headless Chrome에서도, 어제 성공한 `http://127.0.0.1:8765`에서도 실패했다.
+  이 로컬 사이트는 CI artifact를 띄운 것이다.
+- 사이트에 들어간 키는 GitHub Variable `NAVER_MAP_CLIENT_ID`와 같았고 `.env` 키와는 달랐다. 그 키로는
+  인증 서버가 `401 Authentication Failed`, `.env` 키로는 `200`이었다. Variable은 #50에서 사용자가 `.env`
+  키를 바꾸기 전(2026-09-09)에 등록된 채였다.
+
+사용자 승인으로 Variable을 `.env` 키로 바꾸고 PR #80 workflow를 다시 돌렸다. 그 뒤의 관찰은 이렇다.
+
+| 주소 | 등록(사용자 보고) | 실제 인증(관찰) |
 | --- | --- | --- |
-| `https://pr-80.officialdeliciousmap.pages.dev` | 따로 등록하지 않음 | **실패** |
-| `https://7756c1f4.officialdeliciousmap.pages.dev` | 따로 등록하지 않음 | **실패** |
-| `https://officialdeliciousmap.pages.dev` | 사용자 보고로 등록 | 미확인(운영 배포 전) |
+| `https://pr-80.officialdeliciousmap.pages.dev` | 와일드카드 하위 도메인, 이 주소 | **성공** |
+| `https://officialdeliciousmap.pages.dev` | 운영 도메인 | 미확인(운영 배포 전). 인증 서버 판정은 `200` |
 
-두 주소 모두에서 같은 결과였다. 지도 타일 자리에 "네이버 지도 Open API 인증이 실패했습니다"가 떴다.
-SDK가 `navermap_authFailure`를 불렀다(콘솔 `Error: Naver Maps authentication failed`). 화면은 설계대로
-"네이버 지도 설정을 확인해 주세요" 안내를 띄우고 검색 집계(12곳)와 장부를 계속 제공했다.
-운영 도메인만 등록한 상태에서 하위 도메인은 허용되지 않았다. #15의 "대표 도메인 등록으로 preview
-alias도 허용될 것"은 이 계정에서 성립하지 않았다. alias를 허용 목록에 어떻게 넣을지는 사용자에게
-확인한다(`pages.dev` 전체는 넣지 않는다). 키 값은 기록하지 않았다.
+`pr-80`에서는 인증 요청이 `200`이었다. 지도 타일과 마커 묶음(12)이 그려졌고 설정 안내는 뜨지 않았다.
+움직이기 전에 `12곳 전체 · 12곳 현재 지도 영역`과 `first-ready`가 기록됐다. 인증 서버에 직접 물으면
+등록한 적 없는 `pr-999.officialdeliciousmap.pages.dev`도 `200`이었다. 다른 `*.pages.dev` 프로젝트와
+`example.com`은 `401`이었다. 우리 프로젝트의 하위 도메인만 허용되고 `pages.dev` 전체는 열리지 않았다.
+운영 도메인 한 줄만으로 하위 도메인이 허용되는지는, 키가 틀린 동안 시험했으므로 가르지 못했다.
+#15의 "대표 도메인 등록으로 preview alias도 허용될 것"은 그래서 여전히 확인하지 않은 추론이다.
+
+키를 바꾸는 곳이 `.env`와 GitHub Variable 두 곳이라 어긋날 수 있다. `scripts/sync-github.sh`가
+`.env` 값을 Variable에 올리므로 키를 바꾸면 이 스크립트를 다시 실행한다.
 
 ### 남은 원격 확인
 
@@ -145,5 +165,5 @@ alias도 허용될 것"은 이 계정에서 성립하지 않았다. alias를 허
 | 실제 운영 롤백 | 미확인 |
 | 동결 설정 시 `main` push 미배포, 사유 있는 수동 실행 배포 | 미확인(판정은 테스트로 확인) |
 | ruleset 필수 체크 추가 | 적용 |
-| 운영 URL·첫 PR alias의 실제 지도 인증 | PR alias 실패, 운영 미확인 |
+| 운영 URL·첫 PR alias의 실제 지도 인증 | PR alias 성공(Variable 키 교체 뒤), 운영 미확인 |
 | 이전 버전을 연 브라우저의 PWA 갱신 | 미확인 |

@@ -131,7 +131,7 @@ uv run python -m http.server 8765 --directory dist --bind 127.0.0.1
   (아래 사용자 보고) 아직 운영 배포가 없어 그 주소에서 인증이 성공하는지는 보지 못했다. 확인은
   [#53](https://github.com/snowjaewon/OfficialDeliciousMap/issues/53)
   ([#15](https://github.com/snowjaewon/OfficialDeliciousMap/issues/15) 결정의 구현)의 범위다.
-  PR 미리보기 주소에서는 인증이 실패했다(아래 표).
+  PR 미리보기 주소에서는 인증이 성공했다(아래 표).
 - 실기기·실데이터 성능: [#29](https://github.com/snowjaewon/OfficialDeliciousMap/issues/29)의 범위다.
 - 화면 크기에 따른 축소 한계: `minZoom`은 첫 화면의 줌으로 한 번 고정하며, 한 창 크기(851×841)에서만
   확인했다. 창 크기를 바꾸거나 모바일 폭으로 열었을 때 도시 전체가 보이는지는 #29에서 실기기와 함께 본다.
@@ -150,13 +150,14 @@ uv run python -m http.server 8765 --directory dist --bind 127.0.0.1
 | --- | --- | --- |
 | `http://127.0.0.1:8765` | 사용자 보고 | 성공(이 세션에서 관찰) |
 | `http://localhost:8765` | 사용자 보고 | 성공(이 세션에서 관찰) |
-| `officialdeliciousmap.pages.dev` | 사용자 보고, `pages.dev` 전체 미등록 | 미확인(운영 배포 전, #53) |
-| `pr-80.officialdeliciousmap.pages.dev`(PR alias) | 따로 등록하지 않음 | **실패**(2026-09-12 관찰, #53) |
-| `7756c1f4.officialdeliciousmap.pages.dev`(배포 고유 URL) | 따로 등록하지 않음 | **실패**(2026-09-12 관찰, #53) |
+| `officialdeliciousmap.pages.dev` | 사용자 보고, `pages.dev` 전체 미등록 | 미확인(운영 배포 전, #53). 인증 서버 판정은 통과 |
+| `pr-80.officialdeliciousmap.pages.dev`(PR alias) | 사용자 보고: `http://*.officialdeliciousmap.pages.dev`와 이 주소 추가 | 성공(2026-09-12 관찰, #53) |
 
-미리보기의 두 주소는 [#53 검증](issue-53.md#지도-인증)에서 열었다. 운영 도메인만 등록한 상태에서는
-그 하위 도메인이 허용되지 않았다. #15의 "대표 도메인 등록으로 preview alias도 허용될 것"이라는
-추론은 이 계정에서 성립하지 않았다.
+2026-09-12 미리보기 주소에서 처음 본 인증 실패는 도메인 때문이 아니었다. CI가 build에 쓰는
+GitHub Variable `NAVER_MAP_CLIENT_ID`에 위 경과의 **예전 키**가 남아 있었다. 사용자가 `.env`만 새 키로
+바꿨기 때문이다. Variable을 새 키로 바꾸고 다시 배포하자 `pr-80` alias에서 인증이 성공했다.
+경과와 판정은 [#53 검증](issue-53.md#지도-인증)에 있다. 그 사이 사용자가 하위 도메인 두 줄을 추가했으므로,
+운영 도메인 한 줄만으로 하위 도메인이 허용되는지는 가르지 못했다.
 
 로컬 두 주소에서는 실제 인증이 성공했다. SDK의 인증 오류 콘솔 메시지가 없었고 `navermap_authFailure`가
 호출되지 않아 지도 불가 안내도 뜨지 않았다. 따라서 실제 키로 인증 실패 안내가 오탐하지 않는다.
