@@ -197,8 +197,26 @@ PowerShell: Get-Content .env | ForEach-Object { if ($_ -match '^(\w+)=(.*)$') { 
 브라우저 로직 테스트에는 Node.js 20 이상이 필요하며 아래 명령은 외부 패키지를 설치하지 않는다.
 
 ```text
-node --test tests/site_behavior.test.js
+node --test tests/site_behavior.test.js tests/measure_map.test.js
 ```
+
+#### 지도 성능 측정
+
+`scripts/measure_map.js`는 [#22 결정](https://github.com/snowjaewon/OfficialDeliciousMap/issues/22#issuecomment-5614661364)의
+절차를 설치된 Chrome으로 반복한다. Node.js 22 이상과 build한 `dist/<city>/`, 허용 주소가
+`http://127.0.0.1:8765`인 지도 키가 필요하다. 스크립트가 `dist/`를 8765 포트로 직접 띄우므로
+다른 서버를 먼저 띄우지 않는다.
+
+```text
+양쪽 공통: node scripts/measure_map.js --city gwangju --out <결과.json>
+```
+
+데스크톱과 모의 모바일(다운로드 10Mbps·업로드 1Mbps·지연 100ms·CPU 4배 감속)에서 각 20회
+재어 표를 출력한다. 첫 방문은 매번 새 브라우저 컨텍스트(캐시·서비스 워커 없음)에서, 재방문은
+캐시와 서비스 워커를 채운 컨텍스트의 새 탭에서 잰다. 입력·선택 피드백은 Event Timing(16ms
+미만은 16ms로 적음), 결과·상세·장부 첫 목록은 앱의 `window.deliciousmapMetrics`로 잰다.
+드래그·줌·장부 스크롤의 rAF 간격은 진단 값이며 판정하지 않는다. 20회를 채우지 못한
+시나리오는 `미측정`이다. Chrome 경로는 `--chrome` 또는 `CHROME_PATH`로 바꾼다.
 
 ## 단계 계약과 후속 구현 접점
 
