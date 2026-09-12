@@ -81,15 +81,69 @@ Standards·Spec 두 축으로 리뷰했고 다음을 반영했다.
 
 ## 원격 확인
 
-아직 하지 않았다. 아래 순서로 확인해 채운다.
+### PR #80 (2026-09-12)
+
+[PR #80](https://github.com/snowjaewon/OfficialDeliciousMap/pull/80)(`develop` 대상, 같은 저장소)의
+첫 실행([run 34688092946](https://github.com/snowjaewon/OfficialDeliciousMap/actions/runs/34688092946))이다.
+
+- `gitleaks`: push와 PR 두 실행 모두 통과.
+- `ci-build`: 통과. GitHub 러너(ubuntu)에서 기본 검증을 모두 돌렸다(pytest 422 passed, node 11 pass).
+  이어서 `check-data`가 `gwangju`를 냈고, build(약 11초) 뒤 `check-dist`가 8개 파일을 봉인했다.
+  artifact `site-<SHA>`(126,411바이트)를 올렸다.
+- `production`: PR이라 건너뜀.
+- `preview` 첫 시도: **실패**. Wrangler가 `CLOUDFLARE_ACCOUNT_ID` 형식을 거부했고,
+  `CLOUDFLARE_API_TOKEN`은 빈 값으로 전달됐다. GitHub Secrets가 2026-09-09 등록 뒤로 로컬 `.env`와
+  달랐다. 코드는 이 실패를 `업로드가 배포를 만들지 못했다: wrangler exited with 1`로 summary에 남기고
+  job을 실패로 끝냈다. 사용자 승인으로 두 Secret만 `.env` 값으로 다시 등록했다
+  (`scripts/sync-github.sh`와 같은 방식이며 값은 출력하지 않았다).
+- `preview` 재실행: 통과. 9개 파일(manifest 포함)을 올렸다.
+
+| 항목 | 값 |
+| --- | --- |
+| build commit(PR의 임시 merge commit) | `31f932c32f6291229c2590532006d8c379b0aa09` |
+| PR head | `770412e637740abb1be562e11cedda2ffc7bb718` |
+| 배포 ID | `7756c1f4-93d3-4408-bd7c-e2a7989ea4f4` |
+| 고유 URL | `https://7756c1f4.officialdeliciousmap.pages.dev` — 통과(파일 SHA256·주요 경로) |
+| alias | `https://pr-80.officialdeliciousmap.pages.dev` — 통과(파일 SHA256·주요 경로) |
+
+실제 Pages에서도 `.json`은 `application/json`, `.js`는 JavaScript 유형이었다. 빌드하지 않은 도시 주소는
+도시 화면이 아니었다(검증 통과로 확인).
+
+### 필수 체크
+
+`ci-build`가 실제로 성공한 것을 본 뒤 ruleset `main: PR 필수`(id 22636798, `main`·`develop` 대상)에
+`required_status_checks`로 `gitleaks`·`ci-build`(GitHub Actions 앱)를 더했다. 기존 PR 필수·승인 0·
+삭제·force-push 금지 규칙은 그대로다. `strict`(최신 기준 브랜치 요구)는 켜지 않았다.
+PR #80에서 `gh pr checks 80 --required`가 두 체크를 필수로 보였고 병합 상태는 `CLEAN`이었다.
+
+### 지도 인증
+
+#50의 방법대로 Chrome으로 `/gwangju/`를 열었다.
+
+| 주소 | 등록 | 실제 인증 |
+| --- | --- | --- |
+| `https://pr-80.officialdeliciousmap.pages.dev` | 따로 등록하지 않음 | **실패** |
+| `https://7756c1f4.officialdeliciousmap.pages.dev` | 따로 등록하지 않음 | **실패** |
+| `https://officialdeliciousmap.pages.dev` | 사용자 보고로 등록 | 미확인(운영 배포 전) |
+
+두 주소 모두에서 같은 결과였다. 지도 타일 자리에 "네이버 지도 Open API 인증이 실패했습니다"가 떴다.
+SDK가 `navermap_authFailure`를 불렀다(콘솔 `Error: Naver Maps authentication failed`). 화면은 설계대로
+"네이버 지도 설정을 확인해 주세요" 안내를 띄우고 검색 집계(12곳)와 장부를 계속 제공했다.
+운영 도메인만 등록한 상태에서 하위 도메인은 허용되지 않았다. #15의 "대표 도메인 등록으로 preview
+alias도 허용될 것"은 이 계정에서 성립하지 않았다. alias를 허용 목록에 어떻게 넣을지는 사용자에게
+확인한다(`pages.dev` 전체는 넣지 않는다). 키 값은 기록하지 않았다.
+
+### 남은 원격 확인
 
 | 완료 기준 | 상태 |
 | --- | --- |
-| PR·push에서 `gitleaks`·`ci-build` 실행, 문서만 바뀐 PR에도 보고 | 미확인 |
-| 같은 저장소 PR 미리보기(`pr-<n>`), summary의 URL·SHA·검증 결과 | 미확인 |
-| `main` push 운영 배포, 고유 URL·운영 alias 대조 | 미확인 |
+| PR·push에서 `gitleaks`·`ci-build` 실행 | PR·브랜치 push에서 확인. `develop`·`main` push는 병합 뒤 확인 |
+| 문서만 바뀐 PR에도 두 체크 보고 | 경로 필터가 없다. 문서만 바꾼 PR은 아직 관찰하지 않음 |
+| 같은 저장소 PR 미리보기, summary의 URL·SHA·검증 결과 | 확인 |
+| fork PR은 배포하지 않음 | job 조건으로만 확인. fork PR은 관찰하지 않음 |
+| `main` push 운영 배포, 고유 URL·운영 alias 대조 | 미확인(운영 배포 전) |
 | 실제 운영 롤백 | 미확인 |
 | 동결 설정 시 `main` push 미배포, 사유 있는 수동 실행 배포 | 미확인(판정은 테스트로 확인) |
-| ruleset에 `gitleaks`·`ci-build` 필수 체크 추가 | 미적용 |
-| 운영 URL·첫 PR alias의 실제 지도 인증 | 미확인 |
+| ruleset 필수 체크 추가 | 적용 |
+| 운영 URL·첫 PR alias의 실제 지도 인증 | PR alias 실패, 운영 미확인 |
 | 이전 버전을 연 브라우저의 PWA 갱신 | 미확인 |
