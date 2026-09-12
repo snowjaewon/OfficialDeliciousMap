@@ -24,9 +24,10 @@
 ## 광주의 남은 2묶음 대조
 
 [#63](https://github.com/snowjaewon/OfficialDeliciousMap/issues/63)이 가를 근거가 없어 남긴
-2묶음을 원본 파일 네 개를 열어 대조했다. **둘 다 같은 지출로 확정**했고 근거는
-`data/manual/gwangju/repeats.jsonl`의 `evidence`·`references`에 있다. 대조는 에이전트가 했고
-두 줄의 `evidence`에 그렇게 적혀 있다. 업소 확인(`geocode.jsonl`)과 같은 규칙이며, 사람의 확인은
+2묶음을 원본 파일 네 개를 열어 대조했다. **둘 다 같은 지출로 확정**했고 대조 내용은 아래 두 표다.
+`data/manual/gwangju/repeats.jsonl`의 두 줄은 대조한 원본의 파일명을 적는다
+([#88](https://github.com/snowjaewon/OfficialDeliciousMap/issues/88)이 그 줄의 글을 파일명으로
+줄였다). 대조는 에이전트가 했다. 업소 확인(`geocode.jsonl`)과 같은 규칙이며, 사람의 확인은
 이 PR의 승인이다. 담당자가 아래 표와 원본을 함께 보고 승인해야 확정이 선다.
 
 ### 화재예방과 2026-02-27 · 150,000원

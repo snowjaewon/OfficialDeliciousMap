@@ -286,9 +286,11 @@ Node 기반 빌드 도구를 쓰지 않는다. 폐업으로 확인된 후보도 
 이전이다([#66](https://github.com/snowjaewon/OfficialDeliciousMap/issues/66)). 그 둘을 갖춘
 실행에서 `run --city gwangju`로 다시 만든다.
 
-`repeats.jsonl`은 지출 하나(`기관·부서·집행일·상호·금액`)와 그 지출을 실은 원본 해시를 범위로
-선언하고 `same_expense`/`separate_expenses` 중 하나를 근거와 함께 적는다. 장부에 없는 묶음이나
-그 지출을 싣지 않은 원본을 가리키면 `parse`가 거부한다. 입력을 고치면 `parse`부터 다시 돌린다.
+`repeats.jsonl`의 각 줄은 `schema_version=2`, 지출 하나(`기관·부서·집행일·상호·금액`)와 그 지출을
+실은 원본 해시를 담은 `scope`, `same_expense`/`separate_expenses` 중 하나인 `decision`, 대조한
+원본의 파일명인 `evidence`를 가진다. 판단을 글로 옮기지 않고 승인하는 사람이 그 파일을 직접 연다.
+장부에 없는 묶음이나 그 지출을 싣지 않은 원본을 가리키면 `parse`가 거부한다. 입력을 고치면
+`parse`부터 다시 돌린다.
 
 단계 메타데이터 파일은 `<stage>.json`이며 `schema_version`(fetch는 3, parse는 4, geocode는 5,
 closure는 4, build는 6, 나머지는 1), `city`, `org`, 입력 해시인

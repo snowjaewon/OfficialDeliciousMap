@@ -282,15 +282,14 @@ class RepeatConfirmation(Contract):
     ../../docs/adr/0006-human-confirmed-reposts.md)).
 
     사람이 직접 쓰거나 에이전트가 써서 사람이 PR로 승인한다(`IdentityConfirmation`과 같다).
-    어느 쪽이든 `evidence`에 두 원본에서 무엇을 대조했는지와 검토 주체를 적고, 원본의 어느
-    부분을 근거로 삼았는지는 `references`에 남긴다.
+    `evidence`에는 판단을 글로 옮기지 않고 대조한 원본의 파일명을 적는다
+    (`10887-1.xlsx, 11009-1.xlsx`). 승인하는 사람은 그 파일을 직접 연다.
     """
 
-    schema_version: Literal[1] = 1
+    schema_version: Literal[2] = 2
     scope: ExpenseScope
     decision: RepeatDecision
     evidence: Text
-    references: tuple[ReviewReference, ...] = ()
 
 
 class IdentityFacts(Contract):
