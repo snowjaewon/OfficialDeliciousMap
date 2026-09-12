@@ -269,6 +269,7 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
                         candidates=candidates,
                         target_sources=len(parsed.sources),
                         excluded_sources=parsed.excluded_sources,
+                        repeated_expenses=parsed.repeated_expenses,
                     ),
                     context,
                 )

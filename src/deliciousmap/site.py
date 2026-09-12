@@ -23,6 +23,7 @@ from deliciousmap.contracts import (
     PublishedRecord,
     Record,
     RecordFile,
+    RepeatedExpenses,
 )
 from deliciousmap.registry import CITIES, City, HoldReason, Organization, Target
 from deliciousmap.storage import write_text
@@ -89,10 +90,14 @@ class CollectionStatus:
 
 @dataclass(frozen=True)
 class SourceScope:
-    """이번 제출이 읽은 원본과 기간으로 뺀 원본. 읽은 수만 내면 장부가 완전해 보인다."""
+    """화면이 밝히는 이번 제출의 범위. 읽은 수만 내면 장부가 완전해 보인다.
+
+    `excluded`는 기간으로 뺀 원본, `repeated`는 누적 재게시로 합쳐 장부에서 뺀 수다.
+    """
 
     targets: int
     excluded: ExcludedSources
+    repeated: RepeatedExpenses
 
     @property
     def total(self) -> int:
@@ -346,6 +351,36 @@ def _scope_line(scope: SourceScope) -> str:
     )
 
 
+def _repeated_expense_line(repeated: RepeatedExpenses) -> str:
+    """누적 재게시로 장부에서 뺀 수. 밝히지 않으면 건수가 조용히 줄어든 것으로 보인다.
+
+    기준은 [ADR-0004](../../docs/adr/0004-merge-repeated-reposts.md)이다. 합친 것도 남긴 것도
+    없으면 낼 말이 없어 줄을 내지 않는다. `parse` v3는 언제나 세므로(`extract.merge_repeats`)
+    그 경우는 세지 않은 산출물이 아니라 반복이 없었다는 뜻이다. 한쪽이라도 있으면 나머지 0은
+    센 뒤의 사실이므로 감추지 않는다.
+
+    한 묶음이 언제나 한 건으로 줄지는 않는다. 남는 건수는 한 원본이 적은 최대 건수이므로,
+    합친 묶음 수와 장부에서 뺀 레코드 수를 따로 낸다.
+    """
+    if repeated == RepeatedExpenses():
+        return ""
+    merged = (
+        "부서가 이미 공개한 기간을 다시 올려 같은 지출이 여러 원본에 반복된 "
+        f"{repeated.merged_expenses:,}묶음을 합쳐,"
+        f" 장부에서 {repeated.merged_records:,}건을 뺐습니다."
+        if repeated.merged_expenses
+        else "부서가 이미 공개한 기간을 다시 올려 반복된 지출 가운데 합친 것은 없습니다."
+    )
+    left = (
+        "다시 올린 것인지 따로 쓴 것인지 가를 근거가 없어 남긴 "
+        f"{repeated.unmerged_expenses:,}묶음 {repeated.unmerged_records:,}건은"
+        " 장부에 중복으로 보일 수 있습니다."
+        if repeated.unmerged_expenses
+        else "다시 올린 것인지 따로 쓴 것인지 가를 근거가 없어 남긴 묶음은 없습니다."
+    )
+    return f'\n      <p class="collection-scope">{merged} {left}</p>'
+
+
 def _city_page(
     city: City, map_key: MapKey, statuses: tuple[CollectionStatus, ...], scope: SourceScope
 ) -> str:
@@ -422,7 +457,7 @@ def _city_page(
     <dialog class="source-dialog" data-source-dialog>
       <button type="button" class="dialog-close" data-close-sources aria-label="닫기">×</button>
       <p class="eyebrow">자료 범위</p><h2>대상 기간 {REPORTING_PERIOD}</h2>
-{_collection_table(statuses)}{_scope_line(scope)}
+{_collection_table(statuses)}{_scope_line(scope)}{_repeated_expense_line(scope.repeated)}
       <p class="collection-warning">
         레코드 없음과 수집 보류는 집행이 없었다는 뜻이 아닙니다.
       </p>

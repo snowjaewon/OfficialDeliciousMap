@@ -118,7 +118,11 @@ class LocalAdapters:
                 directory,
                 context.map_key,
                 collection_status(context.target.organizations, value.records),
-                SourceScope(targets=value.target_sources, excluded=value.excluded_sources),
+                SourceScope(
+                    targets=value.target_sources,
+                    excluded=value.excluded_sources,
+                    repeated=value.repeated_expenses,
+                ),
             )
         return BuildOutput(
             files=files,
