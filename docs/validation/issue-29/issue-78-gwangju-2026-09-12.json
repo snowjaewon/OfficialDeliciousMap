@@ -1,0 +1,133 @@
+{
+  "measured_at": "2026-09-12T14:27:28.805Z",
+  "code_commit": "58b040b3654a6d3dec4cc82719503a479c0b3c16",
+  "worktree_clean": true,
+  "city": "gwangju",
+  "host": {
+    "platform": "Windows_NT 10.0.26200",
+    "cpu": "11th Gen Intel(R) Core(TM) i5-1155G7 @ 2.50GHz",
+    "logical_cpus": 8,
+    "memory_bytes": 16873869312,
+    "node": "v24.17.0",
+    "browser": "Chrome/152.0.7977.83",
+    "gpu_renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x00009A49) Direct3D11 vs_5_0 ps_5_0, D3D11-30.0.100.9836)",
+    "gpu_compositing": "enabled",
+    "headless": true,
+    "refresh_rate": "none (headless)"
+  },
+  "conditions": {
+    "source": "CDP Tracing",
+    "runs": 20,
+    "frame_budget_ms": 16.7,
+    "stutter_frame_ms": 33.3,
+    "freeze_frame_ms": 100,
+    "long_task_ms": 50,
+    "trace_files": "stored outside the repository; only summaries are included here"
+  },
+  "environments": {
+    "desktop": {
+      "zoom": {
+        "runs": 20,
+        "passing_runs": 11,
+        "stutter_runs": 9,
+        "freeze_runs": 6,
+        "longest_frame_ms": 299.9,
+        "delayed_frames_total": 355,
+        "long_animation_frames": 0,
+        "cause": "unattributed",
+        "verdict": "fail"
+      },
+      "drag": {
+        "runs": 20,
+        "passing_runs": 0,
+        "stutter_runs": 20,
+        "freeze_runs": 0,
+        "longest_frame_ms": 50.1,
+        "delayed_frames_total": 614,
+        "long_animation_frames": 0,
+        "cause": "unattributed",
+        "verdict": "fail"
+      },
+      "scroll": {
+        "runs": 20,
+        "passing_runs": 0,
+        "stutter_runs": 20,
+        "freeze_runs": 0,
+        "longest_frame_ms": 50.1,
+        "delayed_frames_total": 272,
+        "long_animation_frames": 0,
+        "cause": "unattributed",
+        "verdict": "fail"
+      }
+    },
+    "mobile": {
+      "zoom": {
+        "runs": 20,
+        "passing_runs": 0,
+        "stutter_runs": 20,
+        "freeze_runs": 20,
+        "longest_frame_ms": 500.1,
+        "delayed_frames_total": 819,
+        "long_animation_frames": 42,
+        "long_animation_frame_max_ms": 102.7,
+        "cause": {
+          "naver_sdk": {
+            "count": 31,
+            "total_ms": 1930.4,
+            "maximum_ms": 95.1
+          },
+          "application": {
+            "count": 15,
+            "total_ms": 1044.4,
+            "maximum_ms": 102.7
+          },
+          "other": {
+            "count": 0,
+            "total_ms": 0,
+            "maximum_ms": null
+          }
+        },
+        "verdict": "fail"
+      },
+      "drag": {
+        "runs": 20,
+        "passing_runs": 0,
+        "stutter_runs": 20,
+        "freeze_runs": 0,
+        "longest_frame_ms": 50.2,
+        "delayed_frames_total": 556,
+        "long_animation_frames": 14,
+        "long_animation_frame_max_ms": 75,
+        "cause": {
+          "naver_sdk": {
+            "count": 6,
+            "total_ms": 362.2,
+            "maximum_ms": 75
+          },
+          "application": {
+            "count": 8,
+            "total_ms": 494,
+            "maximum_ms": 64.1
+          },
+          "other": {
+            "count": 0,
+            "total_ms": 0,
+            "maximum_ms": null
+          }
+        },
+        "verdict": "fail"
+      },
+      "scroll": {
+        "runs": 20,
+        "passing_runs": 0,
+        "stutter_runs": 20,
+        "freeze_runs": 20,
+        "longest_frame_ms": 333.5,
+        "delayed_frames_total": 799,
+        "long_animation_frames": 0,
+        "cause": "unattributed",
+        "verdict": "fail"
+      }
+    }
+  }
+}
