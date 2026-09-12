@@ -3,6 +3,7 @@
 import io
 import json
 import urllib.parse
+import zipfile
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import date, datetime
@@ -56,6 +57,15 @@ def workbook(*sheets: Sequence[Sequence[Value]]) -> bytes:
                     sheet.write(r, c, value)
     stream = io.BytesIO()
     book.save(stream)
+    return stream.getvalue()
+
+
+def bundle(*files: tuple[str, bytes]) -> bytes:
+    """엑셀 통합문서가 없는 ZIP. 게시판의 첨부 묶음·HWPX처럼 안을 풀지 않는 형식이다."""
+    stream = io.BytesIO()
+    with zipfile.ZipFile(stream, "w") as archive:
+        for name, body in files:
+            archive.writestr(name, body)
     return stream.getvalue()
 
 

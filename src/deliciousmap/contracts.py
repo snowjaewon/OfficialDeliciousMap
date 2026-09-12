@@ -194,6 +194,33 @@ class ComparisonRequest(ScopedReview):
     evidence: Text
 
 
+# 사람이 원본과 대조해 확인한 미해결 사유. 원본 자체의 결함만 담는다.
+SourceFinding = Literal["merchant_blank", "total_mismatch"]
+
+
+class SourceReview(Contract):
+    """data/manual/<city>/sources.jsonl 한 줄. 미해결 원본을 전수로 대조하고 남긴 기록.
+
+    값을 채워 통과시키는 칸은 두지 않는다. 원본에 없는 상호·금액을 적어 넣는 것은 폴백 정책이
+    막으므로, 이 입력이 남기는 것은 무엇을 왜 남겼는지와 어디까지 보았는지다. 폴백 정책이
+    요구하는 사람의 최종 대조는 `confirmed_by`가 가른다 — 비어 있으면 아직 코드 훑기뿐이다.
+    기록한 원본이 나중에 통과하게 되면 `parse`가 낡은 기록으로 알린다.
+    """
+
+    schema_version: Literal[1] = 1
+    city: Text
+    # 원본이 속한 기관. `--org`로 한 기관만 돌릴 때 다른 기관의 기록을 보지 않으려고 둔다.
+    organization: Text
+    source_hash: Sha256
+    finding: SourceFinding
+    # 전수로 본 지출 후보 수와 사유가 걸린 행의 위치(`sheet1:R14`). 원본 값은 적지 않는다.
+    candidates: int = Field(ge=0)
+    rows: tuple[Text, ...] = Field(min_length=1)
+    evidence: Excerpt
+    # 원본과 전수로 대조한 사람. 코드 훑기만 끝났으면 비워 둔다.
+    confirmed_by: str = ""
+
+
 class IdentityFacts(Contract):
     merchant: Text
     # None means unknown; an empty branch explicitly means an unbranched business.
