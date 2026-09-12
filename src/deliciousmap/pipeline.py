@@ -204,7 +204,7 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
             parsed = store.load("parse", ParseOutput)
             classified = store.load("classify", ClassifyOutput)
             # 확인 충돌은 마커 대상이 아닌 레코드에서도 알린다.
-            confirmations = store.confirmations(parsed.records)
+            confirmations = restoration.confirm(parsed.records, store.confirmations())
             reviewed = restoration.resolve(parsed.records, store.restorations())
             restoration.require_agreement(reviewed, confirmations)
             records = restaurant_records(parsed.records, classified.decisions)
@@ -226,7 +226,7 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
                     records=records,
                     lookups=lookups,
                     confirmations=tuple(
-                        item for item in confirmations if item.scope.record_id in included
+                        item for item in confirmations if item.record_id in included
                     ),
                     restorations=restorations,
                     previous=store.previous_geocodes(),

@@ -67,7 +67,7 @@ class LocalAdapters:
 
     def geocode(self, value: GeocodeInput, context: ExecutionContext) -> GeocodeOutput:
         lookups = {item.scope.record_id: item for item in value.lookups}
-        confirmations = {item.scope.record_id: item for item in value.confirmations}
+        confirmations = {item.record_id: item for item in value.confirmations}
         restorations = {item.record_id: item for item in value.restorations}
         previous = {item.lookup_key: item for item in value.previous}
         results = []

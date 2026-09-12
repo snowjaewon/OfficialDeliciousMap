@@ -8,7 +8,8 @@
 외부 HTTP·LLM·과금이 없다. 담당자가 지정한 건에만 아래의 후보 비교가 붙는다.
 
 상호 복원은 원본에서 잘린 상호를 근거 자료와 대조해 동일 업소의 전체 상호로 확인하는 일이다.
-후보 수집이나 검색 순위가 아니라 사람의 확인만 복원명을 확정한다.
+후보 수집이나 검색 순위가 아니라 검토한 확인만 복원명을 확정한다. 확인은 사람이 직접 쓰거나
+에이전트가 써서 사람이 PR로 승인한다. 모델이 낸 제안은 확인 파일에 넣지 않는다.
 
 ## 검토 입력
 
@@ -50,7 +51,7 @@
 | --- | --- | --- |
 | `classify.jsonl` | 사람 보정 | 식당 포함·제외 판정 |
 | `restore.jsonl` | 상호 복원 | 확정 복원명. 원본 표기는 그대로 |
-| `geocode.jsonl` | 업소 확인 | 후보 하나를 동일 업소로 확정 |
+| `geocode.jsonl` | 업소 확인 | 후보 하나를 동일 업소로 확정. `scope`는 위와 같은 `ReviewScope` |
 | `compare.jsonl` | 후보 비교 지정 | 모델에 보낼 미해결 건의 지정. 확정은 아니다 |
 
 ## 적용과 실행
@@ -87,11 +88,16 @@ uv run python -m deliciousmap build --city seoul
 어긋난 확인도 마커 대상이 아니라는 이유로 넘기지 않는다. 모든 경우에 산출물을 쓰지 않고
 `cause=conflicting-review`와 종료 1로 알린다. 담당자가 범위를 좁히거나 내용을 고쳐야 한다.
 
+업소 확인(`geocode.jsonl`)도 같은 범위·충돌 규칙을 쓴다. 한 레코드에 적용되는 확인 줄이
+가리키는 후보·상호·지점·주소가 서로 다르면 좁은 줄이 있어도 고르지 않는다. 적용 자체는
+좌표 판정의 일부이므로 `identity.POLICY_VERSION`이 그 규칙의 버전을 가진다.
+
 `restore.jsonl`의 파일 해시와 `restoration.POLICY_VERSION`은 classify·geocode의 의존성에 들어간다.
 확인을 추가·수정·철회하거나 범위를 바꾸면 이전 판정을 그대로 재사용하지 않고 classify부터 다시 실행한다.
 같은 실행 범위의 다른 업소 결과는 그대로 유지되며 `geocode-history-v2.jsonl`의 이전 이력은 남는다.
 
-geocode·closure 산출물은 조회 요청 기록까지 담은 v4이고 build는 지도·장부 분리 형식인 v5다.
+geocode 산출물은 상호 범위 업소 확인을 담은 v5, closure는 조회 요청 기록까지 담은 v4,
+build는 좌표 출처·장부 사유를 담은 v6다.
 `markers.json`에는 확정 상호·좌표·방문 횟수·폐업 표시만 싣는다. 이전 버전은
 `regeneration-required`로 거부하고
 `history/<stage>-v<version>-<content-hash>.json`에 보존한 뒤 재실행한다. 이 사본은 커밋하지

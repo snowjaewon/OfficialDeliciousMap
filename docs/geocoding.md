@@ -189,12 +189,33 @@ localdata.go.kr은 2026-04-16 종료했으므로 옛 API는 쓰지 않는다. �
 선택적 `data/manual/<city>/geocode.jsonl`은 한 줄당 `IdentityConfirmation`이다.
 식당 포함·제외용 `classify.jsonl`, 상호 복원용 `restore.jsonl`과 의미가 다르다.
 확정 복원명의 형식과 적용 규칙은 [상호 복원](restoration.md)에 있다.
-각 항목에는 후보 파일과 같은 `scope`, 선택한 후보의 `candidate_source`, 확인한 `merchant`,
-`branch`, `address`, 사람이 검토한 출처·확인 내용을 적는 `evidence`가 필요하다.
-같은 scope의 중복 확인은 오류다. 다른 레코드·원본·기관의 확인은 적용하지 않는다.
+각 항목에는 적용 범위를 밝히는 `scope`, 선택한 후보의 `candidate_source`, 확인한 `merchant`,
+`branch`, `address`, 검토한 출처·확인 내용을 적는 `evidence`가 필요하다.
+검토에 쓴 자료는 `references`에 상호 복원과 같은 형식으로 남긴다.
+
+`scope`는 상호 복원과 같은 `ReviewScope`다. `city`와 원본 표기 `merchant`는 필수이고
+`organization`·`source_hash`·`record_id`는 범위를 좁히는 선택 항목이다. 선언한 항목이 모두 맞는
+레코드에만 적용하며 같은 표기의 다른 업소로 번지지 않는다. 방문이 잦은 상호 하나를 확인하면
+그 범위의 레코드가 모두 같은 업소가 되므로, 레코드 수만큼 같은 근거를 되풀이해 적지 않는다.
+같은 `scope`를 두 줄에 적으면 오류다.
+
+한 레코드에 적용되는 줄이 여럿이고 가리키는 후보·상호·지점·주소가 서로 다르면 임의로 고르지
+않는다. 같은 업소를 가리키더라도 어느 줄이 더 좁은지 정할 수 없으면 마찬가지다. 한 줄이 다른
+모든 줄의 선언 항목을 포함할 때만 그 줄의 근거·범위를 결과에 남긴다. 이 규칙은
+[상호 복원의 충돌 규칙](restoration.md#충돌과-재실행)과 같다.
+
+확인은 사람이 직접 쓰거나 에이전트가 써서 사람이 PR로 승인한다(2026-09-12 사용자 결정).
+어느 쪽이든 `evidence`에 무엇을 대조했는지와 검토 주체를 적는다. 모델이 낸 제안은 이 파일에
+넣지 않는다. 자동 채택이 요구하는 독립 근거를 사람 확인이 면제하지는 않는다. 근거가 확정하려는
+후보 자신에서만 왔다면 그 사실을 `evidence`에 적어 뒤에 읽는 사람이 무게를 알 수 있게 한다.
+
+레코드마다 적용한 결과는 `ConfirmedPlace`로 `GeocodeResult.confirmation`에 보존한다.
 확인 값이 후보와 일치하지 않거나 조회 오류·좌표 부재가 남으면 성공으로 바꾸지 않는다.
+후보가 하나도 없는 레코드는 확인이 있어도 `no_candidates`로 남는다.
 같은 레코드의 확정 복원명과 확인한 상호가 다르면 `conflicting-review`로 알린다.
 원본이 부족하거나 충돌한 경우 사람 확인은 보충 자료를 검토한 결과로 사용한다.
+원본에 주소 열이 없어 `missing_address`로 남는 레코드는 이 경로로만 마커가 된다.
+확인의 근거와 그때 적용한 기준은 [이슈 #64 검증](validation/issue-64.md)에 있다.
 
 ## 의존성·이력·교체 경계
 
@@ -223,7 +244,8 @@ localdata.go.kr은 2026-04-16 종료했으므로 옛 API는 쓰지 않는다. �
 판정은 줄 순서가 아니라 `valid=true`인 가장 큰 revision으로 고르므로, 조각이 늘어도 선택은
 달라지지 않는다.
 
-geocode·closure 산출물은 envelope v4이고 build는 좌표 출처·장부 사유를 담은 v6다.
+geocode 산출물은 상호 범위 업소 확인을 담은 envelope v5, closure는 v4,
+build는 좌표 출처·장부 사유를 담은 v6다.
 이전 버전은 `regeneration-required`로 거부하고
 선행 정제 자료와 새 후보 입력을 준비해 세 단계를 재실행한다. 교체 전 기존 파일은
 `history/<stage>-v<version>-<content-hash>.json`에 보존한다. 이 사본은 커밋하지 않는다.

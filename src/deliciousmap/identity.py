@@ -7,20 +7,21 @@ from collections.abc import Sequence
 
 from deliciousmap.contracts import (
     CandidateLookup,
+    ConfirmedPlace,
     GeocodeResult,
-    IdentityConfirmation,
     Record,
     RestoredName,
 )
 
-POLICY_VERSION = "identity-1"
+# identity-2: 업소 확인이 상호 범위를 선언할 수 있게 됐다(#64).
+POLICY_VERSION = "identity-2"
 
 
 def normalized(value: str) -> str:
     return " ".join(unicodedata.normalize("NFC", value).split()).casefold()
 
 
-def _place_identity(
+def place_identity(
     merchant: str,
     branch: str | None,
     address: str | None,
@@ -44,7 +45,7 @@ def digest(value: object) -> str:
 def lookup_key(
     record: Record,
     lookup: CandidateLookup,
-    confirmation: IdentityConfirmation | None,
+    confirmation: ConfirmedPlace | None,
     restoration: RestoredName | None,
     dependency_key: str,
 ) -> str:
@@ -63,7 +64,7 @@ def lookup_key(
 def decide_identity(
     record: Record,
     lookup: CandidateLookup,
-    confirmation: IdentityConfirmation | None = None,
+    confirmation: ConfirmedPlace | None = None,
     restoration: RestoredName | None = None,
     *,
     dependency_key: str,
@@ -97,15 +98,15 @@ def decide_identity(
         return unresolved("no_candidates")
     facts = lookup.facts
     if confirmation is not None:
-        if confirmation.scope != lookup.scope:
-            raise ValueError("confirmation scope mismatch")
+        if confirmation.record_id != record.record_id:
+            raise ValueError("confirmation record mismatch")
         matches = [
             candidate
             for candidate in lookup.candidates
             if (
                 candidate.source == confirmation.candidate_source
-                and _place_identity(candidate.merchant, candidate.branch, candidate.address)
-                == _place_identity(confirmation.merchant, confirmation.branch, confirmation.address)
+                and place_identity(candidate.merchant, candidate.branch, candidate.address)
+                == place_identity(confirmation.merchant, confirmation.branch, confirmation.address)
             )
         ]
     else:
@@ -116,7 +117,7 @@ def decide_identity(
             return unresolved("insufficient_evidence")
         if any(fact.branch is None for fact in facts):
             return unresolved("unknown_branch")
-        identities = {_place_identity(fact.merchant, fact.branch, fact.address) for fact in facts}
+        identities = {place_identity(fact.merchant, fact.branch, fact.address) for fact in facts}
         if len(identities) != 1:
             return unresolved("conflicting_evidence")
         expected = next(iter(identities))
@@ -127,9 +128,7 @@ def decide_identity(
         matches = [
             candidate
             for candidate in lookup.candidates
-            if (
-                _place_identity(candidate.merchant, candidate.branch, candidate.address) == expected
-            )
+            if (place_identity(candidate.merchant, candidate.branch, candidate.address) == expected)
         ]
     if not matches:
         return unresolved("no_match")
@@ -158,7 +157,7 @@ def decide_identity(
                 [
                     "business-1",
                     *(
-                        _place_identity(
+                        place_identity(
                             candidate.merchant,
                             candidate.branch,
                             candidate.address,
@@ -176,7 +175,7 @@ def decide_identity(
 
 
 def _evidence(
-    confirmation: IdentityConfirmation | None,
+    confirmation: ConfirmedPlace | None,
     restoration: RestoredName | None,
     providers: Sequence[str],
 ) -> str:

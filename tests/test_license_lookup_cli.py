@@ -192,7 +192,7 @@ def test_conflicting_provider_coordinates_wait_for_a_scoped_confirmation(
         context.paths.data_root / "manual" / "seoul" / "geocode.jsonl",
         json.dumps(
             {
-                "scope": result["lookup"]["scope"],
+                "scope": {**result["lookup"]["scope"], "merchant": "같은 식당"},
                 "candidate_source": chosen["source"],
                 "merchant": "같은 식당",
                 "branch": "부산점",
