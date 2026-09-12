@@ -33,35 +33,54 @@ function request(url, mode = "same-origin") {
   return { method: "GET", mode, url: new URL(url, ORIGIN).href };
 }
 
+function isDataUrl(url) {
+  const pathname = new URL(url, ORIGIN).pathname;
+  return pathname.endsWith("/markers.json") || pathname.endsWith("/records.json");
+}
+
 function workerHarness({ entries = {}, fetchImpl }) {
   const listeners = {};
   const deleted = [];
   const precached = [];
   const opened = [];
   let claimed = false;
-  const stored = new Map(
-    Object.entries(entries).map(([url, response]) => [new URL(url, ORIGIN).href, response]),
-  );
+  const stored = new Map([
+    ["deliciousmap-shell-v1", new Map()],
+    ["deliciousmap-shell-v2", new Map()],
+    ["deliciousmap-data-v1", new Map()],
+  ]);
+  for (const [url, response] of Object.entries(entries)) {
+    const cacheName = isDataUrl(url) ? "deliciousmap-data-v1" : "deliciousmap-shell-v2";
+    stored.get(cacheName).set(new URL(url, ORIGIN).href, response);
+  }
   const key = (value) => (typeof value === "string" ? new URL(value, ORIGIN).href : value.url);
-  const cache = {
+  const cacheFor = (name) => ({
     addAll: async (urls) => {
       precached.push(...urls);
     },
-    match: async (value) => stored.get(key(value)),
-    put: async (value, response) => stored.set(key(value), response),
-  };
+    match: async (value) => stored.get(name).get(key(value)),
+    put: async (value, response) => stored.get(name).set(key(value), response),
+  });
   const context = vm.createContext({
     URL,
     caches: {
       delete: async (name) => {
         deleted.push(name);
+        stored.delete(name);
         return true;
       },
-      keys: async () => ["deliciousmap-shell-v1", "deliciousmap-data-v1"],
-      match: cache.match,
+      keys: async () => [...stored.keys()],
+      match: async (value) => {
+        for (const cache of stored.values()) {
+          const response = cache.get(key(value));
+          if (response) return response;
+        }
+        return undefined;
+      },
       open: async (name) => {
         opened.push(name);
-        return cache;
+        if (!stored.has(name)) stored.set(name, new Map());
+        return cacheFor(name);
       },
     },
     fetch: fetchImpl,
@@ -92,7 +111,8 @@ function workerHarness({ entries = {}, fetchImpl }) {
           lifetime.push(Promise.resolve(promise));
         },
       });
-      return { complete: Promise.all(lifetime), response };
+      const complete = response ? response.then(() => Promise.all(lifetime)) : Promise.resolve();
+      return { complete, response };
     },
     dispatchLifecycle(name) {
       const lifetime = [];
@@ -131,8 +151,8 @@ test("cached city shell responds before its background refresh finishes", async 
   assert.equal(firstSettled, oldShell);
   assert.deepEqual(harness.opened, ["deliciousmap-shell-v2"]);
   network.resolve(freshShell);
-  await new Promise((resolve) => setImmediate(resolve));
-  assert.equal(harness.stored.get(`${ORIGIN}/gwangju/`).body, "fresh shell");
+  await event.complete;
+  assert.equal(harness.stored.get("deliciousmap-shell-v2").get(`${ORIGIN}/gwangju/`).body, "fresh shell");
 });
 
 test("markers stay network-first while a successful response refreshes the offline fallback", async () => {
@@ -183,13 +203,22 @@ test("unrelated same-origin resources remain outside the worker cache policy", a
 });
 
 test("activate removes old shell versions and claims open pages", async () => {
-  const harness = workerHarness({ fetchImpl: async () => fakeResponse("ok") });
+  const harness = workerHarness({
+    entries: { "/gwangju/markers.json": fakeResponse("cached markers") },
+    fetchImpl: async () => {
+      throw new Error("offline");
+    },
+  });
 
   await harness.dispatchLifecycle("activate");
 
   assert.deepEqual(harness.deleted, ["deliciousmap-shell-v1"]);
   assert.deepEqual(harness.opened, []);
   assert.equal(harness.claimed, true);
+
+  const fallback = await harness.dispatchFetch(request("/gwangju/markers.json")).response;
+  assert.equal(fallback.body, "cached markers");
+  assert.deepEqual(harness.opened, ["deliciousmap-data-v1"]);
 });
 
 test("install precaches the current shell", async () => {

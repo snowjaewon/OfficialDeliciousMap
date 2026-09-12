@@ -208,7 +208,7 @@ PowerShell: Get-Content .env | ForEach-Object { if ($_ -match '^(\w+)=(.*)$') { 
 브라우저 로직 테스트에는 Node.js 20 이상이 필요하며 아래 명령은 외부 패키지를 설치하지 않는다.
 
 ```text
-node --test tests/site_behavior.test.js tests/measure_map.test.js
+node --test tests/site_behavior.test.js tests/measure_map.test.js tests/service_worker.test.js
 ```
 
 #### 지도 성능 측정
