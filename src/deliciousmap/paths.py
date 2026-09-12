@@ -27,8 +27,8 @@ class Paths:
         return self.board_dir(target, organization, board) / name
 
     def manual(self, target: Target, name: str) -> Path:
-        """사람 보정·상호 복원·업소 확인·비교 지정은 의미가 다르므로 파일을 나눈다."""
-        if name not in {"classify", "restore", "geocode", "compare"}:
+        """사람 보정·상호 복원·업소 확인·비교 지정·미해결 원본 대조는 파일을 나눈다."""
+        if name not in {"classify", "restore", "geocode", "compare", "sources"}:
             raise ValueError("unknown manual review input")
         return self.data_root / "manual" / target.city.slug / f"{name}.jsonl"
 

@@ -10,6 +10,7 @@ import openpyxl
 import pytest
 
 from deliciousmap.grid import UnreadableOriginal, UnsupportedFormat, read_tables
+from tests import pdf
 from tests.gwangju import workbook
 
 
@@ -92,10 +93,58 @@ def test_workbook_without_readable_sheets_is_not_reported_as_empty(tmp_path: Pat
 
 @pytest.mark.parametrize(
     "content",
-    [b"%PDF-1.7 synthetic", b"HWP Document File", b"PK\x03\x04not-a-workbook"],
+    [b"HWP Document File", b"PK\x03\x04not-a-workbook"],
 )
 def test_other_formats_are_unsupported(tmp_path: Path, content: bytes) -> None:
     path = tmp_path / "원본.xls"
     path.write_bytes(content)
     with pytest.raises(UnsupportedFormat):
+        read_tables(path)
+
+
+def test_pdf_table_is_read_with_the_page_as_the_label(tmp_path: Path) -> None:
+    path = tmp_path / "집행내역.pdf"
+    path.write_bytes(
+        pdf.document(
+            [
+                ("사용자", "사용일시", "사용장소", "사용금액"),
+                ("", "계", "", "155,000"),
+                ("합성과", "2026-01-07 12:22", "합성식당", "93,000"),
+                ("합성과", "2026-01-08 12:22", "합성찻집", "62,000"),
+            ]
+        )
+    )
+    (table,) = read_tables(path)
+    assert (table.name, table.label) == ("table1", "1쪽")
+    assert table.rows[0] == ("사용자", "사용일시", "사용장소", "사용금액")
+    assert table.rows[2] == ("합성과", "2026-01-07 12:22", "합성식당", "93,000")
+
+
+def test_pdf_numbers_the_tables_and_names_the_page_each_came_from(tmp_path: Path) -> None:
+    path = tmp_path / "집행내역.pdf"
+    path.write_bytes(
+        pdf.document(
+            [("사용일시", "사용장소"), ("2026-01-07", "합성식당")],
+            [("사용일시", "사용장소"), ("2026-02-09", "합성찻집")],
+        )
+    )
+    first, second = read_tables(path)
+    assert [(table.name, table.label) for table in (first, second)] == [
+        ("table1", "1쪽"),
+        ("table2", "2쪽"),
+    ]
+    assert second.rows[1] == ("2026-02-09", "합성찻집")
+
+
+def test_pdf_without_a_readable_table_is_not_reported_as_empty(tmp_path: Path) -> None:
+    """괘선이 없어 칸을 가를 수 없는 PDF. 표 0개를 집행 없음으로 바꾸지 않는다."""
+    path = tmp_path / "안내문.pdf"
+    path.write_bytes(pdf.document([("붙임과 같이 게시합니다.",)], ruled=False))
+    assert read_tables(path) == ()
+
+
+def test_broken_pdf_is_unreadable_rather_than_an_unsupported_format(tmp_path: Path) -> None:
+    path = tmp_path / "깨진.pdf"
+    path.write_bytes(b"%PDF-1.7 synthetic")
+    with pytest.raises(UnreadableOriginal):
         read_tables(path)

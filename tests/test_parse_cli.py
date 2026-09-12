@@ -9,11 +9,13 @@ import pytest
 
 from deliciousmap.cli import main
 from deliciousmap.storage import write_text
+from tests import pdf
 from tests.gwangju import (
     ANSWER_B,
     FakeBoardTransport,
     FakeModel,
     Post,
+    bundle,
     city,
     gemini_reply,
     header_answer,
@@ -23,6 +25,7 @@ from tests.gwangju import (
 )
 
 DATA = Path("저장소") / "data"
+ORG = "gwangju-city"
 
 
 def record_spending(root: Path, amount: str = "0.35") -> None:
@@ -45,13 +48,18 @@ def record_spending(root: Path, amount: str = "0.35") -> None:
 
 
 def run(
-    root: Path, stage: str, model: FakeModel | None = None, board: FakeBoardTransport | None = None
+    root: Path,
+    stage: str,
+    model: FakeModel | None = None,
+    board: FakeBoardTransport | None = None,
+    org: str | None = None,
 ) -> int:
     return main(
         [
             stage,
             "--city",
             "gwangju",
+            *(["--org", org] if org else []),
             "--raw-root",
             str(root / "외부 원본"),
             "--data-root",
@@ -65,8 +73,9 @@ def run(
     )
 
 
-def payload(root: Path, stage: str) -> dict:
-    path = root / DATA / "gwangju" / f"{stage}.json"
+def payload(root: Path, stage: str, org: str | None = None) -> dict:
+    base = root / DATA / "gwangju"
+    path = (base / "orgs" / org if org else base) / f"{stage}.json"
     return json.loads(path.read_text(encoding="utf-8"))["payload"]
 
 
@@ -80,7 +89,9 @@ def ledger(root: Path) -> list[dict]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
 
 
-def publish(root: Path, *files: tuple[str, bytes], department: str = "합성과") -> list[str]:
+def publish(
+    root: Path, *files: tuple[str, bytes], department: str = "합성과", org: str | None = None
+) -> list[str]:
     """게시글마다 원본 하나를 올리고 fetch한다. 원본 해시를 게시 순서대로 돌려준다."""
     posts = tuple(
         Post(
@@ -92,8 +103,8 @@ def publish(root: Path, *files: tuple[str, bytes], department: str = "합성과"
         )
         for index, file in enumerate(files)
     )
-    assert run(root, "fetch", board=FakeBoardTransport(posts)) == 0
-    return [item["source_hash"] for item in payload(root, "fetch")["sources"]]
+    assert run(root, "fetch", board=FakeBoardTransport(posts), org=org) == 0
+    return [item["source_hash"] for item in payload(root, "fetch", org=org)["sources"]]
 
 
 QUARTER = sheet_a(
@@ -108,6 +119,13 @@ QUARTER = sheet_a(
     ("2025-12-30\n11:46", "합성 복집", "연말 업무 협의", 6.0, 117000.0),
 )
 MAY = sheet_b((datetime(2026, 5, 7, 12, 0), "업무 협의 간담회", 56000.0, "합성 한우촌"))
+# 실제 시의회 게시분 PDF 3개와 같은 모양. 헤더가 첫 줄이고 그 아래가 합계 행이다.
+PDF_PAGE = [
+    ("사용자", "사용일시", "사용장소", "집행목적", "대상인원수\n(명)", "사용금액\n(원)"),
+    ("", "계", "", "2 건", "", "155,000"),
+    ("합성\n전문위원", "2026-01-07 12:22", "합성식당", "현안 간담회", "4", "9 3,000"),
+    ("합성\n전문위원", "2026-01-08 12:22", "합성찻집", "의견공유 간담회", "6", "62,000"),
+]
 
 
 def test_verified_mappings_extract_every_candidate_and_reuse_the_header_cache(
@@ -345,14 +363,61 @@ def test_mapping_that_cannot_be_requested_leaves_the_original_unresolved(
 
 
 def test_unsupported_original_is_not_sent_to_the_model(tmp_path: Path, configured: None) -> None:
+    """엑셀 통합문서가 없는 ZIP 묶음. 안의 원본을 풀지 않고 사유와 함께 미해결로 남긴다."""
     record_spending(tmp_path)
-    (source,) = publish(tmp_path, ("집행내역.pdf", b"%PDF-1.7 synthetic"))
+    (source,) = publish(tmp_path, ("첨부 묶음.hwpx", bundle(("붙임.txt", b"synthetic"))))
     model = FakeModel()
     assert run(tmp_path, "headermap", model) == 0
     assert model.prompts == []
     assert payload(tmp_path, "headermap")["unresolved"] == [
         {"source_hash": source, "reason": "unsupported_format", "detail": ""}
     ]
+
+
+def test_unreadable_pdf_is_left_unresolved_without_a_model(
+    tmp_path: Path, configured: None
+) -> None:
+    """PDF는 읽는 형식이지만 구조가 깨지면 읽지 못한 것으로 남긴다. 모델에 넘기지 않는다."""
+    record_spending(tmp_path)
+    (source,) = publish(tmp_path, ("집행내역.pdf", b"%PDF-1.7 synthetic"))
+    model = FakeModel()
+    assert run(tmp_path, "headermap", model) == 0
+    assert model.prompts == []
+    assert payload(tmp_path, "headermap")["unresolved"] == [
+        {"source_hash": source, "reason": "unreadable", "detail": ""}
+    ]
+
+
+def test_pdf_original_is_mapped_and_extracted_like_a_workbook(
+    tmp_path: Path, configured: None
+) -> None:
+    """실제 원본 3개와 같은 모양의 PDF. 표 위치는 `table1`이고 합계 행도 그대로 대조한다."""
+    record_spending(tmp_path)
+    (source,) = publish(
+        tmp_path,
+        (
+            "집행내역.pdf",
+            pdf.document(PDF_PAGE),
+        ),
+    )
+    answer = header_answer(spent_on=1, merchant=2, purpose=3, amount=5, header=1)
+    model = FakeModel(headers=[answer])
+    assert run(tmp_path, "headermap", model) == 0
+    assert payload(tmp_path, "headermap")["unresolved"] == []
+    assert "시트: 1쪽" in model.calls("headermap")[0]
+
+    assert run(tmp_path, "parse") == 0
+    rows = records(tmp_path)
+    assert [(row["spent_on"], row["merchant"], row["amount_krw"]) for row in rows] == [
+        # 칸 안에서 글자가 벌어져 적힌 금액(`9 3,000`)도 하나의 금액으로 읽는다.
+        ("2026-01-07", "합성식당", "93000"),
+        ("2026-01-08", "합성찻집", "62000"),
+    ]
+    assert rows[0]["source_location"] == "table1:R3"
+    (report,) = payload(tmp_path, "parse")["sources"]
+    assert (report["status"], report["candidates"]) == ("parsed", 2)
+    assert report["total_check"] == "matched"
+    assert report["excluded"] == ["table1:R2 total"]
 
 
 @pytest.mark.parametrize(
@@ -465,3 +530,93 @@ def test_a_parse_artifact_from_the_previous_schema_asks_for_a_rerun(
 
     assert run(tmp_path, "classify") == 1
     assert "cause=regeneration-required" in capsys.readouterr().err
+
+
+def review(root: Path, *sources: str, city: str = "gwangju", organization: str = ORG) -> None:
+    """미해결 원본을 전수로 대조하고 남긴 기록. 원본마다 한 줄이다."""
+    write_text(
+        root / DATA / "manual" / city / "sources.jsonl",
+        "".join(
+            json.dumps(
+                {
+                    "city": city,
+                    "organization": organization,
+                    "source_hash": source,
+                    "finding": "merchant_blank",
+                    "candidates": 3,
+                    "rows": ["sheet1:R4"],
+                    "evidence": "원본의 사용장소 칸이 비어 있다(합성)",
+                    "confirmed_by": "합성 검토자",
+                },
+                ensure_ascii=False,
+            )
+            + "\n"
+            for source in sources
+        ),
+    )
+
+
+def test_source_review_keeps_an_unresolved_original_and_its_reason(
+    tmp_path: Path, configured: None
+) -> None:
+    """상호 칸이 빈 지출이 있는 원본. 사람이 전수로 보고 남겨도 장부의 사유는 그대로다."""
+    record_spending(tmp_path)
+    sheet = sheet_a(("2026-01-05", "", "협의", 4.0, 62000.0), total=False)
+    (source,) = publish(tmp_path, ("1분기.xls", workbook(sheet)))
+    assert run(tmp_path, "headermap", FakeModel(headers=[header_answer(), header_answer()])) == 0
+    review(tmp_path, source)
+    assert run(tmp_path, "parse") == 0
+    (report,) = payload(tmp_path, "parse")["sources"]
+    assert (report["status"], report["reason"], report["detail"]) == (
+        "unresolved",
+        "validation_failed",
+        "sheet1:R4 merchant",
+    )
+
+
+def test_source_review_for_an_original_that_now_parses_is_rejected(
+    tmp_path: Path, configured: None
+) -> None:
+    """코드가 읽게 된 원본에 낡은 보류 기록이 남으면 조용히 지나가지 않는다."""
+    record_spending(tmp_path)
+    (source,) = publish(tmp_path, ("1분기.xls", workbook(QUARTER)))
+    assert run(tmp_path, "headermap", FakeModel(headers=[header_answer()])) == 0
+    review(tmp_path, source)
+    assert run(tmp_path, "parse") == 1
+
+
+def test_source_review_from_another_city_is_rejected(tmp_path: Path, configured: None) -> None:
+    record_spending(tmp_path)
+    sheet = sheet_a(("2026-01-05", "", "협의", 4.0, 62000.0), total=False)
+    (source,) = publish(tmp_path, ("1분기.xls", workbook(sheet)))
+    assert run(tmp_path, "headermap", FakeModel(headers=[header_answer(), header_answer()])) == 0
+    review(tmp_path, source)
+    path = tmp_path / DATA / "manual" / "gwangju" / "sources.jsonl"
+    write_text(path, path.read_text(encoding="utf-8").replace('"gwangju"', '"busan"', 1))
+    assert run(tmp_path, "parse") == 1
+
+
+def test_a_review_for_another_organization_is_left_to_that_organization(
+    tmp_path: Path, configured: None
+) -> None:
+    """기관을 좁혀 돌리면 그 기관의 기록만 본다. 다른 기관의 보류 기록은 이 실행의 소관이 아니다."""
+    record_spending(tmp_path)
+    (source,) = publish(tmp_path, ("1분기.xls", workbook(QUARTER)), org=ORG)
+    assert run(tmp_path, "headermap", FakeModel(headers=[header_answer()]), org=ORG) == 0
+    review(tmp_path, source, organization="합성 다른 기관")
+    assert run(tmp_path, "parse", org=ORG) == 0
+
+
+def test_the_same_original_cannot_be_left_twice_with_different_reasons(
+    tmp_path: Path, configured: None
+) -> None:
+    """한 원본에 서로 다른 사유의 기록이 둘이면 어느 쪽이 장부의 사유인지 알 수 없다."""
+    record_spending(tmp_path)
+    sheet = sheet_a(("2026-01-05", "", "협의", 4.0, 62000.0), total=False)
+    (source,) = publish(tmp_path, ("1분기.xls", workbook(sheet)))
+    assert run(tmp_path, "headermap", FakeModel(headers=[header_answer(), header_answer()])) == 0
+    review(tmp_path, source, source)
+    path = tmp_path / DATA / "manual" / "gwangju" / "sources.jsonl"
+    both = path.read_text(encoding="utf-8").replace("merchant_blank", "total_mismatch", 1)
+    write_text(path, both)
+    assert run(tmp_path, "parse") == 1

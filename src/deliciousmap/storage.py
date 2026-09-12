@@ -36,6 +36,7 @@ from deliciousmap.contracts import (
     RestorationProposal,
     ScopedReview,
     SourceRef,
+    SourceReview,
 )
 from deliciousmap.paths import Paths
 from deliciousmap.registry import Target
@@ -402,6 +403,7 @@ class ArtifactStore:
                 raise ValueError("record organization mismatch")
             if output.sources:
                 self._validate_reports(output)
+            self._validate_source_reviews(output)
         elif isinstance(output, ClassifyOutput):
             records = self.load("parse", ParseOutput).records
             require_exact_keys(
@@ -461,6 +463,30 @@ class ArtifactStore:
             counts[record.source_hash] = counts.get(record.source_hash, 0) + 1
         if any(item.records != counts.get(item.source_hash, 0) for item in output.sources):
             raise ValueError("parse report record counts do not match the records")
+
+    def _validate_source_reviews(self, output: ParseOutput) -> None:
+        """보류 기록은 이번 실행에서도 미해결인 원본만 가리켜야 한다.
+
+        코드가 읽게 된 원본에 낡은 기록이 남으면 장부와 어긋난다. 가리키는 원본이 이번 보고에
+        아예 없는 것도 알린다 — 기관을 좁혔다면 그 기관의 기록만 읽으므로 잘못 적은 해시다.
+        """
+        unresolved = {item.source_hash for item in output.sources if item.status == "unresolved"}
+        if any(item.source_hash not in unresolved for item in self.source_reviews()):
+            raise ValueError("source review for an original that is no longer unresolved")
+
+    def source_reviews(self) -> tuple[SourceReview, ...]:
+        """전수 대조로 남긴 미해결 원본의 기록. 값을 채워 통과시키지는 않는다."""
+        entries = read_reviews(self.paths.manual(self.target, "sources"), SourceReview)
+        if any(item.city != self.target.city.slug for item in entries):
+            raise ValueError("source review city mismatch")
+        scoped = tuple(
+            item
+            for item in entries
+            if self.target.org is None or item.organization == self.target.org
+        )
+        if len({item.source_hash for item in scoped}) != len(scoped):
+            raise ValueError("duplicate source review")
+        return scoped
 
     def manual(self) -> tuple[ManualCorrection, ...]:
         corrections = read_reviews(self.paths.manual(self.target, "classify"), ManualCorrection)
