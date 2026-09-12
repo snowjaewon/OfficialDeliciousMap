@@ -392,6 +392,34 @@ test("긴 프레임보다 짧은 AnimationFrame 안의 긴 작업도 원인으�
   assert.equal(summary.freeze_count, 1);
 });
 
+test("한 긴 프레임에 네이버와 애플리케이션 작업이 함께 있으면 양쪽 원인을 남긴다", () => {
+  const summary = summarizeTrace({
+    traceEvents: [
+      { name: "FramePresented", ph: "I", ts: 0 },
+      { name: "FramePresented", ph: "I", ts: 16667 },
+      { name: "AnimationFrame", ph: "X", ts: 20000, dur: 150000, args: {} },
+      {
+        name: "RunTask",
+        ph: "X",
+        ts: 30000,
+        dur: 60000,
+        args: { data: { url: "https://map.naver.com/sdk.js" } },
+      },
+      {
+        name: "RunTask",
+        ph: "X",
+        ts: 90000,
+        dur: 60000,
+        args: { data: { url: "http://127.0.0.1:8765/gwangju/app.js" } },
+      },
+    ],
+  });
+
+  assert.deepEqual(summary.source.application, { count: 1, total_ms: 60, maximum_ms: 60 });
+  assert.deepEqual(summary.source.naver_sdk, { count: 1, total_ms: 60, maximum_ms: 60 });
+  assert.equal(summary.source.other.count, 0);
+});
+
 test("20회 trace 중 하나라도 끊기면 성능 판정은 미달이다", () => {
   const attempts = [
     ...Array(19).fill({ verdict: "pass", longest_frame_ms: 16.7 }),

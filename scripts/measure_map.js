@@ -247,6 +247,14 @@ function isNestedEvent(child, parent) {
   );
 }
 
+function nestedEvents(events, parent) {
+  return events.filter((event) => isNestedEvent(event, parent));
+}
+
+function excludeNestedEvents(events, parents) {
+  return events.filter((event) => !parents.some((parent) => isNestedEvent(event, parent)));
+}
+
 function sourceSummary(events, allEvents = events) {
   const summary = {
     application: { count: 0, total_ms: 0, maximum_ms: null },
@@ -298,10 +306,9 @@ function summarizeTrace(trace, options = {}) {
   const freezeAnimationEvents = longAnimationEvents.filter(
     (event) => (eventDurationMs(event) ?? 0) >= FREEZE_FRAME_MS,
   );
-  const freezeTaskEvents = longTaskEvents.filter(
-    (task) =>
-      (eventDurationMs(task) ?? 0) >= FREEZE_FRAME_MS &&
-      !freezeAnimationEvents.some((animation) => isNestedEvent(task, animation)),
+  const freezeTaskEvents = excludeNestedEvents(
+    longTaskEvents.filter((task) => (eventDurationMs(task) ?? 0) >= FREEZE_FRAME_MS),
+    freezeAnimationEvents,
   );
   const freezeCount = [
     ...intervals.filter((interval) => interval >= FREEZE_FRAME_MS),
@@ -315,10 +322,14 @@ function summarizeTrace(trace, options = {}) {
     (event) => (eventDurationMs(event) ?? 0) >= LONG_TASK_MS,
   );
   const sourceEvents = [
-    ...attributedAnimationEvents,
-    ...longTaskEvents.filter(
-      (task) => !attributedAnimationEvents.some((animation) => isNestedEvent(task, animation)),
+    ...new Set(
+      attributedAnimationEvents.flatMap((animation) => {
+        const nestedTasks = nestedEvents(longTaskEvents, animation);
+        const nestedSources = new Set(nestedTasks.map(traceSource));
+        return nestedTasks.length > 1 && nestedSources.size > 1 ? nestedTasks : [animation];
+      }),
     ),
+    ...excludeNestedEvents(longTaskEvents, attributedAnimationEvents),
   ];
   const source = sourceSummary(sourceEvents, events);
   return {

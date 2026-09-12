@@ -36,7 +36,7 @@
 | `uv run mypy src` | 통과, 29개 소스 파일 |
 | `uv run pytest` | 162 passed, 50.70초 |
 | `node --test tests/site_behavior.test.js` | 6 passed |
-| `uv run python -m deliciousmap --help` | 종료 0 |
+| `.venv/Scripts/python.exe -m deliciousmap --help` | 종료 0 |
 | `uv build --wheel` | 통과, wheel에 4개 정적 자산 포함 |
 | `git diff --check` | 통과 |
 | `gitleaks git --no-banner --redact` | 통과, 비밀 탐지 없음 |
@@ -50,16 +50,17 @@
 
 ## 측정 하네스의 자동 검사
 
-`scripts/measure_map.js`와 `tests/measure_map.test.js`를 더하고 코드 리뷰를 반영한 뒤(2026-09-12) 실행했다.
+`scripts/measure_map.js`와 `tests/measure_map.test.js`를 더하고 코드 리뷰를 반영한 뒤
+(최종 재검증 2026-09-13) 실행했다. 이 환경에는 `uv` 실행 파일이 없어 같은 가상환경의
+도구 경로를 직접 호출했다.
 
 | 검사 | 결과 |
 | --- | --- |
-| `uv sync --locked` | 통과, 31개 패키지 확인 |
-| `uv run ruff check .` | 통과 |
-| `uv run ruff format --check .` | 통과, 91개 파일 |
-| `uv run mypy src` | 통과, 39개 소스 파일 |
-| `uv run pytest` | 375 passed, 94.84초 |
-| `node --test tests/site_behavior.test.js tests/measure_map.test.js` | 24 passed |
+| `.venv/Scripts/ruff.exe check .` | 통과 |
+| `.venv/Scripts/ruff.exe format --check .` | 통과, 99개 파일 |
+| `.venv/Scripts/mypy.exe src` | 통과, 44개 소스 파일 |
+| `.venv/Scripts/pytest.exe --basetemp <저장소 밖 임시 경로>` | 422 passed, 55.12초 |
+| `node --test tests/site_behavior.test.js tests/measure_map.test.js` | 35 passed |
 | `git diff --check` | 통과 |
 | `uv run python -m deliciousmap --help` | 종료 0 |
 
@@ -171,6 +172,8 @@ gzip·루트 밖 경로 거부)는 `node:test`로 검증한다. Chrome을 CDP로
 네이버 SDK, 로컬 앱 URL이면 애플리케이션으로 귀속했다. URL이 없는 compositor 작업은
 미분류로 남겼다. 원본 120개 trace는 저장소 밖 gzip 파일이며, 커밋된 축약 검증 보고서만
 [`issue-78-gwangju-2026-09-12.json`](issue-29/issue-78-gwangju-2026-09-12.json)에 남겼다.
+보고서의 `code_commit`은 trace를 캡처한 커밋이고, `summary_parser_commit`은 같은 원본을
+겹친 작업 제거와 멈춤 판정 보강 후 다시 요약한 커밋이다.
 
 | 환경 | 조작 | 회차 | 충족 회차 | 끊김 회차 | 멈춤 회차 | 가장 긴 간격 | 긴 프레임 | 판정 |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
@@ -184,7 +187,8 @@ gzip·루트 밖 경로 거부)는 `node:test`로 검증한다. Chrome을 CDP로
 모의 모바일 줌의 긴 프레임은 네이버 SDK 27건(총 1,719.7ms)과 애플리케이션 15건
 (총 1,044.4ms), 드래그는 네이버 SDK 6건(362.2ms)과 애플리케이션 8건(494ms)이 겹친
 구간으로 귀속됐다. 이는 URL이 포함된 스크립트 작업의 원인 단서이지 지도 SDK 전체의
-책임을 증명하지 않는다. 데스크톱의 끊김과 모바일 장부 스크롤의 멈춤은 긴 작업 URL
+책임을 증명하지 않는다. 한 긴 프레임 안에 두 출처의 긴 작업이 겹치면 자식 작업을 출처별로
+나눠 세어 한쪽 출처로 임의 귀속하지 않는다. 데스크톱의 끊김과 모바일 장부 스크롤의 멈춤은 긴 작업 URL
 근거가 없어 미분류로 남겼으며, 다음 개선에서 별도 프로파일링이 필요하다.
 
 ### 원인 진단
