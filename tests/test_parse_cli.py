@@ -13,6 +13,7 @@ from deliciousmap.storage import write_text
 from tests import pdf
 from tests.gwangju import (
     ANSWER_B,
+    HEADER_A,
     FakeBoardTransport,
     FakeModel,
     Post,
@@ -250,11 +251,13 @@ def test_unresolved_original_carries_the_candidate_count_of_every_table(
         }
     ]
     # 실패한 시트의 매핑도, 그 뒤 시트의 매핑도 parse까지 간다.
-    assert [item["table"] for item in mapped["rejected"]] == ["sheet1", "sheet2"]
+    assert [item["table"] for item in mapped["unresolved_mappings"]] == ["sheet1", "sheet2"]
 
     assert run(tmp_path, "parse") == 0
     (report,) = payload(tmp_path, "parse")["sources"]
     assert (report["status"], report["candidates"], report["records"]) == ("unresolved", 3, 0)
+    # 분모에서 뺀 행도 근거와 위치를 남긴다(빈 행·제목·합계).
+    assert report["excluded"] == ["sheet1:R6 total", "sheet2:R5 total"]
     assert records(tmp_path) == []
 
 
@@ -270,14 +273,43 @@ def test_table_without_a_mapping_leaves_the_candidate_count_unknown(
     model = FakeModel(headers=[header_answer(), header_answer(), card])
     assert run(tmp_path, "headermap", model) == 0
     mapped = payload(tmp_path, "headermap")
-    assert [item["table"] for item in mapped["rejected"]] == ["sheet1"]
+    assert [item["table"] for item in mapped["unresolved_mappings"]] == ["sheet1"]
     assert mapped["unresolved"] == [
         {"source_hash": source, "reason": "validation_failed", "detail": "sheet1:R4 merchant"}
     ]
 
     assert run(tmp_path, "parse") == 0
     (report,) = payload(tmp_path, "parse")["sources"]
-    assert (report["status"], report["candidates"]) == ("unresolved", None)
+    assert (report["status"], report["candidates"], report["excluded"]) == ("unresolved", None, [])
+
+
+def test_mapping_that_finds_no_candidate_is_not_counted_as_zero(
+    tmp_path: Path, configured: None
+) -> None:
+    """쓰지 않기로 한 판정이 후보를 하나도 찾지 못하면 집행 없음이 아니라 알 수 없음이다."""
+    record_spending(tmp_path)
+    # 지출 행의 금액이 판정한 열에 없는 원본. 지출 행은 후보로 잡히지 않고 합계 행만 읽힌다.
+    sheet = [
+        (),
+        ("", "□ 합성과 업무추진비 사용내역(26.1월)"),
+        HEADER_A,
+        ("", "합성과장", "", "", "현안 업무 협의", 4.0, "", "카드", "62,000"),
+        ("", "", "계", "", "", "1건", 62000.0, "", ""),
+    ]
+    (source,) = publish(tmp_path, ("금액 열이 빈 표.xls", workbook(sheet)))
+    model = FakeModel(headers=[header_answer(), header_answer()])
+    assert run(tmp_path, "headermap", model) == 0
+    assert payload(tmp_path, "headermap")["unresolved"] == [
+        {
+            "source_hash": source,
+            "reason": "validation_failed",
+            "detail": "sheet1:R5 total amount mismatch",
+        }
+    ]
+
+    assert run(tmp_path, "parse") == 0
+    (report,) = payload(tmp_path, "parse")["sources"]
+    assert (report["status"], report["candidates"], report["excluded"]) == ("unresolved", None, [])
 
 
 @pytest.mark.parametrize("recovers", [True, False])
