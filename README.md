@@ -322,9 +322,11 @@ JSON 객체의 키와 줄의 `(key, revision)`을 정렬하며, 이력의 기존
 유효 판정은 `valid=true`인 가장 큰 revision이다. 검증 실패 이력은 이전 유효 판정을 삭제하지 않는다.
 캐시에서 찾은 매핑이 검증에 실패하면 그 원본에서는 캐시를 쓰지 않고 한 번만 다시 묻는다.
 
-`geocode.json`은 현 실행의 결과이고 `geocode-history-v2.jsonl`은 레코드·범위·후보·근거·
-사람 확인·확정 복원명·판정 정책 버전의 해시 키로 성공·미확정을 추가 보존한다. 선행 산출물과
-검토 파일의 해시는 이 키에 넣지 않는다([ADR-0004](docs/adr/0003-narrow-geocode-history-key.md)).
+`geocode.json`은 현 실행의 결과이고 `geocode-history-v2.jsonl`은 판정이 레코드에서 읽는 값·범위·
+후보·근거·사람 확인·확정 복원명·판정 정책 버전의 해시 키로 성공·미확정을 추가 보존한다. 선행
+산출물과 검토 파일의 해시는 이 키에 넣지 않으며([ADR-0003](docs/adr/0003-narrow-geocode-history-key.md)),
+레코드도 통째로 넣지 않고 판정이 읽는 `record_id`·`merchant`만 넣는다
+([ADR-0005](docs/adr/0005-key-only-what-the-decision-reads.md)).
 `geocode-lookup-v1.jsonl`은 제공자·요청 맥락·응답 해석 버전의 해시 키로 조회 결과만 따로 보존한다.
 조회 캐시 적중은 동일 업소 확정이나 사람 확인이 아니며 판정 이력과 섞지 않는다.
 변경 없는 재실행은 이력을 중복 추가하지 않는다. 옛 `geocode-history.jsonl`은 보존만 하며

@@ -3,35 +3,50 @@
 import json
 from copy import deepcopy
 from dataclasses import replace
+from datetime import date
+from decimal import Decimal
 from pathlib import Path
 
 import pytest
 
 from deliciousmap.cli import main
-from deliciousmap.contracts import Classification, ClassifyOutput, ParseOutput, Record
+from deliciousmap.contracts import (
+    Classification,
+    ClassifyOutput,
+    ParseOutput,
+    Record,
+    RecordOrigin,
+)
 from deliciousmap.pipeline import ExecutionContext
 from deliciousmap.registry import Target
 from deliciousmap.storage import ArtifactStore, write_text
 from tests.test_pipeline import context_at
 
 
+def synthetic_record(**changes: object) -> Record:
+    """이 파일과 판정 키 테스트가 함께 쓰는 합성 레코드 하나."""
+    return Record.model_validate(
+        {
+            "record_id": "r1",
+            "spent_on": "2026-01-02",
+            "organization": "test-org",
+            "department": "총무과",
+            "merchant": "같은 식당",
+            "purpose": "출장 식사",
+            "amount_krw": "1000",
+            "source_hash": "a" * 64,
+            "source_location": "sheet1:R2",
+            **changes,
+        }
+    )
+
+
 def prepare(tmp_path: Path, org: str | None = None) -> ExecutionContext:
     context = context_at(tmp_path)
     if org is not None:
         context = replace(context, target=Target(context.target.city, org))
-    record = Record(
-        record_id="r1",
-        spent_on="2026-01-02",
-        organization="test-org",
-        department="총무과",
-        merchant="같은 식당",
-        purpose="출장 식사",
-        amount_krw="1000",
-        source_hash="a" * 64,
-        source_location="sheet1:R2",
-    )
     store = ArtifactStore(context.paths, context.target)
-    store.save("parse", ParseOutput(records=(record,)))
+    store.save("parse", ParseOutput(records=(synthetic_record(),)))
     store.save(
         "classify",
         ClassifyOutput(
@@ -361,6 +376,44 @@ def test_conflicting_coordinates_for_the_same_business_are_explicitly_unresolved
     assert run_cli(context, "build") == 0
     assert payload(context, "build")["record_count"] == 2
     assert payload(context, "build")["marker_count"] == 0
+
+
+def test_record_changes_outside_the_decision_reuse_the_judgement_without_growing_history(
+    tmp_path: Path,
+) -> None:
+    context = prepare(tmp_path)
+    save_input(context, lookup())
+    assert run_cli(context, "geocode") == 0
+    history = context.paths.city_dir(context.target) / "geocode-history-v2.jsonl"
+    original = history.read_bytes()
+    first = payload(context, "geocode")["results"][0]
+
+    store = ArtifactStore(context.paths, context.target)
+    records = store.load("parse", ParseOutput).records
+    decisions = store.load("classify", ClassifyOutput).decisions
+    # 판정이 읽지 않는 칸만 바꾼다. 겹친 출처(`repeats`)는 판정 입력이 아니라 출처 표시다.
+    store.save(
+        "parse",
+        ParseOutput(
+            records=(
+                records[0].model_copy(
+                    update={
+                        "spent_on": date(2026, 3, 4),
+                        "department": "다른과",
+                        "purpose": "다른 목적",
+                        "amount_krw": Decimal("2000"),
+                        "source_location": "sheet1:R9",
+                        "repeats": (RecordOrigin(source_hash="b" * 64, location="sheet1:R3"),),
+                    }
+                ),
+            )
+        ),
+    )
+    store.save("classify", ClassifyOutput(decisions=decisions))
+
+    assert run_cli(context, "geocode") == 0
+    assert payload(context, "geocode")["results"][0] == first
+    assert history.read_bytes() == original
 
 
 def test_failed_results_are_reused_until_explicit_retry_or_changed_evidence(tmp_path: Path) -> None:
