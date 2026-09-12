@@ -226,7 +226,7 @@ def parse_sources(
 
 
 class ExpenseKey(NamedTuple):
-    """지출 하나의 동일성(ADR-0003). 집행목적은 재게시가 다시 쓰므로 넣지 않는다."""
+    """지출 하나의 동일성(ADR-0004). 집행목적은 재게시가 다시 쓰므로 넣지 않는다."""
 
     organization: str
     department: str
@@ -248,8 +248,8 @@ class Merge:
 
 
 def merge_repeats(records: tuple[Record, ...], sources: tuple[SourceRef, ...]) -> Merge:
-    """원본을 넘어 반복된 지출을 한 건으로 모은다([ADR-0003](
-    ../../docs/adr/0003-merge-repeated-reposts.md)).
+    """원본을 넘어 반복된 지출을 한 건으로 모은다([ADR-0004](
+    ../../docs/adr/0004-merge-repeated-reposts.md)).
 
     누적 파일·정정본은 이미 공개한 기간을 다시 싣는다. 두 원본이 같은 지출을 2건 이상 함께 실을
     때만 재게시로 보고 합친다. 근거가 그에 못 미치면 줄이지 않고 남긴 수를 집계에 싣는다.
@@ -331,7 +331,7 @@ def _reposted(carried: Carried, other: Carried) -> bool:
     """두 원본이 같은 장부를 다시 실은 관계인지. 같은 지출을 2건 이상 함께 실으면 그렇다.
 
     한 건은 같은 날 같은 곳에서 같은 금액을 쓴 우연일 수 있다(원본 안에서 실제로 나온다).
-    한 쌍에서 그 우연이 둘 겹치지는 않는다. 근거가 한 건뿐이면 가르지 않고 남긴다(ADR-0003).
+    한 쌍에서 그 우연이 둘 겹치지는 않는다. 근거가 한 건뿐이면 가르지 않고 남긴다(ADR-0004).
     """
     return sum((carried & other).values()) >= 2
 

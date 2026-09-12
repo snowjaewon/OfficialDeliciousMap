@@ -64,8 +64,8 @@ class Record(Contract):
     amount_krw: Decimal = Field(allow_inf_nan=False)
     source_hash: Sha256
     source_location: Token
-    # 이 지출을 함께 실은 다른 원본들. 누적 재게시로 합친 레코드만 가지며([ADR-0003](
-    # ../../docs/adr/0003-merge-repeated-reposts.md)) 행 하나가 아니라 지출 하나의 출처다.
+    # 이 지출을 함께 실은 다른 원본들. 누적 재게시로 합친 레코드만 가지며([ADR-0004](
+    # ../../docs/adr/0004-merge-repeated-reposts.md)) 행 하나가 아니라 지출 하나의 출처다.
     repeats: tuple[RecordOrigin, ...] = ()
 
     @model_validator(mode="after")
@@ -748,7 +748,7 @@ class ExcludedSources(Contract):
 class RepeatedExpenses(Contract):
     """원본을 넘어 반복된 지출의 병합 결과. 합친 수와 가르지 못해 남긴 수를 함께 싣는다.
 
-    기준은 [ADR-0003](../../docs/adr/0003-merge-repeated-reposts.md)이다. `unmerged_expenses`가
+    기준은 [ADR-0004](../../docs/adr/0004-merge-repeated-reposts.md)이다. `unmerged_expenses`가
     0이 아니면 재게시인지 별개 지출인지 가를 근거가 없어 남긴 묶음이 그만큼 있다는 뜻이다.
     """
 

@@ -642,7 +642,7 @@ CUMULATIVE = sheet_a(
 def test_cumulative_repost_is_merged_and_both_originals_stay_traceable(
     tmp_path: Path, configured: None
 ) -> None:
-    """부서가 1월분을 1분기 누적 파일로 다시 올리면 장부의 건수가 부풀지 않는다(ADR-0003)."""
+    """부서가 1월분을 1분기 누적 파일로 다시 올리면 장부의 건수가 부풀지 않는다(ADR-0004)."""
     record_spending(tmp_path)
     month, quarter = publish(
         tmp_path,

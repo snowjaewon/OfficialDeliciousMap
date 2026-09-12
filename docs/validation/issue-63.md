@@ -2,7 +2,7 @@
 
 2026-09-12, Windows 11 · Git Bash · Python 3.12.10.
 범위: [누적 재게시로 반복된 레코드 118묶음의 병합 기준 #63](https://github.com/snowjaewon/OfficialDeliciousMap/issues/63).
-정한 기준은 [ADR-0003](../adr/0003-merge-repeated-reposts.md)이고, 이 문서는 그 기준을 정할 때 읽은
+정한 기준은 [ADR-0004](../adr/0004-merge-repeated-reposts.md)이고, 이 문서는 그 기준을 정할 때 읽은
 실측과 기준대로 합친 결과다. 대상은 [#51 검증 기록](issue-51.md)이 만든 광주광역시청 레코드 2,921건이다.
 
 ## 118묶음을 어떻게 읽었나
@@ -18,7 +18,7 @@
 
 **포함 관계는 따로 세지 않았다.** 한쪽의 지출이 모두 다른 쪽에 있는 쌍은 15개인데, 그중 10개는
 공유가 2건 이상이라 위 첫 줄에 이미 들어 있다. 나머지 5개는 **작은 쪽 원본이 지출 한 건짜리**라
-포함이 곧 "그 한 건이 다른 원본에도 있다"와 같은 말이다. 그래서 기준에서 포함 조항을 뺐다(ADR-0003).
+포함이 곧 "그 한 건이 다른 원본에도 있다"와 같은 말이다. 그래서 기준에서 포함 조항을 뺐다(ADR-0004).
 
 **제목의 기간 표기는 내용을 말해 주지 않는다.** 이슈가 첫 후보로 든 "제목 기간의 포함 관계"로는
 118묶음 중 84묶음만 설명되고, 22묶음은 제목 기간이 서로 겹치지 않으며, 12묶음은 제목이 같다.
@@ -121,27 +121,34 @@ uv run python -m deliciousmap classify --city gwangju --raw-root ../deliciousmap
 | `uv run ruff check .` | 통과 |
 | `uv run ruff format --check .` | 통과 |
 | `uv run mypy src` | 통과, 39개 소스 파일 |
-| `uv run pytest` | 358 passed |
+| `uv run pytest` | 373 passed (develop 리베이스 뒤) |
 | `node --test tests/site_behavior.test.js` | 11 passed |
 | `git diff --check` | 통과 |
 | gitleaks 8.30.1 | no leaks found |
 
 ## 커밋하지 않은 것 — 정제 산출물 재생성
 
-**이 변경은 `data/gwangju/`의 산출물을 다시 만들어 커밋하지 않았다.** 레코드가 줄면 `geocode`의
-의존성 키가 바뀌어 판정 이력(`geocode-history-v2.jsonl`)이 통째로 다시 쌓이는데, 그 결과가
-**20,419,912바이트로 파일당 20MB 상한(ADR-0001)을 넘는다**. 현재 15,477,093바이트에 이번 기준으로
-남는 식당 레코드 2,225건의 항목(4,942,819바이트)이 더해진 값이다(현 이력의 레코드별 최신 항목
-크기를 합산해 계산했다. 상한을 넘길 것이 확실하므로 실행하지는 않았다).
+**이 변경은 `data/gwangju/`의 산출물을 다시 만들어 커밋하지 않았다.** 처음에는 판정 이력이
+20MB 상한(ADR-0001)을 넘어 재생성이 막혀 있었으나, 작업 중
+[#61](https://github.com/snowjaewon/OfficialDeliciousMap/issues/61)이 판정 키를 레코드 입력으로
+좁히고 이력을 조각으로 나누면서 **그 막힘은 풀렸다**(ADR-0003). 이제 재생성은 판정이 실제로 바뀐
+레코드만 이력에 더한다.
 
-이력 분할은 [#61](https://github.com/snowjaewon/OfficialDeliciousMap/issues/61)의 범위다. 그래서
-이 변경은 **기준과 코드까지**이고, `run --city gwangju`로 전 단계를 다시 이어 산출물을 커밋하는 일은
-#61 뒤의 후속 작업이다. 계약 버전이 `parse` v3으로 올라갔으므로 그때까지 커밋된 `parse.json`(v2)은
-`classify` 이후 단계에서 "rerun the producing stage" 오류로 막힌다. 조용히 섞이지 않는다.
+이 기준이 바꾸는 레코드는 겹친 출처를 싣게 된 **117건**이다. 합쳐서 뺀 122건은 다시 판정하지 않는다.
+그래서 이력에 붙는 줄은 약 117줄(약 0.26MB)이고, 조각 2는 5.16MB에서 5.5MB 안쪽에 머문다.
+`repeats`가 키를 바꾸는 것은 `lookup_key`가 레코드 전체를 담기 때문이며, 겹친 출처는 판정 입력이
+아니므로 키에서 뺄지는 ADR-0003의 후속 결정이다.
+
+재생성을 이 변경에 넣지 않은 이유는 두 가지다. `geocode`·`build`는 조회 키와 공개 지도 키를 요구해
+키를 갖춘 실행이 따로 필요하고, 커밋된 산출물은 [#62](https://github.com/snowjaewon/OfficialDeliciousMap/issues/62)의
+PDF 읽기도 아직 반영하지 않아 재생성은 두 이슈의 몫이 겹친다. 계약 버전이 `parse` v3으로 올라갔으므로
+그때까지 커밋된 `parse.json`(v2)은 `classify` 이후 단계에서 "rerun the producing stage" 오류로
+막힌다. 조용히 섞이지 않는다.
 
 ## 남은 일
 
-- #61 뒤 `run --city gwangju` 재실행과 정제 산출물 재생성(레코드 2,799·마커 0 예상).
+- `run --city gwangju` 재실행과 정제 산출물 재생성(레코드 2,799·마커 0 예상). #62의 PDF
+  원본까지 함께 반영할지 정하고, 조회·지도 키를 갖춘 실행에서 한 번에 한다.
 - 정정 게시글이 값을 고친 경우는 동일성 키가 달라 두 건으로 남는다. 무엇이 정정인지 가릴 근거가
   없기 때문이며, 사람 확인 경로는 후속 작업이다. 광주 실측에서 `(수정)` 원본의 12건은 값이 같아
   합쳐졌고, 남은 1건은 정정본에만 있는 새 지출이다.

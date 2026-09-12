@@ -79,7 +79,7 @@ uv run python -m deliciousmap geocode --city seoul --retry-failed
   후보·범위 밖 건수, 분모에서 뺀 행의 위치·종류, 0원·음수 레코드의 위치, 미해결 사유를
   `parse.json`의 `sources`에 남긴다. 목적·상호의 개인정보를 지우고, 경조사 수령인처럼 상호 칸에
   사람 이름이 적힌 경우 `개인(성명 비공개)`로 가린다. 부서가 누적 파일·정정본으로 다시 올려
-  여러 원본에 반복된 지출은 [ADR-0003](docs/adr/0003-merge-repeated-reposts.md)의 기준으로 합치고,
+  여러 원본에 반복된 지출은 [ADR-0004](docs/adr/0004-merge-repeated-reposts.md)의 기준으로 합치고,
   가를 근거가 없는 묶음은 남긴 뒤 그 수를 `parse.json`의 `repeated_expenses`에 싣는다.
 - `classify`: 사람 보정 → 도시 무관 LLM 캐시 → Gemini 순. 호출 실패는 판단 보류로 두고 캐시에 남기지 않는다.
 
@@ -243,9 +243,9 @@ Node 기반 빌드 도구를 쓰지 않는다. 폐업으로 확인된 후보도 
 공통 캐시는 `data/_shared/`에 둔다. 사람 검토 입력은 의미별로 나누어
 `data/manual/<city>/`의 `classify.jsonl`(사람 보정), `restore.jsonl`(상호 복원),
 `geocode.jsonl`(업소 확인)에 둔다. 자세한 내용은 [상호 복원](docs/restoration.md)에 있다.
-커밋된 광주 산출물은 아직 누적 재게시 병합 이전(`parse` v2)이다. 다시 만들려면 geocode 판정
-이력이 파일당 20MB 상한을 넘으므로 [#61](https://github.com/snowjaewon/OfficialDeliciousMap/issues/61)
-뒤에 재생성한다. 근거는 [#63 검증 기록](docs/validation/issue-63.md)에 있다.
+커밋된 광주 산출물은 아직 누적 재게시 병합(`parse` v3)과 PDF 읽기 이전이다. 조회·지도 키를 갖춘
+실행에서 `run --city gwangju`로 한 번에 다시 만든다. 근거는
+[#63 검증 기록](docs/validation/issue-63.md)에 있다.
 
 단계 메타데이터 파일은 `<stage>.json`이며 `schema_version`(fetch·parse는 3, geocode·closure는 4,
 build는 6, 나머지는 1), `city`, `org`, 입력 해시인
@@ -297,7 +297,7 @@ JSON 객체의 키와 줄의 `(key, revision)`을 정렬하며, 이력의 기존
 
 `geocode.json`은 현 실행의 결과이고 `geocode-history-v2.jsonl`은 레코드·범위·후보·근거·
 사람 확인·확정 복원명·판정 정책 버전의 해시 키로 성공·미확정을 추가 보존한다. 선행 산출물과
-검토 파일의 해시는 이 키에 넣지 않는다([ADR-0003](docs/adr/0003-narrow-geocode-history-key.md)).
+검토 파일의 해시는 이 키에 넣지 않는다([ADR-0004](docs/adr/0003-narrow-geocode-history-key.md)).
 `geocode-lookup-v1.jsonl`은 제공자·요청 맥락·응답 해석 버전의 해시 키로 조회 결과만 따로 보존한다.
 조회 캐시 적중은 동일 업소 확정이나 사람 확인이 아니며 판정 이력과 섞지 않는다.
 변경 없는 재실행은 이력을 중복 추가하지 않는다. 옛 `geocode-history.jsonl`은 보존만 하며
