@@ -137,18 +137,20 @@ test("cached city shell responds before its background refresh finishes", async 
   const oldShell = fakeResponse("old shell");
   const freshShell = fakeResponse("fresh shell");
   const network = deferred();
+  let refreshFinished = false;
+  network.promise.then(() => {
+    refreshFinished = true;
+  });
   const harness = workerHarness({
     entries: { "/gwangju/": oldShell },
     fetchImpl: () => network.promise,
   });
 
   const event = harness.dispatchFetch(request("/gwangju/", "navigate"));
-  const firstSettled = await Promise.race([
-    event.response,
-    new Promise((resolve) => setTimeout(() => resolve("still waiting"), 10)),
-  ]);
+  const firstSettled = await event.response;
 
   assert.equal(firstSettled, oldShell);
+  assert.equal(refreshFinished, false);
   assert.deepEqual(harness.opened, ["deliciousmap-shell-v2"]);
   network.resolve(freshShell);
   await event.complete;
