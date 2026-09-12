@@ -391,6 +391,11 @@ h1 {
   cursor: pointer;
 }
 
+.collection-scope {
+  color: #4a4a4a;
+  font-size: 0.92rem;
+}
+
 .collection-warning {
   padding: 0.8rem;
   border-radius: 0.6rem;

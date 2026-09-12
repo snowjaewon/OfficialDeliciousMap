@@ -679,12 +679,31 @@ class SourceReport(Contract):
         return self
 
 
+class ExcludedSources(Contract):
+    """대상에서 빠진 원본의 사유별 수. 수집 장부는 줄지 않으며 이 수는 그 장부에서 센다.
+
+    `undeclared_in_year`는 게시일이 대상 연도인데 제목이 기간을 밝히지 않아 빠진 수다.
+    이 값이 0이 아니면 읽지 못한 표기 때문에 대상이 조용히 빠졌다는 뜻이다.
+    """
+
+    posted_out_of_range: int = Field(default=0, ge=0)
+    declared_out_of_range: int = Field(default=0, ge=0)
+    undeclared_in_year: int = Field(default=0, ge=0)
+
+    @property
+    def total(self) -> int:
+        return self.posted_out_of_range + self.declared_out_of_range + self.undeclared_in_year
+
+
 class ParseOutput(Contract):
     records: tuple[Record, ...]
     empty_reason: Text | None = None
     sources: tuple[SourceReport, ...] = ()
     # 대상 기간(`시작/끝`). 원본별 범위 밖 건수는 이 기간 밖의 유효한 지출이다.
     reporting_period: str = ""
+    # 대상을 고르는 쪽(`ArtifactStore`)이 수집 장부에서 세어 채운다. 어댑터는 대상만 받으므로
+    # 이 수를 알지 못한다.
+    excluded_sources: ExcludedSources = ExcludedSources()
 
 
 class ClassifyInput(Contract):
@@ -736,6 +755,9 @@ class BuildInput(Contract):
     geocodes: tuple[GeocodeResult, ...]
     closures: tuple[ClosureResult, ...]
     candidates: tuple[MarkerCandidate, ...]
+    # 이번 제출이 읽은 원본 수와 뺀 원본의 사유별 수. 화면의 자료 범위가 둘을 같이 낸다.
+    target_sources: int = Field(default=0, ge=0)
+    excluded_sources: ExcludedSources = ExcludedSources()
 
 
 class BuildOutput(Contract):

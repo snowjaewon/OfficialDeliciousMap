@@ -181,7 +181,9 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
                 ParseInput(sources=targets, mappings=mapped.mappings, unresolved=mapped.unresolved),
                 context,
             )
-            result = ParseOutput.model_validate(result)
+            result = ParseOutput.model_validate(result).model_copy(
+                update={"excluded_sources": store.excluded_sources()},
+            )
             source_targets = {(source.source_hash, source.organization) for source in targets}
             if any(
                 (record.source_hash, record.organization) not in source_targets
@@ -264,6 +266,8 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
                         geocodes=geocoded.results,
                         closures=closed.results,
                         candidates=candidates,
+                        target_sources=len(parsed.sources),
+                        excluded_sources=parsed.excluded_sources,
                     ),
                     context,
                 )
