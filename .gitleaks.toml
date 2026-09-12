@@ -13,9 +13,19 @@ regex = '''(?i)\b(NAVER_SEARCH_CLIENT_SECRET|NAVER_SEARCH_CLIENT_ID|DATA_GO_KR_K
 secretGroup = 2
 keywords = ["NAVER_SEARCH_CLIENT_SECRET", "NAVER_SEARCH_CLIENT_ID", "DATA_GO_KR_KEY", "GEMINI_API_KEY", "CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"]
 
-[allowlist]
+[[allowlists]]
 description = "값이 비어 있는 예시 파일과 규칙 파일 자체"
 paths = [
   '''\.env\.example$''',
   '''\.gitleaks\.toml$''',
 ]
+
+# 오탐: 정제 산출물의 캐시·판정 키(`key`·`lookup_key`·`dependency_key`)는 입력을 해시한
+# SHA-256 다이제스트다. 비밀이 아니며, 한 줄이 긴 JSON에서는 잘린 조각으로도 잡힌다(#51).
+# data/ 아래의 generic-api-key 규칙에서, 값이 소문자 16진수뿐인 경우에만 허용한다.
+[[allowlists]]
+description = "data/ 캐시·판정 키의 SHA-256 다이제스트"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = ['''(^|[\\/])data[\\/]''']
+regexes = ['''^[0-9a-f]{20,64}$''']

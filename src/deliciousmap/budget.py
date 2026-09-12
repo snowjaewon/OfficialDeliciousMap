@@ -1,19 +1,26 @@
 """공통 LLM 예산의 예약·정산·누적 보존. 모델 호출·업소 판정·사람 확정은 하지 않는다."""
 
 import os
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from decimal import Decimal
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Protocol
 
-from deliciousmap.contracts import LedgerEntry, LlmPurpose
+from deliciousmap.contracts import LedgerEntry, LlmPurpose, Usage
 from deliciousmap.storage import append_ledger, read_ledger
 
 # 프로젝트 전체 기간의 누적 한도. 날짜·월·도시·실행마다 초기화하지 않는다.
 LIMIT_USD = Decimal("15")
 
 Reason = Literal["unknown_prior_usage", "budget_exhausted", "concurrent_execution"]
+
+
+class Charged(Protocol):
+    """과금된 응답. 제공자가 알린 사용량이 없으면 None이다."""
+
+    @property
+    def usage(self) -> Usage | None: ...
 
 
 class BudgetUnavailable(Exception):
@@ -100,6 +107,26 @@ class Budget:
             )
             append_ledger(self.path, entry)
             yield Reservation(self.path, entry)
+
+    def spend[R: Charged](
+        self,
+        entry_id: str,
+        purpose: LlmPurpose,
+        model: str,
+        ceiling_usd: Decimal,
+        evidence: str,
+        request: Callable[[], R],
+        cost: Callable[[Usage], Decimal],
+    ) -> R:
+        """예약하고 호출한 뒤 알린 사용량으로 정산한다. 사용량을 모르면 예약을 그대로 둔다."""
+        with self.reserve(entry_id, purpose, model, ceiling_usd, evidence) as reservation:
+            reply = request()
+            if reply.usage is not None:
+                reservation.settle(
+                    cost(reply.usage),
+                    f"reported usage in={reply.usage.input_tokens} out={reply.usage.output_tokens}",
+                )
+        return reply
 
     @contextmanager
     def _locked(self) -> Iterator[None]:

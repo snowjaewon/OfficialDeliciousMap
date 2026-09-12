@@ -19,7 +19,7 @@ uv run python -m deliciousmap build --city seoul
 ```
 
 선행 `data/seoul/records.csv`, `parse.json`, `classify.json`은 기존 단계 계약에 맞게 준비한다.
-레코드의 기관은 도시 레지스트리에 등록되어 있어야 한다. 현재 실제 수집·분류기는 미구현이다.
+레코드의 기관은 도시 레지스트리에 등록되어 있어야 한다. 실제 수집·분류는 광주광역시청만 구현했다(#51).
 `--org <기관>`을 쓰면 입력·산출물은 `data/<city>/orgs/<org>/`에 둔다.
 입력이 누락되거나 잘못되면 안전한 원인 코드와 종료 1을 반환한다.
 

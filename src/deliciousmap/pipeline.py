@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Protocol
 
-from deliciousmap import comparison, lookup, restoration, site
+from deliciousmap import classify, comparison, headermap, lookup, restoration, site
 from deliciousmap.budget import Budget
 from deliciousmap.contracts import (
     BuildInput,
@@ -86,6 +86,9 @@ class ExecutionContext:
     map_key: site.MapKey | None = None
     # 게시판 요청 경계. 테스트는 이 자리에 응답만 주입하고 수집 규칙은 그대로 실행한다.
     board_transport: Transport | None = None
+    # 구성된 헤더 매핑·비식당 판별 모델. 없으면 캐시만 쓰고 나머지는 미해결·판단 보류로 남긴다.
+    header_mapper: headermap.HeaderMapper | None = None
+    classifier: classify.Classifier | None = None
 
 
 class Adapters(Protocol):
@@ -170,18 +173,16 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
         case "fetch":
             result = adapters.fetch(FetchInput(context.target), context)
         case "headermap":
-            fetched = store.load("fetch", FetchOutput)
-            result = adapters.headermap(HeaderMapInput(sources=fetched.sources), context)
+            result = adapters.headermap(HeaderMapInput(sources=store.reporting_sources()), context)
         case "parse":
-            fetched = store.load("fetch", FetchOutput)
+            targets = store.reporting_sources()
             mapped = store.load("headermap", HeaderMapOutput)
             result = adapters.parse(
-                ParseInput(sources=fetched.sources, mappings=mapped.mappings), context
+                ParseInput(sources=targets, mappings=mapped.mappings, unresolved=mapped.unresolved),
+                context,
             )
             result = ParseOutput.model_validate(result)
-            source_targets = {
-                (source.source_hash, source.organization) for source in fetched.sources
-            }
+            source_targets = {(source.source_hash, source.organization) for source in targets}
             if any(
                 (record.source_hash, record.organization) not in source_targets
                 for record in result.records

@@ -61,7 +61,7 @@ def main(
             naver.from_environment(naver_transport),
             licenses.from_environment(license_transport),
         )
-        comparator = gemini.from_environment(model_transport)
+        models = gemini.models_from_environment(model_transport)
         # 화면을 만드는 명령만 공개 지도 키를 요구한다. 다른 단계는 영향받지 않는다.
         map_key = site.map_key_from_environment() if args.command in {"build", "run"} else None
     except ValueError as exc:
@@ -77,9 +77,11 @@ def main(
                 paths,
                 args.retry_failed,
                 providers,
-                comparator,
+                models.comparator if models else None,
                 map_key,
                 board_transport or boards.default_transport(),
+                models.header_mapper if models else None,
+                models.classifier if models else None,
             ),
             adapters,
         )

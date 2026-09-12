@@ -4,6 +4,7 @@ import re
 import urllib.parse
 from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass
+from datetime import date
 from html.parser import HTMLParser
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING, Protocol
@@ -118,10 +119,19 @@ class Attachment:
 
 @dataclass(frozen=True)
 class Posting:
-    """게시글 하나와 거기 달린 원본 첨부 전부. 수집 기록의 단위다."""
+    """게시글 하나와 거기 달린 원본 첨부 전부. 수집 기록의 단위다.
+
+    이미 수집을 마친 게시글도 목록에 실린 값만 담아 나온다. 그때 `attachments`는 비어 있고
+    스크래퍼는 본문을 열지 않는다. 무엇을 다시 받을지는 수집이 자기 기록으로 정한다.
+    """
 
     post_id: str
     attachments: tuple[Attachment, ...]
+    # 목록이 밝힌 게시일·제목·작성 부서. 지출 기간은 제목에만 있어 대상 선별이 이 값을 쓰고,
+    # 부서는 원본 표에 부서 열이 없을 때 쓴다. 목록 구조를 읽지 않는 스크래퍼는 채우지 않는다.
+    posted: date | None = None
+    title: str = ""
+    department: str = ""
 
 
 # 이미 수집을 마친 게시글인지 묻는다. 참이면 스크래퍼는 본문을 열지 않는다.
@@ -179,11 +189,15 @@ def default_transport() -> Transport:
 
 
 def read(body: bytes, encoding: str) -> Document:
+    return parse(body, encoding, Document())
+
+
+def parse[T: Document](body: bytes, encoding: str, document: T) -> T:
+    """게시판별 해석기로 응답을 읽는다. 인코딩 계약은 `read`와 같다."""
     try:
         text = body.decode(encoding)
     except UnicodeDecodeError:
         raise UnreadableBoard("board response is not in the measured encoding") from None
-    document = Document()
     document.feed(text)
     document.close()
     return document

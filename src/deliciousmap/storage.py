@@ -9,7 +9,7 @@ import re
 import tempfile
 from pathlib import Path
 
-from deliciousmap import identity, restoration
+from deliciousmap import identity, period, restoration
 from deliciousmap.contracts import (
     BuildOutput,
     CacheEntry,
@@ -33,6 +33,7 @@ from deliciousmap.contracts import (
     Record,
     RestorationProposal,
     ScopedReview,
+    SourceRef,
 )
 from deliciousmap.paths import Paths
 from deliciousmap.registry import Target
@@ -59,8 +60,9 @@ OUTPUT_MODELS: dict[str, type[Contract]] = {
     "build": BuildOutput,
 }
 
-# geocode·closure는 조회 요청 기록을 포함하는 v4, build는 좌표 출처·장부 사유를 담은 v6다.
-SCHEMA_VERSIONS = {"fetch": 2, "geocode": 4, "closure": 4, "build": 6}
+# fetch는 출처·유실에 게시일·제목을 담은 v3, geocode·closure는 조회 요청 기록을 포함하는 v4,
+# build는 좌표 출처·장부 사유를 담은 v6다.
+SCHEMA_VERSIONS = {"fetch": 3, "geocode": 4, "closure": 4, "build": 6}
 
 # 제공자 조회 캐시. 확정 업소 판정 이력(geocode-history-v2.jsonl)과 분리해 둔다.
 LOOKUP_CACHE = "geocode-lookup-v1.jsonl"
@@ -309,6 +311,18 @@ class ArtifactStore:
         self._validate(output)
         return output
 
+    def reporting_sources(self) -> tuple[SourceRef, ...]:
+        """이번 제출이 다룰 원본. 수집 장부에서 대상 기간의 게시글 것만 고른다.
+
+        고르는 이유와 규칙은 README의 CLI 절에 있다. 수집 장부는 줄이지 않으므로
+        무엇을 받아 두었는지는 `fetch.json`에 그대로 남는다.
+        """
+        return tuple(
+            item
+            for item in self.load("fetch", FetchOutput).sources
+            if period.targets(item.posted, item.title)
+        )
+
     def _dependencies(self, stage: str) -> dict[str, str]:
         result = {
             name: hashlib.sha256((self.directory / name).read_bytes()).hexdigest()
@@ -336,7 +350,7 @@ class ArtifactStore:
             for source in output.sources:
                 if source.organization not in organizations:
                     raise ValueError("source organization mismatch")
-                source_path = source.path.resolve()
+                source_path = (self.paths.raw_root / source.path).resolve()
                 if source_path.is_relative_to(
                     self.paths.repository.resolve()
                 ) or not source_path.is_relative_to(self.paths.raw_root.resolve()):
@@ -350,11 +364,15 @@ class ArtifactStore:
                 if source.board not in boards:
                     raise ValueError("source board mismatch")
         elif isinstance(output, HeaderMapOutput):
-            sources = self.load("fetch", FetchOutput).sources
-            if {item.source_hash for item in output.mappings} != {
-                source.source_hash for source in sources
-            }:
-                raise ValueError("mapping must cover all fetched originals")
+            sources = self.reporting_sources()
+            mapped = {item.source_hash for item in output.mappings}
+            unresolved = [item.source_hash for item in output.unresolved]
+            if (
+                len(unresolved) != len(set(unresolved))
+                or mapped & set(unresolved)
+                or mapped | set(unresolved) != {source.source_hash for source in sources}
+            ):
+                raise ValueError("mapping must cover every original of the reporting period")
             identities = [(item.source_hash, item.table) for item in output.mappings]
             if len(identities) != len(set(identities)):
                 raise ValueError("duplicate mapping for a table")
@@ -367,6 +385,8 @@ class ArtifactStore:
             )
             if any(record.organization not in organizations for record in output.records):
                 raise ValueError("record organization mismatch")
+            if output.sources:
+                self._validate_reports(output)
         elif isinstance(output, ClassifyOutput):
             records = self.load("parse", ParseOutput).records
             require_exact_keys(
@@ -414,6 +434,18 @@ class ArtifactStore:
                 for path in output.files
             ):
                 raise ValueError("build must produce files within output-root")
+
+    def _validate_reports(self, output: ParseOutput) -> None:
+        """원본별 보고는 받은 원본을 한 번씩 모두 덮고, 레코드 수가 실제 레코드와 같아야 한다."""
+        reported = [item.source_hash for item in output.sources]
+        targets = {source.source_hash for source in self.reporting_sources()}
+        if len(reported) != len(set(reported)) or set(reported) != targets:
+            raise ValueError("parse report must cover every original of the reporting period once")
+        counts: dict[str, int] = {}
+        for record in output.records:
+            counts[record.source_hash] = counts.get(record.source_hash, 0) + 1
+        if any(item.records != counts.get(item.source_hash, 0) for item in output.sources):
+            raise ValueError("parse report record counts do not match the records")
 
     def manual(self) -> tuple[ManualCorrection, ...]:
         corrections = read_reviews(self.paths.manual(self.target, "classify"), ManualCorrection)

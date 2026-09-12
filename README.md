@@ -57,19 +57,45 @@ uv run python -m deliciousmap geocode --city seoul --retry-failed
 첨부는 서비스 장애와 구별해 수집을 멈추지 않고 `fetch.json`의 `missing`에 사유(`gone`·`empty`)와
 함께 남긴다. 일시적 실패(연결 끊김·타임아웃·
 5xx·429)만 4회까지 2초 배수로 다시 시도하고, 그래도 안 되면 `service-unavailable`로 실패한다. 한 기관에 연달아 보내는 요청에는 간격을 둔다.
-이미 받은 원본은 다시 내려받지 않으며, 게시판을 아직 선언하지 않은 도시는 0건 성공이 아니라
+이미 받은 원본은 다시 내려받지 않는다. 목록은 매번 다시 훑어 이미 받아 둔 게시글의 게시일·제목도
+저장소 밖 `listing.jsonl`에 채운다. 게시판을 아직 선언하지 않은 도시는 0건 성공이 아니라
 `not-implemented`로 실패한다. 현재 선언된 게시판은 광주광역시청 하나뿐이고
 근거와 첫 실행 규모는 [정찰 기록](docs/validation/issue-51.md)에 있다.
-`headermap`·`parse`·`classify`의 실제 어댑터는 미구현이므로 운영 `run`은 아직 매핑 단계에서 실패한다.
-파일 변환·파싱·LLM·인허가 전량 수집·폐업 대조·실데이터 지도 성능 검증·배포는 후속 작업이다.
+
+`headermap`·`parse`·`classify`도 광주광역시청(`gwangju-city`) 게시판 하나에 대해
+구현했다([이슈 #51](https://github.com/snowjaewon/OfficialDeliciousMap/issues/51)).
+
+`headermap` 이후 단계는 받아 둔 원본 전체가 아니라 **이번 제출의 대상 원본**만 다룬다.
+게시판은 22년치를 한 곳에 쌓아 두고 지출 기간은 게시글 제목에만 있으므로, 게시일의 해와
+제목이 밝힌 기간(`period.targets`)이 모두 대상 기간과 맞는 게시글의 원본만 고른다. 고르는 일은
+원본을 열기 전에 끝나 대상 밖 원본은 헤더 매핑에 가지 않는다. 수집 장부인 `fetch.json`은
+줄이지 않으므로 무엇을 받아 두었는지는 그대로 남는다. 제목이 실측한 기간 표기를 쓰지 않으면
+짐작하지 않고 대상에서 뺀다. 게시일도 제목도 없는 원본은 가를 근거가 없어 대상으로 둔다.
+
+- `headermap`: 표마다 공통 헤더 서명 캐시 → 원본별 답변 이력 → Gemini 순으로 매핑을 찾고,
+  코드 검증을 통과한 매핑만 쓴다. 표마다 호출은 최초 1회와 실패 사유를 담은 재호출 1회뿐이다.
+  잘리거나 해석할 수 없는 응답과 카드형 표는 다시 묻지 않고 미해결로 남긴다.
+- `parse`: xls·xlsx(ISO Strict 포함)를 읽는다. 모든 표가 통과한 원본만 레코드를 낸다. 원본마다
+  후보·범위 밖 건수, 분모에서 뺀 행의 위치·종류, 0원·음수 레코드의 위치, 미해결 사유를
+  `parse.json`의 `sources`에 남긴다. 목적·상호의 개인정보를 지우고, 경조사 수령인처럼 상호 칸에
+  사람 이름이 적힌 경우 `개인(성명 비공개)`로 가린다.
+- `classify`: 사람 보정 → 도시 무관 LLM 캐시 → Gemini 순. 호출 실패는 판단 보류로 두고 캐시에 남기지 않는다.
+
+PDF·HWP·원본 묶음 ZIP과 전량 추출 폴백은 파일 단위 미해결로 남으며 후속 작업이다.
+다른 도시·기관, 인허가 전량 수집·폐업 대조, 실데이터 지도 성능 검증·배포도 후속 작업이다.
 
 조회 키는 `.env`에서 읽는다. 네이버 지역검색은 `NAVER_SEARCH_CLIENT_ID`·`NAVER_SEARCH_CLIENT_SECRET`,
 인허가 조회서비스는 `DATA_GO_KR_KEY`다. 키가 없는 제공자는 조회하지 않고, 모두 없으면 준비된 후보
 파일만 쓴다. 네이버 키가 한쪽만 있으면 실행 전에 `configuration:`과 종료 코드 2로 거부한다.
 `build`·`run`은 공개 가능한 지도 키 `NAVER_MAP_CLIENT_ID`도 요구한다.
+헤더 매핑·비식당 판별은 `GEMINI_API_KEY`·`GEMINI_MODEL`과 요금 페이지에서 확인한 단가
+`GEMINI_INPUT_USD_PER_MTOK`·`GEMINI_OUTPUT_USD_PER_MTOK`를 쓴다. 키가 있는데 단가가 없으면
+종료 코드 2다. 모든 호출은 `data/_shared/llm-budget.jsonl`의 공통 예산(누적 USD 15)을 예약·정산하며
+장부에 확인한 기존 사용액(`prior_usage`)이 없으면 호출하지 않는다.
 값은 출력·산출물에 남기지 않는다. 셸에 `.env`를 불러온 뒤 실행한다.
 
 ```text
+양쪽 공통: uv run --env-file .env python -m deliciousmap run --city gwangju
 Git Bash:   set -a; . ./.env; set +a; uv run python -m deliciousmap geocode --city seoul
 PowerShell: Get-Content .env | ForEach-Object { if ($_ -match '^(\w+)=(.*)$') { Set-Item "env:$($Matches[1])" $Matches[2] } }
 ```
@@ -177,10 +203,13 @@ node --test tests/site_behavior.test.js
 `contracts.py`의 입출력 모델, `pipeline.py`의 `Adapters` Protocol이 공개 경계다.
 `execute(command, ExecutionContext(target, paths), adapters)`에 어댑터를 주입한다.
 CLI를 포함한 통합 테스트에는 `cli.main(argv, cities=..., adapters=...)`를 사용한다.
-기본 `LocalAdapters`는 게시판 수집·업소 판정과 후속 정제 출력에 연결한다. 후보 조회는
-`lookup.CandidateProvider`(현재 네이버 지역검색·인허가 조회서비스)로 분리하며, 통합 테스트는
-`cli.main(argv, naver_transport=..., license_transport=..., board_transport=...)`로 외부 응답만 대신한다.
-게시판 요청도 같은 `Transport` 경계를 쓴다. 선언되지 않은 도시의 스크래퍼는 후속 작업이다.
+기본 `LocalAdapters`가 운영 단계다. 게시판 수집·업소 판정과 후속 정제 출력에 연결한다.
+게시판 해석기는 `src/deliciousmap/scrapers/`의 클래스이며 레지스트리의 `Board.scraper`가 가리킨다.
+후보 조회는 `lookup.CandidateProvider`(현재 네이버 지역검색·인허가 조회서비스), 모델은
+`headermap.HeaderMapper`·`classify.Classifier`·`comparison.ComparisonModel`로 분리한다.
+통합 테스트는 `cli.main(argv, board_transport=..., model_transport=..., naver_transport=...,
+license_transport=...)`로 외부 응답만 대신한다. 게시판 요청도 같은 `Transport` 경계를 쓴다.
+선언되지 않은 도시의 스크래퍼는 후속 작업이다.
 
 | 단계 | 입력 → 출력 |
 | --- | --- |
@@ -212,10 +241,13 @@ Node 기반 빌드 도구를 쓰지 않는다. 폐업으로 확인된 후보도 
 공통 캐시는 `data/_shared/`에 둔다. 사람 검토 입력은 의미별로 나누어
 `data/manual/<city>/`의 `classify.jsonl`(사람 보정), `restore.jsonl`(상호 복원),
 `geocode.jsonl`(업소 확인)에 둔다. 자세한 내용은 [상호 복원](docs/restoration.md)에 있다.
-단계 메타데이터 파일은 `<stage>.json`이며 `schema_version`(fetch는 2, geocode·closure는 4,
+단계 메타데이터 파일은 `<stage>.json`이며 `schema_version`(fetch는 3, geocode·closure는 4,
 build는 6, 나머지는 1), `city`, `org`, 입력 해시인
 `dependencies`, 실제 출력인 `payload`를 가진다. `fetch.json`은 받은 원본의 `sources` 외에
-게시판이 링크했지만 받지 못한 원본을 `missing`(기관·게시판·게시글 주소·파일 이름·사유)에 남긴다. `parse.json`에는 레코드를 중복 저장하지 않는다.
+게시판이 링크했지만 받지 못한 원본을 `missing`(기관·게시판·게시글 주소·파일 이름·사유)에 남긴다.
+`sources`·`missing`의 각 줄은 게시판 목록이 밝힌 `posted`(게시일)와 `title`(제목)도 싣고,
+`sources`는 목록이 밝힌 작성 부서를 `department`에 싣는다. 원본 표에 부서 열이 없을 때 이 값이
+부서가 된다. 목록 구조를 읽지 않는 스크래퍼는 이 셋을 채우지 않는다. `parse.json`에는 레코드를 중복 저장하지 않는다.
 원본의 내용·개인정보를 메타데이터에 넣지 않는다. fetch 메타데이터의 외부 경로는 수집 PC 기준이다.
 
 레코드 CSV의 열 순서(`storage.RECORD_FIELDS`)는 다음과 같다. UTF-8 BOM 없음, LF 줄바꿈,
@@ -240,15 +272,21 @@ record_id,spent_on,organization,department,merchant,purpose,amount_krw,source_ha
 0부터 시작하는 열 번호인 `columns`, 원 단위 변환 배수 `amount_multiplier`를 가진다.
 열 역할은 `spent_on`, `merchant`, `purpose`, `department`, `amount_krw`, `month`, `day`, `time`이다.
 정책·검증의 상세는 [ADR-0002](docs/adr/0002-ai-header-mapping.md)와
-[폴백 정책](docs/specs/header-mapping-fallback.md)을 따른다. 매핑·파싱 알고리즘과 예산 집행은 아직 없다.
+[폴백 정책](docs/specs/header-mapping-fallback.md)을 따른다. 코드 검증은 표의 지출 후보 전부가
+날짜·금액·상호를 갖추고, 합계 행이 있으면 그 구역 또는 표 전체의 합과 정확히 같아야 통과한다.
+빈 행·반복 헤더·소계·합계·`이하 빈칸` 같은 행은 분모에서 뺀다. 합계 행의 `N건`은 대조하지 않는다.
+`누계`·`N월 합계`처럼 범위를 확정할 수 없는 합계는 대조하지 않고 `total_check=ambiguous`로 남긴다.
 
-공통 캐시는 `headermap.jsonl`(키: 정규화 헤더 텍스트와 열 수의 SHA-256),
-`classify.jsonl`(키: 정규화 상호)이다. 키 생성은 후속 어댑터의 책임이다.
+공통 캐시는 `headermap.jsonl`(키: 정책 버전과 정규화한 헤더 행 글자의 SHA-256. 행 길이가 열 수다.
+값은 헤더 행·첫 지출 행까지의 거리·열 역할·금액 배수·모델)과 `classify.jsonl`(키: 정규화 상호)이다.
+원본·표마다 받은 헤더 매핑 답은 `data/<city>/headermap-answers-v1.jsonl`에 쌓아, 코드가 바뀌어도
+같은 표를 다시 묻지 않고 기록된 답을 다시 검증한다. 잘리거나 해석할 수 없던 응답도 과금된 시도로
+남긴다. 표마다 호출 한도는 모델·지시문이 바뀌어도 이 이력으로 센다. 다시 물으려면 담당자가 그 파일을 지운다.
 각 줄은 `schema_version=1`, `key`, 양의 정수 `revision`, `valid`, `evidence`, `value`를 가진다.
 JSON 객체의 키와 줄의 `(key, revision)`을 정렬하며, 이력의 기존 값은 수정하거나 삭제하지 않는다.
 같은 키·revision의 동일 항목 재추가는 무동작이고 다른 값이면 실패한다.
 유효 판정은 `valid=true`인 가장 큰 revision이다. 검증 실패 이력은 이전 유효 판정을 삭제하지 않는다.
-헤더 검증 실패 시 해당 원본에서 캐시를 우회하는 정책은 실제 headermap 어댑터가 구현한다.
+캐시에서 찾은 매핑이 검증에 실패하면 그 원본에서는 캐시를 쓰지 않고 한 번만 다시 묻는다.
 
 `geocode.json`은 현 실행의 결과이고 `geocode-history-v2.jsonl`은 레코드·범위·후보·근거·
 사람 확인·입력 의존성·정책 버전의 해시 키로 성공·미확정을 추가 보존한다.

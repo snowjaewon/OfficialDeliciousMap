@@ -1,6 +1,11 @@
-"""개발자 PC에서 도는 어댑터. 게시판 수집과 정제 입력 단계이며 LLM·예산 집행은 하지 않는다."""
+"""개발자 PC에서 도는 운영 어댑터. 게시판 수집부터 정제 출력까지다.
 
+외부 서비스(게시판·모델·후보 조회)는 컨텍스트가 건네는 경계로만 닿는다.
+"""
+
+from deliciousmap import classify, extract, headermap
 from deliciousmap.boards import default_transport
+from deliciousmap.budget import Budget
 from deliciousmap.collection import collect
 from deliciousmap.contracts import (
     BuildInput,
@@ -23,19 +28,37 @@ from deliciousmap.identity import decide_identity, lookup_key, reconcile_coordin
 from deliciousmap.pipeline import AdapterFailure, ExecutionContext, FailureCause
 from deliciousmap.site import collection_status, write_city_data, write_site_shell
 
+# 원본·표마다 받은 헤더 매핑 답의 이력. 도시 무관 서명 캐시와 달리 원본에 묶인다.
+HEADERMAP_ANSWERS = "headermap-answers-v1.jsonl"
+
 
 class LocalAdapters:
     def fetch(self, value: FetchInput, context: ExecutionContext) -> FetchOutput:
         return collect(value.target, context.paths, context.board_transport or default_transport())
 
     def headermap(self, value: HeaderMapInput, context: ExecutionContext) -> HeaderMapOutput:
-        raise AdapterFailure(FailureCause.NOT_IMPLEMENTED)
+        return headermap.resolve(
+            value.sources,
+            context.paths.raw_root,
+            context.paths.shared("headermap"),
+            context.paths.city_dir(context.target) / HEADERMAP_ANSWERS,
+            Budget(context.paths.shared("llm-budget")),
+            context.header_mapper,
+        )
 
     def parse(self, value: ParseInput, context: ExecutionContext) -> ParseOutput:
-        raise AdapterFailure(FailureCause.NOT_IMPLEMENTED)
+        return extract.parse_sources(
+            value.sources, value.mappings, value.unresolved, context.paths.raw_root
+        )
 
     def classify(self, value: ClassifyInput, context: ExecutionContext) -> ClassifyOutput:
-        raise AdapterFailure(FailureCause.NOT_IMPLEMENTED)
+        return classify.resolve(
+            value,
+            context.target.city.slug,
+            context.paths.shared("classify"),
+            Budget(context.paths.shared("llm-budget")),
+            context.classifier,
+        )
 
     def geocode(self, value: GeocodeInput, context: ExecutionContext) -> GeocodeOutput:
         lookups = {item.scope.record_id: item for item in value.lookups}
