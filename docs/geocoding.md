@@ -212,7 +212,7 @@ localdata.go.kr은 2026-04-16 종료했으므로 옛 API는 쓰지 않는다. �
 geocode·closure 산출물은 envelope v4이고 build는 지도·장부 분리 형식인 v5다.
 이전 버전은 `regeneration-required`로 거부하고
 선행 정제 자료와 새 후보 입력을 준비해 세 단계를 재실행한다. 교체 전 기존 파일은
-`history/<stage>-v<version>-<content-hash>.json`에 보존한다.
+`history/<stage>-v<version>-<content-hash>.json`에 보존한다. 이 사본은 커밋하지 않는다.
 옛 상호 중심 `geocode-history.jsonl`은 읽거나 수정하지 않는다.
 
 정적 빌드에는 앞서 열거한 정제 파일과 사용한 사람 보정·확인 파일을 함께 보관한다.

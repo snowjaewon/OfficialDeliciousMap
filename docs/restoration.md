@@ -94,7 +94,8 @@ uv run python -m deliciousmap build --city seoul
 geocode·closure 산출물은 조회 요청 기록까지 담은 v4이고 build는 지도·장부 분리 형식인 v5다.
 `markers.json`에는 확정 상호·좌표·방문 횟수·폐업 표시만 싣는다. 이전 버전은
 `regeneration-required`로 거부하고
-`history/<stage>-v<version>-<content-hash>.json`에 보존한 뒤 재실행한다. 후보 비교 제안은
+`history/<stage>-v<version>-<content-hash>.json`에 보존한 뒤 재실행한다. 이 사본은 커밋하지
+않는다(`.gitignore`). 커밋한 판은 git 이력에 그대로 있다. 후보 비교 제안은
 이 산출물에 실리지 않으므로 제안이 늘어도 산출물 버전은 바뀌지 않는다.
 
 ## 지정 건의 후보 비교
