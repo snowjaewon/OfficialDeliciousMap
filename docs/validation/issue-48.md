@@ -134,7 +134,7 @@ uv run python -m http.server 8765 --directory dist --bind 127.0.0.1
 - 실기기·실데이터 성능: [#29](https://github.com/snowjaewon/OfficialDeliciousMap/issues/29)의 범위다.
 - 화면 크기에 따른 축소 한계: `minZoom`은 첫 화면의 줌으로 한 번 고정하며, 한 창 크기(851×841)에서만
   확인했다. 창 크기를 바꾸거나 모바일 폭으로 열었을 때 도시 전체가 보이는지는 #29에서 실기기와 함께 본다.
-- 실제 도시 산출물로 만든 지도: 아래 [실제 도시 산출물](#실제-도시-산출물) 참고.
+- 실제 도시 산출물의 build·정적 서빙: 아래 [실제 도시 산출물](#실제-도시-산출물) 참고.
 
 ### 유효한 지도 키로 확인(#50)
 
@@ -222,5 +222,46 @@ Standards·Spec 두 축으로 리뷰했고 다음을 반영했다.
 
 ## 실제 도시 산출물
 
-위 브라우저 확인은 모두 합성 입력의 결과다. 실제 도시 정제 산출물(광주광역시청)로 `build`를 돌린
-확인은 [이슈 #51 검증](issue-51.md)에 있다. 그 기록도 광주를 도시 완료로 판정하지 않는다.
+### 광주 정제 산출물 확인 (2026-09-12)
+
+`develop` 기준 커밋 `4356d20`의 실제 광주광역시청 정제 산출물로, 지도 키는 저장하지 않는
+검증용 값만 환경 변수에 넣어 `build`를 실행했다. 출력은 저장소의 `dist/`가 아닌 임시 디렉터리에
+냈고, 실행이 끝난 뒤 생성된 `data/gwangju/build.json`의 출력 경로는 기존 값으로 되돌렸다.
+
+```text
+PowerShell: $env:NAVER_MAP_CLIENT_ID = '<검증용 공개 키>'
+            $env:NAVER_MAP_KEY_PARAM = 'ncpKeyId'
+            uv run python -m deliciousmap build --city gwangju --output-root '<임시 출력 디렉터리>'
+            uv run python -m http.server 8765 --directory '<임시 출력 디렉터리>' --bind 127.0.0.1
+```
+
+| 항목 | 결과 |
+| --- | --- |
+| 입력 | 광주 정제 레코드 2,799건, 확정 마커 12곳 |
+| 생성 파일 | `gwangju/markers.json`, `gwangju/records.json`, `gwangju/index.html`, 랜딩, `assets/app.js`, `assets/styles.css`, `manifest.webmanifest`, `sw.js` (8개) |
+| `BuildOutput` | `record_count=2799`, `marker_count=12`, `files` 8개 |
+| 정적 서버 `/` | HTTP 200, 랜딩 1,592바이트 |
+| 정적 서버 `/gwangju/` | HTTP 200, 도시 진입 페이지 4,437바이트 |
+| 장부·마커 | `records.json` 1,108,102바이트, `markers.json` 2,839바이트 |
+| 키 보존 | 검증용 키는 커밋·소스·산출물 메타데이터에 기록하지 않음 |
+
+따라서 실제 도시 산출물로 `build`가 완료되고 두 정적 진입 페이지가 로컬 서버에서 응답하는 것을
+확인했다. 지도 SDK의 타일·인증·마커 상호작용은 유효한 키를 사용한 합성 서울 산출물의
+[#50 검증](https://github.com/snowjaewon/OfficialDeliciousMap/issues/50)에서 확인했으며, 이
+확인은 광주 산출물의 파일 생성·정적 서빙 범위를 검증한다.
+
+## 최신 develop 회귀 검사 (2026-09-12)
+
+실제 산출물 확인과 함께 현재 `develop` 기준으로 전체 회귀 검사를 다시 실행했다.
+
+| 검사 | 결과 |
+| --- | --- |
+| `uv sync --locked` | 통과, 31개 패키지 확인 |
+| `uv run ruff check .` | 통과 |
+| `uv run ruff format --check .` | 통과, 91개 파일 |
+| `uv run mypy src` | 통과, 39개 소스 파일 |
+| `uv run pytest` | 375 passed |
+| `node --test tests/site_behavior.test.js` | 11 passed |
+| `uv run python -m deliciousmap --help` | 종료 0 |
+| `git diff --check` | 통과 |
+| `gitleaks git --staged` | 통과, no leaks found |
