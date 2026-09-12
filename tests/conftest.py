@@ -25,6 +25,11 @@ def block_real_keys(monkeypatch: pytest.MonkeyPatch) -> None:
         "GEMINI_MODEL",
         "GEMINI_INPUT_USD_PER_MTOK",
         "GEMINI_OUTPUT_USD_PER_MTOK",
+        "CLOUDFLARE_API_TOKEN",
+        "CLOUDFLARE_ACCOUNT_ID",
+        "GITHUB_TOKEN",
+        # CI에서 pytest를 돌릴 때 테스트가 실제 Actions summary에 쓰지 않게 한다.
+        "GITHUB_STEP_SUMMARY",
     ):
         monkeypatch.delenv(name, raising=False)
 

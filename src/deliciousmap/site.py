@@ -3,7 +3,7 @@
 import json
 import os
 from collections import Counter
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import asdict, dataclass
 from html import escape
 from importlib.resources import files
@@ -28,6 +28,8 @@ from deliciousmap.registry import CITIES, City, HoldReason, Organization, Target
 from deliciousmap.storage import write_text
 
 ASSET_NAMES = ("app.js", "styles.css")
+# 도시 전체 build가 도시마다 내는 화면과 두 데이터 파일.
+CITY_FILES = ("index.html", "markers.json", "records.json")
 REPORTING_PERIOD = period.LABEL
 # 수집 보류 사유의 화면 표기. 사유 자체의 단일 출처는 레지스트리다.
 HOLD_REASON_LABELS: dict[HoldReason, str] = {
@@ -57,6 +59,12 @@ class MapKey:
             raise ValueError(CLIENT_ID_VARIABLE)
         if self.key_param not in KEY_PARAMS:
             raise ValueError(KEY_PARAM_VARIABLE)
+
+
+def public_paths(city_slugs: Iterable[str]) -> frozenset[str]:
+    """도시 전체 build가 `dist/`에 내는 공개 파일 전부. 배포 검사는 이것만 허용한다."""
+    shell = {"index.html", "manifest.webmanifest", "sw.js", *(f"assets/{n}" for n in ASSET_NAMES)}
+    return frozenset({*shell, *(f"{slug}/{name}" for slug in city_slugs for name in CITY_FILES)})
 
 
 def map_key_from_environment(environ: Mapping[str, str] | None = None) -> MapKey:
