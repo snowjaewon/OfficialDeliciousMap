@@ -418,7 +418,8 @@ uv run python -m http.server 8765 --directory dist --bind 127.0.0.1
 
 2026-09-12, Windows 11 · Git Bash · Python 3.12.10.
 범위: 2부가 남긴 "전량 수집 뒤 `headermap` 이후를 다시 실행해야 한다"를 풀기 위한 **대상 선별**이다.
-`geocode` 이후는 조회 키가 이 작업 환경에 없어 실행하지 못했다(아래 "실행하지 못한 것").
+`run --city gwangju`는 종료 코드 0으로 끝까지 통과했다(아래 "run 전 단계 실행").
+단계별 확인을 먼저 하고, 조회 키를 준비한 뒤 `run`으로 전 단계를 다시 이었다.
 
 ### 왜 필요했나
 
@@ -505,7 +506,10 @@ uv run python -m deliciousmap fetch --city gwangju --raw-root ../deliciousmap-ra
 **대상 선별은 수집 장부를 줄이지 않는다.** `fetch.json`은 11,035개를 그대로 싣고, 고르는 일은
 `headermap`·`parse`의 입력에서만 일어난다. 무엇을 받아 두었는지는 장부에 남는다.
 
-### 대상만으로 다시 실행
+### 대상만으로 다시 실행 — 단계별 확인
+
+조회 키를 준비하기 전에 키가 필요 없는 세 단계만 먼저 돌려 대상 선별이 맞는지 보았다.
+뒤의 `run`이 같은 값을 다시 냈다.
 
 ```text
 uv run python -m deliciousmap headermap --city gwangju --raw-root ../deliciousmap-raw
@@ -528,23 +532,46 @@ uv run python -m deliciousmap classify --city gwangju --raw-root ../deliciousmap
 뺀 원본 76개가 기간 안 지출을 한 건도 담고 있지 않았다**는 뜻이다. 행 단위 기간 필터(`period.contains`)와
 제목 기간 필터가 같은 답을 낸다는 교차 확인이다.
 
-### 실행하지 못한 것
+### run 전 단계 실행
 
-`geocode` 이후는 **조회 키가 이 작업 환경에 없어 실행하지 못했다.** `.env`가 이 worktree에도
-`C:/Users/pc/orca/OfficialDeliciousMap`에도 없고 환경변수도 비어 있다. [#50](https://github.com/snowjaewon/OfficialDeliciousMap/issues/50)에서
-발급한 지도 키를 포함해 키는 개발자 PC의 `.env`에만 있으며 gitignore 대상이라 worktree를 따라오지 않는다.
+키를 준비한 뒤 `uv run --env-file .env python -m deliciousmap run --city gwangju`를 실행했다.
+**종료 코드 0, 9분 57초.** 대부분은 목록 105쪽 재정찰이고 나머지 여섯 단계는 캐시를 재사용했다.
 
-키 없이 `geocode`를 실행하면 후보 제공자가 하나도 구성되지 않아 식당 레코드 2,325건이 모두
-`lookup_error`가 되고 `lookup-failed`로 실패한다(실측). 그 실행이 `geocode-history-v2.jsonl`에
-남긴 낡은 판정 2,325건은 커밋 전에 되돌렸다. `build`는 `NAVER_MAP_CLIENT_ID`가 없으면
-`configuration:`과 종료 코드 2로 거부한다.
+| 단계 | 결과 |
+| --- | --- |
+| fetch | 원본 11,035개 · 유실 101개. 첨부 요청 0회 |
+| headermap | 매핑 181개(원본 154개), 미해결 19개. **모델 호출 0회** |
+| parse | 원본 173개, 지출 후보 2,959건 중 기간 안 **2,921건** |
+| classify | 식당 2,325 · 비식당 193 · 판단 보류 403. **모델 호출 0회** |
+| geocode | 식당 2,325건 중 `missing_address` 2,055 · `no_candidates` 270. 확정 0 |
+| closure | 대상 0 |
+| build | **레코드 2,921 · 마커 0**, 부서 66개 · 빈 부서 0건 |
 
-**헤더 매핑·판별에 쓰는 `GEMINI_API_KEY`는 이번 실행에 필요하지 않았다**(캐시가 전부 덮었다).
-남은 것은 네이버 지역검색 키(`NAVER_SEARCH_CLIENT_ID`·`NAVER_SEARCH_CLIENT_SECRET`)와
-지도 키(`NAVER_MAP_CLIENT_ID`)다.
+| 공개 파일 | 크기 |
+| --- | --- |
+| `dist/gwangju/markers.json` | 69바이트 |
+| `dist/gwangju/records.json` | 1,140,080바이트 |
 
-`data/gwangju/`의 `geocode.json`·`closure.json`과 `dist/`는 낡은 입력의 것이고, `dependencies`
-불일치로 로드할 때 `stale artifact`로 막힌다. 성공으로 넘어가지 않는다.
+**새 외부 호출은 한 건도 없었다.** 네이버 지역검색은 `geocode-lookup-v1.jsonl`의 후보를 그대로
+재사용했고(파일이 바뀌지 않았다), 모델은 서명 캐시·답변 이력이 덮었다. 공통 LLM 예산은
+**USD 0.653 그대로**다. 키가 필요했던 이유는 조회를 더 보내기 위해서가 아니라, 제공자가 구성되지
+않으면 식당 레코드가 모두 `lookup_error`가 되고 `build`가 지도 키를 요구하기 때문이다.
+
+네이버 검색 키는 API HUB 키였지만 그 Application에 지역검색 API가 포함되어 있지 않아 처음에는
+`errorCode 210 Permission Denied (A subscription to the API is required)`로 401이 났다.
+콘솔의 `All Services > Application Services > NAVER API HUB > Application`에서 지역검색 API를
+더한 뒤 통과했다. 키 값은 `.env`에만 두었고 문서·로그·산출물 어디에도 남기지 않았다.
+
+**마커가 0인 이유는 2부와 같다.** 광주시청 원본에는 상호만 있고 주소가 없어
+[#33](https://github.com/snowjaewon/OfficialDeliciousMap/issues/33#issuecomment-5615154736) 정책상
+네이버 후보만으로 업소를 확정하지 않는다. 사람 확인은 후속 작업이다.
+
+레코드 2,921건·부서 66개는 2부와 같고 `records.csv`는 이전 커밋과 바이트까지 같다. 173개
+원본만 읽은 이번 실행이 251개를 읽은 2부와 같은 장부를 낸다는 교차 확인이다.
+
+`geocode-history-v2.jsonl`은 5.16MB에서 **10.32MB**로 늘었다(#37 설계대로 입력이 바뀔 때마다
+모든 판정을 새 키로 다시 쌓는다). 파일당 20MB 상한(ADR-0001)의 절반을 넘었고, 입력이 한두 번
+더 바뀌면 상한에 닿는다. 분할·보존 기준은 후속 결정이다.
 
 계약 버전을 올리면서 이전 `fetch.json`(v2)이 `data/gwangju/history/`에 보관되었다. 그 바이트는
 커밋 `eea3ee2`의 `data/gwangju/fetch.json`과 sha256이 같아 커밋하지 않았다.
@@ -596,6 +623,9 @@ uv run python -m deliciousmap classify --city gwangju --raw-root ../deliciousmap
 
 ### 자동 검사
 
+`core.hooksPath`가 이 worktree에 설정되어 있지 않아 pre-commit 훅이 돌지 않고 있었다.
+gitleaks 8.30.1을 설치하고 `git config core.hooksPath .githooks`로 활성화했다(SECURITY.md).
+
 | 검사 | 결과 |
 | --- | --- |
 | `uv run ruff check .` | 통과 |
@@ -603,10 +633,11 @@ uv run python -m deliciousmap classify --city gwangju --raw-root ../deliciousmap
 | `uv run mypy src` | 통과, 39개 소스 파일 |
 | `uv run pytest` | 331 passed |
 | `git diff --check` | 통과 |
+| gitleaks 8.30.1 | no leaks found (커밋과 작업 트리 59.9MB 전체) |
 
 ### 남은 일
 
-- 네이버 키를 준비해 `run --city gwangju`를 `geocode`·`closure`·`build`까지 끝내고 산출물을 커밋한다.
+- 유효한 지도 키로 띄운 화면의 브라우저 확인(#50 절차). 산출물이 2부와 같아 이번에는 다시 보지 않았다.
 - `headermap` 미해결 19개(상호 빈칸·합계 불일치 16, PDF 3)의 사람 전수 대조.
 - 제목이 기간을 밝히지 않은 게시글은 대상에서 빠진다. 지금은 게시일 2026인 그런 글이 0건이라
   잃은 것이 없지만, 0이 아니게 되면 조용히 빠진다. 그 수를 산출물에 남길지는 후속 결정이다.
