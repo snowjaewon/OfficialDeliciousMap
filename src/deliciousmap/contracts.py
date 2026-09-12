@@ -90,6 +90,10 @@ class SourceRef(Contract):
     # 게시글이 밝힌 작성 부서. 원본에 부서 열이 없을 때 출처 메타데이터로 보완한다.
     # 게시판 구조에 기대지 않는 스크래퍼는 채우지 않으며, 그때 부서는 표의 열에서만 온다.
     department: Text | None = None
+    # 게시판 목록이 밝힌 게시일과 제목. 지출 기간은 제목에만 있어 이번 제출의 대상 원본을
+    # 고르는 일이 이 값을 쓴다. 목록 구조를 읽지 않는 스크래퍼는 채우지 않는다.
+    posted: date | None = None
+    title: Text | None = None
 
 
 class HeaderMap(Contract):
@@ -591,6 +595,9 @@ class MissingOriginal(Contract):
     filename: Text
     # gone: 기관이 404로 답한다. empty: 200이지만 내용이 없다. 둘 다 받을 것이 없다.
     reason: Literal["gone", "empty"]
+    # 어느 기간의 장부가 빈 것인지 알 수 있도록 출처와 같은 값을 남긴다.
+    posted: date | None = None
+    title: Text | None = None
 
 
 class FetchOutput(Contract):

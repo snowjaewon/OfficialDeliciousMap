@@ -18,7 +18,7 @@ from tests.gwangju import (
     sheet_a,
     workbook,
 )
-from tests.test_parse_cli import DATA, record_spending
+from tests.test_parse_cli import DATA, payload, record_spending, records, run
 
 
 def test_declared_gwangju_board_is_the_verified_city_hall_board() -> None:
@@ -30,6 +30,55 @@ def test_declared_gwangju_board_is_the_verified_city_hall_board() -> None:
     assert board.url == (
         "https://www.gwangju.go.kr/boardList.do?boardId=BD_0000000252&recordCnt=100"
     )
+
+
+def test_only_originals_whose_posting_declares_the_reporting_period_are_mapped(
+    tmp_path: Path, configured: None
+) -> None:
+    """대상은 원본을 열기 전에 고른다. 지난해 지출을 공개한 게시글은 모델을 부르지 않는다.
+
+    실측(2026-09-12): 이 게시판은 2026년에 올린 글 247건 가운데 75건이 2024·2025년 지출이다.
+    """
+    record_spending(tmp_path)
+    board = FakeBoardTransport(
+        (
+            Post(
+                9,
+                "2026년 1분기 업무추진비 집행내역(합성과)",
+                "합성과",
+                date(2026, 4, 2),
+                (
+                    (
+                        "1분기.xls",
+                        workbook(sheet_a(("2026-01-05", "합성 식당", "간담회", 4.0, 6.2e4))),
+                    ),
+                ),
+            ),
+            Post(
+                8,
+                "2025년 4분기 업무추진비 집행내역(합성과)",
+                "합성과",
+                date(2026, 1, 8),
+                (
+                    (
+                        "4분기.xls",
+                        workbook(sheet_a(("2025-11-05", "합성 식당", "간담회", 4.0, 5.1e4))),
+                    ),
+                ),
+            ),
+        )
+    )
+    model = FakeModel(headers=[header_answer()])
+    assert run(tmp_path, "fetch", board=board) == 0
+    # 수집 장부에는 두 원본이 모두 남는다. 대상 선별은 장부를 줄이지 않는다.
+    assert len(payload(tmp_path, "fetch")["sources"]) == 2
+    assert run(tmp_path, "headermap", model=model) == 0
+    assert len(model.calls("headermap")) == 1
+    assert [item["source_hash"] for item in payload(tmp_path, "headermap")["mappings"]] == [
+        payload(tmp_path, "fetch")["sources"][0]["source_hash"]
+    ]
+    assert run(tmp_path, "parse") == 0
+    assert [item["merchant"] for item in records(tmp_path)] == ["합성 식당"]
 
 
 def test_run_builds_a_city_page_whose_ledger_keeps_unmapped_records(

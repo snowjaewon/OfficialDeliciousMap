@@ -141,9 +141,8 @@ def test_verified_mappings_extract_every_candidate_and_reuse_the_header_cache(
         ("2026-03-02", "합성 국밥", "27000"),
         ("2026-05-07", "합성 한우촌", "56000"),
     ]
-    # 광주시청 스크래퍼는 게시글의 작성 부서를 남기지 않으므로 부서 열이 없으면 비운다.
-    # 출처가 부서를 밝혔을 때의 보완은 test_extract.py에서 확인한다.
-    assert {row["department"] for row in rows} == {""}
+    # 부서 열이 없는 표에서는 게시판 목록이 밝힌 작성 부서를 쓴다.
+    assert {row["department"] for row in rows} == {"합성과"}
     assert rows[1]["purpose"] == "직원 격려 다과 구입 담당"
     assert rows[0]["source_location"] == "sheet1:R4"
     assert "합성과장" not in json.dumps(rows, ensure_ascii=False)

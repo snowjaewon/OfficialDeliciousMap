@@ -111,10 +111,16 @@ def run_fetch(paths: Paths, transport: BoardTransport, *, city: str = "gwangju")
     )
 
 
-def fetch_artifact(paths: Paths, city: str = "gwangju") -> dict[str, Any]:
+def fetch_envelope(paths: Paths, city: str = "gwangju") -> dict[str, Any]:
     target = select_target(CITIES, city, None)
-    envelope = json.loads((paths.city_dir(target) / "fetch.json").read_text(encoding="utf-8"))
-    payload: dict[str, Any] = envelope["payload"]
+    envelope: dict[str, Any] = json.loads(
+        (paths.city_dir(target) / "fetch.json").read_text(encoding="utf-8")
+    )
+    return envelope
+
+
+def fetch_artifact(paths: Paths, city: str = "gwangju") -> dict[str, Any]:
+    payload: dict[str, Any] = fetch_envelope(paths, city)["payload"]
     return payload
 
 
@@ -197,6 +203,113 @@ def test_fetch_records_the_posting_as_the_source_of_every_original(tmp_path: Pat
     # 같은 원본을 두 번 세지 않도록 내용 해시로 구별한다.
     assert sources[0]["source_hash"] == sources[2]["source_hash"]
     assert sources[0]["source_hash"] != sources[1]["source_hash"]
+
+
+def test_fetch_records_the_posting_date_and_title_of_every_original(tmp_path: Path) -> None:
+    """지출 기간은 제목에만 있다. 대상 원본은 원본을 열기 전에 골라야 하므로 목록에서 읽는다."""
+    paths = paths_at(tmp_path)
+    assert run_fetch(paths, BoardTransport(board_responses())) == 0
+    sources = fetch_artifact(paths)["sources"]
+    assert [item["posted"] for item in sources] == ["2026-06-29", "2026-06-29", "2026-03-30"]
+    assert [item["title"] for item in sources] == [
+        "2026년 2분기 업무추진비 집행내역(합성부서)",
+        "2026년 2분기 업무추진비 집행내역(합성부서)",
+        "2026년 1분기 업무추진비 집행내역(합성과)",
+    ]
+
+
+def test_fetch_records_the_department_that_published_each_original(tmp_path: Path) -> None:
+    """원본 표에 부서 열이 없는 게시글이 많다. 그때 부서는 목록이 밝힌 작성 부서에서 온다.
+
+    화면에 읽히지 않는 `작성자` 딱지(`span.blind`)는 부서가 아니므로 값에 섞지 않는다.
+    """
+    paths = paths_at(tmp_path)
+    assert run_fetch(paths, BoardTransport(board_responses())) == 0
+    sources = fetch_artifact(paths)["sources"]
+    assert [item["department"] for item in sources] == ["합성총괄관", "합성총괄관", "합성정책과"]
+
+
+def test_fetch_records_the_posting_date_and_title_of_an_original_it_could_not_get(
+    tmp_path: Path,
+) -> None:
+    """받지 못한 원본도 어느 기간의 장부가 빈 것인지 알 수 있어야 한다."""
+    paths = paths_at(tmp_path)
+    assert run_fetch(paths, Gone(board_responses(), {download(11024, 2)})) == 0
+    lost = fetch_artifact(paths)["missing"][0]
+    assert lost["posted"] == "2026-06-29"
+    assert lost["title"] == "2026년 2분기 업무추진비 집행내역(합성부서)"
+
+
+def test_fetch_fills_the_listing_of_postings_already_collected(tmp_path: Path) -> None:
+    """이미 받아 둔 원본도 목록만 다시 읽어 게시일·제목을 채운다. 첨부는 다시 받지 않는다."""
+    paths = paths_at(tmp_path)
+    assert run_fetch(paths, BoardTransport(board_responses())) == 0
+    target = select_target(CITIES, "gwangju", None)
+    (paths.board_dir(target, "gwangju-city", "expenses") / "listing.jsonl").unlink()
+    again = BoardTransport(board_responses())
+    assert run_fetch(paths, again) == 0
+    assert [key for key in again.requests if not key.startswith(LIST_URL)] == []
+    sources = fetch_artifact(paths)["sources"]
+    assert [item["posted"] for item in sources] == ["2026-06-29", "2026-06-29", "2026-03-30"]
+    assert all(item["title"] for item in sources)
+
+
+def test_fetch_declares_the_contract_that_carries_the_posting_date(tmp_path: Path) -> None:
+    """게시일·제목이 붙은 출처는 이전 산출물과 다른 계약이다. 낡은 산출물을 섞어 쓰지 않는다."""
+    paths = paths_at(tmp_path)
+    assert run_fetch(paths, BoardTransport(board_responses())) == 0
+    assert fetch_envelope(paths)["schema_version"] == 3
+
+
+def test_fetch_reports_a_listing_whose_rows_it_can_no_longer_read(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """목록 구조가 바뀌면 0건 성공이 아니라 읽지 못한 것으로 알린다."""
+    paths = paths_at(tmp_path)
+    responses = board_responses()
+    responses[list_page(1)] = (
+        fixture("board-list-1.html").decode("utf-8").replace("body_row", "listing_item").encode()
+    )
+    assert run_fetch(paths, BoardTransport(responses)) == 1
+    assert "cause=adapter-failed" in capsys.readouterr().err
+
+
+def test_fetch_reports_a_listing_whose_rows_lost_their_posting_date(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    paths = paths_at(tmp_path)
+    responses = board_responses()
+    responses[list_page(1)] = (
+        fixture("board-list-1.html").decode("utf-8").replace('class="date"', 'class="day"').encode()
+    )
+    assert run_fetch(paths, BoardTransport(responses)) == 1
+    assert "cause=adapter-failed" in capsys.readouterr().err
+
+
+def test_fetch_reports_a_listing_whose_rows_never_close(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """줄이 닫히지 않으면 그 뒤 게시글이 통째로 빨려 들어간다. 조용히 줄지 않고 알린다."""
+    paths = paths_at(tmp_path)
+    responses = board_responses()
+    body = fixture("board-list-1.html").decode("utf-8")
+    # 첫 줄의 게시일 div가 닫히지 않은 목록. 남은 줄이 그 줄 안에 갇힌다.
+    responses[list_page(1)] = body.replace("2026-06-29</div>", "2026-06-29", 1).encode()
+    assert run_fetch(paths, BoardTransport(responses)) == 1
+    assert "cause=adapter-failed" in capsys.readouterr().err
+
+
+def test_fetch_reports_a_listing_whose_posting_date_is_not_a_real_day(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """모양만 날짜인 값은 날짜가 아니다. 산출물 문제가 아니라 읽지 못한 것으로 알린다."""
+    paths = paths_at(tmp_path)
+    responses = board_responses()
+    responses[list_page(1)] = (
+        fixture("board-list-1.html").decode("utf-8").replace("2026-06-29", "2026-13-45").encode()
+    )
+    assert run_fetch(paths, BoardTransport(responses)) == 1
+    assert "cause=adapter-failed" in capsys.readouterr().err
 
 
 def test_fetch_walks_every_listed_page_and_skips_postings_without_attachments(

@@ -173,21 +173,16 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
         case "fetch":
             result = adapters.fetch(FetchInput(context.target), context)
         case "headermap":
-            fetched = store.load("fetch", FetchOutput)
-            result = adapters.headermap(HeaderMapInput(sources=fetched.sources), context)
+            result = adapters.headermap(HeaderMapInput(sources=store.reporting_sources()), context)
         case "parse":
-            fetched = store.load("fetch", FetchOutput)
+            targets = store.reporting_sources()
             mapped = store.load("headermap", HeaderMapOutput)
             result = adapters.parse(
-                ParseInput(
-                    sources=fetched.sources, mappings=mapped.mappings, unresolved=mapped.unresolved
-                ),
+                ParseInput(sources=targets, mappings=mapped.mappings, unresolved=mapped.unresolved),
                 context,
             )
             result = ParseOutput.model_validate(result)
-            source_targets = {
-                (source.source_hash, source.organization) for source in fetched.sources
-            }
+            source_targets = {(source.source_hash, source.organization) for source in targets}
             if any(
                 (record.source_hash, record.organization) not in source_targets
                 for record in result.records

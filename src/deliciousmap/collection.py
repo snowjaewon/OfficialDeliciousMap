@@ -5,6 +5,7 @@ import json
 import os
 import tempfile
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 
 from deliciousmap import boards
@@ -21,6 +22,9 @@ LEDGER = "collected.jsonl"
 # 실측하지 않은 형식을 만난 첨부의 목록. 게시판을 끝까지 훑은 뒤 한 번에 보고하기 위한 것이며
 # 기록에 남기지 않으므로 형식을 선언하고 다시 실행하면 그 게시글부터 다시 받는다.
 UNMEASURED = "unmeasured.jsonl"
+# 목록에서 읽은 게시일·제목의 색인. 원본과 함께 저장소 밖에 두며, 이미 받아 둔 원본에도
+# 목록만 다시 읽어 이 값을 채운다. 지우면 다음 실행이 목록에서 다시 만든다.
+LISTING = "listing.jsonl"
 
 
 def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
@@ -39,8 +43,9 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
             directory = paths.board_dir(target, organization.slug, board.slug)
             unmeasured.extend(_walk(board, directory, transport))
             collected, gone = _ledger(directory)
-            sources.extend(_sources(directory, collected, organization.slug, board.slug))
-            missing.extend(_missing(gone, organization.slug, board.slug))
+            listed = _listed(directory)
+            sources.extend(_sources(directory, collected, listed, organization.slug, board.slug))
+            missing.extend(_missing(gone, listed, organization.slug, board.slug))
     if unmeasured:
         # 게시판을 끝까지 훑은 뒤에 한 번에 알린다. 형식을 하나 만날 때마다 멈추지 않는다.
         raise AdapterFailure(FailureCause.UNSUPPORTED_FORMAT)
@@ -62,10 +67,16 @@ def _walk(board: Board, directory: Path, transport: Transport) -> list[dict[str,
     """
     collected, gone = _ledger(directory)
     done = set(collected) | set(gone)
+    listed = _listed(directory)
     scraper: boards.BoardScraper = board.scraper(board, transport)
     unmeasured: list[dict[str, str]] = []
     try:
         for posting in scraper.postings(lambda post_id: post_id in done):
+            if posting.posted is not None or posting.title:
+                # 이미 끝낸 게시글도 목록에서 읽은 값은 이번 훑기의 것으로 갱신한다.
+                listed[posting.post_id] = Listed(posting.posted, posting.title, posting.department)
+            if posting.post_id in done:
+                continue
             stored, lost, empty = [], [], []
             published = scraper.published_suffixes
             unknown = [item for item in posting.attachments if item.suffix not in published]
@@ -100,6 +111,7 @@ def _walk(board: Board, directory: Path, transport: Transport) -> list[dict[str,
         raise AdapterFailure(FailureCause.SERVICE_UNAVAILABLE) from None
     except boards.UnreadableBoard:
         raise AdapterFailure(FailureCause.ADAPTER_FAILED) from None
+    _remember_listing(directory, listed)
     _report_unmeasured(directory, unmeasured)
     return unmeasured
 
@@ -125,15 +137,79 @@ def _report_unmeasured(directory: Path, unmeasured: list[dict[str, str]]) -> Non
     write_text(path, "".join(f"{line}\n" for line in lines))
 
 
+@dataclass(frozen=True)
+class Listed:
+    """목록에서 읽은 게시글 하나. 지출 기간은 제목에만 있어 출처에 함께 싣는다."""
+
+    posted: date | None
+    title: str
+    department: str
+
+    @staticmethod
+    def of(listed: dict[str, "Listed"], post_id: str) -> tuple[date | None, str | None, str | None]:
+        """출처에 실을 목록 값. 계약은 빈 글자를 받지 않으므로 없는 것으로 남긴다."""
+        entry = listed.get(post_id)
+        if entry is None:
+            return None, None, None
+        return entry.posted, entry.title or None, entry.department or None
+
+
+def _listed(directory: Path) -> dict[str, Listed]:
+    """목록 색인. 같은 게시글이 여러 줄이면 마지막 줄이 이긴다. 읽지 못한 줄은 버린다."""
+    path = directory / LISTING
+    listed: dict[str, Listed] = {}
+    if not path.exists():
+        return listed
+    for line in path.read_text(encoding="utf-8").splitlines():
+        try:
+            entry = json.loads(line)
+            posted = entry["posted"]
+            listed[str(entry["post_id"])] = Listed(
+                date.fromisoformat(posted) if posted else None,
+                str(entry["title"]),
+                str(entry.get("department") or ""),
+            )
+        except (ValueError, KeyError, TypeError):
+            continue
+    return listed
+
+
+def _remember_listing(directory: Path, listed: dict[str, Listed]) -> None:
+    """색인은 목록을 그대로 옮긴 것이라 통째로 다시 쓴다. 수집 기록과 달리 이력이 아니다."""
+    if not listed:
+        return
+    directory.mkdir(parents=True, exist_ok=True)
+    lines = [
+        json.dumps(
+            {
+                "post_id": post_id,
+                "posted": entry.posted.isoformat() if entry.posted else None,
+                "title": entry.title,
+                "department": entry.department,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+        # 게시글 번호는 연번이지만 숫자라고 단정하지 않는다. 자릿수를 먼저 보고 정렬한다.
+        for post_id, entry in sorted(listed.items(), key=lambda item: (len(item[0]), item[0]))
+    ]
+    write_text(directory / LISTING, "".join(f"{line}\n" for line in lines))
+
+
 def _sources(
-    directory: Path, collected: dict[str, "Collected"], organization: str, board: str
+    directory: Path,
+    collected: dict[str, "Collected"],
+    listed: dict[str, Listed],
+    organization: str,
+    board: str,
 ) -> list[SourceRef]:
     """수집 기록 전체를 출처로 옮긴다. 이번 실행에서 새로 받은 것만 세지 않는다.
 
     컨테이너는 저장한 원본에서 다시 판정한다. 게시판이 붙인 확장자를 그대로 믿지 않는다.
     """
     references = []
-    for entry in collected.values():
+    for post_id, entry in collected.items():
+        posted, title, department = Listed.of(listed, post_id)
         for name in entry.files:
             path = directory / name
             if not path.exists():
@@ -147,6 +223,9 @@ def _sources(
                     board=board,
                     url=entry.url,
                     container=boards.container_of(body),
+                    department=department,
+                    posted=posted,
+                    title=title,
                 )
             )
     return references
@@ -193,14 +272,25 @@ def _ledger(directory: Path) -> tuple[dict[str, Collected], dict[str, Gone]]:
     return collected, gone
 
 
-def _missing(gone: dict[str, Gone], organization: str, board: str) -> list[MissingOriginal]:
-    return [
-        MissingOriginal(
-            organization=organization, board=board, url=entry.url, filename=name, reason=reason
+def _missing(
+    gone: dict[str, Gone], listed: dict[str, Listed], organization: str, board: str
+) -> list[MissingOriginal]:
+    lost: list[MissingOriginal] = []
+    for post_id, entry in gone.items():
+        posted, title, _ = Listed.of(listed, post_id)
+        lost.extend(
+            MissingOriginal(
+                organization=organization,
+                board=board,
+                url=entry.url,
+                filename=name,
+                reason=reason,
+                posted=posted,
+                title=title,
+            )
+            for name, reason in entry.files
         )
-        for entry in gone.values()
-        for name, reason in entry.files
-    ]
+    return lost
 
 
 def _remember(
