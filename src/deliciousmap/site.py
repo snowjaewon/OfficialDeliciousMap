@@ -361,6 +361,10 @@ def _repeated_expense_line(repeated: RepeatedExpenses) -> str:
 
     한 묶음이 언제나 한 건으로 줄지는 않는다. 남는 건수는 한 원본이 적은 최대 건수이므로,
     합친 묶음 수와 장부에서 뺀 레코드 수를 따로 낸다.
+
+    사람이 원본을 대조해 확정한 수는 따로 낸다([ADR-0006](
+    ../../docs/adr/0006-human-confirmed-reposts.md)). 확정이 없으면 그 말은 내지 않는다 —
+    기준이 센 수만으로 장부가 다 설명되고, 하지 않은 검토의 0건은 군말이다.
     """
     if repeated == RepeatedExpenses():
         return ""
@@ -378,7 +382,23 @@ def _repeated_expense_line(repeated: RepeatedExpenses) -> str:
         if repeated.unmerged_expenses
         else "다시 올린 것인지 따로 쓴 것인지 가를 근거가 없어 남긴 묶음은 없습니다."
     )
-    return f'\n      <p class="collection-scope">{merged} {left}</p>'
+    return f'\n      <p class="collection-scope">{merged}{_confirmed_line(repeated)} {left}</p>'
+
+
+def _confirmed_line(repeated: RepeatedExpenses) -> str:
+    """사람이 확정해 합친 수와 남긴 수. 확정한 것이 없으면 낼 말이 없다(ADR-0006)."""
+    said = ""
+    if repeated.confirmed_expenses:
+        said += (
+            f" 원본을 다시 대조해 같은 지출로 확정한 {repeated.confirmed_expenses:,}묶음"
+            f" {repeated.confirmed_records:,}건도 함께 뺐습니다."
+        )
+    if repeated.separate_expenses:
+        said += (
+            f" 원본을 다시 대조해 별개 지출로 확정한 {repeated.separate_expenses:,}묶음"
+            f" {repeated.separate_records:,}건은 장부에 그대로 남습니다."
+        )
+    return said
 
 
 def _city_page(

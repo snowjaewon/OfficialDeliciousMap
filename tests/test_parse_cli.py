@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from deliciousmap.cli import main
+from deliciousmap.contracts import RepeatDecision
 from deliciousmap.storage import write_text
 from tests import pdf
 from tests.gwangju import (
@@ -671,6 +672,10 @@ def test_cumulative_repost_is_merged_and_both_originals_stay_traceable(
         "merged_records": 2,
         "unmerged_expenses": 0,
         "unmerged_records": 0,
+        "confirmed_expenses": 0,
+        "confirmed_records": 0,
+        "separate_expenses": 0,
+        "separate_records": 0,
     }
     report = {item["source_hash"]: item for item in parsed["sources"]}
     # 원본별 보고는 합친 뒤 수와 합쳐서 뺀 수를 함께 낸다. 뺀 것을 0으로 감추지 않는다.
@@ -716,4 +721,135 @@ def test_a_single_shared_expense_is_left_in_the_ledger(tmp_path: Path, configure
         "merged_records": 0,
         "unmerged_expenses": 1,
         "unmerged_records": 1,
+        "confirmed_expenses": 0,
+        "confirmed_records": 0,
+        "separate_expenses": 0,
+        "separate_records": 0,
     }
+
+
+ONCE = sheet_a(("2026-01-14\n12:07", "합성 식당", "현안 업무 협의", 23.0, 480000.0))
+AGAIN = sheet_a(
+    ("2026-01-14\n12:07", "합성 식당", "현안 업무 협의", 23.0, 480000.0),
+    ("2026-02-05\n12:10", "합성 국밥", "현안 업무 협의", 21.0, 300000.0),
+)
+
+
+def confirm_repeat(
+    root: Path,
+    *sources: str,
+    decision: RepeatDecision = "same_expense",
+    city: str = "gwangju",
+    organization: str = ORG,
+    merchant: str = "합성 식당",
+) -> None:
+    """사람이 원본을 대조해 확정한 재게시 여부. 지출 묶음마다 한 줄이다."""
+    write_text(
+        root / DATA / "manual" / city / "repeats.jsonl",
+        json.dumps(
+            {
+                "scope": {
+                    "city": city,
+                    "organization": organization,
+                    "department": "합성과",
+                    "spent_on": "2026-01-14",
+                    "merchant": merchant,
+                    "amount_krw": "480000",
+                    "sources": list(sources),
+                },
+                "decision": decision,
+                "evidence": "뒤 원본의 대상기간이 앞 원본의 기간을 포함한다(합성)",
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+    )
+
+
+def test_a_confirmed_repost_is_merged_and_counted_apart_from_the_criterion(
+    tmp_path: Path, configured: None
+) -> None:
+    """근거가 한 건뿐이라 코드가 남긴 묶음도 사람이 확정하면 합친다(ADR-0006). 출처는 남는다."""
+    record_spending(tmp_path)
+    first, second = publish(
+        tmp_path,
+        ("1월.xls", workbook(ONCE)),
+        ("2월.xls", workbook(AGAIN)),
+        posted=("2026-02-02", "2026-03-03"),
+    )
+    assert run(tmp_path, "headermap", FakeModel(headers=[header_answer()])) == 0
+    assert run(tmp_path, "parse") == 0
+    # 확정이 없으면 가를 근거가 하나뿐이라 장부에 두 건으로 남는다.
+    assert len(records(tmp_path)) == 3
+
+    confirm_repeat(tmp_path, first, second)
+    assert run(tmp_path, "parse") == 0
+    rows = records(tmp_path)
+    assert [(row["spent_on"], row["source_hash"], row["repeats"]) for row in rows] == [
+        ("2026-01-14", first, f"{second}:sheet1:R4"),
+        ("2026-02-05", second, ""),
+    ]
+    parsed = payload(tmp_path, "parse")
+    assert parsed["repeated_expenses"] == {
+        "merged_expenses": 0,
+        "merged_records": 0,
+        "unmerged_expenses": 0,
+        "unmerged_records": 0,
+        "confirmed_expenses": 1,
+        "confirmed_records": 1,
+        "separate_expenses": 0,
+        "separate_records": 0,
+    }
+    report = {item["source_hash"]: item for item in parsed["sources"]}
+    assert (report[first]["records"], report[first]["repeated"]) == (1, 0)
+    assert (report[second]["records"], report[second]["repeated"]) == (1, 1)
+
+
+def test_a_confirmation_that_no_longer_matches_the_ledger_is_rejected(
+    tmp_path: Path, configured: None
+) -> None:
+    """장부에 없는 묶음을 가리키는 확정이 남으면 조용히 지나가지 않는다."""
+    record_spending(tmp_path)
+    first, second = publish(
+        tmp_path,
+        ("1월.xls", workbook(ONCE)),
+        ("2월.xls", workbook(AGAIN)),
+        posted=("2026-02-02", "2026-03-03"),
+    )
+    assert run(tmp_path, "headermap", FakeModel(headers=[header_answer()])) == 0
+    confirm_repeat(tmp_path, first, second, merchant="합성 국밥")
+    assert run(tmp_path, "parse") == 1
+
+
+def test_a_confirmation_from_another_city_is_rejected(tmp_path: Path, configured: None) -> None:
+    record_spending(tmp_path)
+    first, second = publish(
+        tmp_path,
+        ("1월.xls", workbook(ONCE)),
+        ("2월.xls", workbook(AGAIN)),
+        posted=("2026-02-02", "2026-03-03"),
+    )
+    assert run(tmp_path, "headermap", FakeModel(headers=[header_answer()])) == 0
+    confirm_repeat(tmp_path, first, second)
+    path = tmp_path / DATA / "manual" / "gwangju" / "repeats.jsonl"
+    write_text(path, path.read_text(encoding="utf-8").replace('"gwangju"', '"busan"', 1))
+    assert run(tmp_path, "parse") == 1
+
+
+def test_a_confirmation_for_another_organization_is_left_to_that_organization(
+    tmp_path: Path, configured: None
+) -> None:
+    """기관을 좁혀 돌리면 그 기관의 확정만 본다. 다른 기관의 확정은 이 실행의 소관이 아니다."""
+    record_spending(tmp_path)
+    first, second = publish(
+        tmp_path,
+        ("1월.xls", workbook(ONCE)),
+        ("2월.xls", workbook(AGAIN)),
+        posted=("2026-02-02", "2026-03-03"),
+        org=ORG,
+    )
+    assert run(tmp_path, "headermap", FakeModel(headers=[header_answer()]), org=ORG) == 0
+    confirm_repeat(tmp_path, first, second, organization="합성 다른 기관")
+    assert run(tmp_path, "parse", org=ORG) == 0
+    report = {item["source_hash"]: item for item in payload(tmp_path, "parse", org=ORG)["sources"]}
+    assert (report[first]["records"], report[second]["records"]) == (1, 2)
