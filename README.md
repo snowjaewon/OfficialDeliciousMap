@@ -237,6 +237,15 @@ URL이 `naver.com`이면 네이버 SDK, 로컬 주소이면 애플리케이션, 
 원인을 요약한다. trace 디렉터리는 기본적으로 임시 폴더에 만들며 `--trace-dir`로 저장 위치를
 지정할 수 있지만 저장소 안은 거부한다. Chrome 경로는 `--chrome` 또는 `CHROME_PATH`로 바꾼다.
 
+Chrome을 띄우기 전 10초 동안 호스트의 CPU 사용률을 재어 `idle_cpu_percent`로 남기고, 실제로 내준
+셸(`sw.js`·manifest·공유 JavaScript·CSS·도시 HTML)의 SHA-256을 `shell`에 남긴다. 개선 전후처럼
+셸만 다른 사이트를 비교할 때는 각 사이트를 `--site`로 바꿔 `--runs 5`씩 번갈아 잰 뒤, 같은 셸의
+블록끼리 합쳐 20회로 다시 판정한다. 셸·데이터·측정 조건·호스트·코드 커밋이 다른 블록은 합치지 않는다.
+
+```text
+양쪽 공통: node scripts/measure_map.js --merge --out <합친 결과.json> <블록1.json> <블록2.json> ...
+```
+
 재방문 서비스 워커는 셸(도시 HTML·공유 JavaScript·CSS·manifest)을 캐시에서 먼저 내주고
 동시에 네트워크에서 갱신하는 stale-while-revalidate 전략을 쓴다. 처음 받은 도시 셸도
 캐시에 저장하므로 다음 탐색은 네트워크 재검증을 기다리지 않는다. `markers.json`과

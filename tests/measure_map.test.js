@@ -6,11 +6,14 @@ const path = require("node:path");
 
 const {
   ENVIRONMENTS,
+  cpuBusyPercent,
   createStaticServer,
+  describeShell,
   frameStats,
   judgeTrace,
   judge,
   markdownTable,
+  mergeResults,
   summarizeTrace,
 } = require("../scripts/measure_map.js");
 
@@ -442,4 +445,107 @@ test("20회 trace를 채우지 못하면 성능 판정은 미측정이다", () =
 
   assert.equal(summary.verdict, "unmeasured");
   assert.equal(summary.runs, 1);
+});
+
+function cpu(user, sys, idle) {
+  return { times: { user, nice: 0, sys, idle, irq: 0 } };
+}
+
+test("유휴 CPU 사용률은 두 시점 사이 모든 코어의 쉬지 않은 시간 비율이다", () => {
+  // 코어 0은 1,000ms 중 150ms, 코어 1은 1,000ms 중 300ms를 일했다.
+  const before = [cpu(100, 50, 850), cpu(0, 0, 1000)];
+  const after = [cpu(200, 100, 1700), cpu(300, 0, 1700)];
+
+  assert.equal(cpuBusyPercent(before, after), 22.5);
+});
+
+const SHA256_ABC = "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad";
+const SHA256_EMPTY = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+
+test("셸 해시는 커밋이 아니라 실제로 내준 서비스 워커·자산·도시 화면을 구분한다", (t) => {
+  const site = fs.mkdtempSync(path.join(os.tmpdir(), "measure-shell-"));
+  t.after(() => fs.rmSync(site, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(site, "assets"));
+  fs.mkdirSync(path.join(site, "gwangju"));
+  fs.writeFileSync(path.join(site, "sw.js"), "abc");
+  for (const file of ["manifest.webmanifest", "assets/app.js", "assets/styles.css", "gwangju/index.html"]) {
+    fs.writeFileSync(path.join(site, file), "");
+  }
+
+  assert.deepEqual(describeShell(site, "gwangju"), {
+    "sw.js": SHA256_ABC,
+    "manifest.webmanifest": SHA256_EMPTY,
+    "assets/app.js": SHA256_EMPTY,
+    "assets/styles.css": SHA256_EMPTY,
+    "gwangju/index.html": SHA256_EMPTY,
+  });
+});
+
+// 하네스 결과 JSON 한 벌. 번갈아 재는 5회 블록 하나에 해당한다.
+function block({ measured_at = "2026-09-13T00:00:00Z", sw = SHA256_ABC, idle = 5, revisit = [], zoom = [], failures = [] }) {
+  return {
+    measured_at,
+    code_commit: "c0ffee",
+    worktree_clean: true,
+    city: "gwangju",
+    files: { "markers.json": { sha256: SHA256_EMPTY } },
+    shell: { "sw.js": sw },
+    host: { cpu: "test cpu" },
+    idle_cpu_percent: idle,
+    conditions: { required_runs: 20, runs: revisit.length, query: "가" },
+    environments: {
+      mobile: {
+        attempts: { revisit: runs(revisit) },
+        failures,
+        summaries: {},
+        frames: { zoom: [], drag: [], scroll: [] },
+        tracing: { source: "CDP Tracing", criteria: {}, gestures: { zoom: { attempts: zoom, summary: {} } } },
+        diagnostics: { first_visit_transferred_bytes: [], heap_used_bytes: [] },
+      },
+    },
+  };
+}
+
+test("번갈아 잰 블록을 합치면 모인 회차로 20회 판정을 다시 한다", () => {
+  const first = block({ idle: 4.2, revisit: [...Array(9).fill(100), 2500] });
+  const second = block({ measured_at: "2026-09-13T01:00:00Z", idle: 6.8, revisit: [...Array(9).fill(100), 1900] });
+
+  const merged = mergeResults([first, second]);
+
+  assert.deepEqual(merged.environments.mobile.summaries.revisit, {
+    runs: 20,
+    second_slowest_ms: 1900,
+    maximum_ms: 2500,
+    target_ms: 2000,
+    verdict: "pass",
+  });
+  assert.equal(merged.conditions.runs, 20);
+  assert.deepEqual(merged.blocks, [
+    { measured_at: "2026-09-13T00:00:00Z", runs: 10, idle_cpu_percent: 4.2 },
+    { measured_at: "2026-09-13T01:00:00Z", runs: 10, idle_cpu_percent: 6.8 },
+  ]);
+});
+
+test("다른 셸·데이터·조건·호스트에서 잰 블록은 한 결과로 합치지 않는다", () => {
+  const before = block({ sw: SHA256_EMPTY, revisit: [100] });
+  const after = block({ revisit: [100] });
+  const otherHost = { ...block({ revisit: [100] }), host: { cpu: "other cpu" } };
+
+  assert.throws(() => mergeResults([before, after]), /shell/);
+  assert.throws(() => mergeResults([after, otherHost]), /host/);
+});
+
+test("합친 결과는 성능 기록을 다시 판정하고 실패 회차가 어느 블록인지 남긴다", () => {
+  const smooth = { verdict: "pass", longest_frame_ms: 16.7 };
+  const first = block({ zoom: Array(10).fill(smooth) });
+  const second = block({
+    zoom: [...Array(9).fill(smooth), { verdict: "fail", longest_frame_ms: 50 }],
+    failures: [{ phase: "cold", run: 3, error: "timeout" }],
+  });
+
+  const mobile = mergeResults([first, second]).environments.mobile;
+
+  assert.equal(mobile.tracing.gestures.zoom.summary.runs, 20);
+  assert.equal(mobile.tracing.gestures.zoom.summary.verdict, "fail");
+  assert.deepEqual(mobile.failures, [{ block: 2, phase: "cold", run: 3, error: "timeout" }]);
 });
