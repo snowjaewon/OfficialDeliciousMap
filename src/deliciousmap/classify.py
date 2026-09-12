@@ -24,7 +24,12 @@ from deliciousmap.contracts import (
     Verdict,
 )
 from deliciousmap.identity import normalized
-from deliciousmap.storage import append_cache_entries, read_cache
+from deliciousmap.storage import (
+    append_cache_entries,
+    highest_revision,
+    latest_valid,
+    read_cache,
+)
 
 PURPOSE: LlmPurpose = "classification"
 # 한 요청에 묻는 상호 수. 출력 상한 안에서 답을 모두 받을 수 있는 크기로 둔다.
@@ -59,8 +64,8 @@ def resolve(
         if corrections[record.record_id] is None:
             display.setdefault(normalized(names[record.record_id]), names[record.record_id])
     history = read_cache(cache_path)
-    revisions = {entry.key: entry.revision for entry in history}
-    verdicts = {entry.key: entry for entry in history if entry.valid and entry.key in display}
+    revisions = highest_revision(history)
+    verdicts = {key: entry for key, entry in latest_valid(history).items() if key in display}
     failures: dict[str, str] = {}
     unknown = sorted(display.keys() - verdicts.keys())
     for start in range(0, len(unknown), BATCH_SIZE):

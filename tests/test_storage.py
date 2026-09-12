@@ -94,3 +94,107 @@ def test_headerless_mapping_cannot_reference_shared_header_cache() -> None:
             amount_multiplier=Decimal("1"),
             cache=CacheRef(key="b" * 64, revision=1),
         )
+
+
+def test_cache_history_opens_a_new_part_instead_of_passing_the_size_limit(tmp_path: Path) -> None:
+    from deliciousmap.contracts import CacheEntry
+    from deliciousmap.storage import append_cache_entries, cache_parts, read_cache, select_cache
+
+    path = tmp_path / "gwangju" / "geocode-history-v2.jsonl"
+    bulky = tuple(
+        CacheEntry(
+            key=letter * 64,
+            revision=1,
+            valid=True,
+            evidence="synthetic",
+            # 한 항목이 7MB를 넘어 두 개까지만 한 조각에 들어간다.
+            value={"body": "가" * 2_400_000},
+        )
+        for letter in "abc"
+    )
+    append_cache_entries(path, bulky[:2])
+    first = path.read_bytes()
+    assert cache_parts(path) == (path,)
+    append_cache_entries(path, bulky[2:])
+    rolled = path.parent / "geocode-history-v2.002.jsonl"
+    # 앞 조각은 그대로 두고 새 조각을 연다. 두 파일 모두 상한 안이다.
+    assert path.read_bytes() == first
+    assert cache_parts(path) == (path, rolled)
+    assert all(part.stat().st_size <= 20_000_000 for part in cache_parts(path))
+    assert read_cache(path) == bulky
+    assert select_cache(path, "c" * 64) == bulky[2]
+    # 이미 쌓인 항목의 재추가는 어느 조각도 다시 쓰지 않는다.
+    append_cache_entries(path, bulky)
+    assert path.read_bytes() == first
+    assert read_cache(path) == bulky
+
+
+def test_cache_rejects_an_entry_that_cannot_fit_a_part(tmp_path: Path) -> None:
+    from deliciousmap.contracts import CacheEntry
+    from deliciousmap.storage import append_cache_entries
+
+    path = tmp_path / "geocode-history-v2.jsonl"
+    with pytest.raises(ValueError, match="20MB"):
+        append_cache_entries(
+            path,
+            (
+                CacheEntry(
+                    key="a" * 64,
+                    revision=1,
+                    valid=True,
+                    evidence="synthetic",
+                    value={"body": "가" * 7_000_000},
+                ),
+            ),
+        )
+    assert not path.exists()
+
+
+def test_cache_parts_must_be_numbered_without_gaps_and_keep_pairs_unique(tmp_path: Path) -> None:
+    from deliciousmap.storage import cache_parts, read_cache, write_text
+
+    path = tmp_path / "geocode-history-v2.jsonl"
+    line = (
+        '{"schema_version":1,"key":"'
+        + "a" * 64
+        + '","revision":1,"valid":true,"evidence":"synthetic","value":{}}\n'
+    )
+    write_text(path, line)
+    write_text(path.parent / "geocode-history-v2.003.jsonl", line)
+    with pytest.raises(ValueError, match="parts"):
+        cache_parts(path)
+    (path.parent / "geocode-history-v2.003.jsonl").rename(
+        path.parent / "geocode-history-v2.002.jsonl"
+    )
+    with pytest.raises(ValueError, match="repeat"):
+        read_cache(path)
+
+
+def test_latest_valid_follows_revision_not_the_order_of_the_parts(tmp_path: Path) -> None:
+    import json
+
+    from deliciousmap.contracts import CacheEntry
+    from deliciousmap.storage import read_cache, select_cache, write_text
+
+    def line(key: str, revision: int, *, valid: bool, status: str) -> str:
+        entry = CacheEntry(
+            key=key,
+            revision=revision,
+            valid=valid,
+            evidence="synthetic",
+            value={"status": status},
+        )
+        return json.dumps(entry.model_dump(mode="json"), ensure_ascii=False, sort_keys=True) + "\n"
+
+    path = tmp_path / "classify.jsonl"
+    # 뒤 조각이 더 낮은 revision을 담아도 유효한 최신 판정은 revision으로 고른다.
+    write_text(
+        path,
+        line("가", 2, valid=True, status="restaurant") + line("나", 3, valid=False, status="-"),
+    )
+    write_text(path.parent / "classify.002.jsonl", line("가", 1, valid=True, status="pending"))
+    assert len(read_cache(path)) == 3
+    chosen = select_cache(path, "가")
+    assert chosen is not None and chosen.revision == 2
+    # 검증 실패 이력은 그 키의 유효 판정을 만들지 않는다.
+    assert select_cache(path, "나") is None

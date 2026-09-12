@@ -288,10 +288,10 @@ def _remember(
     if same is not None:
         # 이미 있는 판정을 다시 쌓지 않는다. 쌓으면 변형끼리 번갈아 revision이 늘어난다.
         return CacheRef(key=key, revision=same.revision)
-    latest = previous[-1] if previous else None
+    # 조각 사이의 줄 순서가 아니라 revision으로 다음 번호를 정한다.
     entry = CacheEntry(
         key=key,
-        revision=1 if latest is None else latest.revision + 1,
+        revision=max((item.revision for item in previous), default=0) + 1,
         valid=True,
         evidence=f"{recorded.model}/{recorded.prompt_version} verified on "
         f"{mapping.source_hash[:16]}",
