@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "measured_at": "2026-09-13",
-  "code_commit": "62dba72",
+  "code_commit": "5e36349",
   "worktree_clean": false,
   "city": "gwangju",
   "status": "unmeasured",
