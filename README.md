@@ -243,6 +243,10 @@ Node 기반 빌드 도구를 쓰지 않는다. 폐업으로 확인된 후보도 
 공통 캐시는 `data/_shared/`에 둔다. 사람 검토 입력은 의미별로 나누어
 `data/manual/<city>/`의 `classify.jsonl`(사람 보정), `restore.jsonl`(상호 복원),
 `geocode.jsonl`(업소 확인)에 둔다. 자세한 내용은 [상호 복원](docs/restoration.md)에 있다.
+커밋된 광주 산출물은 아직 누적 재게시 병합 이전(`parse` v2)이다. 다시 만들려면 geocode 판정
+이력이 파일당 20MB 상한을 넘으므로 [#61](https://github.com/snowjaewon/OfficialDeliciousMap/issues/61)
+뒤에 재생성한다. 근거는 [#63 검증 기록](docs/validation/issue-63.md)에 있다.
+
 단계 메타데이터 파일은 `<stage>.json`이며 `schema_version`(fetch·parse는 3, geocode·closure는 4,
 build는 6, 나머지는 1), `city`, `org`, 입력 해시인
 `dependencies`, 실제 출력인 `payload`를 가진다. `fetch.json`은 받은 원본의 `sources` 외에
