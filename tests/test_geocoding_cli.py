@@ -600,3 +600,30 @@ def test_oversized_refined_result_is_rejected_before_geocode_history_write(tmp_p
     assert run_cli(context, "geocode") == 1
     assert not (context.paths.city_dir(context.target) / "geocode.json").exists()
     assert not (context.paths.city_dir(context.target) / "geocode-history-v2.jsonl").exists()
+
+
+def test_upstream_metadata_change_alone_does_not_repeat_settled_geocode_history(
+    tmp_path: Path,
+) -> None:
+    context = prepare(tmp_path)
+    save_input(context, lookup())
+    assert run_cli(context, "geocode") == 0
+    history = context.paths.city_dir(context.target) / "geocode-history-v2.jsonl"
+    settled = history.read_bytes()
+    decided = payload(context, "geocode")["results"]
+    store = ArtifactStore(context.paths, context.target)
+    parsed = store.load("parse", ParseOutput)
+    decisions = store.load("classify", ClassifyOutput).decisions
+    # 레코드도 식당 여부도 그대로이고 상류 산출물의 메타데이터만 바뀐 재실행이다.
+    store.save("parse", parsed.model_copy(update={"reporting_period": "2026-01-01/2026-12-31"}))
+    store.save(
+        "classify",
+        ClassifyOutput(
+            decisions=tuple(
+                item.model_copy(update={"evidence": "다시 적은 합성 분류"}) for item in decisions
+            )
+        ),
+    )
+    assert run_cli(context, "geocode") == 0
+    assert history.read_bytes() == settled
+    assert payload(context, "geocode")["results"] == decided

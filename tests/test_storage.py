@@ -94,3 +94,77 @@ def test_headerless_mapping_cannot_reference_shared_header_cache() -> None:
             amount_multiplier=Decimal("1"),
             cache=CacheRef(key="b" * 64, revision=1),
         )
+
+
+def test_cache_history_opens_a_new_part_instead_of_passing_the_size_limit(tmp_path: Path) -> None:
+    from deliciousmap.contracts import CacheEntry
+    from deliciousmap.storage import append_cache_entries, cache_parts, read_cache, select_cache
+
+    path = tmp_path / "gwangju" / "geocode-history-v2.jsonl"
+    bulky = tuple(
+        CacheEntry(
+            key=letter * 64,
+            revision=1,
+            valid=True,
+            evidence="synthetic",
+            # 한 항목이 7MB를 넘어 두 개까지만 한 조각에 들어간다.
+            value={"body": "가" * 2_400_000},
+        )
+        for letter in "abc"
+    )
+    append_cache_entries(path, bulky[:2])
+    first = path.read_bytes()
+    assert cache_parts(path) == (path,)
+    append_cache_entries(path, bulky[2:])
+    rolled = path.parent / "geocode-history-v2.002.jsonl"
+    # 앞 조각은 그대로 두고 새 조각을 연다. 두 파일 모두 상한 안이다.
+    assert path.read_bytes() == first
+    assert cache_parts(path) == (path, rolled)
+    assert all(part.stat().st_size <= 20_000_000 for part in cache_parts(path))
+    assert read_cache(path) == bulky
+    assert select_cache(path, "c" * 64) == bulky[2]
+    # 이미 쌓인 항목의 재추가는 어느 조각도 다시 쓰지 않는다.
+    append_cache_entries(path, bulky)
+    assert path.read_bytes() == first
+    assert read_cache(path) == bulky
+
+
+def test_cache_rejects_an_entry_that_cannot_fit_a_part(tmp_path: Path) -> None:
+    from deliciousmap.contracts import CacheEntry
+    from deliciousmap.storage import append_cache_entries
+
+    path = tmp_path / "geocode-history-v2.jsonl"
+    with pytest.raises(ValueError, match="20MB"):
+        append_cache_entries(
+            path,
+            (
+                CacheEntry(
+                    key="a" * 64,
+                    revision=1,
+                    valid=True,
+                    evidence="synthetic",
+                    value={"body": "가" * 7_000_000},
+                ),
+            ),
+        )
+    assert not path.exists()
+
+
+def test_cache_parts_must_be_numbered_without_gaps_and_keep_pairs_unique(tmp_path: Path) -> None:
+    from deliciousmap.storage import cache_parts, read_cache, write_text
+
+    path = tmp_path / "geocode-history-v2.jsonl"
+    line = (
+        '{"schema_version":1,"key":"'
+        + "a" * 64
+        + '","revision":1,"valid":true,"evidence":"synthetic","value":{}}\n'
+    )
+    write_text(path, line)
+    write_text(path.parent / "geocode-history-v2.003.jsonl", line)
+    with pytest.raises(ValueError, match="parts"):
+        cache_parts(path)
+    (path.parent / "geocode-history-v2.003.jsonl").rename(
+        path.parent / "geocode-history-v2.002.jsonl"
+    )
+    with pytest.raises(ValueError, match="repeat"):
+        read_cache(path)

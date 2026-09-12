@@ -74,7 +74,7 @@ git diff --check
 ## 아키텍처
 
 - 정식 패키지는 `src/deliciousmap/`, 테스트는 `tests/`에 둔다. Python 파이프라인과 정적 HTML/PWA를 유지한다. 원본 수집·파싱·LLM·지오코딩은 개발자 PC에서, CI 사이트 빌드는 커밋된 입력으로 수행한다.
-- 원본·정제 산출물·캐시를 다룰 때 [ADR-0001](docs/adr/0001-commit-refined-artifacts.md), 헤더 매핑·추출을 다룰 때 [ADR-0002](docs/adr/0002-ai-header-mapping.md)와 [폴백 정책](docs/specs/header-mapping-fallback.md)을 읽는다.
+- 원본·정제 산출물·캐시를 다룰 때 [ADR-0001](docs/adr/0001-commit-refined-artifacts.md), 헤더 매핑·추출을 다룰 때 [ADR-0002](docs/adr/0002-ai-header-mapping.md)와 [폴백 정책](docs/specs/header-mapping-fallback.md), 지오코딩 판정 키·이력 분할을 다룰 때 [ADR-0003](docs/adr/0003-narrow-geocode-history-key.md)을 읽는다.
 - `data/<city>/`는 도시 담당자가 갱신한다. 공통 캐시의 키 정렬 JSONL·추가형 이력은 [협업 결정](https://github.com/snowjaewon/OfficialDeliciousMap/issues/8)을 따른다. 초기 모듈 결정의 `.json` 예시보다 이후의 JSONL 합의를 우선한다. 사람 보정은 `data/manual/<city>/`에 분리한다.
 - 기존 결정과 충돌하면 충돌 근거를 밝힌다. 도메인 용어는 `CONTEXT.md`, 결정의 이유는 해당 이슈·ADR에 기록하고 중복 스펙을 만들지 않는다.
 

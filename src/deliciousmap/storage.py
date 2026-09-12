@@ -8,6 +8,7 @@ import os
 import re
 import tempfile
 from collections import Counter
+from collections.abc import Iterable, Iterator, Sequence
 from pathlib import Path
 
 from deliciousmap import identity, period, restoration
@@ -39,6 +40,9 @@ from deliciousmap.contracts import (
 )
 from deliciousmap.paths import Paths
 from deliciousmap.registry import Target
+
+# 정제 산출물의 파일당 상한(ADR-0001). 이력도 이 상한 안에서 조각으로 나눈다.
+SIZE_LIMIT = 20_000_000
 
 RECORD_FIELDS = (
     "record_id",
@@ -134,8 +138,12 @@ def write_text(path: Path, content: str) -> None:
             temporary.unlink(missing_ok=True)
 
 
+def fits(content: str) -> bool:
+    return len(content.encode("utf-8")) <= SIZE_LIMIT
+
+
 def require_size(content: str) -> None:
-    if len(content.encode("utf-8")) > 20_000_000:
+    if not fits(content):
         raise ValueError("artifact exceeds 20MB; partition before writing")
 
 
@@ -161,12 +169,45 @@ def read_records(path: Path) -> tuple[Record, ...]:
         return tuple(records)
 
 
-def read_cache(path: Path) -> tuple[CacheEntry, ...]:
+def cache_part(path: Path, number: int) -> Path:
+    """첫 조각은 원래 이름 그대로다. 이어지는 조각만 세 자리 번호를 붙인다."""
+    if number == 1:
+        return path
+    if number > 999:
+        raise ValueError("cache parts exhausted; split the scope of this cache")
+    return path.with_name(f"{path.stem}.{number:03d}{path.suffix}")
+
+
+def cache_parts(path: Path) -> tuple[Path, ...]:
+    """이력을 이루는 조각. 번호가 비면 잃어버린 조각을 조용히 넘기지 않고 알린다."""
+    found = sorted(path.parent.glob(f"{path.stem}.[0-9][0-9][0-9]{path.suffix}"))
     if not path.exists():
+        if found:
+            raise ValueError("cache parts without the first file of the history")
         return ()
+    parts = (path, *found)
+    if list(parts) != [cache_part(path, number) for number in range(1, len(parts) + 1)]:
+        raise ValueError("cache parts must be numbered without gaps")
+    return parts
+
+
+def read_cache(path: Path) -> tuple[CacheEntry, ...]:
+    entries: tuple[CacheEntry, ...] = ()
+    seen: set[tuple[str, int]] = set()
+    for part in cache_parts(path):
+        found = _read_cache_part(part)
+        identities = {(entry.key, entry.revision) for entry in found}
+        if identities & seen:
+            raise ValueError("cache parts must not repeat a key/revision pair")
+        seen |= identities
+        entries += found
+    return entries
+
+
+def _read_cache_part(part: Path) -> tuple[CacheEntry, ...]:
     entries = tuple(
         CacheEntry.model_validate_json(line)
-        for line in path.read_text(encoding="utf-8").splitlines()
+        for line in part.read_text(encoding="utf-8").splitlines()
     )
     identities = [(entry.key, entry.revision) for entry in entries]
     if identities != sorted(set(identities)):
@@ -179,18 +220,56 @@ def append_cache(path: Path, entry: CacheEntry) -> None:
 
 
 def append_cache_entries(path: Path, additions: tuple[CacheEntry, ...]) -> None:
-    entries = {(entry.key, entry.revision): entry for entry in read_cache(path)}
+    """마지막 조각에만 이어 쓴다. 상한을 넘길 만큼 쌓이면 앞 조각을 그대로 두고 새 조각을 연다."""
+    settled = {(entry.key, entry.revision): entry for entry in read_cache(path)}
+    fresh: dict[tuple[str, int], CacheEntry] = {}
     for entry in additions:
         entry = CacheEntry.model_validate(entry)
-        key = (entry.key, entry.revision)
-        if key in entries and entries[key] != entry:
-            raise ValueError("cannot overwrite cache history")
-        entries[key] = entry
-    content = "".join(
+        pair = (entry.key, entry.revision)
+        kept = settled.get(pair, fresh.get(pair))
+        if kept is not None:
+            if kept != entry:
+                raise ValueError("cannot overwrite cache history")
+            continue
+        fresh[pair] = entry
+    if not fresh:
+        return
+    parts = cache_parts(path)
+    added = sorted(fresh.values(), key=_cache_order)
+    if parts:
+        carried = sorted((*_read_cache_part(parts[-1]), *added), key=_cache_order)
+        merged = _jsonl(carried)
+        if fits(merged):
+            write_text(parts[-1], merged)
+            return
+    for offset, chunk in enumerate(_cache_chunks(added)):
+        write_text(cache_part(path, len(parts) + offset + 1), _jsonl(chunk))
+
+
+def _cache_order(entry: CacheEntry) -> tuple[str, int]:
+    return entry.key, entry.revision
+
+
+def _cache_chunks(entries: Sequence[CacheEntry]) -> Iterator[list[CacheEntry]]:
+    """한 조각에 담을 만큼씩 나눈다. 혼자서도 상한을 넘는 항목은 쓰는 쪽이 거부한다."""
+    chunk: list[CacheEntry] = []
+    size = 0
+    for entry in entries:
+        length = len(_jsonl((entry,)).encode("utf-8"))
+        if chunk and size + length > SIZE_LIMIT:
+            yield chunk
+            chunk, size = [], 0
+        chunk.append(entry)
+        size += length
+    if chunk:
+        yield chunk
+
+
+def _jsonl(entries: Iterable[Contract]) -> str:
+    return "".join(
         json.dumps(item.model_dump(mode="json"), ensure_ascii=False, sort_keys=True) + "\n"
-        for item in sorted(entries.values(), key=lambda item: (item.key, item.revision))
+        for item in entries
     )
-    write_text(path, content)
 
 
 def read_ledger(path: Path) -> tuple[LedgerEntry, ...]:
@@ -213,13 +292,7 @@ def append_ledger(path: Path, entry: LedgerEntry) -> None:
     entries = read_ledger(path)
     if any((item.entry_id, item.kind) == (entry.entry_id, entry.kind) for item in entries):
         raise ValueError("cannot overwrite budget history")
-    write_text(
-        path,
-        "".join(
-            json.dumps(item.model_dump(mode="json"), ensure_ascii=False, sort_keys=True) + "\n"
-            for item in (*entries, entry)
-        ),
-    )
+    write_text(path, _jsonl((*entries, entry)))
 
 
 def attempt(previous: CacheEntry | None) -> int:
@@ -498,7 +571,19 @@ class ArtifactStore:
         )
 
     def geocode_dependency_key(self) -> str:
-        return identity.digest(self._dependencies("geocode"))
+        """판정이 레코드 밖에서 기대는 전부. 상류 산출물의 파일 해시는 여기에 넣지 않는다.
+
+        레코드·후보 조회·사람 확인·확정 복원명은 레코드마다 `lookup_key`가 값으로 담는다.
+        그 파일들의 해시를 여기에 묶으면 판정이 하나도 바뀌지 않은 재실행도 모든 키를 갈아
+        이력을 통째로 다시 쌓는다. 근거는 ADR-0003이다. 산출물 단위의 낡음은 이 키가 아니라
+        envelope의 `dependencies`가 그대로 검사한다.
+        """
+        return identity.digest(
+            {
+                "policy": identity.POLICY_VERSION,
+                "restoration_policy": restoration.POLICY_VERSION,
+            }
+        )
 
     def cached_candidates(self, key: str) -> CacheEntry | None:
         """조회 캐시의 유효한 최신 항목. 적중 자체는 업소 확정이 아니다."""
