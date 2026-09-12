@@ -6,13 +6,14 @@
 
 import argparse
 import os
+import subprocess
 import sys
 import time
 from collections.abc import Callable, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 
-from deliciousmap import deploy, publish
+from deliciousmap import cloudflare, deploy, github, publish
 from deliciousmap.registry import CITIES, City
 
 
@@ -24,6 +25,7 @@ def main(
     uploader: deploy.Uploader | None = None,
     pages: deploy.Pages | None = None,
     checks: deploy.Checks | None = None,
+    latest_main: Callable[[], str] | None = None,
     sleep: Callable[[float], None] = time.sleep,
     clock: Callable[[], datetime] = lambda: datetime.now(UTC),
 ) -> int:
@@ -34,12 +36,12 @@ def main(
         return _check_dist(args.dist, args.commit, tuple(args.city))
     if args.command == "wait-check":
         return _wait_check(args, checks, sleep)
-    site_fetcher = fetcher or deploy.HttpFetcher()
-    site_uploader = uploader or deploy.WranglerUploader(args.project)
+    verifier = deploy.Verifier(fetcher or cloudflare.HttpFetcher(), cities, sleep)
+    site_uploader = uploader or cloudflare.WranglerUploader(args.project)
     if args.command == "preview":
-        report = deploy.release_preview(
-            args.dist, args.branch, site_uploader, site_fetcher, cities, sleep
-        )
+        report = deploy.release_preview(args.dist, args.branch, site_uploader, verifier)
+        if args.head:
+            report.facts.append(("PR head", f"`{args.head}`"))
         return _finish(report, args.summary)
     try:
         request = deploy.Request(
@@ -48,11 +50,10 @@ def main(
             reason=args.reason,
             freeze_at=deploy.parse_freeze(args.freeze_at),
             now=clock(),
-            main_head=args.main_head,
         )
         # 자격 없는 실행은 Pages 설정을 읽기 전에 거부한다.
-        deploy.hold_reason(request)
-        project_api = pages or deploy.CloudflarePages.from_environment(args.project)
+        deploy.validate_request(request)
+        project_api = pages or cloudflare.CloudflarePages.from_environment(args.project)
     except deploy.Refused as exc:
         print(f"production: {exc}", file=sys.stderr)
         return 2
@@ -60,12 +61,33 @@ def main(
         # 빠진 변수 이름만 알린다. 값은 어디에도 출력하지 않는다.
         print(f"configuration: {exc}", file=sys.stderr)
         return 2
+
+    def keep(report: deploy.Report) -> None:
+        if args.record is not None:
+            args.record.write_text(report.to_record(), encoding="utf-8")
+
     report = deploy.release_production(
-        args.dist, request, project_api, site_uploader, site_fetcher, cities, sleep
+        args.dist,
+        request,
+        project_api,
+        site_uploader,
+        verifier,
+        latest_main or _remote_main,
+        keep,
     )
-    if args.record is not None:
-        args.record.write_text(report.to_record(), encoding="utf-8")
+    keep(report)
     return _finish(report, args.summary)
+
+
+def _remote_main() -> str:
+    """업로드 직전의 원격 main. 대기하던 오래된 커밋이 더 최신 배포를 덮지 않게 한다."""
+    listed = subprocess.run(
+        ["git", "ls-remote", "origin", "refs/heads/main"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    return listed.split()[0] if listed.strip() else ""
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -86,11 +108,11 @@ def _parser() -> argparse.ArgumentParser:
     preview = commands.add_parser("preview", help="Upload a PR preview and verify it")
     _deploy_arguments(preview)
     preview.add_argument("--branch", required=True, help="Preview branch, e.g. pr-12")
+    preview.add_argument("--head", default="", help="PR head SHA; the build is its merge commit")
     release = commands.add_parser("production", help="Deploy main to production and verify it")
     _deploy_arguments(release)
     release.add_argument("--event", required=True, help="GitHub event: push or workflow_dispatch")
     release.add_argument("--ref", required=True, help="Git ref of the run, e.g. refs/heads/main")
-    release.add_argument("--main-head", required=True, help="Latest main SHA just before upload")
     release.add_argument(
         "--freeze-at",
         default="",
@@ -156,17 +178,16 @@ def _check_dist(dist: Path, commit: str, city_slugs: tuple[str, ...]) -> int:
 def _wait_check(
     args: argparse.Namespace, checks: deploy.Checks | None, sleep: Callable[[float], None]
 ) -> int:
-    """성공만 통과다. 실패·취소·건너뜀·시간 초과를 성공으로 보고하지 않는다."""
     try:
-        source = checks or deploy.GitHubChecks.from_environment(args.repo)
+        source = checks or github.GitHubChecks.from_environment(args.repo)
     except ValueError as exc:
         print(f"configuration: {exc}", file=sys.stderr)
         return 2
     run = deploy.wait_for_check(source, args.sha, args.name, sleep)
-    if run is not None and run.status == "completed" and run.conclusion == "success":
+    if run is not None and run.succeeded:
         print(f"wait-check: {args.name} succeeded on {args.sha}")
         return 0
-    state = "not found" if run is None else f"{run.status}/{run.conclusion}"
+    state = "not found or unavailable" if run is None else f"{run.status}/{run.conclusion}"
     print(f"wait-check: {args.name} on {args.sha} is {state}", file=sys.stderr)
     return 1
 

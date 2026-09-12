@@ -1,26 +1,26 @@
 """배포 명령의 판정. Cloudflare·GitHub 대신 가짜 Pages 프로젝트와 응답을 주입한다."""
 
 import json
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from subprocess import CompletedProcess
+from typing import Any
 
 import pytest
 
 from deliciousmap.ci import main
+from deliciousmap.cloudflare import WRANGLER, CloudflarePages, WranglerUploader
 from deliciousmap.deploy import (
-    WRANGLER,
     CheckRun,
-    CloudflarePages,
+    ChecksUnavailable,
     Deployment,
-    GitHubChecks,
     PagesApiFailed,
     Project,
     Response,
     UploadFailed,
-    WranglerUploader,
 )
+from deliciousmap.github import GitHubChecks
 from tests.test_ci import COMMIT
 from tests.test_geocoding_cli import run_cli
 from tests.test_site_build import build_ready
@@ -48,6 +48,7 @@ class FakePages:
         self.aliases: dict[str, str] = {}
         self.pending: dict[str, tuple[str, int]] = {}
         self.production: Deployment | None = None
+        self.deployments: dict[str, Deployment] = {}
         self.uploads: list[tuple[str, str]] = []
         self.rollbacks: list[str] = []
         self.lag = 0
@@ -64,7 +65,9 @@ class FakePages:
     def rollback(self, deployment_id: str) -> None:
         self.rollbacks.append(deployment_id)
         if self.rollback_works:
-            self.aliases[PRODUCTION_ALIAS] = f"https://{deployment_id}.{PROJECT}.pages.dev"
+            self.production = self.deployments[deployment_id]
+            self.pending.pop(PRODUCTION_ALIAS, None)
+            self.aliases[PRODUCTION_ALIAS] = self.production.url
 
     # Wrangler
     def upload(self, dist: Path, branch: str, commit: str) -> Deployment:
@@ -87,6 +90,7 @@ class FakePages:
             environment="production" if branch == "main" else "preview",
             alias=alias,
         )
+        self.deployments[number] = deployment
         if branch == "main":
             self.production = deployment
         return deployment
@@ -247,8 +251,6 @@ def production(
             event,
             "--ref",
             ref,
-            "--main-head",
-            main_head,
             "--freeze-at",
             freeze_at,
             "--reason",
@@ -261,9 +263,15 @@ def production(
         fetcher=cloud,
         uploader=cloud,
         pages=cloud,
+        latest_main=lambda: main_head,
         sleep=cloud.sleep,
         clock=lambda: NOW,
     )
+
+
+def record_of(tmp_path: Path) -> dict[str, Any]:
+    loaded: dict[str, Any] = json.loads((tmp_path / "release.json").read_text(encoding="utf-8"))
+    return loaded
 
 
 def summary_of(tmp_path: Path) -> str:
@@ -286,7 +294,7 @@ def test_main_push_deploys_to_production_and_verifies_unique_url_and_alias(
     text = summary_of(tmp_path)
     assert f"고유 URL `https://d2.{PROJECT}.pages.dev`: 통과" in text
     assert f"운영 alias `{PRODUCTION_ALIAS}`: 통과" in text
-    record = json.loads((tmp_path / "release.json").read_text(encoding="utf-8"))
+    record = record_of(tmp_path)
     # 업로드 전에 직전 검증 성공 배포의 ID와 manifest를 보존한다.
     assert record["previous"]["id"] == previous.id
     assert record["previous"]["manifest"]["commit"] == PREVIOUS
@@ -311,7 +319,7 @@ def test_failed_verification_rolls_back_to_the_last_verified_deployment_and_stil
     assert "seoul/markers.json: SHA256 mismatch" in text
     # 복구가 끝나도 이 실행은 실패다.
     assert text.startswith("## 운영 배포: 실패")
-    assert json.loads((tmp_path / "release.json").read_text(encoding="utf-8"))["passed"] is False
+    assert record_of(tmp_path)["passed"] is False
 
 
 def test_a_production_deployment_that_was_never_verified_is_not_a_rollback_target(
@@ -326,7 +334,7 @@ def test_a_production_deployment_that_was_never_verified_is_not_a_rollback_targe
 
     assert cloud.rollbacks == []
     assert "롤백할 검증 배포가 없다" in summary_of(tmp_path)
-    assert json.loads((tmp_path / "release.json").read_text(encoding="utf-8"))["previous"] is None
+    assert record_of(tmp_path)["previous"] is None
 
 
 def test_rollback_that_does_not_restore_the_verified_site_is_reported(
@@ -417,7 +425,26 @@ def test_a_run_for_an_older_main_commit_skips_the_upload(
     assert "f" * 40 in summary_of(tmp_path)
 
 
-def test_an_upload_that_creates_no_deployment_fails_without_touching_production(
+def test_manual_run_during_the_freeze_for_an_older_commit_is_not_a_success(
+    cloud: FakePages, sealed: Path, previous: Deployment, tmp_path: Path
+) -> None:
+    """동결 중에는 최신 커밋을 자동으로 배포할 실행이 없다. 건너뛴 것을 성공으로 남기지 않는다."""
+    code = production(
+        cloud,
+        sealed,
+        tmp_path,
+        event="workflow_dispatch",
+        freeze_at=FREEZE,
+        reason="긴급 수정",
+        main_head="f" * 40,
+    )
+
+    assert code == 1
+    assert cloud.uploads == []
+    assert "다시 수동 실행" in summary_of(tmp_path)
+
+
+def test_an_upload_with_no_deployment_leaves_production_as_it_was(
     cloud: FakePages, sealed: Path, previous: Deployment, tmp_path: Path
 ) -> None:
     def refuse(dist: Path, branch: str, commit: str) -> Deployment:
@@ -428,7 +455,42 @@ def test_an_upload_that_creates_no_deployment_fails_without_touching_production(
     assert production(cloud, sealed, tmp_path) == 1
 
     assert cloud.rollbacks == []
-    assert "wrangler exited with 1" in summary_of(tmp_path)
+    text = summary_of(tmp_path)
+    assert "wrangler exited with 1" in text
+    assert f"운영은 직전 검증 배포 `{previous.id}` 그대로다" in text
+
+
+def test_an_unconfirmed_upload_that_did_change_production_is_rolled_back(
+    cloud: FakePages, sealed: Path, previous: Deployment, tmp_path: Path
+) -> None:
+    """Wrangler가 배포를 만들고도 결과를 알리지 못하면 운영이 이미 바뀌었을 수 있다."""
+    upload = cloud.upload
+
+    def lose_output(dist: Path, branch: str, commit: str) -> Deployment:
+        upload(dist, branch, commit)
+        raise UploadFailed("wrangler reported no deployment")
+
+    cloud.upload = lose_output  # type: ignore[method-assign]
+    cloud.tamper = corrupt_markers
+
+    assert production(cloud, sealed, tmp_path) == 1
+
+    assert cloud.rollbacks == [previous.id]
+    assert f"롤백 뒤 운영 alias `{PRODUCTION_ALIAS}`: 통과" in summary_of(tmp_path)
+
+
+def test_the_last_verified_deployment_is_recorded_before_the_upload(
+    cloud: FakePages, sealed: Path, previous: Deployment, tmp_path: Path
+) -> None:
+    def crash(dist: Path, branch: str, commit: str) -> Deployment:
+        raise RuntimeError("runner lost")
+
+    cloud.upload = crash  # type: ignore[method-assign]
+
+    with pytest.raises(RuntimeError):
+        production(cloud, sealed, tmp_path)
+
+    assert record_of(tmp_path)["previous"]["id"] == previous.id
 
 
 @pytest.mark.parametrize("failing", ["project", "rollback"])
@@ -453,11 +515,11 @@ class RecordingTransport:
         self.bodies = list(bodies)
         self.requests: list[tuple[str, str, dict[str, str]]] = []
 
-    def fetch(self, url: str, params: dict[str, str], headers: dict[str, str]) -> bytes:
+    def fetch(self, url: str, params: Mapping[str, str], headers: Mapping[str, str]) -> bytes:
         self.requests.append(("GET", url, dict(headers)))
         return self.bodies.pop(0)
 
-    def post(self, url: str, body: bytes, headers: dict[str, str]) -> bytes:
+    def post(self, url: str, body: bytes, headers: Mapping[str, str]) -> bytes:
         self.requests.append(("POST", url, dict(headers)))
         return self.bodies.pop(0)
 
@@ -482,7 +544,7 @@ def test_pages_api_reads_the_current_production_deployment_and_rolls_back() -> N
         ),
         api({"id": "2bef-uuid"}),
     )
-    pages = CloudflarePages(PROJECT, "합성-계정", "합성-토큰", transport)  # type: ignore[arg-type]
+    pages = CloudflarePages(PROJECT, "합성-계정", "합성-토큰", transport)
 
     project = pages.project()
     pages.rollback("2bef-uuid")
@@ -503,7 +565,7 @@ def test_pages_api_reads_the_current_production_deployment_and_rolls_back() -> N
 
 
 def test_pages_api_failure_response_is_an_api_failure() -> None:
-    pages = CloudflarePages(PROJECT, "a", "t", RecordingTransport(api(None, success=False)))  # type: ignore[arg-type]
+    pages = CloudflarePages(PROJECT, "a", "t", RecordingTransport(api(None, success=False)))
 
     with pytest.raises(PagesApiFailed):
         pages.project()
@@ -523,8 +585,6 @@ def test_production_without_cloudflare_configuration_names_only_the_variable(
             "push",
             "--ref",
             "refs/heads/main",
-            "--main-head",
-            COMMIT,
         ],
         clock=lambda: NOW,
     )
@@ -536,13 +596,16 @@ def test_production_without_cloudflare_configuration_names_only_the_variable(
 class FakeChecks:
     """같은 커밋의 체크 상태를 차례로 돌려준다. 마지막 상태는 계속 유지된다."""
 
-    def __init__(self, *states: CheckRun | None) -> None:
+    def __init__(self, *states: CheckRun | ChecksUnavailable | None) -> None:
         self.states = list(states)
         self.asked: list[tuple[str, str]] = []
 
     def latest(self, sha: str, name: str) -> CheckRun | None:
         self.asked.append((sha, name))
-        return self.states.pop(0) if len(self.states) > 1 else self.states[0]
+        state = self.states.pop(0) if len(self.states) > 1 else self.states[0]
+        if isinstance(state, ChecksUnavailable):
+            raise state
+        return state
 
 
 def wait_check(checks: FakeChecks, sleeps: list[float]) -> int:
@@ -554,7 +617,12 @@ def wait_check(checks: FakeChecks, sleeps: list[float]) -> int:
 
 
 def test_wait_check_waits_until_the_same_commit_check_succeeds() -> None:
-    checks = FakeChecks(None, CheckRun("in_progress", None), CheckRun("completed", "success"))
+    """아직 없는 체크, 진행 중인 체크, 잠시 답하지 않는 조회는 모두 기다린다."""
+    checks = FakeChecks(
+        None,
+        ChecksUnavailable("check runs request failed"),
+        CheckRun("completed", "success"),
+    )
     sleeps: list[float] = []
 
     assert wait_check(checks, sleeps) == 0
@@ -582,7 +650,7 @@ def test_github_checks_takes_the_most_recent_run_of_that_name() -> None:
         ],
     }
     transport = RecordingTransport(json.dumps(body).encode())
-    checks = GitHubChecks("owner/repo", "합성-토큰", transport)  # type: ignore[arg-type]
+    checks = GitHubChecks("owner/repo", "합성-토큰", transport)
 
     assert checks.latest(COMMIT, "gitleaks") == CheckRun("completed", "success")
     method, url, headers = transport.requests[0]
