@@ -742,6 +742,7 @@ def confirm_repeat(
     city: str = "gwangju",
     organization: str = ORG,
     merchant: str = "합성 식당",
+    evidence: str = "1월.xls, 2월.xls",
 ) -> None:
     """사람이 원본을 대조해 확정한 재게시 여부. 지출 묶음마다 한 줄이다."""
     write_text(
@@ -758,7 +759,7 @@ def confirm_repeat(
                     "sources": list(sources),
                 },
                 "decision": decision,
-                "evidence": "뒤 원본의 대상기간이 앞 원본의 기간을 포함한다(합성)",
+                "evidence": evidence,
             },
             ensure_ascii=False,
         )
@@ -833,6 +834,30 @@ def test_a_confirmation_from_another_city_is_rejected(tmp_path: Path, configured
     confirm_repeat(tmp_path, first, second)
     path = tmp_path / DATA / "manual" / "gwangju" / "repeats.jsonl"
     write_text(path, path.read_text(encoding="utf-8").replace('"gwangju"', '"busan"', 1))
+    assert run(tmp_path, "parse") == 1
+
+
+def test_a_confirmation_written_for_the_previous_contract_is_rejected(
+    tmp_path: Path, configured: None
+) -> None:
+    """`evidence`의 뜻이 바뀌었으므로 옛 계약으로 쓴 줄은 조용히 지나가지 않는다(#88)."""
+    record_spending(tmp_path)
+    first, second = publish(
+        tmp_path,
+        ("1월.xls", workbook(ONCE)),
+        ("2월.xls", workbook(AGAIN)),
+        posted=("2026-02-02", "2026-03-03"),
+    )
+    assert run(tmp_path, "headermap", FakeModel(headers=[header_answer()])) == 0
+    confirm_repeat(tmp_path, first, second)
+    path = tmp_path / DATA / "manual" / "gwangju" / "repeats.jsonl"
+    entry = json.loads(path.read_text(encoding="utf-8"))
+    # 옛 버전 표시만으로 거부한다. 그 버전의 `evidence`는 대조 내용을 적는 칸이었다.
+    write_text(path, json.dumps({**entry, "schema_version": 1}, ensure_ascii=False) + "\n")
+    assert run(tmp_path, "parse") == 1
+    # 뺀 칸이 남아 있어도 거부한다.
+    reference = {"kind": "disclosure", "source": "https://example.invalid/1", "detail": "합성 근거"}
+    write_text(path, json.dumps({**entry, "references": [reference]}, ensure_ascii=False) + "\n")
     assert run(tmp_path, "parse") == 1
 
 

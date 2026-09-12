@@ -379,7 +379,7 @@ def confirm(
             sources=tuple(source.source_hash for source in sources),
         ),
         decision=decision,
-        evidence="두 원본의 대상기간이 겹치고 뒤 원본이 앞 기간을 다시 실었다(합성)",
+        evidence=", ".join(source.path.name for source in sources),
     )
 
 
