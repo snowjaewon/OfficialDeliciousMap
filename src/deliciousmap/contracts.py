@@ -244,6 +244,51 @@ class SourceReview(Contract):
     confirmed_by: str = ""
 
 
+# 사람이 지출 묶음을 읽고 내리는 결론. 이 둘뿐이며 나머지 상태는 확정이 아니다.
+RepeatDecision = Literal["same_expense", "separate_expenses"]
+
+
+class ExpenseScope(Contract):
+    """확인 근거가 뒷받침하는 지출 하나와 그 지출을 실은 원본들.
+
+    지출의 동일성은 `기관·부서·집행일·상호·금액`이다([ADR-0004](
+    ../../docs/adr/0004-merge-repeated-reposts.md)). 범위는 레코드 하나가 아니라 지출 하나이므로
+    한 원본이 같은 지출을 두 번 적었어도 그 원본은 한 번만 적는다.
+    """
+
+    city: Text
+    organization: Text
+    department: str
+    spent_on: date
+    merchant: Text
+    amount_krw: Decimal = Field(allow_inf_nan=False)
+    # 이 지출을 실은 원본들. 재게시 관계는 원본 쌍의 관계이므로 둘 이상을 적는다.
+    sources: tuple[Sha256, ...] = Field(min_length=2)
+
+    @model_validator(mode="after")
+    def distinct_sources(self) -> "ExpenseScope":
+        if len(set(self.sources)) != len(self.sources):
+            raise ValueError("an expense scope cannot list the same original twice")
+        return self
+
+
+class RepeatConfirmation(Contract):
+    """data/manual/<city>/repeats.jsonl 한 줄. 사람이 원본을 대조해 확정한 재게시 여부.
+
+    코드는 두 원본이 같은 지출을 2건 이상 함께 실을 때만 재게시로 본다(ADR-0004). 근거가 그에
+    못 미쳐 남은 묶음을 사람이 원본으로 읽고 확정하는 자리가 여기다. 확정은 자동 판정보다 먼저
+    적용하며, 합치더라도 겹친 원본은 레코드의 `repeats`에 모두 남는다. `separate_expenses`도
+    확인했다는 사실이 근거이므로 장부에 남기고 집계에서 감추지 않는다([ADR-0006](
+    ../../docs/adr/0006-human-confirmed-reposts.md)).
+    """
+
+    schema_version: Literal[1] = 1
+    scope: ExpenseScope
+    decision: RepeatDecision
+    evidence: Text
+    references: tuple[ReviewReference, ...] = ()
+
+
 class IdentityFacts(Contract):
     merchant: Text
     # None means unknown; an empty branch explicitly means an unbranched business.
@@ -718,6 +763,8 @@ class ParseInput(Contract):
     sources: tuple[SourceRef, ...]
     mappings: tuple[HeaderMap, ...]
     unresolved: tuple[UnresolvedSource, ...] = ()
+    # 사람이 확정한 재게시 여부. 누적 재게시 병합이 자동 판정보다 먼저 적용한다.
+    confirmations: tuple[RepeatConfirmation, ...] = ()
 
 
 # 합계 대조 결과. 합계가 없거나 범위를 확정할 수 없으면 대조하지 않았다는 뜻이다.
@@ -775,6 +822,8 @@ class RepeatedExpenses(Contract):
 
     기준은 [ADR-0004](../../docs/adr/0004-merge-repeated-reposts.md)이다. `unmerged_expenses`가
     0이 아니면 재게시인지 별개 지출인지 가를 근거가 없어 남긴 묶음이 그만큼 있다는 뜻이다.
+    사람이 원본을 대조해 확정한 묶음은 자동 판정과 섞지 않고 `confirmed_*`·`separate_*`에
+    따로 싣는다([ADR-0006](../../docs/adr/0006-human-confirmed-reposts.md)).
     """
 
     # 합친 지출 묶음 수와 그때 뺀 레코드 수.
@@ -783,6 +832,12 @@ class RepeatedExpenses(Contract):
     # 가를 근거가 없어 남긴 묶음 수와 그 묶음들에 원본을 넘어 남은 레코드 수.
     unmerged_expenses: int = Field(default=0, ge=0)
     unmerged_records: int = Field(default=0, ge=0)
+    # 사람이 같은 지출로 확정해 합친 묶음 수와 그때 뺀 레코드 수(ADR-0006).
+    confirmed_expenses: int = Field(default=0, ge=0)
+    confirmed_records: int = Field(default=0, ge=0)
+    # 사람이 별개 지출로 확정해 남긴 묶음 수와 그 묶음들에 원본을 넘어 남은 레코드 수.
+    separate_expenses: int = Field(default=0, ge=0)
+    separate_records: int = Field(default=0, ge=0)
 
 
 class ParseOutput(Contract):

@@ -7,9 +7,12 @@ from pathlib import Path
 import pytest
 
 from deliciousmap.contracts import (
+    ExpenseScope,
     HeaderMap,
     Record,
     RecordOrigin,
+    RepeatConfirmation,
+    RepeatDecision,
     RepeatedExpenses,
     SourceRef,
 )
@@ -354,4 +357,111 @@ def test_a_group_merges_only_the_originals_that_are_reposts_of_each_other() -> N
     ]
     assert merged.tally == RepeatedExpenses(
         merged_expenses=2, merged_records=2, unmerged_expenses=1, unmerged_records=1
+    )
+
+
+def confirm(
+    *sources: SourceRef,
+    decision: RepeatDecision = "same_expense",
+    day: int = 5,
+    merchant: str = "합성 식당",
+    amount: int = 62000,
+) -> RepeatConfirmation:
+    """사람이 원본을 대조해 남긴 지출 묶음 판정. 범위는 레코드가 아니라 지출 하나다."""
+    return RepeatConfirmation(
+        scope=ExpenseScope(
+            city="gwangju",
+            organization=SOURCE.organization,
+            department="합성과",
+            spent_on=date(2026, 1, day),
+            merchant=merchant,
+            amount_krw=Decimal(amount),
+            sources=tuple(source.source_hash for source in sources),
+        ),
+        decision=decision,
+        evidence="두 원본의 대상기간이 겹치고 뒤 원본이 앞 기간을 다시 실었다(합성)",
+    )
+
+
+def test_a_confirmed_group_is_merged_without_two_shared_expenses() -> None:
+    """근거가 한 건뿐이라 코드가 남긴 묶음도 사람이 같은 지출로 확정하면 합친다."""
+    first, second = original(1, "2026-02-27"), original(2, "2026-04-15")
+    records = (
+        spent(first, 4, 5, "합성 식당", 62000),
+        spent(second, 4, 5, "합성 식당", 62000),
+        spent(second, 5, 20, "합성 카페", 9000),
+    )
+    merged = merge_repeats(records, (first, second), (confirm(first, second),))
+    assert [record.record_id for record in merged.records] == [
+        records[0].record_id,
+        records[2].record_id,
+    ]
+    # 확인 결과로 합쳐도 출처는 모두 남는다.
+    assert merged.records[0].repeats == (
+        RecordOrigin(source_hash=second.source_hash, location="sheet1:R4"),
+    )
+    assert merged.tally == RepeatedExpenses(confirmed_expenses=1, confirmed_records=1)
+
+
+def test_a_group_confirmed_as_separate_expenses_is_kept_and_stops_being_evidence() -> None:
+    """확정은 기준보다 먼저 적용한다. 별개 지출로 확정한 묶음은 재게시의 근거가 되지 못한다."""
+    first, second = original(1, "2026-02-27"), original(2, "2026-04-15")
+    records = (
+        spent(first, 4, 5, "합성 식당", 62000),
+        spent(first, 5, 6, "합성 카페", 9000),
+        spent(second, 4, 5, "합성 식당", 62000),
+        spent(second, 5, 6, "합성 카페", 9000),
+    )
+    apart = confirm(first, second, decision="separate_expenses")
+    merged = merge_repeats(records, (first, second), (apart,))
+    # 함께 실은 지출 둘 중 하나가 별개로 확정되면 남은 근거는 한 건뿐이라 카페도 합치지 않는다.
+    assert merged.records == records
+    assert merged.tally == RepeatedExpenses(
+        unmerged_expenses=1, unmerged_records=1, separate_expenses=1, separate_records=1
+    )
+
+
+def test_a_confirmation_for_an_expense_the_ledger_does_not_carry_is_rejected() -> None:
+    """장부에 없는 묶음을 가리키는 확정은 낡은 기록이다. 확인했다고 여긴 채 지나가지 않는다."""
+    first, second = original(1, "2026-02-27"), original(2, "2026-04-15")
+    records = (spent(first, 4, 5, "합성 식당", 62000), spent(second, 4, 20, "합성 카페", 9000))
+    with pytest.raises(ValueError, match="not in the ledger"):
+        merge_repeats(records, (first, second), (confirm(first, second),))
+
+
+def test_one_expense_cannot_be_confirmed_twice() -> None:
+    """한 묶음에 확정이 둘이면 어느 쪽이 사람의 결론인지 알 수 없다."""
+    first, second = original(1, "2026-02-27"), original(2, "2026-04-15")
+    records = (spent(first, 4, 5, "합성 식당", 62000), spent(second, 4, 5, "합성 식당", 62000))
+    both = (confirm(first, second), confirm(first, second, decision="separate_expenses"))
+    with pytest.raises(ValueError, match="two repeat confirmations"):
+        merge_repeats(records, (first, second), both)
+
+
+def test_a_confirmation_counts_only_what_it_merged_beyond_the_criterion() -> None:
+    """기준이 이미 합친 수는 자동 판정의 몫이다. 확정이 더 합친 만큼만 사람이 적용한 수다."""
+    first, second, third = (
+        original(1, "2026-02-02"),
+        original(2, "2026-03-03"),
+        original(3, "2026-04-01"),
+    )
+    records = (
+        spent(first, 4, 5, "합성 식당", 62000),
+        spent(second, 4, 5, "합성 식당", 62000),
+        spent(second, 5, 6, "합성 카페", 9000),
+        spent(third, 4, 5, "합성 식당", 62000),
+        spent(third, 5, 6, "합성 카페", 9000),
+    )
+    merged = merge_repeats(records, (first, second, third), (confirm(first, second),))
+    assert [record.record_id for record in merged.records] == [
+        records[0].record_id,
+        records[2].record_id,
+    ]
+    # 확정한 두 원본만 적었어도 그 원본과 이어진 원본까지 한 지출이 된다.
+    assert merged.records[0].repeats == (
+        RecordOrigin(source_hash=second.source_hash, location="sheet1:R4"),
+        RecordOrigin(source_hash=third.source_hash, location="sheet1:R4"),
+    )
+    assert merged.tally == RepeatedExpenses(
+        merged_expenses=2, merged_records=2, confirmed_expenses=1, confirmed_records=1
     )

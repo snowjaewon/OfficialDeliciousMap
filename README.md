@@ -80,7 +80,10 @@ uv run python -m deliciousmap geocode --city seoul --retry-failed
   `parse.json`의 `sources`에 남긴다. 목적·상호의 개인정보를 지우고, 경조사 수령인처럼 상호 칸에
   사람 이름이 적힌 경우 `개인(성명 비공개)`로 가린다. 부서가 누적 파일·정정본으로 다시 올려
   여러 원본에 반복된 지출은 [ADR-0004](docs/adr/0004-merge-repeated-reposts.md)의 기준으로 합치고,
-  가를 근거가 없는 묶음은 남긴 뒤 그 수를 `parse.json`의 `repeated_expenses`에 싣는다.
+  가를 근거가 없는 묶음은 남긴 뒤 그 수를 `parse.json`의 `repeated_expenses`에 싣는다. 사람이
+  원본을 대조해 확정한 묶음은 그 확정을 기준보다 먼저 적용하며([ADR-0006](
+  docs/adr/0006-human-confirmed-reposts.md)), 확정으로 합치거나 남긴 수를 자동 판정과 구별해
+  같은 집계에 싣는다.
 - `classify`: 사람 보정 → 도시 무관 LLM 캐시 → Gemini 순. 호출 실패는 판단 보류로 두고 캐시에 남기지 않는다.
 
 PDF·HWP·원본 묶음 ZIP과 전량 추출 폴백은 파일 단위 미해결로 남으며 후속 작업이다.
@@ -244,7 +247,7 @@ license_transport=...)`로 외부 응답만 대신한다. 게시판 요청도 �
 | --- | --- |
 | fetch | `FetchInput.target` → 외부 `SourceRef`(경로·SHA-256·기관·게시판·출처 URL·컨테이너)와 받지 못한 원본 |
 | headermap | 원본 참조 → 표별 `HeaderMap`과 공통 캐시 참조 |
-| parse | 원본 참조 + 매핑 → `ParseOutput.records` |
+| parse | 원본 참조 + 매핑 + 도시별 재게시 확정 → `ParseOutput.records` |
 | classify | 레코드·고유 상호(`merchants`)·도시별 사람 보정 → 레코드별 최종 판정과 근거 |
 | geocode | 식당 판정 레코드·범위가 명시된 후보/근거·조회한 후보·사람 확인·이전 결과 → 레코드별 동일 업소·좌표 또는 미확정 이유 |
 | closure | 좌표가 있는 마커 후보·외부 인허가 루트 참조 → `open` / `closed` / `unknown` |
@@ -269,10 +272,17 @@ Node 기반 빌드 도구를 쓰지 않는다. 폐업으로 확인된 후보도 
 `data/<city>/orgs/<org>/`에 분리한다. 기관별 산출물을 도시 전체로 합치는 기능은 후속 작업이다.
 공통 캐시는 `data/_shared/`에 둔다. 사람 검토 입력은 의미별로 나누어
 `data/manual/<city>/`의 `classify.jsonl`(사람 보정), `restore.jsonl`(상호 복원),
-`geocode.jsonl`(업소 확인)에 둔다. 자세한 내용은 [상호 복원](docs/restoration.md)에 있다.
-커밋된 광주 산출물은 아직 누적 재게시 병합(`parse` v3)과 PDF 읽기 이전이다. 조회·지도 키를 갖춘
-실행에서 `run --city gwangju`로 한 번에 다시 만든다. 근거는
-[#63 검증 기록](docs/validation/issue-63.md)에 있다.
+`geocode.jsonl`(업소 확인), `compare.jsonl`(후보 비교 지정), `sources.jsonl`(미해결 원본 대조),
+`repeats.jsonl`(재게시 확정)에 둔다. 자세한 내용은 [상호 복원](docs/restoration.md)에 있다.
+각 줄은 계약 하나이며 없는 파일은 검토가 없는 것과 같다. 도시가 맞지 않거나 같은 범위를 두 번
+선언한 줄은 그 단계가 거부한다. `--org` 실행은 그 기관의 줄만 읽는다.
+커밋된 광주 산출물은 아직 PDF 읽기와 미해결 원본 16개의 사람 최종 확인
+이전이다([#66](https://github.com/snowjaewon/OfficialDeliciousMap/issues/66)). 그 둘을 갖춘
+실행에서 `run --city gwangju`로 다시 만든다.
+
+`repeats.jsonl`은 지출 하나(`기관·부서·집행일·상호·금액`)와 그 지출을 실은 원본 해시를 범위로
+선언하고 `same_expense`/`separate_expenses` 중 하나를 근거와 함께 적는다. 장부에 없는 묶음이나
+그 지출을 싣지 않은 원본을 가리키면 `parse`가 거부한다. 입력을 고치면 `parse`부터 다시 돌린다.
 
 단계 메타데이터 파일은 `<stage>.json`이며 `schema_version`(fetch·parse는 3, geocode·closure는 4,
 build는 6, 나머지는 1), `city`, `org`, 입력 해시인

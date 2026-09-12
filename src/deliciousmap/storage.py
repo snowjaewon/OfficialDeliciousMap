@@ -35,6 +35,7 @@ from deliciousmap.contracts import (
     ProviderCandidates,
     Record,
     RecordOrigin,
+    RepeatConfirmation,
     RestorationProposal,
     ScopedReview,
     SourceRef,
@@ -107,7 +108,8 @@ def read_reviews[T: Contract](path: Path, model: type[T]) -> tuple[T, ...]:
 
 
 def require_scoped_reviews(
-    entries: Sequence[NameRestoration | IdentityConfirmation | ScopedReview], city: str
+    entries: Sequence[NameRestoration | IdentityConfirmation | RepeatConfirmation | ScopedReview],
+    city: str,
 ) -> None:
     if any(item.scope.city != city for item in entries):
         raise ValueError("review city mismatch")
@@ -607,6 +609,16 @@ class ArtifactStore:
         if len({item.source_hash for item in scoped}) != len(scoped):
             raise ValueError("duplicate source review")
         return scoped
+
+    def repeat_confirmations(self) -> tuple[RepeatConfirmation, ...]:
+        """사람이 확정한 재게시 여부. 파일이 없으면 확정이 없는 것과 같다."""
+        entries = read_reviews(self.paths.manual(self.target, "repeats"), RepeatConfirmation)
+        require_scoped_reviews(entries, self.target.city.slug)
+        return tuple(
+            item
+            for item in entries
+            if self.target.org is None or item.scope.organization == self.target.org
+        )
 
     def manual(self) -> tuple[ManualCorrection, ...]:
         corrections = read_reviews(self.paths.manual(self.target, "classify"), ManualCorrection)
