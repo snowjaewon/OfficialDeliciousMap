@@ -200,7 +200,28 @@ function traceSource(event) {
   return "other";
 }
 
-function sourceSummary(events) {
+function nestedTraceSource(event, allEvents) {
+  const direct = traceSource(event);
+  if (direct !== "other" || !Number.isFinite(event.ts) || !Number.isFinite(event.dur)) return direct;
+  const end = event.ts + event.dur;
+  const nested = allEvents.filter(
+    (candidate) =>
+      candidate !== event &&
+      Number.isFinite(candidate.ts) &&
+      candidate.ts >= event.ts &&
+      candidate.ts <= end &&
+      traceSource(candidate) !== "other",
+  );
+  return nested
+    .map((candidate) => traceSource(candidate))
+    .sort(
+      (left, right) =>
+        nested.filter((candidate) => traceSource(candidate) === right).length -
+        nested.filter((candidate) => traceSource(candidate) === left).length,
+    )[0] ?? "other";
+}
+
+function sourceSummary(events, allEvents = events) {
   const summary = {
     application: { count: 0, total_ms: 0, maximum_ms: null },
     naver_sdk: { count: 0, total_ms: 0, maximum_ms: null },
@@ -209,7 +230,7 @@ function sourceSummary(events) {
   for (const event of events) {
     const duration = eventDurationMs(event);
     if (duration === null || duration < LONG_TASK_MS) continue;
-    const source = traceSource(event);
+    const source = nestedTraceSource(event, allEvents);
     const bucket = summary[source];
     bucket.count += 1;
     bucket.total_ms = roundMilliseconds(bucket.total_ms + duration);
@@ -265,6 +286,7 @@ function summarizeTrace(trace, options = {}) {
       ...longAnimationEvents,
       ...events.filter((event) => /^(?:LongTask|RunTask|Task)$/i.test(event.name ?? "")),
     ],
+    events,
   );
   return {
     frames: intervals.length,

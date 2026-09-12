@@ -334,6 +334,27 @@ test("긴 작업의 URL로 네이버 SDK와 애플리케이션 원인을 분리�
   });
 });
 
+test("상위 AnimationFrame에 URL이 없어도 겹친 스크립트로 원인을 귀속한다", () => {
+  const summary = summarizeTrace({
+    traceEvents: [
+      { name: "FramePresented", ph: "I", ts: 0 },
+      { name: "FramePresented", ph: "I", ts: 16667 },
+      { name: "AnimationFrame", ph: "X", ts: 20000, dur: 60000, args: {} },
+      {
+        name: "FunctionCall",
+        ph: "X",
+        ts: 25000,
+        dur: 50000,
+        args: { data: { url: "https://oapi.map.naver.com/openapi/v3/maps.js" } },
+      },
+    ],
+  });
+
+  assert.equal(summary.long_animation_frames, 1);
+  assert.equal(summary.source.naver_sdk.count, 1);
+  assert.equal(summary.source.dominant, "naver_sdk");
+});
+
 test("20회 trace 중 하나라도 끊기면 성능 판정은 미달이다", () => {
   const attempts = [
     ...Array(19).fill({ verdict: "pass", longest_frame_ms: 16.7 }),
