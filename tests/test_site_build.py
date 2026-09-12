@@ -152,7 +152,7 @@ def test_markers_name_the_provider_that_supplied_the_coordinates(tmp_path: Path)
         context.paths.manual(context.target, "geocode"),
         json.dumps(
             {
-                "scope": query["scope"],
+                "scope": {**query["scope"], "merchant": "같은 식당"},
                 "candidate_source": query["candidates"][1]["source"],
                 "merchant": "같은 식당",
                 "branch": "부산점",

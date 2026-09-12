@@ -451,7 +451,7 @@ def test_scoped_human_confirmation_restores_name_and_invalidates_old_markers(
         confirmation_path,
         json.dumps(
             {
-                "scope": first["scope"],
+                "scope": {**first["scope"], "merchant": "같은 식당"},
                 "candidate_source": first["candidates"][0]["source"],
                 "merchant": "같은 식당 전체 이름",
                 "branch": "부산점",
@@ -627,3 +627,138 @@ def test_upstream_metadata_change_alone_does_not_repeat_settled_geocode_history(
     assert run_cli(context, "geocode") == 0
     assert history.read_bytes() == settled
     assert payload(context, "geocode")["results"] == decided
+
+
+def confirmation_file(context: ExecutionContext) -> Path:
+    return context.paths.data_root / "manual" / "seoul" / "geocode.jsonl"
+
+
+def unaddressed(*record_ids: str) -> list[dict]:
+    """원본에 주소 근거가 없는 레코드들. 후보는 조회가 준 그대로다."""
+    queries = []
+    for record_id in record_ids:
+        query = lookup()
+        query["scope"]["record_id"] = record_id
+        query["facts"] = []
+        queries.append(query)
+    return queries
+
+
+def test_merchant_scoped_confirmation_maps_every_record_without_address_evidence(
+    tmp_path: Path,
+) -> None:
+    """주소 근거가 없는 레코드도 상호 범위의 사람 확인 한 줄로 확정 마커가 된다(#64)."""
+    context = prepare(tmp_path)
+    add_record(context, "r2")
+    first, second = unaddressed("r1", "r2")
+    save_input(context, first, second)
+    assert run_cli(context, "geocode") == 0
+    assert [item["reason"] for item in payload(context, "geocode")["results"]] == [
+        "missing_address",
+        "missing_address",
+    ]
+
+    write_text(
+        confirmation_file(context),
+        json.dumps(
+            {
+                "scope": {"city": "seoul", "merchant": "같은 식당"},
+                "candidate_source": first["candidates"][0]["source"],
+                "merchant": "같은 식당",
+                "branch": "부산점",
+                "address": "부산 합성로 10",
+                "evidence": "합성 근거로 후보 하나를 확정",
+                "references": [
+                    {
+                        "kind": "place",
+                        "source": "https://example.invalid/places/1",
+                        "detail": "상호·지점·주소가 하나뿐인 후보",
+                    }
+                ],
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+    )
+    assert run_cli(context, "geocode") == 0
+    results = payload(context, "geocode")["results"]
+    assert [item["reason"] for item in results] == ["human_confirmed", "human_confirmed"]
+    # 확인은 한 줄이지만 레코드마다 적용한 결과가 남는다. 범위는 상호까지만 선언했다.
+    assert [item["confirmation"]["record_id"] for item in results] == ["r1", "r2"]
+    assert results[0]["confirmation"]["scope"] == {
+        "city": "seoul",
+        "merchant": "같은 식당",
+        "organization": None,
+        "record_id": None,
+        "source_hash": None,
+    }
+    assert results[0]["evidence"] == "합성 근거로 후보 하나를 확정"
+    assert run_cli(context, "closure") == 0
+    assert run_cli(context, "build") == 0
+    markers = json.loads(
+        (context.paths.output_root / "seoul" / "markers.json").read_text(encoding="utf-8")
+    )
+    assert [marker["visit_count"] for marker in markers["markers"]] == [2]
+    assert markers["markers"][0]["coordinate_source"] == "local"
+
+
+def test_confirmations_disagreeing_on_the_place_are_reported_not_chosen(tmp_path: Path) -> None:
+    """같은 업소를 가리키면 좁은 줄의 근거를 남긴다. 다른 곳이면 고르지 않는다(#64)."""
+    context = prepare(tmp_path)
+    add_record(context, "r2")
+    first, second = unaddressed("r1", "r2")
+    other = deepcopy(first["candidates"][0])
+    other["source"] = {
+        "provider": "naver",
+        "source_id": "place-2",
+        "reference": "https://example.invalid/places/2",
+    }
+    other["address"] = "부산 합성로 12"
+    for query in (first, second):
+        query["candidates"].append(deepcopy(other))
+    save_input(context, first, second)
+
+    def line(scope: dict, candidate: dict, evidence: str) -> str:
+        return (
+            json.dumps(
+                {
+                    "scope": scope,
+                    "candidate_source": candidate["source"],
+                    "merchant": candidate["merchant"],
+                    "branch": candidate["branch"],
+                    "address": candidate["address"],
+                    "evidence": evidence,
+                },
+                ensure_ascii=False,
+            )
+            + "\n"
+        )
+
+    city_scope = {"city": "seoul", "merchant": "같은 식당"}
+    chosen = first["candidates"][0]
+    # 같은 업소를 가리키는 두 줄. 레코드까지 밝힌 줄이 더 좁으므로 그 근거를 남긴다.
+    write_text(
+        confirmation_file(context),
+        line(city_scope, chosen, "도시 범위 확인")
+        + line({**city_scope, "record_id": "r2"}, chosen, "레코드 범위 확인"),
+    )
+    assert run_cli(context, "geocode") == 0
+    results = payload(context, "geocode")["results"]
+    assert [item["reason"] for item in results] == ["human_confirmed", "human_confirmed"]
+    assert [item["evidence"] for item in results] == ["도시 범위 확인", "레코드 범위 확인"]
+
+    # 두 줄이 다른 업소를 가리키면 좁은 줄이 있어도 고르지 않는다.
+    write_text(
+        confirmation_file(context),
+        line(city_scope, chosen, "도시 범위 확인")
+        + line({**city_scope, "record_id": "r2"}, other, "레코드 범위 확인"),
+    )
+    assert run_cli(context, "geocode") == 1
+
+    # 기관만 밝힌 줄과 원본만 밝힌 줄은 어느 쪽도 더 좁지 않다.
+    write_text(
+        confirmation_file(context),
+        line({**city_scope, "organization": "test-org"}, chosen, "기관 범위")
+        + line({**city_scope, "source_hash": "a" * 64}, chosen, "원본 범위"),
+    )
+    assert run_cli(context, "geocode") == 1

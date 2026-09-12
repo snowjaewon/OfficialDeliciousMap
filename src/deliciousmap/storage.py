@@ -71,7 +71,7 @@ OUTPUT_MODELS: dict[str, type[Contract]] = {
 
 # fetch는 출처·유실에 게시일·제목을 담은 v3, parse는 누적 재게시 병합을 담은 v3,
 # geocode·closure는 조회 요청 기록을 포함하는 v4, build는 좌표 출처·장부 사유를 담은 v6다.
-SCHEMA_VERSIONS = {"fetch": 3, "parse": 3, "geocode": 4, "closure": 4, "build": 6}
+SCHEMA_VERSIONS = {"fetch": 3, "parse": 3, "geocode": 5, "closure": 4, "build": 6}
 
 # 제공자 조회 캐시. 확정 업소 판정 이력(geocode-history-v2.jsonl)과 분리해 둔다.
 LOOKUP_CACHE = "geocode-lookup-v1.jsonl"
@@ -107,7 +107,7 @@ def read_reviews[T: Contract](path: Path, model: type[T]) -> tuple[T, ...]:
 
 
 def require_scoped_reviews(
-    entries: tuple[NameRestoration, ...] | tuple[ScopedReview, ...], city: str
+    entries: Sequence[NameRestoration | IdentityConfirmation | ScopedReview], city: str
 ) -> None:
     if any(item.scope.city != city for item in entries):
         raise ValueError("review city mismatch")
@@ -620,7 +620,17 @@ class ArtifactStore:
 
     def restorations(self) -> tuple[NameRestoration, ...]:
         """확정 복원명의 직렬화는 여기에 둔다. 복원 로직은 파일을 보지 않는다."""
-        entries = read_reviews(self.paths.manual(self.target, "restore"), NameRestoration)
+        return self._declared("restore", NameRestoration)
+
+    def confirmations(self) -> tuple[IdentityConfirmation, ...]:
+        """확정한 업소 확인의 직렬화. 적용 범위 판단은 파일을 보지 않는다."""
+        return self._declared("geocode", IdentityConfirmation)
+
+    def _declared[T: NameRestoration | IdentityConfirmation](
+        self, name: str, model: type[T]
+    ) -> tuple[T, ...]:
+        """범위를 선언한 검토 입력 중 이 실행의 기관에 해당하는 줄만 돌려준다."""
+        entries = read_reviews(self.paths.manual(self.target, name), model)
         require_scoped_reviews(entries, self.target.city.slug)
         return tuple(
             item
@@ -733,9 +743,6 @@ class ArtifactStore:
             )
             for record in records
         )
-
-    def confirmations(self, records: tuple[Record, ...]) -> tuple[IdentityConfirmation, ...]:
-        return self._scoped("geocode", IdentityConfirmation, records)
 
     def _scoped[T: ScopedReview](
         self, name: str, model: type[T], records: tuple[Record, ...]

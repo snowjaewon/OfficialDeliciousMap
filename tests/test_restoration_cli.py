@@ -234,7 +234,11 @@ def test_conflicting_reviews_on_a_record_outside_the_markers_are_reported(
         context.paths.manual(context.target, "geocode"),
         json.dumps(
             {
-                "scope": {**truncated_lookup()["scope"], "record_id": "r2"},
+                "scope": {
+                    **truncated_lookup()["scope"],
+                    "record_id": "r2",
+                    "merchant": "같은 식당",
+                },
                 "candidate_source": truncated_lookup()["candidates"][0]["source"],
                 "merchant": "확인자가 고른 다른 상호",
                 "branch": "부산점",
@@ -263,7 +267,7 @@ def test_restoration_conflicting_with_an_identity_confirmation_is_reported(
         context.paths.manual(context.target, "geocode"),
         json.dumps(
             {
-                "scope": query["scope"],
+                "scope": {**query["scope"], "merchant": "같은 식당"},
                 "candidate_source": query["candidates"][0]["source"],
                 "merchant": "확인자가 고른 다른 상호",
                 "branch": "부산점",

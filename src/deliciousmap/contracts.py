@@ -163,8 +163,11 @@ class ReviewReference(Contract):
     detail: Excerpt
 
 
-class RestorationScope(Contract):
-    """확인 근거가 뒷받침하는 적용 범위. 선언한 항목이 모두 맞는 레코드에만 적용한다."""
+class ReviewScope(Contract):
+    """확인 근거가 뒷받침하는 적용 범위. 선언한 항목이 모두 맞는 레코드에만 적용한다.
+
+    상호 복원과 업소 확인이 같은 범위 규칙을 쓴다. 많이 선언한 줄이 더 좁은 범위다.
+    """
 
     city: Text
     merchant: Text
@@ -177,7 +180,7 @@ class NameRestoration(Contract):
     """data/manual/<city>/restore.jsonl 한 줄. 사람이 확정한 전체 상호."""
 
     schema_version: Literal[1] = 1
-    scope: RestorationScope
+    scope: ReviewScope
     restored_merchant: Text
     evidence: Text
     references: tuple[ReviewReference, ...] = ()
@@ -189,7 +192,7 @@ class RestoredName(Contract):
     record_id: Text
     merchant: Text
     restored_merchant: Text
-    scope: RestorationScope
+    scope: ReviewScope
     evidence: Text
     references: tuple[ReviewReference, ...] = ()
 
@@ -316,12 +319,34 @@ class CandidateFile(Contract):
     lookups: tuple[CandidateLookup, ...]
 
 
-class IdentityConfirmation(ScopedReview):
+class IdentityConfirmation(Contract):
+    """data/manual/<city>/geocode.jsonl 한 줄. 후보 하나를 동일 업소로 확정한다.
+
+    사람이 직접 쓰거나 에이전트가 써서 사람이 PR로 승인한다. 어느 쪽이든 `evidence`에
+    무엇을 대조했는지와 검토 주체를 적는다. 모델이 낸 제안은 이 파일에 넣지 않는다.
+    """
+
+    schema_version: Literal[1] = 1
+    scope: ReviewScope
     candidate_source: CandidateSource
     merchant: Text
     branch: str
     address: Text
     evidence: Text
+    references: tuple[ReviewReference, ...] = ()
+
+
+class ConfirmedPlace(Contract):
+    """레코드 하나에 적용한 업소 확인. 원본 표기는 레코드에 그대로 남는다."""
+
+    record_id: Text
+    candidate_source: CandidateSource
+    merchant: Text
+    branch: str
+    address: Text
+    scope: ReviewScope
+    evidence: Text
+    references: tuple[ReviewReference, ...] = ()
 
 
 class GeocodeResult(Contract):
@@ -334,7 +359,7 @@ class GeocodeResult(Contract):
     lookup_key: Sha256
     dependency_key: Sha256
     lookup: CandidateLookup
-    confirmation: IdentityConfirmation | None = None
+    confirmation: ConfirmedPlace | None = None
     restoration: RestoredName | None = None
     latitude: float | None = Field(default=None, ge=-90, le=90, allow_inf_nan=False)
     longitude: float | None = Field(default=None, ge=-180, le=180, allow_inf_nan=False)
@@ -797,7 +822,7 @@ class GeocodeInput(Contract):
     dependency_key: Sha256
     records: tuple[Record, ...]
     lookups: tuple[CandidateLookup, ...] = ()
-    confirmations: tuple[IdentityConfirmation, ...] = ()
+    confirmations: tuple[ConfirmedPlace, ...] = ()
     restorations: tuple[RestoredName, ...] = ()
     previous: tuple[GeocodeResult, ...] = ()
     retry_failed: bool = False
