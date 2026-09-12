@@ -142,6 +142,21 @@ function eventDurationMs(event) {
   return Number.isFinite(event.dur) ? event.dur / 1000 : null;
 }
 
+function frameIntervals(timestamps) {
+  return timestamps.slice(1).map((timestamp, index) => timestamp - timestamps[index]);
+}
+
+function droppedFrameCount(intervals) {
+  return intervals.reduce(
+    (total, interval) => total + Math.max(0, Math.round(interval / FRAME_MS) - 1),
+    0,
+  );
+}
+
+function isLongTask(event) {
+  return /^(?:LongTask|RunTask|Task)$/i.test(event.name ?? "");
+}
+
 function completedTraceEvents(events, names) {
   const completed = [];
   const open = new Map();
@@ -221,6 +236,17 @@ function nestedTraceSource(event, allEvents) {
     )[0] ?? "other";
 }
 
+function isNestedEvent(child, parent) {
+  return (
+    Number.isFinite(child.ts) &&
+    Number.isFinite(parent.ts) &&
+    Number.isFinite(child.dur) &&
+    Number.isFinite(parent.dur) &&
+    child.ts >= parent.ts &&
+    child.ts + child.dur <= parent.ts + parent.dur
+  );
+}
+
 function sourceSummary(events, allEvents = events) {
   const summary = {
     application: { count: 0, total_ms: 0, maximum_ms: null },
@@ -245,11 +271,8 @@ function sourceSummary(events, allEvents = events) {
 function summarizeTrace(trace, options = {}) {
   const events = traceWindow(traceEventList(trace), options.startMarker, options.endMarker);
   const timestamps = traceFrameTimestamps(events);
-  const intervals = timestamps.slice(1).map((timestamp, index) => (timestamp - timestamps[index]) / 1000);
-  const intervalDroppedFrames = intervals.reduce(
-    (total, interval) => total + Math.max(0, Math.round(interval / FRAME_MS) - 1),
-    0,
-  );
+  const intervals = frameIntervals(timestamps).map((interval) => interval / 1000);
+  const intervalDroppedFrames = droppedFrameCount(intervals);
   const pipelineDroppedFrames = events.filter(
     (event) =>
       event.name === "PipelineReporter" &&
@@ -265,29 +288,39 @@ function summarizeTrace(trace, options = {}) {
   const longAnimationFrames = longAnimationEvents
     .map(eventDurationMs)
     .filter((duration) => duration !== null && duration >= LONG_TASK_MS);
-  const longTasks = events
-    .filter((event) => /^(?:LongTask|RunTask|Task)$/i.test(event.name ?? ""))
-    .map(eventDurationMs)
-    .filter((duration) => duration !== null && duration >= LONG_TASK_MS);
+  const longTaskEvents = events
+    .filter(isLongTask)
+    .filter((event) => {
+      const duration = eventDurationMs(event);
+      return duration !== null && duration >= LONG_TASK_MS;
+    });
+  const longTasks = longTaskEvents.map(eventDurationMs);
+  const freezeAnimationEvents = longAnimationEvents.filter(
+    (event) => (eventDurationMs(event) ?? 0) >= FREEZE_FRAME_MS,
+  );
+  const freezeTaskEvents = longTaskEvents.filter(
+    (task) =>
+      (eventDurationMs(task) ?? 0) >= FREEZE_FRAME_MS &&
+      !freezeAnimationEvents.some((animation) => isNestedEvent(task, animation)),
+  );
   const freezeCount = [
     ...intervals.filter((interval) => interval >= FREEZE_FRAME_MS),
-    ...longAnimationFrames.filter((duration) => duration >= FREEZE_FRAME_MS),
-    // Long tasks are usually nested in a Long Animation Frame. Count them as
-    // freeze evidence only when the trace has no higher-level animation frame.
-    ...(longAnimationFrames.length === 0
-      ? longTasks.filter((duration) => duration >= FREEZE_FRAME_MS)
-      : []),
+    ...freezeAnimationEvents,
+    ...freezeTaskEvents,
   ].length;
   const longestLongAnimationFrame = Math.max(0, ...longAnimationFrames);
   const longestLongTask = Math.max(0, ...longTasks);
   const measured = intervals.length > 0;
-  const source = sourceSummary(
-    [
-      ...longAnimationEvents,
-      ...events.filter((event) => /^(?:LongTask|RunTask|Task)$/i.test(event.name ?? "")),
-    ],
-    events,
+  const attributedAnimationEvents = longAnimationEvents.filter(
+    (event) => (eventDurationMs(event) ?? 0) >= LONG_TASK_MS,
   );
+  const sourceEvents = [
+    ...attributedAnimationEvents,
+    ...longTaskEvents.filter(
+      (task) => !attributedAnimationEvents.some((animation) => isNestedEvent(task, animation)),
+    ),
+  ];
+  const source = sourceSummary(sourceEvents, events);
   return {
     frames: intervals.length,
     frame_budget_ms: roundMilliseconds(FRAME_MS),
@@ -327,7 +360,7 @@ function judgeTrace(attempts, requiredRuns) {
 }
 
 function frameStats(timestamps) {
-  const intervals = timestamps.slice(1).map((time, index) => time - timestamps[index]);
+  const intervals = frameIntervals(timestamps);
   const longest = Math.max(0, ...intervals);
   // 짝수 개면 위쪽 중앙값을 쓴다. 끊긴 간격이 섞여도 평소 갱신 주기를 가리킨다.
   const median = [...intervals].sort((left, right) => left - right)[Math.floor(intervals.length / 2)];
@@ -335,10 +368,7 @@ function frameStats(timestamps) {
     frames: intervals.length,
     median_frame_ms: median === undefined ? null : Number(median.toFixed(1)),
     longest_frame_ms: Number(longest.toFixed(1)),
-    dropped_frames: intervals.reduce(
-      (total, interval) => total + Math.max(0, Math.round(interval / FRAME_MS) - 1),
-      0,
-    ),
+    dropped_frames: droppedFrameCount(intervals),
   };
 }
 

@@ -1,4 +1,5 @@
 {
+  "report_kind": "trace-summary",
   "measured_at": "2026-09-12T14:27:28.805Z",
   "code_commit": "58b040b3654a6d3dec4cc82719503a479c0b3c16",
   "worktree_clean": true,
@@ -72,8 +73,8 @@
         "long_animation_frame_max_ms": 102.7,
         "cause": {
           "naver_sdk": {
-            "count": 31,
-            "total_ms": 1930.4,
+            "count": 27,
+            "total_ms": 1719.7,
             "maximum_ms": 95.1
           },
           "application": {

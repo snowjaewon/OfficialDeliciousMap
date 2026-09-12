@@ -240,7 +240,7 @@ test("성능 기록은 프레임 지연·끊김·멈춤과 긴 작업을 요약�
     longest_long_task_ms: 120,
     source: {
       application: { count: 0, total_ms: 0, maximum_ms: null },
-      naver_sdk: { count: 2, total_ms: 240, maximum_ms: 120 },
+      naver_sdk: { count: 1, total_ms: 120, maximum_ms: 120 },
       other: { count: 0, total_ms: 0, maximum_ms: null },
       dominant: "naver_sdk",
     },
@@ -353,6 +353,43 @@ test("상위 AnimationFrame에 URL이 없어도 겹친 스크립트로 원인을
   assert.equal(summary.long_animation_frames, 1);
   assert.equal(summary.source.naver_sdk.count, 1);
   assert.equal(summary.source.dominant, "naver_sdk");
+});
+
+test("100ms 긴 작업은 짧은 Long Animation Frame이 함께 있어도 멈춤으로 판정한다", () => {
+  const summary = summarizeTrace({
+    traceEvents: [
+      { name: "FramePresented", ph: "I", ts: 0 },
+      { name: "FramePresented", ph: "I", ts: 16667 },
+      { name: "AnimationFrame", ph: "X", ts: 20000, dur: 60000, args: {} },
+      { name: "RunTask", ph: "X", ts: 25000, dur: 120000, args: {} },
+    ],
+  });
+
+  assert.equal(summary.long_animation_frames, 1);
+  assert.equal(summary.freeze_count, 1);
+  assert.equal(summary.verdict, "fail");
+});
+
+test("긴 프레임보다 짧은 AnimationFrame 안의 긴 작업도 원인으로 남긴다", () => {
+  const summary = summarizeTrace({
+    traceEvents: [
+      { name: "FramePresented", ph: "I", ts: 0 },
+      { name: "FramePresented", ph: "I", ts: 16667 },
+      { name: "AnimationFrame", ph: "X", ts: 20000, dur: 40000, args: {} },
+      {
+        name: "RunTask",
+        ph: "X",
+        ts: 25000,
+        dur: 120000,
+        args: { data: { url: "http://127.0.0.1:8765/gwangju/app.js" } },
+      },
+    ],
+  });
+
+  assert.equal(summary.long_animation_frames, 0);
+  assert.equal(summary.source.application.count, 1);
+  assert.equal(summary.source.dominant, "application");
+  assert.equal(summary.freeze_count, 1);
 });
 
 test("20회 trace 중 하나라도 끊기면 성능 판정은 미달이다", () => {
