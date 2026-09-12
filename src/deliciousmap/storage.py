@@ -7,6 +7,7 @@ import json
 import os
 import re
 import tempfile
+from collections import Counter
 from pathlib import Path
 
 from deliciousmap import identity, period, restoration
@@ -20,6 +21,7 @@ from deliciousmap.contracts import (
     ComparisonRequest,
     Contract,
     EvidenceScope,
+    ExcludedSources,
     FetchOutput,
     GeocodeOutput,
     GeocodeResult,
@@ -62,7 +64,7 @@ OUTPUT_MODELS: dict[str, type[Contract]] = {
 
 # fetch는 출처·유실에 게시일·제목을 담은 v3, geocode·closure는 조회 요청 기록을 포함하는 v4,
 # build는 좌표 출처·장부 사유를 담은 v6다.
-SCHEMA_VERSIONS = {"fetch": 3, "geocode": 4, "closure": 4, "build": 6}
+SCHEMA_VERSIONS = {"fetch": 3, "parse": 2, "geocode": 4, "closure": 4, "build": 6}
 
 # 제공자 조회 캐시. 확정 업소 판정 이력(geocode-history-v2.jsonl)과 분리해 둔다.
 LOOKUP_CACHE = "geocode-lookup-v1.jsonl"
@@ -321,6 +323,19 @@ class ArtifactStore:
             item
             for item in self.load("fetch", FetchOutput).sources
             if period.targets(item.posted, item.title)
+        )
+
+    def excluded_sources(self) -> ExcludedSources:
+        """대상에서 뺀 원본의 사유별 수. 뺀 것을 0으로 감추지 않으려고 산출물에 싣는다."""
+        counted = Counter(
+            reason
+            for item in self.load("fetch", FetchOutput).sources
+            if (reason := period.exclusion(item.posted, item.title)) is not None
+        )
+        return ExcludedSources(
+            posted_out_of_range=counted["posted_out_of_range"],
+            declared_out_of_range=counted["declared_out_of_range"],
+            undeclared_in_year=counted["undeclared_in_year"],
         )
 
     def _dependencies(self, stage: str) -> dict[str, str]:

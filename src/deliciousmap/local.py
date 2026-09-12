@@ -26,7 +26,12 @@ from deliciousmap.contracts import (
 )
 from deliciousmap.identity import decide_identity, lookup_key, reconcile_coordinates
 from deliciousmap.pipeline import AdapterFailure, ExecutionContext, FailureCause
-from deliciousmap.site import collection_status, write_city_data, write_site_shell
+from deliciousmap.site import (
+    SourceScope,
+    collection_status,
+    write_city_data,
+    write_site_shell,
+)
 
 # 원본·표마다 받은 헤더 매핑 답의 이력. 도시 무관 서명 캐시와 달리 원본에 묶인다.
 HEADERMAP_ANSWERS = "headermap-answers-v1.jsonl"
@@ -113,6 +118,7 @@ class LocalAdapters:
                 directory,
                 context.map_key,
                 collection_status(context.target.organizations, value.records),
+                SourceScope(targets=value.target_sources, excluded=value.excluded_sources),
             )
         return BuildOutput(
             files=files,

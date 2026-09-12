@@ -15,6 +15,7 @@ from deliciousmap.contracts import (
     BuildInput,
     ClassificationStatus,
     Contract,
+    ExcludedSources,
     GeocodeResult,
     MarkerFile,
     Provider,
@@ -76,6 +77,18 @@ class CollectionStatus:
     status: Literal["collected", "empty", "held"]
     record_count: int
     hold_reason: HoldReason | None = None
+
+
+@dataclass(frozen=True)
+class SourceScope:
+    """이번 제출이 읽은 원본과 기간으로 뺀 원본. 읽은 수만 내면 장부가 완전해 보인다."""
+
+    targets: int
+    excluded: ExcludedSources
+
+    @property
+    def total(self) -> int:
+        return self.targets + self.excluded.total
 
 
 def collection_status(
@@ -201,11 +214,12 @@ def write_site_shell(
     city_directory: Path,
     map_key: MapKey,
     statuses: tuple[CollectionStatus, ...],
+    scope: SourceScope,
 ) -> tuple[Path, ...]:
     """Write shared assets, the city landing, and one city entry page."""
     written: list[Path] = []
     city_page = city_directory / "index.html"
-    write_text(city_page, _city_page(city, map_key, statuses))
+    write_text(city_page, _city_page(city, map_key, statuses, scope))
     written.append(city_page)
 
     # 진입 페이지를 먼저 쓰고 랜딩을 만들어, 이번 실행의 도시도 링크 대상이 되게 한다.
@@ -313,7 +327,20 @@ def _city_card(city: City, output_root: Path) -> str:
     )
 
 
-def _city_page(city: City, map_key: MapKey, statuses: tuple[CollectionStatus, ...]) -> str:
+def _scope_line(scope: SourceScope) -> str:
+    """원본을 세지 않은 산출물에는 줄을 내지 않는다. 0개라고 적으면 없는 사실을 지어내는 것이다."""
+    if scope.total == 0:
+        return ""
+    return (
+        '\n      <p class="collection-scope">'
+        f"게시글 원본 {scope.total:,}개 중 대상 {scope.targets:,}개"
+        f" (기간 미표기 제외 {scope.excluded.undeclared_in_year:,}개)</p>"
+    )
+
+
+def _city_page(
+    city: City, map_key: MapKey, statuses: tuple[CollectionStatus, ...], scope: SourceScope
+) -> str:
     city_name = escape(city.name)
     config = json.dumps(
         {
@@ -387,7 +414,7 @@ def _city_page(city: City, map_key: MapKey, statuses: tuple[CollectionStatus, ..
     <dialog class="source-dialog" data-source-dialog>
       <button type="button" class="dialog-close" data-close-sources aria-label="닫기">×</button>
       <p class="eyebrow">자료 범위</p><h2>대상 기간 {REPORTING_PERIOD}</h2>
-{_collection_table(statuses)}
+{_collection_table(statuses)}{_scope_line(scope)}
       <p class="collection-warning">
         레코드 없음과 수집 보류는 집행이 없었다는 뜻이 아닙니다.
       </p>

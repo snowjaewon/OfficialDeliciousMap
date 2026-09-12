@@ -9,6 +9,7 @@ import calendar
 import re
 from dataclasses import dataclass
 from datetime import date
+from typing import Literal
 
 START = date(2026, 1, 1)
 END = date(2026, 6, 30)
@@ -52,6 +53,9 @@ class Span:
 
 REPORTING = Span(START, END)
 
+# 대상에서 빠진 사유. 게시일을 읽지 못한 게시글은 `posted_out_of_range`로 센다.
+ExclusionReason = Literal["posted_out_of_range", "declared_out_of_range", "undeclared_in_year"]
+
 
 def declared(title: str | None) -> Span | None:
     """게시글 제목이 밝힌 지출 기간. 실측한 표기가 아니면 밝히지 않은 것으로 둔다."""
@@ -67,18 +71,30 @@ def declared(title: str | None) -> Span | None:
     return Span(date(year, first, 1), date(year, last, calendar.monthrange(year, last)[1]))
 
 
+def exclusion(posted: date | None, title: str | None) -> ExclusionReason | None:
+    """대상이 아니면 그 사유. 대상이면 `None`.
+
+    `undeclared_in_year`는 감시 지점이다. 게시일이 대상 연도인데 제목이 기간을 밝히지 않으면
+    그 게시글은 조용히 빠진다. 실측(2026-09-12 광주)에서는 0건이며, 0이 아니게 되면 그 표기를
+    실측해 `DECLARATION`에 더해야 한다.
+    """
+    if posted is None and title is None:
+        return None
+    if posted is None or not (START.year <= posted.year <= END.year):
+        return "posted_out_of_range"
+    span = declared(title)
+    if span is None:
+        return "undeclared_in_year"
+    return None if span.overlaps(REPORTING) else "declared_out_of_range"
+
+
 def targets(posted: date | None, title: str | None) -> bool:
     """이번 제출의 대상 게시글인지. 게시일의 해와 제목이 밝힌 지출 기간이 모두 맞아야 한다.
 
     게시일도 제목도 없으면 목록 구조를 읽지 않는 게시판이라 기간으로 가를 수 없다. 그때는
     가르지 않고 대상으로 둔다. 가를 근거가 없다는 것을 0건으로 바꾸지 않기 위해서다.
     """
-    if posted is None and title is None:
-        return True
-    if posted is None or not (START.year <= posted.year <= END.year):
-        return False
-    span = declared(title)
-    return span is not None and span.overlaps(REPORTING)
+    return exclusion(posted, title) is None
 
 
 def _months(found: re.Match[str]) -> tuple[int, int]:

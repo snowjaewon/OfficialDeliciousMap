@@ -7,7 +7,7 @@ from datetime import date
 
 import pytest
 
-from deliciousmap.period import END, START, Span, declared, targets
+from deliciousmap.period import END, START, Span, declared, exclusion, targets
 
 
 @pytest.mark.parametrize(
@@ -104,3 +104,45 @@ def test_an_unreadable_title_is_left_out_even_when_posted_in_the_target_year() -
 def test_a_period_that_ends_before_it_starts_is_not_read() -> None:
     """거꾸로 적힌 범위는 뒤집어 고치지 않는다. 밝히지 않은 것으로 둔다."""
     assert declared("2026년 4~1분기 업무추진비 집행내역(합성과)") is None
+
+
+@pytest.mark.parametrize(
+    ("posted", "title", "expected"),
+    [
+        # 대상인 게시글은 사유가 없다.
+        (date(2026, 4, 2), "2026년 1분기 업무추진비 사용내역(합성과)", None),
+        # 가를 근거가 없는 게시판도 대상이라 사유가 없다.
+        (None, None, None),
+        # 게시일이 대상 연도 밖이다. 제목의 기간은 보지 않는다.
+        (date(2025, 12, 30), "2026년 1분기 업무추진비 집행내역(합성과)", "posted_out_of_range"),
+        (date(2024, 3, 2), "2024년 1분기 업무추진비 집행내역(합성과)", "posted_out_of_range"),
+        # 게시일을 읽지 못한 게시글도 같은 갈래로 센다. 실측 0건이다.
+        (None, "2026년 1분기 업무추진비 집행내역(합성과)", "posted_out_of_range"),
+        # 게시일은 대상 연도인데 지출은 지난해다.
+        (date(2026, 1, 8), "2025년 4분기 업무추진비 집행내역(합성과)", "declared_out_of_range"),
+        # 게시일은 대상 연도인데 제목이 기간을 밝히지 않았다. 감시 지점이다.
+        (date(2026, 5, 1), "업무추진비 공개 안내", "undeclared_in_year"),
+        (date(2026, 5, 1), None, "undeclared_in_year"),
+    ],
+)
+def test_exclusion_names_why_a_posting_is_not_a_target(
+    posted: date | None, title: str | None, expected: str | None
+) -> None:
+    assert exclusion(posted, title) == expected
+
+
+@pytest.mark.parametrize(
+    ("posted", "title"),
+    [
+        (date(2026, 4, 2), "2026년 1분기 업무추진비 사용내역(합성과)"),
+        (date(2026, 1, 8), "2025년 4분기 업무추진비 집행내역(합성과)"),
+        (date(2026, 5, 1), "업무추진비 공개 안내"),
+        (date(2024, 3, 2), "2024년 1분기 업무추진비 집행내역(합성과)"),
+        (None, None),
+    ],
+)
+def test_target_is_the_absence_of_an_exclusion_reason(
+    posted: date | None, title: str | None
+) -> None:
+    """두 함수가 같은 판단을 낸다. 사유를 붙이는 일이 대상 판정을 바꾸지 않는다."""
+    assert targets(posted, title) is (exclusion(posted, title) is None)

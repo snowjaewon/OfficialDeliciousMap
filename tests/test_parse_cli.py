@@ -388,3 +388,80 @@ def test_empty_table_is_not_treated_as_no_spending(tmp_path: Path, configured: N
         "no_candidates",
         0,
     )
+
+
+def test_parse_counts_why_each_original_was_left_out_of_the_submission(
+    tmp_path: Path, configured: None
+) -> None:
+    """장부는 11개를 그대로 싣고, 대상에서 뺀 이유는 사유별 수로 남는다."""
+    record_spending(tmp_path)
+    posts = (
+        Post(
+            100,
+            "2026년 1분기 업무추진비 집행내역(합성과)",
+            "합성과",
+            datetime(2026, 4, 1).date(),
+            (("1분기.xls", workbook(QUARTER, [])),),
+        ),
+        Post(
+            99,
+            "2025년 4분기 업무추진비 집행내역(합성과)",
+            "합성과",
+            datetime(2026, 1, 8).date(),
+            (("작년 4분기.xls", workbook(QUARTER, [])),),
+        ),
+        Post(
+            98,
+            "업무추진비 공개 안내",
+            "합성과",
+            datetime(2026, 5, 1).date(),
+            (("안내.xls", workbook(QUARTER, [])),),
+        ),
+        Post(
+            97,
+            "2024년 1분기 업무추진비 집행내역(합성과)",
+            "합성과",
+            datetime(2024, 3, 2).date(),
+            (("2024.xls", workbook(QUARTER, [])),),
+        ),
+        Post(
+            96,
+            "2023년 업무추진비 집행내역(합성과)",
+            "합성과",
+            datetime(2023, 2, 2).date(),
+            (("2023.xls", workbook(QUARTER, [])),),
+        ),
+    )
+    assert run(tmp_path, "fetch", board=FakeBoardTransport(posts)) == 0
+    assert len(payload(tmp_path, "fetch")["sources"]) == 5
+
+    assert run(tmp_path, "headermap", FakeModel(headers=[header_answer()])) == 0
+    assert run(tmp_path, "parse") == 0
+
+    parsed = payload(tmp_path, "parse")
+    assert parsed["excluded_sources"] == {
+        "posted_out_of_range": 2,
+        "declared_out_of_range": 1,
+        "undeclared_in_year": 1,
+    }
+    # 대상 하나만 읽었고 수집 장부는 줄지 않았다.
+    assert len(parsed["sources"]) == 1
+    assert len(payload(tmp_path, "fetch")["sources"]) == 5
+
+
+def test_a_parse_artifact_from_the_previous_schema_asks_for_a_rerun(
+    tmp_path: Path, configured: None, capsys: pytest.CaptureFixture[str]
+) -> None:
+    record_spending(tmp_path)
+    publish(tmp_path, ("1분기.xls", workbook(QUARTER, [])))
+    assert run(tmp_path, "headermap", FakeModel(headers=[header_answer()])) == 0
+    assert run(tmp_path, "parse") == 0
+
+    path = tmp_path / DATA / "gwangju" / "parse.json"
+    envelope = json.loads(path.read_text(encoding="utf-8"))
+    envelope["schema_version"] -= 1
+    del envelope["payload"]["excluded_sources"]
+    write_text(path, json.dumps(envelope, ensure_ascii=False))
+
+    assert run(tmp_path, "classify") == 1
+    assert "cause=regeneration-required" in capsys.readouterr().err

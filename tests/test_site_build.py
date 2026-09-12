@@ -10,13 +10,17 @@ import pytest
 
 from deliciousmap.contracts import (
     CONFIRMED_REASONS,
+    ClassifyOutput,
+    ExcludedSources,
     GeocodeReason,
     MapStatus,
+    ParseOutput,
     Provider,
+    SourceReport,
 )
 from deliciousmap.pipeline import ExecutionContext
 from deliciousmap.registry import CITIES, HoldReason, Organization, Target
-from deliciousmap.storage import write_text
+from deliciousmap.storage import ArtifactStore, write_text
 from tests.test_geocoding_cli import (
     add_record,
     lookup,
@@ -280,3 +284,92 @@ def test_screen_labels_cover_every_published_contract_value() -> None:
     assert labelled("MAP_STATUSES") == set(get_args(MapStatus))
     # 확정된 두 사유는 지도에 오른 레코드의 것이라 장부에서 따로 적지 않는다.
     assert labelled("GEOCODE_REASONS") == set(get_args(GeocodeReason)) - set(CONFIRMED_REASONS)
+
+
+def fetched(posted: str, title: str | None, digest: str) -> dict:
+    """수집 장부 한 줄. 대상 선별은 게시일과 제목만 보므로 나머지는 합성값이다."""
+    return {
+        "path": "외부 원본/합성.xls",
+        "source_hash": digest,
+        "organization": "test-org",
+        "board": "expenses",
+        "url": f"https://example.invalid/{digest[:4]}",
+        "container": "ole2",
+        "department": "총무과",
+        "posted": posted,
+        "title": title,
+    }
+
+
+def save_ledger(context: ExecutionContext) -> None:
+    """대상 2개와 사유 셋으로 빠진 7개를 담은 fetch 장부를 쓴다."""
+    sources = [
+        fetched("2026-04-01", "2026년 1분기 업무추진비 집행내역(합성과)", "a" * 64),
+        fetched("2026-04-02", "2026년 2분기 업무추진비 집행내역(합성과)", "b" * 64),
+        *(
+            fetched(
+                f"202{year}-03-02",
+                f"202{year}년 1분기 업무추진비 집행내역(합성과)",
+                str(year) * 64,
+            )
+            for year in range(1, 5)
+        ),
+        fetched("2026-01-08", "2025년 4분기 업무추진비 집행내역(합성과)", "c" * 64),
+        fetched("2026-05-01", "업무추진비 공개 안내", "d" * 64),
+        fetched("2026-05-02", "합성과 업무추진비 집행내역", "e" * 64),
+    ]
+    write_text(
+        context.paths.data_root / context.target.city.slug / "fetch.json",
+        json.dumps(
+            {
+                "schema_version": 3,
+                "city": context.target.city.slug,
+                "org": context.target.org,
+                "dependencies": {},
+                "payload": {"sources": sources},
+            },
+            ensure_ascii=False,
+        ),
+    )
+
+
+def scoped_build(tmp_path: Path) -> ExecutionContext:
+    """대상 2개를 읽고 7개를 뺀 제출. parse를 고쳐 쓰고 뒤 단계를 그 위에서 다시 만든다."""
+    context = prepare(tmp_path)
+    save_ledger(context)
+    store = ArtifactStore(context.paths, context.target)
+    classified = store.load("classify", ClassifyOutput)
+    parsed = store.load("parse", ParseOutput)
+    store.save(
+        "parse",
+        parsed.model_copy(
+            update={
+                "sources": (
+                    SourceReport(source_hash="a" * 64, status="parsed", records=1),
+                    SourceReport(source_hash="b" * 64, status="parsed", records=0),
+                ),
+                "excluded_sources": ExcludedSources(
+                    posted_out_of_range=4, declared_out_of_range=1, undeclared_in_year=2
+                ),
+            }
+        ),
+    )
+    store.save("classify", classified)
+    save_input(context, lookup())
+    for stage in ("geocode", "closure", "build"):
+        assert run_cli(context, stage) == 0
+    return context
+
+
+def test_city_page_publishes_how_many_originals_the_submission_left_out(tmp_path: Path) -> None:
+    """대상만 세고 뺀 것을 감추면 장부가 완전해 보인다. 둘을 한 줄에 같이 낸다."""
+    page = city_page(scoped_build(tmp_path))
+    assert "원본 9개 중 대상 2개" in page
+    assert "기간 미표기 제외 2개" in page
+
+
+def test_city_page_omits_the_scope_line_when_no_original_was_counted(tmp_path: Path) -> None:
+    """원본을 세지 않은 산출물에 0개를 적으면 없는 사실을 지어내는 것이다."""
+    context = build_ready(tmp_path)
+    assert run_cli(context, "build") == 0
+    assert "중 대상" not in city_page(context)
