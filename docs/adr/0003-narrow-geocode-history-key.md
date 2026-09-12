@@ -6,6 +6,8 @@ status: accepted
 
 `lookup_key`에서 선행 산출물·검토 파일의 **파일 해시를 뺀다**. 남는 것은 그 레코드의 값, 그 레코드에 적용한 후보 조회 결과, 그 레코드의 사람 확인과 확정 복원명, 그리고 판정 정책 버전(`identity.POLICY_VERSION`·`restoration.POLICY_VERSION`)이다. 그리고 추가형 이력은 한 조각이 20MB에 닿으면 앞 조각을 그대로 두고 `<이름>.002.<확장자>`부터 번호를 붙인 다음 조각에 이어 쓴다. 이 결정은 [#61](https://github.com/snowjaewon/OfficialDeliciousMap/issues/61)에서 2026-09-12에 했다.
 
+여기서 "그 레코드의 값"은 레코드 전체를 뜻했다. [ADR-0005](0005-key-only-what-the-decision-reads.md)가 그것을 판정이 실제로 읽는 `record_id`·`merchant`로 좁혔다. 파일 해시를 뺀 이 결정의 논리를 레코드의 칸에 그대로 적용한 것이며, 아래 나머지 내용은 그대로다.
+
 `decide_identity`는 레코드·조회·사람 확인·확정 복원명과 정책만 읽는 순수 함수다. 그 파일들에서 판정이 실제로 읽은 값은 이미 `lookup_key` 안에 값으로 들어 있다. 파일 해시를 한 번 더 묶으면 같은 판정에 두 개의 이름이 생기고, **판정이 하나도 바뀌지 않은 재실행이 모든 키를 갈아 이력을 통째로 다시 쌓는다**. [#59](https://github.com/snowjaewon/OfficialDeliciousMap/issues/59)에서 `parse.json`에 집계 세 칸을 더하자 `geocode-history-v2.jsonl`이 9.84MB에서 14.76MB로, 2,325줄이 한 번에 늘었다([검증](../validation/issue-59.md)).
 
 산출물 단위의 낡음은 envelope의 `dependencies`가 그대로 검사한다. 이 결정은 그 검사를 좁히지 않는다. 상류가 바뀌면 `geocode.json`은 여전히 낡은 것으로 거부되고 단계를 다시 돌려야 한다. 달라지는 것은 그 재실행이 **같은 판정을 다시 쌓지 않는다**는 점뿐이다.
