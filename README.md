@@ -237,6 +237,13 @@ URL이 `naver.com`이면 네이버 SDK, 로컬 주소이면 애플리케이션, 
 원인을 요약한다. trace 디렉터리는 기본적으로 임시 폴더에 만들며 `--trace-dir`로 저장 위치를
 지정할 수 있지만 저장소 안은 거부한다. Chrome 경로는 `--chrome` 또는 `CHROME_PATH`로 바꾼다.
 
+재방문 서비스 워커는 셸(도시 HTML·공유 JavaScript·CSS·manifest)을 캐시에서 먼저 내주고
+동시에 네트워크에서 갱신하는 stale-while-revalidate 전략을 쓴다. 처음 받은 도시 셸도
+캐시에 저장하므로 다음 탐색은 네트워크 재검증을 기다리지 않는다. `markers.json`과
+`records.json`은 매번 네트워크 응답을 우선하고 성공한 응답만 캐시에 저장해 오프라인 때
+마지막 산출물을 대신 보여준다. 서비스 워커 캐시 이름(`deliciousmap-shell-v2`)은 셸 계약이
+바뀔 때 올리며, 새 버전이 활성화되면 이전 캐시를 지우고 열린 페이지를 제어한다.
+
 ## 단계 계약과 후속 구현 접점
 
 `contracts.py`의 입출력 모델, `pipeline.py`의 `Adapters` Protocol이 공개 경계다.
