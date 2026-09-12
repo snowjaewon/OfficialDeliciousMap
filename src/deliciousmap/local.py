@@ -1,5 +1,7 @@
-"""Local refined-input stages. No HTTP, originals, LLM or budget operations."""
+"""개발자 PC에서 도는 어댑터. 게시판 수집과 정제 입력 단계이며 LLM·예산 집행은 하지 않는다."""
 
+from deliciousmap.boards import default_transport
+from deliciousmap.collection import collect
 from deliciousmap.contracts import (
     BuildInput,
     BuildOutput,
@@ -24,7 +26,7 @@ from deliciousmap.site import collection_status, write_city_data, write_site_she
 
 class LocalAdapters:
     def fetch(self, value: FetchInput, context: ExecutionContext) -> FetchOutput:
-        raise AdapterFailure(FailureCause.NOT_IMPLEMENTED)
+        return collect(value.target, context.paths, context.board_transport or default_transport())
 
     def headermap(self, value: HeaderMapInput, context: ExecutionContext) -> HeaderMapOutput:
         raise AdapterFailure(FailureCause.NOT_IMPLEMENTED)

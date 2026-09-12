@@ -74,12 +74,17 @@ class CacheRef(Contract):
     revision: int = Field(ge=1)
 
 
+# 원본의 실제 컨테이너. 게시판이 붙인 확장자가 아니라 매직 바이트로 판정한 값이다.
+Container = Literal["ole2", "ooxml", "pdf", "spreadsheetml"]
+
+
 class SourceRef(Contract):
     path: Path
     source_hash: Sha256
     organization: Text
     board: Text
     url: Text
+    container: Container
 
 
 class HeaderMap(Contract):
@@ -476,8 +481,22 @@ class FetchInput:
     target: Target
 
 
+class MissingOriginal(Contract):
+    """게시판이 링크했지만 받지 못한 원본. 0건으로 숨기지 않기 위해 장부처럼 남긴다."""
+
+    organization: Text
+    board: Text
+    # 근거가 되는 게시글 주소와 게시판이 밝힌 파일 이름.
+    url: Text
+    filename: Text
+    # gone: 기관이 404로 답한다. empty: 200이지만 내용이 없다. 둘 다 받을 것이 없다.
+    reason: Literal["gone", "empty"]
+
+
 class FetchOutput(Contract):
     sources: tuple[SourceRef, ...]
+    # 받지 못한 원본. 성공한 수집에도 남을 수 있다.
+    missing: tuple[MissingOriginal, ...] = ()
     empty_reason: Text | None = None
 
 

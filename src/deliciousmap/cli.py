@@ -5,7 +5,7 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-from deliciousmap import gemini, licenses, naver, site
+from deliciousmap import boards, gemini, licenses, naver, site
 from deliciousmap.lookup import CandidateProvider
 from deliciousmap.paths import Paths
 from deliciousmap.pipeline import STAGES, Adapters, ExecutionContext, PipelineFailure, execute
@@ -21,6 +21,7 @@ def main(
     naver_transport: Transport | None = None,
     license_transport: Transport | None = None,
     model_transport: JsonTransport | None = None,
+    board_transport: Transport | None = None,
 ) -> int:
     parser = argparse.ArgumentParser(prog="deliciousmap")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -71,7 +72,15 @@ def main(
     try:
         execute(
             args.command,
-            ExecutionContext(target, paths, args.retry_failed, providers, comparator, map_key),
+            ExecutionContext(
+                target,
+                paths,
+                args.retry_failed,
+                providers,
+                comparator,
+                map_key,
+                board_transport or boards.default_transport(),
+            ),
             adapters,
         )
     except PipelineFailure as exc:

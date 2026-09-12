@@ -60,7 +60,7 @@ OUTPUT_MODELS: dict[str, type[Contract]] = {
 }
 
 # geocode·closure는 조회 요청 기록을 포함하는 v4, build는 좌표 출처·장부 사유를 담은 v6다.
-SCHEMA_VERSIONS = {"geocode": 4, "closure": 4, "build": 6}
+SCHEMA_VERSIONS = {"fetch": 2, "geocode": 4, "closure": 4, "build": 6}
 
 # 제공자 조회 캐시. 확정 업소 판정 이력(geocode-history-v2.jsonl)과 분리해 둔다.
 LOOKUP_CACHE = "geocode-lookup-v1.jsonl"
@@ -331,6 +331,8 @@ class ArtifactStore:
         if isinstance(output, FetchOutput):
             if not output.sources and output.empty_reason is None:
                 raise ValueError("unexplained empty fetch")
+            if any(item.organization not in organizations for item in output.missing):
+                raise ValueError("missing original organization mismatch")
             for source in output.sources:
                 if source.organization not in organizations:
                     raise ValueError("source organization mismatch")
