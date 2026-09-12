@@ -1,8 +1,7 @@
 const SHELL_CACHE_NAME = "deliciousmap-shell-v2";
 const DATA_CACHE_NAME = "deliciousmap-data-v1";
-const SHELL_ASSETS = ["assets/app.js", "assets/styles.css", "manifest.webmanifest"];
-const SHELL = ["./", ...SHELL_ASSETS.map((asset) => `./${asset}`)];
-const SHELL_PATHS = new Set(SHELL_ASSETS.map((asset) => `/${asset}`));
+const SHELL = ["./", "./assets/app.js", "./assets/styles.css", "./manifest.webmanifest"];
+const SHELL_PATHS = new Set(SHELL.slice(1).map((asset) => new URL(asset, self.location.origin).pathname));
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

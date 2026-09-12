@@ -174,6 +174,25 @@ test("markers stay network-first while a successful response refreshes the offli
   assert.deepEqual(harness.opened, ["deliciousmap-data-v1", "deliciousmap-data-v1"]);
 });
 
+test("records use the same network-first data policy", async () => {
+  const networkResponses = [fakeResponse("fresh records"), new Error("offline")];
+  const harness = workerHarness({
+    entries: { "/gwangju/records.json": fakeResponse("old records") },
+    fetchImpl: async () => {
+      const response = networkResponses.shift();
+      if (response instanceof Error) throw response;
+      return response;
+    },
+  });
+
+  const first = await harness.dispatchFetch(request("/gwangju/records.json")).response;
+  const second = await harness.dispatchFetch(request("/gwangju/records.json")).response;
+
+  assert.equal(first.body, "fresh records");
+  assert.equal(second.body, "fresh records");
+  assert.deepEqual(harness.opened, ["deliciousmap-data-v1", "deliciousmap-data-v1"]);
+});
+
 test("an HTTP data error uses the last successful marker response when available", async () => {
   const harness = workerHarness({
     entries: { "/gwangju/markers.json": fakeResponse("cached markers") },

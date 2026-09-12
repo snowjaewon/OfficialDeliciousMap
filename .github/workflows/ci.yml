@@ -35,7 +35,7 @@ jobs:
       - run: uv run ruff format --check .
       - run: uv run mypy src
       - run: uv run pytest
-      - run: node --test tests/site_behavior.test.js
+      - run: node --test tests/site_behavior.test.js tests/measure_map.test.js tests/service_worker.test.js
       - run: uv run python -m deliciousmap --help
       - name: 정제 산출물 크기·입력 검증
         id: data

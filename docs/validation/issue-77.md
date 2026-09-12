@@ -32,7 +32,7 @@
 | 마커 네트워크 우선 및 성공 응답 오프라인 폴백 | 통과 |
 | 설치 셸 프리캐시 | 통과 |
 | 활성화 시 구버전 캐시 제거·열린 페이지 제어 | 통과 |
-| `node --test tests/service_worker.test.js` | 6 passed |
+| `node --test tests/service_worker.test.js` | 7 passed |
 
 ## 실측 상태
 
