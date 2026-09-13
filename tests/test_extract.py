@@ -108,6 +108,58 @@ def test_unlabeled_total_row_is_recognized_by_its_count() -> None:
     assert (result.candidates, result.total_check) == (1, "matched")
 
 
+def test_ceremonial_payment_without_a_place_is_kept_as_a_masked_payee() -> None:
+    """2026-09-13 북구 실측: 애경사 축·조의금은 상호 칸이 아예 비어 있다. 받는 사람이 개인이다.
+
+    지출은 실제로 있었으므로 장부에서 지우지 않고 가린 표시로 남긴다(#51 사용자 결정과 같다).
+    """
+    purpose = "2026. 1월중 소속직원 애경사 축·조의금 지급"
+    ceremony = ("과장", "2026-01-20 00:00", "", purpose, 350000.0)
+    (record,) = extract(table(ceremony), MAPPING, SOURCE).records
+    assert record.merchant == "개인(성명 비공개)"
+    assert record.purpose == purpose
+    # 경조사가 아닌데 상호가 비어 있으면 그대로 실패한다. 무엇이 빠졌는지 알 수 없다.
+    with pytest.raises(ValidationFailed, match="sheet1:R3 merchant"):
+        extract(table(("과장", "2026-01-20 00:00", "", "간담회", 350000.0)), MAPPING, SOURCE)
+
+
+def test_section_title_in_the_date_column_is_not_an_expense() -> None:
+    """2026-09-13 북구 실측: 구역 제목이 날짜 열에 온다. 상호도 금액도 없으면 지출이 아니다."""
+    result = extract(
+        table(spend(5, "합성 식당", 62000.0), ("", "○ 구정현안 시책추진"),
+              spend(6, "합성 국밥", 27000.0)),
+        MAPPING,
+        SOURCE,
+    )  # fmt: skip
+    assert (result.candidates, result.excluded) == (2, ("sheet1:R4 note",))
+
+
+def test_total_row_with_only_an_amount_is_recognized_and_checked() -> None:
+    """2026-09-13 광산구 실측: 헤더 바로 아래에 금액만 적은 합계 행이 온다. 딱지도 건수도 없다.
+
+    집행일시·사용장소가 비어 있어 지출 1건일 수 없다. 합계로 보고 그 값을 대조한다.
+    """
+    result = extract(
+        table(("", "", "", "", 89000.0), spend(5, "합성 식당", 62000.0),
+              spend(6, "합성 국밥", 27000.0)),
+        MAPPING,
+        SOURCE,
+    )  # fmt: skip
+    assert (result.candidates, result.excluded, result.total_check) == (
+        2,
+        ("sheet1:R3 total",),
+        "matched",
+    )
+    # 합이 맞지 않으면 지나가지 않는다.
+    with pytest.raises(ValidationFailed, match="sheet1:R3 total amount mismatch"):
+        extract(
+            table(("", "", "", "", 88000.0), spend(5, "합성 식당", 62000.0),
+                  spend(6, "합성 국밥", 27000.0)),
+            MAPPING,
+            SOURCE,
+        )  # fmt: skip
+
+
 def test_stale_count_in_the_total_row_does_not_fail_a_matching_amount() -> None:
     result = extract(
         table(spend(5, "합성 식당", 62000.0), spend(6, "합성 국밥", 27000.0),
@@ -189,6 +241,35 @@ def test_each_section_is_checked_against_its_own_total() -> None:
 )
 def test_dates_seen_in_real_originals(value: str, expected: date) -> None:
     assert parse_date(value) == expected
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        # 2026-09-13 광주 서구 실측: 날짜 서식이 아닌 칸에 든 엑셀 일련값. 정수부가 날짜이고
+        # 소수부가 시각이다(46024.70763888889 = 2026-01-02 16:59).
+        (46024.70763888889, date(2026, 1, 2)),
+        (46114.0, date(2026, 4, 2)),
+        # 일련값의 범위 밖은 날짜로 읽지 않는다. 금액·인원이 날짜가 되지 않게 한다.
+        (2026.5, None),
+        (99999.25, None),
+    ],
+)
+def test_excel_serial_dates_carry_a_time_of_day(value: float, expected: date | None) -> None:
+    """날짜 칸이 시각을 함께 담은 일련값으로 온다. 정수가 아니라고 날짜가 아닌 것은 아니다."""
+    assert parse_date(value) == expected
+
+
+def test_month_and_day_with_a_time_are_not_read_as_a_two_digit_year() -> None:
+    """2026-09-13 동구 실측: `03.03. 12:25`는 3월 3일 12시 25분이다. 2003년 3월 12일이 아니다.
+
+    뒤에 시각이 붙은 표기를 두 자리 연도로 읽으면 연도가 통째로 어긋난 레코드가 조용히 생긴다.
+    """
+    assert parse_date("03.03. 12:25", 2026) == date(2026, 3, 3)
+    assert parse_date("03.03. 12:25") is None
+    # 두 자리 연도 표기는 그대로 읽는다. 시각이 붙어도 마지막 칸이 날짜다.
+    assert parse_date("26.01.26. 12:25", 2026) == date(2026, 1, 26)
+    assert parse_date("'25. 10. 17. 12:15") == date(2025, 10, 17)
 
 
 def original(number: int, posted: str) -> SourceRef:
