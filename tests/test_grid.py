@@ -226,6 +226,42 @@ def test_broken_hwpx_body_is_unreadable_rather_than_an_unsupported_format(tmp_pa
         read_tables(path)
 
 
+def test_hwpx_cells_pointing_at_one_position_are_unreadable(tmp_path: Path) -> None:
+    """자리 표기가 어긋나 두 칸이 한 자리를 가리킨다. 나중 칸으로 덮어써 앞 칸을 버리지 않는다."""
+    path = tmp_path / "겹친 자리.hwpx"
+    cell = (
+        "<hp:tc><hp:subList><hp:p><hp:run><hp:t>합성식당</hp:t></hp:run></hp:p></hp:subList>"
+        '<hp:cellAddr colAddr="0" rowAddr="0"/><hp:cellSpan colSpan="1" rowSpan="1"/></hp:tc>'
+    )
+    path.write_bytes(
+        hwpx.document(
+            body='<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>'
+            f"<hs:sec {hwpx.NAMESPACES}><hp:p><hp:run>"
+            f'<hp:tbl rowCnt="1" colCnt="2"><hp:tr>{cell}{cell}</hp:tr></hp:tbl>'
+            "</hp:run></hp:p></hs:sec>"
+        )
+    )
+    with pytest.raises(UnreadableOriginal):
+        read_tables(path)
+
+
+def test_hwpx_table_too_wide_to_lay_out_is_unreadable(tmp_path: Path) -> None:
+    """병합 표기가 깨져 격자를 감당할 수 없는 표. 자리를 짐작해 줄이지 않고 미해결로 남긴다."""
+    path = tmp_path / "깨진 병합.hwpx"
+    path.write_bytes(
+        hwpx.document(
+            body='<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>'
+            f"<hs:sec {hwpx.NAMESPACES}><hp:p><hp:run>"
+            '<hp:tbl rowCnt="1" colCnt="1"><hp:tr><hp:tc><hp:subList><hp:p><hp:run>'
+            "<hp:t>합 계</hp:t></hp:run></hp:p></hp:subList>"
+            '<hp:cellAddr colAddr="0" rowAddr="0"/><hp:cellSpan colSpan="9999999" rowSpan="1"/>'
+            "</hp:tc></hp:tr></hp:tbl></hp:run></hp:p></hs:sec>"
+        )
+    )
+    with pytest.raises(UnreadableOriginal):
+        read_tables(path)
+
+
 def test_pdf_table_is_read_with_the_page_as_the_label(tmp_path: Path) -> None:
     path = tmp_path / "집행내역.pdf"
     path.write_bytes(

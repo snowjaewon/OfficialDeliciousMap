@@ -35,26 +35,36 @@ HWPX는 표준 ZIP이고 본문은 `Contents/section<번호>.xml`의 OWPML이다
 `data/gwangju/orgs/gwangju-nam/`은 이 작업으로 바뀌지 않았다.
 
 ```text
-cp -r data "$SCRATCH/data"
+SCRATCH=/c/Users/pc/AppData/Local/Temp/deliciousmap-112   # 저장소 밖이면 어디든 된다
+mkdir -p "$SCRATCH" && cp -r data "$SCRATCH/data"
 uv run python -m deliciousmap headermap --city gwangju --org gwangju-nam \
   --data-root "$SCRATCH/data" --output-root "$SCRATCH/dist"   # 3.6초
 uv run python -m deliciousmap parse --city gwangju --org gwangju-nam \
   --data-root "$SCRATCH/data" --output-root "$SCRATCH/dist"   # 2.5초
 ```
 
+이 두 단계를 **저장소를 받은 그대로** 돌리면 레코드는 14건이 아니라 **5건**이다. `1112-1`의
+헤더 판정이 아직 커밋돼 있지 않기 때문이며(3절) 그 원본은 `model_not_configured`로 남는다.
+14건을 재현하려면 3절의 판정을 답변 이력에 먼저 넣어야 한다. 아래 표는 두 경우를 모두 적는다.
+
 ### headermap — `unsupported_format` 4개가 0개가 됐다
 
-| | 커밋된 산출물 | 이번 실행 |
-| --- | --- | --- |
-| 매핑한 표 | 73 | **77** |
-| 미해결 원본 | 7 | **3** |
-| 그중 `unsupported_format` | 4 | **0** |
+| | 커밋된 산출물 | 저장소 그대로 | 3절 판정을 넣고 |
+| --- | --- | --- | --- |
+| 매핑한 표 | 73 | 76 | **77** |
+| 미해결 원본 | 7 | 4 | **3** |
+| 그중 `unsupported_format` | 4 | **0** | **0** |
+
+**형식 때문에 막히는 일은 헤더 판정 없이도 없어진다.** 저장소 그대로 돌려도
+`unsupported_format`은 0개이고, `1112-1`은 형식이 아니라 헤더 판정이 없다는 내용 사유
+(`model_not_configured`)로 남는다. 이슈 본문이 적은 "형식 때문에 막히는 일이 없어진다"가
+이것이다.
 
 남은 미해결 3개는 형식이 아니라 내용 때문이며 이번 변경 전과 같다 — `1117-1.pdf`
 (`table1:R6 spent_on`), `1130-1.xlsx`(`sheet1:R18 spent_on`), `1154-1.pdf`
 (`table1:R3 spent_on`). 날짜 표기는 [#113](https://github.com/snowjaewon/OfficialDeliciousMap/issues/113)이 다룬다.
 
-### parse — 레코드 14건
+### parse — 레코드 14건 (저장소 그대로는 5건)
 
 | 원본 | 부서·분기 | 표 행 | 지출 후보 | 레코드 | 총계 대조 |
 | --- | --- | --- | --- | --- | --- |
@@ -65,7 +75,8 @@ uv run python -m deliciousmap parse --city gwangju --org gwangju-nam \
 | 합계 | | | 14 | **14** | |
 
 남구 전체로는 통과한 원본이 60개에서 64개로, 지출 후보가 1,087건에서 1,101건으로,
-`records.csv`가 1,022줄에서 1,036줄로 늘었다. 범위 밖 지출·분모에서 뺀 행·재검토 대상은
+`records.csv`가 1,022줄에서 1,036줄로 늘었다. 저장소 그대로 돌리면 `1112-1`의 9건이 빠져
+63개·1,092건·1,027줄이다. 범위 밖 지출·분모에서 뺀 행·재검토 대상은
 네 원본 모두 0건이다.
 
 `1112-1`의 `matched`가 병합 펼치기의 증거다. 이 원본의 합계 행은 `colSpan=5`로 합쳐져 있어
@@ -162,14 +173,21 @@ raw-root의 `.hwpx`는 7개이고 그중 대상은 4개다. 나머지 3개도 �
 uv run ruff check .          통과
 uv run ruff format --check . 통과
 uv run mypy src              통과
-uv run pytest                512 → 521건 통과
+uv run pytest                512 → 523건 통과
 git diff --check             통과
 ```
 
-`tests/test_grid.py`에 9건을 더했다. 여덟 건은 구현 전에 먼저 실패시킨 것이다 —
+`tests/test_grid.py`에 11건을 더했다. 여덟 건은 구현 전에 먼저 실패시킨 것이다 —
 이름표·조각 잇기·병합 펼치기·표 번호·표 없는 본문·깨진 본문·`.hwp`·HWPX 본문이 없는
-ZIP이다. 나머지 하나(구역이 여럿인 본문)는 구현 뒤에 더했다. 구역 번호를 글자가 아니라
-수로 정렬하는 것은 실제 원본 7개가 모두 구역 하나여서 앞의 여덟 건이 짚지 못한다.
+ZIP이다. 나머지 셋은 구현 뒤에 더했다.
+
+| 뒤에 더한 테스트 | 왜 앞의 여덟 건이 짚지 못하나 |
+| --- | --- |
+| 구역이 여럿인 본문 | 실제 원본 7개가 모두 구역 하나다. 구역 번호는 글자가 아니라 수로 정렬해야 `section10`이 `section2`보다 뒤다. |
+| 두 칸이 한 자리를 가리키는 표 | 자리 표기가 어긋나면 나중 칸이 앞 칸을 덮어써 값이 조용히 사라진다. 덮어쓰지 않고 미해결로 남긴다. |
+| 격자를 감당할 수 없는 표 | 병합 표기가 깨지면 칸 하나가 격자를 끝없이 키운다. 100만 칸에서 멈추고 미해결로 남긴다. |
+
+뒤의 둘은 코드 리뷰가 짚은 것이다. 실제 원본 7개는 셋 다 그대로 통과한다(격자·행 수 불변).
 
 ## 9. 남은 것
 

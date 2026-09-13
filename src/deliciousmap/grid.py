@@ -15,7 +15,7 @@ import xlrd
 
 # 셀 값. 엑셀의 날짜 셀만 datetime이고 숫자는 float, 나머지는 앞뒤 공백을 둔 문자열이다.
 Cell = str | float | datetime
-# 형식별 읽기가 내는 표 하나. 이름표(시트 이름 또는 나온 쪽)와 자르기 전의 행들이다.
+# 형식별 읽기가 내는 표 하나. `Table.label`이 될 이름표와 자르기 전의 행들이다.
 Block = tuple[str, list[tuple[Cell, ...]]]
 
 OLE2 = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
@@ -23,6 +23,8 @@ ZIP = b"PK\x03\x04"
 PDF = b"%PDF-"
 # 연속 빈 행이 이만큼 이어지면 시트의 끝으로 본다.
 MAX_BLANK_RUN = 1_000
+# 표 하나를 펼칠 수 있는 칸 수의 상한. 자리·병합 표기가 깨진 HWPX가 격자를 키우지 못하게 한다.
+MAX_TABLE_CELLS = 1_000_000
 # ISO/IEC 29500 Strict 이름공간과 같은 뜻의 Transitional 이름공간. 관계 유형은 접두어로 바뀐다.
 STRICT_MAIN = b"http://purl.oclc.org/ooxml/spreadsheetml/main"
 STRICT_NAMESPACES = (
@@ -50,7 +52,7 @@ CELL = f"{{{OWPML}}}tc"
 ADDRESS = f"{{{OWPML}}}cellAddr"
 SPAN = f"{{{OWPML}}}cellSpan"
 PARAGRAPH = f"{{{OWPML}}}p"
-LETTERS = f"{{{OWPML}}}t"
+TEXT_TAG = f"{{{OWPML}}}t"
 
 
 class UnsupportedFormat(Exception):
@@ -63,7 +65,11 @@ class UnreadableOriginal(Exception):
 
 @dataclass(frozen=True)
 class Table:
-    """표 하나. `name`은 산출물의 위치 표기, `label`은 원본의 시트 이름이나 나온 쪽이다."""
+    """표 하나. `name`은 산출물의 위치 표기, `label`은 원본이 이 표를 부르는 이름이다.
+
+    이름표는 형식마다 다른 자리에서 온다 — 통합문서는 시트 이름, PDF는 나온 쪽,
+    HWPX는 표 바로 앞의 제목 문단이다.
+    """
 
     name: str
     label: str
@@ -88,8 +94,7 @@ def read_tables(path: Path) -> tuple[Table, ...]:
     """통합문서는 시트마다, PDF는 괘선으로 나뉜 표마다, HWPX는 `<hp:tbl>`마다 표 하나다.
 
     내용이 없는 시트·표는 표가 아니며 뒤쪽의 빈 칸·빈 행은 잘라 낸다. 위치 표기는
-    통합문서가 `sheet1`, PDF·HWPX가 `table1`이고 `label`이 시트 이름, 나온 쪽, 표 앞
-    제목 문단을 남긴다.
+    통합문서가 `sheet1`, PDF·HWPX가 `table1`이다.
     """
     content = path.read_bytes()
     if content.startswith(OLE2):
@@ -214,7 +219,7 @@ class _Body:
     """본문 하나를 훑는 동안의 상태. 표 바로 앞의 문단을 그 표의 이름표로 쓴다."""
 
     # 표 앞에 문단이 없을 때 쓸 본문 이름(`section0`).
-    default: str
+    fallback_label: str
     blocks: list[Block] = field(default_factory=list)
     label: str = ""
 
@@ -235,9 +240,11 @@ def _hwpx(content: bytes, sections: list[str]) -> list[Block]:
         found = _Body(Path(name).stem)
         try:
             _scan(ElementTree.fromstring(body), found)
+        except UnreadableOriginal:
+            # 자리 표기를 두고 이미 정한 사유가 있다. 뭉뚱그리지 않고 그대로 올린다.
+            raise
         except Exception:
-            # 구조가 깨졌거나 자리 표기가 격자를 감당하지 못하는 본문. 원본 내용은 사유에
-            # 담지 않는다.
+            # 구조가 깨진 본문. 원본 내용은 사유에 담지 않는다.
             raise UnreadableOriginal("HWPX body could not be read") from None
         blocks.extend(found.blocks)
     return blocks
@@ -247,15 +254,16 @@ def _scan(element: ElementTree.Element, body: _Body) -> None:
     """본문을 적힌 순서대로 훑는다. 칸 안에 든 표도 제 표로 따로 낸다."""
     for child in element:
         if child.tag == TABLE:
-            body.blocks.append((body.label or body.default, _hwpx_rows(child)))
+            body.blocks.append((body.label or body.fallback_label, _hwpx_rows(child)))
             body.label = ""
             for row in child.findall(ROW):
                 for cell in row.findall(CELL):
                     _scan(cell, body)
+            # 칸 안의 문단은 이 표의 것이다. 다음 표의 이름표로 새지 않게 다시 비운다.
             body.label = ""
             continue
         if child.tag == PARAGRAPH:
-            found = _letters(child)
+            found = _joined_text(child)
             if found.strip():
                 body.label = found.strip()
         _scan(child, body)
@@ -278,10 +286,17 @@ def _hwpx_rows(table: ElementTree.Element) -> list[tuple[Cell, ...]]:
                 column += 1
             row, column = _at(cell, index, column)
             rows, columns = _span(cell)
-            placed[(row, column)] = _letters(cell)
-            taken.update((row + r, column + c) for r in range(rows) for c in range(columns))
             height = max(height, row + rows)
             width = max(width, column + columns)
+            if height * width > MAX_TABLE_CELLS:
+                # 실제 원본의 가장 큰 표도 600칸이 되지 않는다. 여기까지 오면 표기가 깨진
+                # 것이며, 자리를 짐작해 줄이지 않고 옮기지 못했다고 남긴다.
+                raise UnreadableOriginal("HWPX table is too large to lay out")
+            if (row, column) in taken:
+                # 두 칸이 한 자리를 가리킨다. 나중 칸으로 덮어써 앞 칸을 조용히 버리지 않는다.
+                raise UnreadableOriginal("HWPX cells overlap in the same position")
+            placed[(row, column)] = _joined_text(cell)
+            taken.update((row + r, column + c) for r in range(rows) for c in range(columns))
             column += columns
     return [
         tuple(placed.get((row, column), "") for column in range(width)) for row in range(height)
@@ -313,7 +328,7 @@ def _number(value: str | None, fallback: int, floor: int = 0) -> int:
     return max(found, floor)
 
 
-def _letters(element: ElementTree.Element) -> str:
+def _joined_text(element: ElementTree.Element) -> str:
     """칸·문단의 글자를 잇는다. 한 칸이 `<hp:t>` 여러 개로 쪼개져 있어도 한 값이다.
 
     실제 원본은 칸 안에서 줄을 나눠 `결제`·`방법`을 따로 적는다. 그 사이에 무엇도 끼우지
@@ -321,7 +336,7 @@ def _letters(element: ElementTree.Element) -> str:
     글자를 가져오지 않는다.
     """
     return "".join(
-        "".join(child.itertext()) if child.tag == LETTERS else _letters(child)
+        "".join(child.itertext()) if child.tag == TEXT_TAG else _joined_text(child)
         for child in element
         if child.tag != TABLE
     )
