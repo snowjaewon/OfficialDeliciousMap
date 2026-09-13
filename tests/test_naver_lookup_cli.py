@@ -410,3 +410,53 @@ def test_a_lookup_found_mid_run_hits_the_later_records_of_the_same_run(
     results = payload(context, "geocode")["results"]
     assert [item["status"] for item in results] == ["success", "success"]
     assert [item["lookup"]["queries"][0]["cache"]["revision"] for item in results] == [1, 1]
+
+
+def test_a_tail_that_only_counts_unnamed_places_is_dropped_from_the_request(
+    tmp_path: Path, configured: None
+) -> None:
+    """`외 1`을 통째로 조회하면 제공자에 그런 업소가 없다. 떼면 첫 업소가 조회된다(#127)."""
+    context = prepare_many(tmp_path, ("같은 식당 외 1",))
+    save_input(context, evidence_only())
+    transport = FakeTransport(naver_body(matching_place()))
+    assert run_cli(context, "geocode", transport=transport) == 0
+
+    result = geocoded(context)
+    assert result["lookup"]["queries"][0]["request"] == "같은 식당"
+    # 첫 업소가 근거와 일치해 마커가 된다. 원본 표기는 판정 결과에 그대로 남는다.
+    assert (result["status"], result["reason"]) == ("success", "matched")
+    assert (result["merchant"], result["confirmed_merchant"]) == ("같은 식당 외 1", "같은 식당")
+
+
+def test_the_ledger_keeps_the_original_notation_of_a_trimmed_tail(
+    tmp_path: Path, configured: None
+) -> None:
+    """조회 질의어만 바뀐다. 장부와 마커는 원본 표기와 확정 상호를 각각 그대로 쓴다."""
+    context = prepare_many(tmp_path, ("같은 식당 외 1",))
+    save_input(context, evidence_only())
+    transport = FakeTransport(naver_body(matching_place()))
+    for stage in ("geocode", "closure", "build"):
+        assert run_cli(context, stage, transport=transport) == 0
+
+    [record] = built_records(context)["records"]
+    assert record["merchant"] == "같은 식당 외 1"
+    assert [item["merchant"] for item in markers(context)["markers"]] == ["같은 식당"]
+
+
+def test_a_confirmed_restored_name_is_asked_for_as_written(
+    tmp_path: Path, configured: None
+) -> None:
+    """사람이 확정한 복원명은 규칙이 다시 손대지 않는다. 확인이 규칙보다 앞선다."""
+    context = prepare_many(tmp_path, ("같은 식당 외 1",))
+    save_restorations(
+        context,
+        restore_entry(scope={"city": "seoul", "merchant": "같은 식당 외 1", "record_id": "r1"}),
+    )
+    classify_records(context)
+    save_input(context, evidence_only(merchant=FULL_NAME))
+    transport = FakeTransport(naver_body(matching_place(f"<b>{FULL_NAME}</b> 부산점")))
+    assert run_cli(context, "geocode", transport=transport) == 0
+
+    result = geocoded(context)
+    assert result["lookup"]["queries"][0]["request"] == FULL_NAME
+    assert (result["status"], result["confirmed_merchant"]) == ("success", FULL_NAME)

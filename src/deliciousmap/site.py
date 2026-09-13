@@ -11,7 +11,7 @@ from importlib.resources import files
 from pathlib import Path
 from typing import Literal
 
-from deliciousmap import period
+from deliciousmap import merchants, period
 from deliciousmap.contracts import (
     BuildInput,
     ClassificationStatus,
@@ -28,6 +28,7 @@ from deliciousmap.contracts import (
     RepeatedExpenses,
     SourceFinding,
     SubmissionTally,
+    UnnamedCompanions,
     UnresolvedReason,
 )
 from deliciousmap.registry import CITIES, City, HoldReason, Organization, Target
@@ -264,6 +265,8 @@ def _published_record(
     fields = record.model_dump(mode="json")
     for provenance in ("source_hash", "source_location", "repeats"):
         fields.pop(provenance)
+    # 이름 없는 동행 업소의 수. 원본 표기는 그대로 두고 그 표기가 밝힌 수만 함께 낸다(#127).
+    fields["unnamed_companions"] = merchants.read(record.merchant).unnamed
     if classification != "restaurant":
         return PublishedRecord.model_validate(
             {**fields, "classification": classification, "map_status": classification}
@@ -516,9 +519,34 @@ def _tally_lines(tally: SubmissionTally) -> str:
     """제출 시점 기준이 공개하는 남은 미해결(#106). 세지 않은 값은 줄을 내지 않는다."""
     return "".join(
         f'\n      <p class="collection-scope">{line}</p>'
-        for line in (_unresolved_source_line(tally), _unmapped_record_line(tally))
+        for line in (
+            _unresolved_source_line(tally),
+            _unmapped_record_line(tally),
+            _unnamed_companion_line(tally.unnamed_companions),
+        )
         if line
     )
+
+
+def _unnamed_companion_line(counted: UnnamedCompanions) -> str:
+    """원본이 이름 없이 수만 밝힌 업소. 밝히지 않으면 그 업소가 없었던 것으로 읽힌다(#127).
+
+    이름이 적힌 첫 업소는 다른 레코드와 같게 조회·판정되므로 여기서 세지 않는다. 수를 적지 않은
+    표기는 몇 곳인지 모르므로 합계에 넣지 않고 그 레코드 수를 따로 낸다. 그런 표기를 쓴 원본이
+    없으면 낼 말이 없어 줄을 내지 않는다.
+    """
+    if not counted.records:
+        return ""
+    said = (
+        f"상호 끝에 이름 없이 수만 적은 {counted.records:,}건이 밝힌"
+        f" 이름 없는 업소 {counted.places:,}곳은 조회할 이름이 없어 지도에 오르지 못합니다."
+    )
+    if counted.uncounted_records:
+        said += (
+            f" 그 가운데 {counted.uncounted_records:,}건은 원본이 수도 적지 않아"
+            " 몇 곳인지 알 수 없습니다."
+        )
+    return said
 
 
 def _unresolved_source_line(tally: SubmissionTally) -> str:

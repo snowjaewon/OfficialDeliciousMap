@@ -605,6 +605,12 @@ h1 {
   color: #52665f;
 }
 
+.record-card .record-companions {
+  margin: 0.35rem 0 0;
+  color: #7b3c20;
+  font-size: 0.8rem;
+}
+
 .record-state,
 .closed-state,
 .open-state {

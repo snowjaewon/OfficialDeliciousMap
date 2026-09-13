@@ -5,6 +5,7 @@ import json
 import unicodedata
 from collections.abc import Sequence
 
+from deliciousmap import merchants
 from deliciousmap.contracts import (
     CandidateLookup,
     ConfirmedPlace,
@@ -14,7 +15,8 @@ from deliciousmap.contracts import (
 )
 
 # identity-2: 업소 확인이 상호 범위를 선언할 수 있게 됐다(#64).
-POLICY_VERSION = "identity-2"
+# identity-3: 이름 없는 동행 업소의 꼬리말(`외 N`)을 뗀 이름을 근거와 대조한다(#127).
+POLICY_VERSION = "identity-3"
 
 # 판정 키가 레코드에서 담는 칸. `decide_identity`가 레코드에서 읽는 것이 이 둘뿐이다 —
 # `record_id`는 판정을 그 지출에 묶고, `merchant`는 확정 복원명이 없을 때 근거와 맞춰 볼 이름이다.
@@ -87,7 +89,10 @@ def decide_identity(
         "restoration": restoration,
     }
     # 확정된 복원명만 원본 표기를 대신한다. 확인 전 후보는 복원명이 아니다.
-    expected_name = restoration.restored_merchant if restoration else record.merchant
+    # 복원명이 없으면 이름 없는 동행 업소의 꼬리말을 뗀 첫 업소의 이름과 대조한다(#127).
+    expected_name = (
+        restoration.restored_merchant if restoration else merchants.read(record.merchant).named
+    )
 
     def unresolved(reason: str) -> GeocodeResult:
         return GeocodeResult.model_validate(
