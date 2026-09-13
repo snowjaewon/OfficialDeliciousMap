@@ -210,12 +210,11 @@ def _xlsx(content: bytes) -> list[Block]:
 def _xlsx_spans(archive: zipfile.ZipFile) -> dict[str, tuple[Span, ...]]:
     """시트 이름마다 세로 병합. openpyxl은 읽기 전용으로 열면 병합을 싣지 않는다.
 
-    관계 기록이나 시트 부분이 없으면 그 시트는 병합 없이 읽는다. 이어짐 칸이 빈 값으로
-    남아 검증이 사유와 함께 알리므로, 못 읽은 병합을 읽은 것으로 바꾸지 않는다.
+    openpyxl이 이미 연 통합문서만 여기로 온다. 관계 기록과 `xl/workbook.xml`은 openpyxl도
+    같은 것을 읽으므로 둘이 없거나 깨진 통합문서는 여기 오기 전에 읽기 실패다(2026-09-13 실측).
+    시트가 아닌 부분을 가리키는 관계만 병합 없이 지나간다.
     """
     names = set(archive.namelist())
-    if WORKBOOK_RELS not in names:
-        return {}
     targets = {
         item.get("Id"): item.get("Target", "")
         for item in ElementTree.fromstring(archive.read(WORKBOOK_RELS))
@@ -289,17 +288,23 @@ def _pdf_spans(table: RuledTable) -> tuple[Span, ...]:
     그냥 칸이 없는 자리이며 병합으로 보지 않는다.
     """
     spans: list[Span] = []
+    # 열마다 값을 담은 마지막 칸의 행과 그 칸의 아랫변. 칸도 행도 (왼쪽, 위, 오른쪽, 아래)다.
     holders: dict[int, tuple[int, float]] = {}
     for row, line in enumerate(table.rows, start=1):
+        bottom = line.bbox[3]
         for column, cell in enumerate(line.cells):
             if cell is not None:
                 holders[column] = (row, cell[3])
                 continue
             holder = holders.get(column)
-            if holder is None or holder[1] < line.bbox[3] - RULE_TOLERANCE:
+            if holder is None:
+                continue
+            holder_row, holder_bottom = holder
+            if holder_bottom < bottom - RULE_TOLERANCE:
+                # 위 칸이 이 행 끝까지 내려오지 않았다. 병합이 아니라 그냥 칸이 없는 자리다.
                 holders.pop(column, None)
                 continue
-            spans.append(Span(row, column, holder[0]))
+            spans.append(Span(row, column, holder_row))
     return tuple(spans)
 
 
