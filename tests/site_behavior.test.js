@@ -17,6 +17,7 @@ const {
   selectMarker,
   setupInstallGuide,
   setupListSheet,
+  setupVisitFilters,
   start,
   summarizeMetrics,
   viewportBounds,
@@ -31,10 +32,20 @@ class FakeElement {
     this.listeners = {};
     this.textContent = "";
     this.className = "";
+    this.dataset = {};
+    this.attributes = {};
   }
 
   addEventListener(name, listener) {
     this.listeners[name] = listener;
+  }
+
+  closest(selector) {
+    return selector.includes(this.tagName) ? this : null;
+  }
+
+  setAttribute(name, value) {
+    this.attributes[name] = String(value);
   }
 
   append(...nodes) {
@@ -176,6 +187,14 @@ function fakeNaverMaps() {
         this.options = options;
         this.listeners = {};
       }
+
+      setIcon(icon) {
+        this.options.icon = icon;
+      }
+
+      setZIndex(zIndex) {
+        this.options.zIndex = zIndex;
+      }
     },
     Point: class Point {},
     Position: { TOP_RIGHT: "top-right" },
@@ -230,6 +249,34 @@ test("search and visit bands always use every marker in the selected city", () =
   assert.deepEqual(filterMarkers(markers, "", "10"), [markers[1]]);
   assert.deepEqual(filterMarkers(markers, "", "5"), [markers[2]]);
   assert.deepEqual(filterMarkers(markers, "", "1"), [markers[3]]);
+});
+
+test("several visit bands can be selected together, and an empty selection means all", () => {
+  assert.deepEqual(
+    filterMarkers(markers, "", new Set(["20", "5"])),
+    [markers[0], markers[2]],
+  );
+  assert.deepEqual(filterMarkers(markers, "", new Set()), markers);
+});
+
+test("visit filter buttons toggle independently and mark the empty state as all", () => {
+  const buttons = ["all", "20", "10", "5", "1"].map((band) => {
+    const button = new FakeElement("button");
+    button.dataset.visits = band;
+    return button;
+  });
+  const documentObject = { querySelectorAll: () => buttons };
+  const selected = setupVisitFilters(documentObject);
+
+  assert.deepEqual(buttons.map((button) => button.attributes["aria-pressed"]), ["true", "false", "false", "false", "false"]);
+  buttons[1].click();
+  buttons[3].click();
+  assert.deepEqual([...selected], ["20", "5"]);
+  assert.deepEqual(buttons.map((button) => button.attributes["aria-pressed"]), ["false", "true", "false", "true", "false"]);
+  buttons[1].click();
+  buttons[3].click();
+  assert.deepEqual([...selected], []);
+  assert.equal(buttons[0].attributes["aria-pressed"], "true");
 });
 
 test("the current-area count is a subset of the city-wide filtered result", () => {
@@ -444,6 +491,49 @@ test("pressing a map marker opens the same detail as the list", () => {
   assert.deepEqual(selected, [markers[0]]);
 });
 
+test("selecting a map marker highlights it, and an empty map click clears the selection", () => {
+  const sdk = fakeNaverMaps();
+  const windowObject = { document: new FakeDocument({ "#map": new FakeElement() }) };
+  const selected = [];
+  const cleared = [];
+  const created = createMap(
+    windowObject,
+    sdk,
+    { map_bounds: SEOUL_BOUNDS },
+    markers,
+    () => {},
+    (marker) => selected.push(marker),
+    { onClearSelection: () => cleared.push(true) },
+  );
+
+  sdk.Event.trigger(created.overlays[0].overlay, "click");
+  assert.deepEqual(selected, [markers[0]]);
+  assert.match(created.overlays[0].overlay.options.icon.content, /is-selected/);
+  assert.doesNotMatch(created.overlays[1].overlay.options.icon.content, /is-selected/);
+
+  sdk.Event.trigger(created.map, "click");
+  assert.deepEqual(cleared, [true]);
+  assert.doesNotMatch(created.overlays[0].overlay.options.icon.content, /is-selected/);
+});
+
+test("selecting a lower-visit marker raises it above overlapping markers", () => {
+  const sdk = fakeNaverMaps();
+  const windowObject = { document: new FakeDocument({ "#map": new FakeElement() }) };
+  const created = createMap(windowObject, sdk, { map_bounds: SEOUL_BOUNDS }, markers, () => {}, () => {});
+
+  sdk.Event.trigger(created.overlays[1].overlay, "click");
+  assert.equal(created.overlays[1].overlay.options.zIndex, 24);
+  assert.equal(created.overlays[0].overlay.options.zIndex, markers[0].visit_count);
+});
+
+test("the map does not create a plus-minus zoom control", () => {
+  const sdk = fakeNaverMaps();
+  const windowObject = { document: new FakeDocument({ "#map": new FakeElement() }) };
+  const created = createMap(windowObject, sdk, { map_bounds: SEOUL_BOUNDS }, markers, () => {});
+  assert.equal(created.map.options.zoomControl, false);
+  assert.equal(created.map.options.zoomControlOptions, undefined);
+});
+
 test("marker color follows the same visit bands as the filter", () => {
   assert.deepEqual([25, 20, 19, 10, 9, 5, 4, 1].map(visitBand), [
     "20",
@@ -522,7 +612,22 @@ function sheetFixture({ narrow = true } = {}) {
   const press = (y) => handle.listeners.pointerdown({ clientY: y, pointerId: 1 });
   const move = (y) => handle.listeners.pointermove({ clientY: y });
   const release = () => handle.listeners.pointerup({});
-  return { sheet, panel, handle, press, move, release };
+  const pressHeader = (y, target = header) =>
+    header.listeners.pointerdown({ clientY: y, pointerId: 1, target });
+  const moveHeader = (y) => header.listeners.pointermove({ clientY: y, target: header });
+  const releaseHeader = () => header.listeners.pointerup({ target: header });
+  return {
+    sheet,
+    panel,
+    handle,
+    header,
+    press,
+    move,
+    release,
+    pressHeader,
+    moveHeader,
+    releaseHeader,
+  };
 }
 
 test("the list sheet opens collapsed and a tap raises it one step at a time", () => {
@@ -560,6 +665,41 @@ test("a shaky tap on the sheet handle is still a tap, and a drag settles nearby"
   release();
   handle.click();
   assert.equal(panel.dataset.sheet, "full");
+});
+
+test("the empty space in the sheet header drags without remeasuring during movement", () => {
+  const { sheet, panel, header, pressHeader, moveHeader, releaseHeader } = sheetFixture();
+  let reads = 0;
+  Object.defineProperty(panel, "offsetHeight", {
+    configurable: true,
+    get() {
+      reads += 1;
+      return 700;
+    },
+  });
+  sheet.refresh();
+  const afterRefresh = reads;
+
+  pressHeader(600);
+  const afterPress = reads;
+  assert.equal(afterPress, afterRefresh + 1);
+  moveHeader(0);
+  moveHeader(10);
+  assert.equal(reads, afterPress);
+  releaseHeader();
+  assert.equal(reads, afterPress);
+  assert.equal(panel.dataset.sheet, "full");
+  assert.equal(header.listeners.pointerdown !== undefined, true);
+});
+
+test("pressing a search control inside the sheet header does not start a drag", () => {
+  const { sheet, panel, header, pressHeader, moveHeader, releaseHeader } = sheetFixture();
+  const input = new FakeElement("input");
+  pressHeader(600, input);
+  moveHeader(0);
+  releaseHeader();
+  assert.equal(panel.dataset.sheet, "collapsed");
+  assert.equal(sheet.state(), "collapsed");
 });
 
 test("a hidden map keeps the sheet where it was instead of shrinking it to nothing", () => {
