@@ -29,3 +29,14 @@ targetRules = ["generic-api-key"]
 condition = "AND"
 paths = ['''(^|[\\/])data[\\/]''']
 regexes = ['''^[0-9a-f]{20,64}$''']
+
+# 오탐: 지역검색이 후보의 홈페이지로 준 제3자 공개 링크에 UUID가 질의 조건으로 실린다
+# (`web.coupangeats.com/share?storeId=…&key=<UUID>`, 2026-09-13 광산구 조회 실측).
+# 우리 키가 아니라 제공자가 돌려준 공개 주소이며 근거로 그대로 남겨야 한다.
+# data/ 아래의 generic-api-key 규칙에서, 값이 UUID 모양인 경우에만 허용한다.
+[[allowlists]]
+description = "data/ 조회 후보가 실은 제3자 링크의 UUID"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = ['''(^|[\/])data[\/]''']
+regexes = ['''^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$''']

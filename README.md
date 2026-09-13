@@ -70,8 +70,9 @@ uv run python -m deliciousmap geocode --city seoul --retry-failed
 근거와 첫 실행 규모는 [시청 정찰 기록](docs/validation/issue-51.md)과
 [자치구 실측](docs/validation/issue-97.md)에 있다.
 
-`headermap`·`parse`·`classify`도 광주광역시청(`gwangju-city`) 게시판 하나에 대해
-구현했다([이슈 #51](https://github.com/snowjaewon/OfficialDeliciousMap/issues/51)).
+`headermap`·`parse`·`classify`는 광주광역시청(`gwangju-city`)에서 구현했고([이슈 #51](
+https://github.com/snowjaewon/OfficialDeliciousMap/issues/51)) 광주 5개 자치구까지 실제로
+흘렸다([이슈 #99 검증](docs/validation/issue-99.md)).
 
 `headermap` 이후 단계는 받아 둔 원본 전체가 아니라 **이번 제출의 대상 원본**만 다룬다.
 게시판은 22년치를 한 곳에 쌓아 두고 지출 기간은 게시글 제목에만 있으므로, 게시일의 해와
