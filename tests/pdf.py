@@ -7,6 +7,10 @@
 
 from collections.abc import Sequence
 
+# 칸 하나. `None`은 위 칸이 세로로 덮어 그 자리에 칸이 없다는 뜻이다.
+# 격자의 `grid.Cell`과 다른 것이라 이름을 따로 둔다.
+PdfCell = str | None
+
 # 칸은 쪽(612×792) 안에 들어가야 하고, 글자가 칸을 넘으면 표 인식이 이웃 칸으로 샌다.
 CELL_WIDTH = 90
 CELL_HEIGHT = 24
@@ -19,7 +23,7 @@ FIRST_CODE = 0x2A
 LAST_CODE = 0xFF
 
 
-def document(*pages: Sequence[Sequence[str]], ruled: bool = True) -> bytes:
+def document(*pages: Sequence[Sequence[PdfCell]], ruled: bool = True) -> bytes:
     """쪽마다 표 하나. `ruled`가 거짓이면 괘선 없이 글자만 둔다(표로 읽히지 않는 원본)."""
     codes: dict[str, int] = {}
     contents = [_content(rows, codes, ruled) for rows in pages]
@@ -54,23 +58,39 @@ def document(*pages: Sequence[Sequence[str]], ruled: bool = True) -> bytes:
     return _assemble(objects, catalog)
 
 
-def _content(rows: Sequence[Sequence[str]], codes: dict[str, int], ruled: bool) -> bytes:
-    """칸 하나에 줄바꿈이 있으면 실제 원본처럼 칸 안에서 줄을 나눠 놓는다."""
+def _content(rows: Sequence[Sequence[PdfCell]], codes: dict[str, int], ruled: bool) -> bytes:
+    """칸 하나에 줄바꿈이 있으면 실제 원본처럼 칸 안에서 줄을 나눠 놓는다.
+
+    `None`인 칸은 위 칸이 세로로 덮은 자리다. 실제 원본처럼 괘선도 글자도 두지 않고,
+    덮은 칸의 괘선만 그만큼 길게 그려 그 자리에 칸이 없게 만든다.
+    """
     out = [b"0.6 w"]
     for r, cells in enumerate(rows):
         for c, value in enumerate(cells):
+            if value is None:
+                continue
+            covered = _covered(rows, r, c)
+            height = CELL_HEIGHT * covered
             x = LEFT + c * CELL_WIDTH
-            y = TOP - (r + 1) * CELL_HEIGHT
+            y = TOP - (r + covered) * CELL_HEIGHT
             if ruled:
-                out.append(b"%d %d %d %d re S" % (x, y, CELL_WIDTH, CELL_HEIGHT))
+                out.append(b"%d %d %d %d re S" % (x, y, CELL_WIDTH, height))
             written = [line for line in value.split("\n") if line]
-            top = y + CELL_HEIGHT - FONT_SIZE - 2
+            top = y + height - FONT_SIZE - 2
             for index, line in enumerate(written):
                 out.append(
                     b"BT /F1 %d Tf 1 0 0 1 %d %d Tm (%s) Tj ET"
                     % (FONT_SIZE, x + 3, top - index * LINE_HEIGHT, _encode(line, codes))
                 )
     return b"\n".join(out)
+
+
+def _covered(rows: Sequence[Sequence[PdfCell]], r: int, c: int) -> int:
+    """이 칸이 덮는 행 수. 바로 아래 칸이 `None`으로 이어지는 만큼 세로로 병합된 것이다."""
+    covered = 1
+    while r + covered < len(rows) and c < len(rows[r + covered]) and rows[r + covered][c] is None:
+        covered += 1
+    return covered
 
 
 def _encode(value: str, codes: dict[str, int]) -> bytes:

@@ -38,6 +38,8 @@ UNCLEAR_TOTAL = re.compile(rf"{PERIOD}?누계|{PERIOD}(합계|총계|계)")
 SUBTOTAL = re.compile(r".{0,6}소계")
 # 표 끝을 알리는 행. 원본에서는 글자마다 칸을 나눠 적기도 한다(`이 | 하 | 빈 | 칸`).
 TERMINATOR = re.compile(r"(이하)?(빈칸|여백|없음)\.?")
+# 연도 뒤에 오는 월·일. 구분자는 거듭 찍히기도 한다(`2026..03.24.` 동구 실측).
+AFTER_YEAR = r"(?:\s*[-./년])+\s*(\d{1,2})(?:\s*[-./월])+\s*(\d{1,2})(?!\d)"
 # 엑셀 1900 체계의 날짜 일련번호가 2000~2099년에 해당하는 범위.
 SERIAL_RANGE = (36526, 73051)
 EXCEL_EPOCH = datetime(1899, 12, 30)
@@ -505,7 +507,7 @@ def _purpose(table: Table, mapping: HeaderMap, row: int) -> str:
     """그 행의 집행목적. 매핑이 목적 열을 주지 않으면 빈 글자다."""
     if "purpose" not in mapping.columns:
         return ""
-    return text(table.cell(row, mapping.columns["purpose"]))
+    return text(table.value(row, mapping.columns["purpose"]))
 
 
 def _payee(table: Table, mapping: HeaderMap, row: int) -> str:
@@ -518,19 +520,20 @@ def _payee(table: Table, mapping: HeaderMap, row: int) -> str:
 
 
 def _candidate(table: Table, mapping: HeaderMap, row: int) -> _Candidate:
+    """지출 1건의 값을 읽는다. 세로 병합이 덮은 칸은 병합이 담은 값이다(`Table.value`)."""
     columns = mapping.columns
     if "spent_on" in columns:
-        spent_on = parse_date(table.cell(row, columns["spent_on"]), mapping.year_hint)
+        spent_on = parse_date(table.value(row, columns["spent_on"]), mapping.year_hint)
     else:
         spent_on = _month_day(
-            table.cell(row, columns["month"]), table.cell(row, columns["day"]), mapping.year_hint
+            table.value(row, columns["month"]), table.value(row, columns["day"]), mapping.year_hint
         )
     if spent_on is None:
         raise ValidationFailed(f"{table.name}:R{row} spent_on")
-    amount = _amount(table.cell(row, columns["amount_krw"]))
+    amount = _amount(table.value(row, columns["amount_krw"]))
     if amount is None:
         raise ValidationFailed(f"{table.name}:R{row} amount_krw")
-    merchant = text(table.cell(row, columns["merchant"])) or _payee(table, mapping, row)
+    merchant = text(table.value(row, columns["merchant"])) or _payee(table, mapping, row)
     if not merchant:
         raise ValidationFailed(f"{table.name}:R{row} merchant")
     return _Candidate(row, spent_on, merchant, amount * mapping.amount_multiplier)
@@ -604,7 +607,7 @@ def _check_totals(table: Table, sections: list[_Section], multiplier: Decimal) -
 def _record(table: Table, mapping: HeaderMap, source: SourceRef, candidate: _Candidate) -> Record:
     columns = mapping.columns
     department = (
-        text(table.cell(candidate.row, columns["department"])) if "department" in columns else ""
+        text(table.value(candidate.row, columns["department"])) if "department" in columns else ""
     )
     purpose = _purpose(table, mapping, candidate.row)
     return Record(
@@ -631,10 +634,11 @@ def parse_date(value: Cell, year_hint: int | None = None) -> date | None:
             return (EXCEL_EPOCH + timedelta(days=int(value))).date()
         if value.is_integer() and 20000101 <= value <= 20991231:
             return _date(int(value) // 10000, int(value) // 100 % 100, int(value) % 100)
-        return None
+        # 두 자리 연도를 붙여 쓴 표기는 숫자 칸으로도 온다. 판정은 글자와 같다.
+        return _packed(text(value), year_hint) if value.is_integer() else None
     # 엑셀에서 문자로 적으려고 붙인 따옴표(`'25. 10. 17.`)는 값이 아니다.
     raw = text(value).lstrip("'‘’`")
-    full = re.match(r"(\d{4})\s*[-./년]\s*(\d{1,2})\s*[-./월]\s*(\d{1,2})(?!\d)", raw)
+    full = re.match(r"(\d{4})" + AFTER_YEAR, raw)
     if full:
         return _date(*(int(part) for part in full.groups()))
     compact = re.match(r"(20\d{2})(\d{2})(\d{2})(?!\d)", raw)
@@ -646,10 +650,38 @@ def parse_date(value: Cell, year_hint: int | None = None) -> date | None:
         year, month, day = (int(part) for part in short.groups())
         return _date(2000 + year, month, day)
     if year_hint is not None:
+        packed = _packed(raw, year_hint)
+        if packed is not None:
+            return packed
+        # 연도 한 자리가 빠져 어떤 연도로도 읽히지 않는 표기(`206/05/08` 서구 실측).
+        odd = re.match(r"(\d{3})" + AFTER_YEAR, raw)
+        if odd and _one_digit_short(odd.group(1), year_hint):
+            return _date(year_hint, int(odd.group(2)), int(odd.group(3)))
         partial = re.match(r"(\d{1,2})\s*[-./월]\s*(\d{1,2})(?!\d)", raw)
         if partial:
             return _date(year_hint, *(int(part) for part in partial.groups()))
     return None
+
+
+def _packed(raw: str, year_hint: int | None) -> date | None:
+    """두 자리 연도를 붙여 쓴 `YYMMDD`(광산구 실측).
+
+    금액도 여섯 자리가 흔해(`104000`) 연도 근거가 있고 그 연도와 맞을 때만 날짜로 읽는다.
+    """
+    found = re.fullmatch(r"(\d{2})(\d{2})(\d{2})", raw)
+    if found is None or year_hint is None or 2000 + int(found.group(1)) != year_hint:
+        return None
+    return _date(year_hint, int(found.group(2)), int(found.group(3)))
+
+
+def _one_digit_short(digits: str, year_hint: int) -> bool:
+    """연도 근거에서 숫자 한 자리를 지워 그대로 같아지는가(`2026` → `206`).
+
+    한 자리를 끼워 넣어 근거와 정확히 같아질 때만 오타로 본다. 이 판단은 연도에만 쓰며
+    월·일의 오타는 고쳐 읽지 않는다.
+    """
+    year = str(year_hint)
+    return any(year[:index] + year[index + 1 :] == digits for index in range(len(year)))
 
 
 def _month_day(month: Cell, day: Cell, year_hint: int | None) -> date | None:

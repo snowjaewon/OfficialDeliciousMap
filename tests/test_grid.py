@@ -8,6 +8,7 @@ from pathlib import Path
 
 import openpyxl
 import pytest
+import xlwt
 
 from deliciousmap.grid import UnreadableOriginal, UnsupportedFormat, read_tables
 from tests import pdf
@@ -43,6 +44,49 @@ def test_xlsx_is_read_by_content_and_trims_formatted_empty_ranges(tmp_path: Path
         ("사용자", "사용일시", "시각", "금액"),
         ("합성과장", datetime(2026, 2, 3), "12:04", 93000.0),
     )
+
+
+def test_vertically_merged_cells_are_marked_without_changing_the_grid(tmp_path: Path) -> None:
+    """격자는 병합을 담지 않는다. 이어짐 칸은 빈 값 그대로 두고 병합만 따로 싣는다.
+
+    값을 채워 넣으면 헤더 서명이 달라져 공통 헤더 캐시가 빗나간다(#113).
+    """
+    book = openpyxl.Workbook()
+    sheet = book.active
+    sheet.append(["일자", "사용장소", "사용금액"])
+    sheet.append(["2026-03-17", "합성 식당", 62000])
+    sheet.append([None, "합성 찻집", 27000])
+    sheet.append([None, "합성 국밥", 15000])
+    sheet.merge_cells("A2:A3")
+    path = tmp_path / "집행내역.xlsx"
+    book.save(path)
+    (table,) = read_tables(path)
+    assert table.rows[2] == ("", "합성 찻집", 27000.0)
+    assert table.value(3, 0) == "2026-03-17"
+    # 병합이 아닌 빈 칸은 그대로 빈 값이다.
+    assert table.value(4, 0) == ""
+
+
+def test_legacy_workbook_marks_vertically_merged_cells(tmp_path: Path) -> None:
+    book = xlwt.Workbook()
+    sheet = book.add_sheet("시트1")
+    for column, label in enumerate(("일자", "사용장소", "사용금액")):
+        sheet.write(0, column, label)
+    sheet.write_merge(1, 2, 0, 0, "2026-03-17")
+    spent = [("합성 식당", 62000.0), ("합성 찻집", 27000.0)]
+    for row, (place, amount) in enumerate(spent, start=1):
+        sheet.write(row, 1, place)
+        sheet.write(row, 2, amount)
+    sheet.write(3, 1, "합성 국밥")
+    sheet.write(3, 2, 15000.0)
+    stream = io.BytesIO()
+    book.save(stream)
+    path = tmp_path / "집행내역.xls"
+    path.write_bytes(stream.getvalue())
+    (table,) = read_tables(path)
+    assert table.rows[2] == ("", "합성 찻집", 27000.0)
+    assert table.value(3, 0) == "2026-03-17"
+    assert table.value(4, 0) == ""
 
 
 def strict(path: Path) -> bytes:
@@ -134,6 +178,26 @@ def test_pdf_numbers_the_tables_and_names_the_page_each_came_from(tmp_path: Path
         ("table2", "2쪽"),
     ]
     assert second.rows[1] == ("2026-02-09", "합성찻집")
+
+
+def test_pdf_marks_cells_that_are_merged_into_the_one_above(tmp_path: Path) -> None:
+    """병합된 자리에는 칸 자체가 없다(남구 실측). 그 자리를 병합으로 싣고 격자는 그대로 둔다."""
+    path = tmp_path / "집행내역.pdf"
+    path.write_bytes(
+        pdf.document(
+            [
+                ("일자", "사용장소", "사용금액"),
+                ("2026-03-17", "합성 식당", "62,000"),
+                (None, "합성 찻집", "27,000"),
+                ("", "합성 국밥", "15,000"),
+            ]
+        )
+    )
+    (table,) = read_tables(path)
+    assert table.rows[2] == ("", "합성 찻집", "27,000")
+    assert table.value(3, 0) == "2026-03-17"
+    # 괘선이 있는 빈 칸은 병합이 아니다.
+    assert table.value(4, 0) == ""
 
 
 def test_pdf_without_a_readable_table_is_not_reported_as_empty(tmp_path: Path) -> None:

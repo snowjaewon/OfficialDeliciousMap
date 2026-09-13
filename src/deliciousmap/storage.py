@@ -471,6 +471,50 @@ def select_cache(path: Path, key: str) -> CacheEntry | None:
     return latest_valid(read_cache(path)).get(key)
 
 
+class LookupCache:
+    """조회 캐시의 유효한 최신 항목을 한 실행이 시작할 때 한 번만 읽어 든다.
+
+    레코드마다 파일을 다시 파싱하면 읽기 비용이 레코드 수 곱하기 캐시 줄 수가 된다. 캐시가
+    커질수록 적중뿐인 재실행이 더 느려진다. 이 사전은 그 읽기를 레코드 수 더하기 캐시 줄 수로
+    낮춘다. **쓰기는 그대로다.** 미스마다 `append_cache_entries()`가 파일을 다시 읽으므로
+    새 상호가 많은 실행에서는 미스 수 곱하기 캐시 줄 수가 남는다.
+
+    실행 중 새로 얻은 조회는 파일과 사전 양쪽에 남긴다. 같은 요청이 뒤에 또 나와도 다시 묻지
+    않는다. 대신 실행이 도는 동안 다른 세션이 같은 파일에 쓴 항목은 이 사전에 들어오지 않는다.
+    그 경우 이어 쓰기가 같은 revision을 만나 `cannot overwrite cache history`로 멈춘다.
+    조용히 덮지는 않는다.
+    """
+
+    def __init__(self, path: Path) -> None:
+        self.path = path
+        self._latest = latest_valid(read_cache(path))
+
+    def cached_candidates(self, key: str) -> CacheEntry | None:
+        """그 키의 유효한 최신 항목. 적중 자체는 업소 확정이 아니다."""
+        return self._latest.get(key)
+
+    def remember_candidates(self, key: str, found: ProviderCandidates, evidence: str) -> int:
+        """같은 결과는 다시 쌓지 않고, 달라지면 새 revision으로 이력에 남긴다.
+
+        앞선 판정은 부르는 쪽이 넘기지 않고 사전에서 직접 본다. 넘겨받으면 사전이 들고 있는
+        것과 어긋난 revision으로 쌓을 여지가 생긴다.
+        """
+        value = ProviderCandidates.model_validate(found).model_dump(mode="json")
+        previous = self._latest.get(key)
+        if previous is not None and previous.value == value:
+            return previous.revision
+        entry = CacheEntry(
+            key=key,
+            revision=attempt(previous),
+            valid=True,
+            evidence=evidence,
+            value=value,
+        )
+        append_cache(self.path, entry)
+        self._latest[key] = entry
+        return entry.revision
+
+
 class ArtifactStore:
     def __init__(self, paths: Paths, target: Target) -> None:
         self.paths = paths
@@ -797,30 +841,13 @@ class ArtifactStore:
             }
         )
 
-    def cached_candidates(self, key: str) -> CacheEntry | None:
-        """조회 캐시의 유효한 최신 항목. 적중 자체는 업소 확정이 아니다."""
-        return select_cache(self.directory / LOOKUP_CACHE, key)
+    def lookup_cache(self) -> LookupCache:
+        """이 실행이 쓸 조회 캐시. 읽기는 여기서 한 번 끝내고 레코드 루프는 사전만 본다.
 
-    def remember_candidates(
-        self,
-        key: str,
-        found: ProviderCandidates,
-        evidence: str,
-        previous: CacheEntry | None,
-    ) -> int:
-        """같은 결과는 다시 쌓지 않고, 달라지면 새 revision으로 이력에 남긴다."""
-        value = ProviderCandidates.model_validate(found).model_dump(mode="json")
-        if previous is not None and previous.value == value:
-            return previous.revision
-        entry = CacheEntry(
-            key=key,
-            revision=1 if previous is None else previous.revision + 1,
-            valid=True,
-            evidence=evidence,
-            value=value,
-        )
-        append_cache(self.directory / LOOKUP_CACHE, entry)
-        return entry.revision
+        부를 때마다 파일을 다시 읽는다. 한 실행이 두 번 부르면 읽기가 두 번이 되므로
+        받은 객체를 그 실행 내내 들고 다닌다.
+        """
+        return LookupCache(self.directory / LOOKUP_CACHE)
 
     def cached_proposal(self, key: str) -> CacheEntry | None:
         """같은 입력의 유효한 최신 제안. 제안 자체는 복원 확정이 아니다."""
