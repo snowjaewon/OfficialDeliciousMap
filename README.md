@@ -352,11 +352,12 @@ Node 기반 빌드 도구를 쓰지 않는다. 폐업으로 확인된 후보도 
 `data/<city>/orgs/<org>/`에 분리한다. 기관별 산출물을 도시 전체로 합치는 기능은 후속 작업이다.
 공통 캐시는 `data/_shared/`에 둔다. 사람 검토 입력은 의미별로 나누어
 `data/manual/<city>/`의 `classify.jsonl`(사람 보정), `restore.jsonl`(상호 복원),
-`geocode.jsonl`(업소 확인), `compare.jsonl`(후보 비교 지정), `sources.jsonl`(미해결 원본 대조),
-`repeats.jsonl`(재게시 확정)에 둔다. 자세한 내용은 [상호 복원](docs/restoration.md)에 있다.
+`geocode.jsonl`(업소 확인), `merchants.jsonl`(상호 가르기),
+`compare.jsonl`(후보 비교 지정), `sources.jsonl`(미해결 원본 대조), `repeats.jsonl`(재게시 확정)에
+둔다. 자세한 내용은 [상호 복원](docs/restoration.md)에 있다.
 각 줄은 계약 하나이며 없는 파일은 검토가 없는 것과 같다. 도시가 맞지 않는 줄은 그 단계가 거부하고,
 `--org` 실행은 그 기관에 해당하는 줄만 읽는다(기관을 적지 않은 줄은 도시 전체에 걸린다).
-범위를 선언하는 `restore`·`geocode`·`compare`·`repeats`는 같은 범위를 두 번 선언한 줄을,
+범위를 선언하는 `restore`·`geocode`·`merchants`·`compare`·`repeats`는 같은 범위를 두 번 선언한 줄을,
 `sources`는 한 원본을 두 번 적은 줄을 거부한다. `classify.jsonl`은 상호 범위가 겹칠 수 있어,
 한 레코드에 서로 다른 판정이 걸릴 때 `classify`가 거부한다.
 커밋된 광주 산출물은 PDF를 읽은 실행의 것이며([#66](

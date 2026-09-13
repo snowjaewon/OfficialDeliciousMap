@@ -189,6 +189,7 @@ def test_build_separates_map_data_from_complete_record_list(tmp_path: Path) -> N
             "merchant": "같은 식당",
             "organizations": ["test-org"],
             "total_amount_krw": "1000",
+            "unpriced_visit_count": 0,
             "visit_count": 1,
         }
     ]

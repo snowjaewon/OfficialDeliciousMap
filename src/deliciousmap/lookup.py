@@ -2,6 +2,7 @@
 
 from typing import Protocol
 
+from deliciousmap import merchants
 from deliciousmap.contracts import (
     CacheRef,
     CandidateLookup,
@@ -61,8 +62,16 @@ def resolve(
             continue
         # 확정 복원명이 있으면 그 이름으로 조회한다. 도시·기관 맥락은 질의에 넣지 않는다.
         query = restored.get(record.record_id, record.merchant)
+        # 사람이 이미 업소별로 본 지출은 나누어 조회할 것이 없다. 확인이 없는 표기만 더 조회한다.
         resolved.append(
-            _merge_provider_lookups(cache, prepared, query, providers, retry_failed=retry_failed)
+            _merge_provider_lookups(
+                cache,
+                prepared,
+                query,
+                providers,
+                retry_failed=retry_failed,
+                probe=record.expense is None,
+            )
         )
     return tuple(resolved)
 
@@ -74,6 +83,7 @@ def _merge_provider_lookups(
     providers: tuple[CandidateProvider, ...],
     *,
     retry_failed: bool,
+    probe: bool,
 ) -> CandidateLookup:
     """제공자마다 조회하고 후보를 출처와 함께 모은다. 한 곳의 실패도 성공으로 숨기지 않는다."""
     candidates = list(prepared.candidates)
@@ -83,6 +93,8 @@ def _merge_provider_lookups(
     for provider in providers:
         found, cache_ref = _reuse_or_search(cache, provider, query, retry_failed=retry_failed)
         candidates.extend(found.candidates)
+        if probe:
+            _probe_merged(cache, provider, query, retry_failed=retry_failed)
         queries.append(
             ProviderQuery.model_validate(
                 {
@@ -107,6 +119,22 @@ def _merge_provider_lookups(
             "queries": tuple(queries),
         }
     )
+
+
+def _probe_merged(
+    cache: LookupCache, provider: CandidateProvider, query: str, *, retry_failed: bool
+) -> None:
+    """합쳐 적은 상호를 나눈 이름으로도 조회해 캐시에 쌓는다. 판정에는 쓰지 않는다.
+
+    규칙은 조회만 한다([#117](https://github.com/snowjaewon/OfficialDeliciousMap/issues/117)).
+    나눈 이름의 후보를 그대로 판정에 넣으면 규칙이 업소를 확정하게 되고, `그저,쉼` 같은 한
+    업소를 둘로 만든다. 쌓아 둔 후보는 사람이 업소별로 확인할 때 읽는다.
+    """
+    found = merchants.parts(query)
+    if len(found) == 1:
+        return
+    for part in found:
+        _reuse_or_search(cache, provider, part, retry_failed=retry_failed)
 
 
 def _reuse_or_search(

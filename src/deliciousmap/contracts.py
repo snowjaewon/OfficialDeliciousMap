@@ -41,6 +41,7 @@ GeocodeReason = Literal[
     "missing_coordinates",
     "lookup_error",
     "insufficient_evidence",
+    "merged_merchant",
 ]
 CONFIRMED_REASONS = ("matched", "human_confirmed")
 MapStatus = Literal["mapped", "geocode_failed", "non_restaurant", "pending"]
@@ -145,6 +146,19 @@ class RecordOrigin(Contract):
     location: Token
 
 
+class Expense(Contract):
+    """레코드가 나온 지출 하나와 그 지출이 밝힌 금액.
+
+    사람이 합쳐 적은 상호를 업소별로 확인한 지출에만 붙는다. 확인이 업소 둘 이상을 선언하면
+    레코드도 그만큼 나뉘고 나뉜 레코드의 금액은 빈 값이며, 금액은 여기 그대로 남는다([ADR-0007](
+    ../../docs/adr/0007-do-not-split-unallocated-amounts.md)). 업소 하나라는 확인도 판정이므로
+    가르지 않은 레코드에도 붙는다 — 붙어 있다는 것이 사람이 이미 본 지출이라는 뜻이다.
+    """
+
+    expense_id: Text
+    amount_krw: Decimal = Field(allow_inf_nan=False)
+
+
 class Record(Contract):
     record_id: Text
     spent_on: SpendingDay
@@ -152,12 +166,16 @@ class Record(Contract):
     department: str
     merchant: Text
     purpose: str
-    amount_krw: Decimal = Field(allow_inf_nan=False)
+    # 한 지출이 업소 둘 이상에 걸쳐 나뉜 레코드는 금액이 빈 값이다. 반씩 나누거나 한쪽에
+    # 몰지 않으며, 비어 있다는 사실이 값으로 남는다(ADR-0007).
+    amount_krw: Decimal | None = Field(allow_inf_nan=False)
     source_hash: Sha256
     source_location: Token
     # 이 지출을 함께 실은 다른 원본들. 누적 재게시로 합친 레코드만 가지며([ADR-0004](
     # ../../docs/adr/0004-merge-repeated-reposts.md)) 행 하나가 아니라 지출 하나의 출처다.
     repeats: tuple[RecordOrigin, ...] = ()
+    # 사람이 업소별로 확인한 지출. 확인이 없는 레코드는 지출과 1:1이라 이 값을 갖지 않는다.
+    expense: Expense | None = None
 
     @model_validator(mode="after")
     def distinct_origins(self) -> "Record":
@@ -165,6 +183,12 @@ class Record(Contract):
         origins |= {(item.source_hash, item.location) for item in self.repeats}
         if len(origins) != len(self.repeats) + 1:
             raise ValueError("a record cannot list the same origin twice")
+        return self
+
+    @model_validator(mode="after")
+    def unallocated_amount_stays_with_the_expense(self) -> "Record":
+        if self.amount_krw is None and self.expense is None:
+            raise ValueError("a record without an amount must name the expense that holds it")
         return self
 
 
@@ -275,6 +299,30 @@ class NameRestoration(Contract):
     restored_merchant: Text
     evidence: Text
     references: tuple[ReviewReference, ...] = ()
+
+
+class MerchantReview(Contract):
+    """data/manual/<city>/merchants.jsonl 한 줄. 상호 표기 하나가 업소 몇 곳인지의 확인.
+
+    합쳐 적은 상호는 사람이 확인해야 업소마다 나뉜다. 업소 둘 이상을 선언하면 그 지출이 레코드
+    그만큼으로 갈리고, 하나만 선언하면 나누지 않는다 — 나누지 않는다는 것도 판정이다.
+    범위는 상호 표기 단위이므로 같은 표기의 레코드 여럿이 한 줄로 처리된다.
+
+    이름을 바꾸는 것은 상호 복원(`restore.jsonl`)의 일이다. 업소 하나를 선언한 줄이 범위가
+    가리키는 표기와 다른 이름을 적으면 적용하는 쪽이 거부한다.
+    """
+
+    schema_version: Literal[1] = 1
+    scope: ReviewScope
+    merchants: tuple[Text, ...] = Field(min_length=1)
+    evidence: Text
+    references: tuple[ReviewReference, ...] = ()
+
+    @model_validator(mode="after")
+    def distinct_merchants(self) -> "MerchantReview":
+        if len(set(self.merchants)) != len(self.merchants):
+            raise ValueError("a merchant review cannot declare the same place twice")
+        return self
 
 
 class RestoredName(Contract):
@@ -562,8 +610,18 @@ class PublishedMarker(Contract):
     address: Text
     # 아래 셋은 이 식당으로 묶인 레코드의 요약이다. 목록·상세가 장부를 받지 않고도 보여 준다.
     last_visited_on: SpendingDay
+    # 금액이 있는 방문만 더한 합계와, 금액을 알 수 없는 방문 수. 합쳐 적은 상호를 업소별로
+    # 가른 레코드는 금액이 빈 값이므로(ADR-0007) 합계에 들어가지 않는다. 그 수를 밝히지
+    # 않으면 합계가 방문 전부를 더한 값으로 읽힌다.
     total_amount_krw: Decimal = Field(allow_inf_nan=False)
+    unpriced_visit_count: int = Field(default=0, ge=0)
     organizations: tuple[Text, ...] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def unpriced_visits_are_counted_visits(self) -> "PublishedMarker":
+        if self.unpriced_visit_count > self.visit_count:
+            raise ValueError("unpriced visits cannot outnumber the visits themselves")
+        return self
 
 
 class PublishedRecord(Contract):
@@ -575,7 +633,8 @@ class PublishedRecord(Contract):
     department: str
     merchant: Text
     purpose: str
-    amount_krw: Decimal = Field(allow_inf_nan=False)
+    # 업소별로 가른 레코드는 금액이 빈 값이다. 지출에 남은 금액을 나누어 적지 않는다(ADR-0007).
+    amount_krw: Decimal | None = Field(allow_inf_nan=False)
     classification: ClassificationStatus
     map_status: MapStatus
     # 지오코딩을 수행한 레코드만 사유를 가진다. 비식당·판단 보류는 판정 대상이 아니다.
@@ -596,14 +655,14 @@ class PublishedRecord(Contract):
 
 
 class MarkerFile(Contract):
-    schema_version: Literal[8] = 8
+    schema_version: Literal[9] = 9
     city: Text
     org: str | None = None
     markers: tuple[PublishedMarker, ...]
 
 
 class RecordFile(Contract):
-    schema_version: Literal[8] = 8
+    schema_version: Literal[9] = 9
     city: Text
     org: str | None = None
     records: tuple[PublishedRecord, ...]
@@ -884,6 +943,8 @@ class ParseInput(Contract):
     unresolved_mappings: tuple[HeaderMap, ...] = ()
     # 사람이 확정한 재게시 여부. 누적 재게시 병합이 자동 판정보다 먼저 적용한다.
     confirmations: tuple[RepeatConfirmation, ...] = ()
+    # 사람이 확인한 상호 표기별 업소. 확인이 있는 지출만 업소마다 레코드로 갈린다.
+    merchants: tuple[MerchantReview, ...] = ()
 
 
 # 합계 대조 결과. 합계가 없거나 범위를 확정할 수 없으면 대조하지 않았다는 뜻이다.
@@ -1022,6 +1083,8 @@ class SubmissionTally(Contract):
     # 지오코딩 판정 대상. 미확정 수의 분모이며 비식당·판단 보류는 대상이 아니다.
     restaurant_records: int = Field(default=0, ge=0)
     unconfirmed_places: tuple[UnconfirmedPlace, ...] = ()
+    # 상호 칸에 업소 둘 이상이 적혔는데 사람 확인이 없어 업소별로 가르지 못한 지출 수(#117).
+    unsplit_expenses: int = Field(default=0, ge=0)
 
     @model_validator(mode="after")
     def counted_before_reported(self) -> "SubmissionTally":

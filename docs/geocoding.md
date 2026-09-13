@@ -77,6 +77,8 @@ uv run python -m deliciousmap build --city seoul
 구성된 제공자는 네이버·인허가 순으로 모두 조회하고, 후보는 출처(`CandidateSource`)를 달아 한 목록에 모은다.
 한 제공자라도 실패하면 그 조회를 `status: "error"`로 남긴다. 성공한 제공자의 후보는 보존하되 채택하지 않는다.
 `data/manual/<city>/restore.jsonl`의 확정 복원명이 있으면 그 이름으로, 없으면 원본 표기로 요청한다.
+한 칸에 업소 둘 이상이 적힌 표기는 구분자로 나눈 이름으로도 조회해 캐시에 쌓는다. 그 후보는
+판정에 넣지 않는다 — 나누는 것은 사람 확인뿐이다([상호 복원](restoration.md#상호-가르기--합쳐-적은-상호를-업소마다)).
 요청 맥락의 도시·기관은 질의에 넣지 않는다. 도시는 자료를 공개한 기관의 단위일 뿐이므로
 기관 도시 밖 후보를 거르거나 기관 도시 안 동명이 업소로 바꾸지 않는다.
 
@@ -178,6 +180,7 @@ localdata.go.kr은 2026-04-16 종료했으므로 옛 API는 쓰지 않는다. �
 | `missing_address`, `unknown_branch`, `insufficient_evidence` | 주소·지점·독립 근거 부족 |
 | `conflicting_evidence`, `ambiguous` | 근거 충돌 또는 특정 불가 |
 | `unconfirmed_name`, `no_match`, `no_candidates` | 전체 상호 미확정·일치 후보 없음·정상 조회 0건 |
+| `merged_merchant` | 한 칸에 업소 둘 이상이 적혔는데 사람 확인이 없음. 다른 미확정 사유보다 앞선다 |
 | `missing_coordinates` | 좌표 미확정 |
 | `lookup_error` | 조회 오류. 저장 후 CLI 종료 1, `cause=lookup-failed` |
 

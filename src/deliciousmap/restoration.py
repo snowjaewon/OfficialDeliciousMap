@@ -1,13 +1,16 @@
 """사람이 확정한 검토 입력의 적용 범위 판단. 조회·저장·파일 탐색은 하지 않는다.
 
-상호 복원(`restore.jsonl`)과 업소 확인(`geocode.jsonl`)이 같은 범위 규칙을 쓴다.
-`POLICY_VERSION`은 복원명 적용 규칙의 버전이다. 업소 확인의 적용은 좌표 판정의 일부이므로
-`identity.POLICY_VERSION`이 버전을 가진다.
+상호 복원(`restore.jsonl`)·업소 확인(`geocode.jsonl`)·상호 가르기(`merchants.jsonl`)가 같은
+범위 규칙을 쓴다. `POLICY_VERSION`은 복원명 적용 규칙의 버전이다. 업소 확인의 적용은 좌표
+판정의 일부이므로 `identity.POLICY_VERSION`이, 상호 가르기의 적용은 `merchants.POLICY_VERSION`이
+버전을 가진다.
 """
 
 from deliciousmap.contracts import (
     ConfirmedPlace,
+    Expense,
     IdentityConfirmation,
+    MerchantReview,
     NameRestoration,
     Record,
     RestoredName,
@@ -17,7 +20,7 @@ from deliciousmap.identity import normalized, place_identity
 POLICY_VERSION = "restoration-1"
 
 # 범위를 선언하는 사람 검토 입력. 적용·충돌 규칙을 공유한다.
-type ScopedEntry = NameRestoration | IdentityConfirmation
+type ScopedEntry = NameRestoration | IdentityConfirmation | MerchantReview
 
 
 class ConflictingReview(Exception):
@@ -91,6 +94,47 @@ def confirm(
             )
         )
     return tuple(confirmed)
+
+
+def divide(records: tuple[Record, ...], entries: tuple[MerchantReview, ...]) -> tuple[Record, ...]:
+    """확인이 업소 둘 이상을 선언한 지출만 레코드로 가른다. 확인이 없으면 그대로 둔다.
+
+    나뉜 레코드의 금액은 빈 값이고 금액은 지출에 남는다([ADR-0007](
+    ../../docs/adr/0007-do-not-split-unallocated-amounts.md)). 업소 하나라는 확인도 판정이므로
+    그 레코드에도 지출을 달아 사람이 이미 본 지출임을 남긴다.
+
+    entries는 대상 도시의 확인만 담아야 한다. 도시 검사와 읽기는 저장 모듈이 한다.
+    """
+    divided: list[Record] = []
+    for record in records:
+        applicable = [entry for entry in entries if applies(entry, record)]
+        if not applicable:
+            divided.append(record)
+            continue
+        if len({tuple(normalized(name) for name in entry.merchants) for entry in applicable}) != 1:
+            raise ConflictingReview("merchant review places")
+        chosen = _narrowest(applicable)
+        if record.amount_krw is None:
+            raise ValueError("a divided record cannot be divided again")
+        expense = Expense(expense_id=record.record_id, amount_krw=record.amount_krw)
+        if len(chosen.merchants) == 1:
+            # 이름을 바꾸는 것은 상호 복원의 일이다. 확인 줄은 표기를 그대로 두고 판정만 남긴다.
+            if normalized(chosen.merchants[0]) != normalized(record.merchant):
+                raise ConflictingReview("merchant review renames the merchant")
+            divided.append(record.model_copy(update={"expense": expense}))
+            continue
+        divided.extend(
+            record.model_copy(
+                update={
+                    "record_id": f"{record.record_id}#{index}",
+                    "merchant": merchant,
+                    "amount_krw": None,
+                    "expense": expense,
+                }
+            )
+            for index, merchant in enumerate(chosen.merchants, start=1)
+        )
+    return tuple(divided)
 
 
 def _place(entry: IdentityConfirmation) -> tuple[str, ...]:

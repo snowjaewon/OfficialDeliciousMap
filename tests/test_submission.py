@@ -88,6 +88,7 @@ def test_a_defect_a_person_confirmed_is_counted_apart_from_the_unresolved() -> N
         (review("a" * 64, confirmed_by="합성 검토자", candidates=47),),
         (),
         (),
+        (),
     )
 
     defects = [(item.finding, item.sources, item.candidates) for item in counted.confirmed_defects]
@@ -97,7 +98,7 @@ def test_a_defect_a_person_confirmed_is_counted_apart_from_the_unresolved() -> N
 
 def test_a_defect_without_a_person_check_stays_unresolved() -> None:
     """같은 사유라도 사람 대조를 거치지 않은 원본은 원본 결함 확정이 아니다(#93 전의 16개)."""
-    counted = tally((unresolved("a" * 64),), (review("a" * 64),), (), ())
+    counted = tally((unresolved("a" * 64),), (review("a" * 64),), (), (), ())
 
     assert counted.confirmed_defects == ()
     assert [(item.reason, item.sources) for item in counted.unresolved_sources] == [
@@ -106,7 +107,7 @@ def test_a_defect_without_a_person_check_stays_unresolved() -> None:
 
 
 def test_an_unresolved_original_nobody_reviewed_stays_unresolved() -> None:
-    counted = tally((unresolved("a" * 64, reason="unsupported_format"),), (), (), ())
+    counted = tally((unresolved("a" * 64, reason="unsupported_format"),), (), (), (), ())
 
     assert counted.confirmed_defects == ()
     assert [(item.reason, item.sources) for item in counted.unresolved_sources] == [
@@ -117,6 +118,7 @@ def test_an_unresolved_original_nobody_reviewed_stays_unresolved() -> None:
 def test_originals_that_were_read_are_not_counted_as_remaining() -> None:
     counted = tally(
         (SourceReport(source_hash="a" * 64, status="parsed", records=2), unresolved("b" * 64)),
+        (),
         (),
         (),
         (),
@@ -136,6 +138,7 @@ def test_reasons_are_counted_together_and_ordered_by_how_many_originals_they_hol
         (),
         (),
         (),
+        (),
     )
 
     unresolved_counts = [
@@ -147,7 +150,11 @@ def test_reasons_are_counted_together_and_ordered_by_how_many_originals_they_hol
 def test_candidates_stay_unknown_when_one_original_never_counted_them() -> None:
     """후보 수를 모르는 원본이 섞이면 나머지만 더한 수를 전체인 것처럼 내지 않는다(폴백 정책)."""
     counted = tally(
-        (unresolved("a" * 64, candidates=5), unresolved("b" * 64, candidates=None)), (), (), ()
+        (unresolved("a" * 64, candidates=5), unresolved("b" * 64, candidates=None)),
+        (),
+        (),
+        (),
+        (),
     )
 
     assert [(item.sources, item.candidates) for item in counted.unresolved_sources] == [(2, None)]
@@ -155,7 +162,7 @@ def test_candidates_stay_unknown_when_one_original_never_counted_them() -> None:
 
 def test_nothing_is_counted_when_the_parse_left_no_report() -> None:
     """원본을 세지 않은 산출물의 0은 사실이 아니다. 셌는지를 함께 낸다."""
-    counted = tally((), (), (decision("r1", "restaurant"),), (geocode("r1", "matched"),))
+    counted = tally((), (), (decision("r1", "restaurant"),), (geocode("r1", "matched"),), ())
 
     assert counted.counted_sources is False
     assert counted.confirmed_defects == ()
@@ -173,6 +180,7 @@ def test_records_left_off_the_map_are_counted_by_their_reason() -> None:
             decision("r4", "non_restaurant"),
         ),
         (geocode("r1", "matched"), geocode("r2", "missing_address")),
+        (),
     )
 
     assert counted.classified_records == 4
@@ -184,7 +192,9 @@ def test_records_left_off_the_map_are_counted_by_their_reason() -> None:
 
 
 def test_a_submission_that_confirmed_every_place_leaves_nothing_unconfirmed() -> None:
-    counted = tally((), (), (decision("r1", "restaurant"),), (geocode("r1", "human_confirmed"),))
+    counted = tally(
+        (), (), (decision("r1", "restaurant"),), (geocode("r1", "human_confirmed"),), ()
+    )
 
     assert counted.unconfirmed_places == ()
     assert counted.restaurant_records == 1

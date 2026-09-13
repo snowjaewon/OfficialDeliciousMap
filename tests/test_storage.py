@@ -67,13 +67,13 @@ def test_record_csv_round_trip_preserves_values_order_and_utf8(tmp_path: Path) -
     assert (
         content.decode("utf-8").splitlines()[0]
         == "record_id,spent_on,organization,department,merchant,purpose,"
-        "amount_krw,source_hash,source_location,repeats"
+        "amount_krw,source_hash,source_location,repeats,expense_id,expense_amount_krw"
     )
     assert "1200.50" in content.decode("utf-8")
     assert (
         content.decode("utf-8")
         .splitlines()[-1]
-        .endswith(f"{'c' * 64}:sheet1:R9 {'d' * 64}:sheet2:R11")
+        .endswith(f"{'c' * 64}:sheet1:R9 {'d' * 64}:sheet2:R11,,")
     )
 
 
