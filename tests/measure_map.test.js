@@ -6,10 +6,15 @@ const path = require("node:path");
 
 const {
   ENVIRONMENTS,
+  cpuBusyPercent,
   createStaticServer,
+  describeShell,
   frameStats,
+  judgeTrace,
   judge,
   markdownTable,
+  mergeResults,
+  summarizeTrace,
 } = require("../scripts/measure_map.js");
 
 function runs(values) {
@@ -199,4 +204,353 @@ test("실패한 시도는 값이 없으므로 횟수에 넣지 않는다", () =>
 
   assert.equal(summary.runs, 19);
   assert.equal(summary.verdict, "unmeasured");
+});
+
+test("성능 기록은 프레임 지연·끊김·멈춤과 긴 작업을 요약한다", () => {
+  const summary = summarizeTrace({
+    traceEvents: [
+      { name: "FramePresented", ph: "I", ts: 0 },
+      { name: "FramePresented", ph: "I", ts: 16667 },
+      { name: "FramePresented", ph: "I", ts: 66667 },
+      {
+        name: "LongAnimationFrame",
+        ph: "X",
+        ts: 20000,
+        dur: 120000,
+        args: { data: { url: "https://oapi.map.naver.com/openapi/v3/maps.js" } },
+      },
+      {
+        name: "RunTask",
+        ph: "X",
+        ts: 20000,
+        dur: 120000,
+        args: { data: { url: "https://oapi.map.naver.com/openapi/v3/maps.js" } },
+      },
+    ],
+  });
+
+  assert.deepEqual(summary, {
+    frames: 2,
+    frame_budget_ms: 16.7,
+    delayed_frames: 2,
+    dropped_frames: 0,
+    stutter_count: 1,
+    freeze_count: 1,
+    longest_frame_ms: 50,
+    long_animation_frames: 1,
+    longest_long_animation_frame_ms: 120,
+    long_tasks: 1,
+    longest_long_task_ms: 120,
+    source: {
+      application: { count: 0, total_ms: 0, maximum_ms: null },
+      naver_sdk: { count: 1, total_ms: 120, maximum_ms: 120 },
+      other: { count: 0, total_ms: 0, maximum_ms: null },
+      dominant: "naver_sdk",
+    },
+    verdict: "fail",
+  });
+});
+
+test("성능 기록에 프레임 증거가 없으면 합격이 아니라 미측정이다", () => {
+  const summary = summarizeTrace({ traceEvents: [] });
+
+  assert.equal(summary.verdict, "unmeasured");
+  assert.equal(summary.frames, 0);
+});
+
+test("PipelineReporter의 실제 표시·드롭 상태를 프레임 증거로 사용한다", () => {
+  const summary = summarizeTrace({
+    traceEvents: [
+      {
+        name: "PipelineReporter",
+        ph: "b",
+        ts: 0,
+        args: { frame_reporter: { state: "STATE_PRESENTED_ALL" } },
+      },
+      {
+        name: "PipelineReporter",
+        ph: "b",
+        ts: 16667,
+        args: { frame_reporter: { state: "STATE_DROPPED" } },
+      },
+      {
+        name: "PipelineReporter",
+        ph: "b",
+        ts: 66667,
+        args: { frame_reporter: { state: "STATE_PRESENTED_ALL" } },
+      },
+    ],
+  });
+
+  assert.equal(summary.frames, 1);
+  assert.equal(summary.dropped_frames, 1);
+  assert.equal(summary.delayed_frames, 3);
+  assert.equal(summary.verdict, "fail");
+});
+
+test("성능 기록 요약은 조작 시작·끝 marker 밖의 프레임을 제외한다", () => {
+  const summary = summarizeTrace(
+    {
+      traceEvents: [
+        { name: "start", ph: "I", ts: 100000 },
+        { name: "FramePresented", ph: "I", ts: 110000 },
+        { name: "FramePresented", ph: "I", ts: 126000 },
+        { name: "FramePresented", ph: "I", ts: 176000 },
+        { name: "FramePresented", ph: "I", ts: 500000 },
+        { name: "end", ph: "I", ts: 200000 },
+      ],
+    },
+    { startMarker: "start", endMarker: "end" },
+  );
+
+  assert.equal(summary.frames, 2);
+  assert.equal(summary.longest_frame_ms, 50);
+});
+
+test("긴 작업의 URL로 네이버 SDK와 애플리케이션 원인을 분리한다", () => {
+  const summary = summarizeTrace({
+    traceEvents: [
+      { name: "FramePresented", ph: "I", ts: 0 },
+      { name: "FramePresented", ph: "I", ts: 16667 },
+      {
+        name: "RunTask",
+        ph: "X",
+        ts: 20000,
+        dur: 60000,
+        args: { data: { url: "http://127.0.0.1:8765/gwangju/app.js" } },
+      },
+      {
+        name: "RunTask",
+        ph: "X",
+        ts: 90000,
+        dur: 70000,
+        args: { data: { url: "https://map.naver.com/sdk.js" } },
+      },
+    ],
+  });
+
+  assert.deepEqual(summary.source, {
+    application: { count: 1, total_ms: 60, maximum_ms: 60 },
+    naver_sdk: { count: 1, total_ms: 70, maximum_ms: 70 },
+    other: { count: 0, total_ms: 0, maximum_ms: null },
+    dominant: "naver_sdk",
+  });
+});
+
+test("상위 AnimationFrame에 URL이 없어도 겹친 스크립트로 원인을 귀속한다", () => {
+  const summary = summarizeTrace({
+    traceEvents: [
+      { name: "FramePresented", ph: "I", ts: 0 },
+      { name: "FramePresented", ph: "I", ts: 16667 },
+      { name: "AnimationFrame", ph: "X", ts: 20000, dur: 60000, args: {} },
+      {
+        name: "FunctionCall",
+        ph: "X",
+        ts: 25000,
+        dur: 50000,
+        args: { data: { url: "https://oapi.map.naver.com/openapi/v3/maps.js" } },
+      },
+    ],
+  });
+
+  assert.equal(summary.long_animation_frames, 1);
+  assert.equal(summary.source.naver_sdk.count, 1);
+  assert.equal(summary.source.dominant, "naver_sdk");
+});
+
+test("100ms 긴 작업은 짧은 Long Animation Frame이 함께 있어도 멈춤으로 판정한다", () => {
+  const summary = summarizeTrace({
+    traceEvents: [
+      { name: "FramePresented", ph: "I", ts: 0 },
+      { name: "FramePresented", ph: "I", ts: 16667 },
+      { name: "AnimationFrame", ph: "X", ts: 20000, dur: 60000, args: {} },
+      { name: "RunTask", ph: "X", ts: 25000, dur: 120000, args: {} },
+    ],
+  });
+
+  assert.equal(summary.long_animation_frames, 1);
+  assert.equal(summary.freeze_count, 1);
+  assert.equal(summary.verdict, "fail");
+});
+
+test("긴 프레임보다 짧은 AnimationFrame 안의 긴 작업도 원인으로 남긴다", () => {
+  const summary = summarizeTrace({
+    traceEvents: [
+      { name: "FramePresented", ph: "I", ts: 0 },
+      { name: "FramePresented", ph: "I", ts: 16667 },
+      { name: "AnimationFrame", ph: "X", ts: 20000, dur: 40000, args: {} },
+      {
+        name: "RunTask",
+        ph: "X",
+        ts: 25000,
+        dur: 120000,
+        args: { data: { url: "http://127.0.0.1:8765/gwangju/app.js" } },
+      },
+    ],
+  });
+
+  assert.equal(summary.long_animation_frames, 0);
+  assert.equal(summary.source.application.count, 1);
+  assert.equal(summary.source.dominant, "application");
+  assert.equal(summary.freeze_count, 1);
+});
+
+test("한 긴 프레임에 네이버와 애플리케이션 작업이 함께 있으면 양쪽 원인을 남긴다", () => {
+  const summary = summarizeTrace({
+    traceEvents: [
+      { name: "FramePresented", ph: "I", ts: 0 },
+      { name: "FramePresented", ph: "I", ts: 16667 },
+      { name: "AnimationFrame", ph: "X", ts: 20000, dur: 150000, args: {} },
+      {
+        name: "RunTask",
+        ph: "X",
+        ts: 30000,
+        dur: 60000,
+        args: { data: { url: "https://map.naver.com/sdk.js" } },
+      },
+      {
+        name: "RunTask",
+        ph: "X",
+        ts: 90000,
+        dur: 60000,
+        args: { data: { url: "http://127.0.0.1:8765/gwangju/app.js" } },
+      },
+    ],
+  });
+
+  assert.deepEqual(summary.source.application, { count: 1, total_ms: 60, maximum_ms: 60 });
+  assert.deepEqual(summary.source.naver_sdk, { count: 1, total_ms: 60, maximum_ms: 60 });
+  assert.equal(summary.source.other.count, 0);
+  assert.equal(summary.source.dominant, "mixed");
+});
+
+test("20회 trace 중 하나라도 끊기면 성능 판정은 미달이다", () => {
+  const attempts = [
+    ...Array(19).fill({ verdict: "pass", longest_frame_ms: 16.7 }),
+    { verdict: "fail", longest_frame_ms: 50 },
+  ];
+
+  assert.deepEqual(judgeTrace(attempts, 20), {
+    runs: 20,
+    passing_runs: 19,
+    stutter_runs: 1,
+    freeze_runs: 0,
+    longest_frame_ms: 50,
+    verdict: "fail",
+  });
+});
+
+test("20회 trace를 채우지 못하면 성능 판정은 미측정이다", () => {
+  const summary = judgeTrace([{ verdict: "pass", longest_frame_ms: 16.7 }], 20);
+
+  assert.equal(summary.verdict, "unmeasured");
+  assert.equal(summary.runs, 1);
+});
+
+function cpu(user, sys, idle) {
+  return { times: { user, nice: 0, sys, idle, irq: 0 } };
+}
+
+test("유휴 CPU 사용률은 두 시점 사이 모든 코어의 쉬지 않은 시간 비율이다", () => {
+  // 코어 0은 1,000ms 중 150ms, 코어 1은 1,000ms 중 300ms를 일했다.
+  const before = [cpu(100, 50, 850), cpu(0, 0, 1000)];
+  const after = [cpu(200, 100, 1700), cpu(300, 0, 1700)];
+
+  assert.equal(cpuBusyPercent(before, after), 22.5);
+});
+
+const SHA256_ABC = "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad";
+const SHA256_EMPTY = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+
+test("셸 해시는 커밋이 아니라 실제로 내준 서비스 워커·자산·도시 화면을 구분한다", (t) => {
+  const site = fs.mkdtempSync(path.join(os.tmpdir(), "measure-shell-"));
+  t.after(() => fs.rmSync(site, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(site, "assets"));
+  fs.mkdirSync(path.join(site, "gwangju"));
+  fs.writeFileSync(path.join(site, "sw.js"), "abc");
+  for (const file of ["manifest.webmanifest", "assets/app.js", "assets/styles.css", "gwangju/index.html"]) {
+    fs.writeFileSync(path.join(site, file), "");
+  }
+
+  assert.deepEqual(describeShell(site, "gwangju"), {
+    "sw.js": SHA256_ABC,
+    "manifest.webmanifest": SHA256_EMPTY,
+    "assets/app.js": SHA256_EMPTY,
+    "assets/styles.css": SHA256_EMPTY,
+    "gwangju/index.html": SHA256_EMPTY,
+  });
+});
+
+// 하네스 결과 JSON 한 벌. 번갈아 재는 5회 블록 하나에 해당한다.
+function block({ measured_at = "2026-09-13T00:00:00Z", sw = SHA256_ABC, idle = 5, revisit = [], zoom = [], failures = [] }) {
+  return {
+    measured_at,
+    code_commit: "c0ffee",
+    worktree_clean: true,
+    city: "gwangju",
+    files: { "markers.json": { sha256: SHA256_EMPTY } },
+    shell: { "sw.js": sw },
+    host: { cpu: "test cpu" },
+    idle_cpu_percent: idle,
+    conditions: { required_runs: 20, runs: revisit.length, query: "가" },
+    environments: {
+      mobile: {
+        attempts: { revisit: runs(revisit) },
+        failures,
+        summaries: {},
+        frames: { zoom: [], drag: [], scroll: [] },
+        tracing: { source: "CDP Tracing", criteria: {}, gestures: { zoom: { attempts: zoom, summary: {} } } },
+        diagnostics: { first_visit_transferred_bytes: [], heap_used_bytes: [] },
+      },
+    },
+  };
+}
+
+test("번갈아 잰 블록을 합치면 모인 회차로 20회 판정을 다시 한다", () => {
+  const first = block({ idle: 4.2, revisit: [...Array(9).fill(100), 2500] });
+  const second = block({ measured_at: "2026-09-13T01:00:00Z", idle: 6.8, revisit: [...Array(9).fill(100), 1900] });
+
+  const merged = mergeResults([first, second]);
+
+  assert.deepEqual(merged.environments.mobile.summaries.revisit, {
+    runs: 20,
+    second_slowest_ms: 1900,
+    maximum_ms: 2500,
+    target_ms: 2000,
+    verdict: "pass",
+  });
+  assert.equal(merged.conditions.runs, 20);
+  assert.deepEqual(merged.blocks, [
+    { measured_at: "2026-09-13T00:00:00Z", runs: 10, idle_cpu_percent: 4.2 },
+    { measured_at: "2026-09-13T01:00:00Z", runs: 10, idle_cpu_percent: 6.8 },
+  ]);
+});
+
+test("다른 셸·데이터·조건·호스트·커밋에서 잰 블록은 한 결과로 합치지 않는다", () => {
+  const after = block({ revisit: [100] });
+  const differing = (change) => ({ ...block({ revisit: [100] }), ...change });
+
+  assert.throws(() => mergeResults([after, block({ sw: SHA256_EMPTY, revisit: [100] })]), /shell/);
+  assert.throws(() => mergeResults([after, differing({ files: { "markers.json": { sha256: SHA256_ABC } } })]), /files/);
+  assert.throws(
+    () => mergeResults([after, differing({ conditions: { ...after.conditions, query: "나" } })]),
+    /conditions/,
+  );
+  assert.throws(() => mergeResults([after, differing({ host: { cpu: "other cpu" } })]), /host/);
+  assert.throws(() => mergeResults([after, differing({ code_commit: "decade" })]), /code_commit/);
+});
+
+test("합친 결과는 성능 기록을 다시 판정하고 실패 회차가 어느 블록인지 남긴다", () => {
+  const smooth = { verdict: "pass", longest_frame_ms: 16.7 };
+  const first = block({ zoom: Array(10).fill(smooth) });
+  const second = block({
+    zoom: [...Array(9).fill(smooth), { verdict: "fail", longest_frame_ms: 50 }],
+    failures: [{ phase: "cold", run: 3, error: "timeout" }],
+  });
+
+  const mobile = mergeResults([first, second]).environments.mobile;
+
+  assert.equal(mobile.tracing.gestures.zoom.summary.runs, 20);
+  assert.equal(mobile.tracing.gestures.zoom.summary.verdict, "fail");
+  assert.deepEqual(mobile.failures, [{ block: 2, phase: "cold", run: 3, error: "timeout" }]);
 });

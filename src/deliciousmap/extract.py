@@ -15,15 +15,17 @@ from typing import Literal, NamedTuple
 
 from deliciousmap import period
 from deliciousmap.contracts import (
+    ExpenseScope,
     HeaderMap,
+    ParseInput,
     ParseOutput,
     Record,
     RecordOrigin,
+    RepeatConfirmation,
     RepeatedExpenses,
     SourceRef,
     SourceReport,
     TotalCheck,
-    UnresolvedSource,
 )
 from deliciousmap.grid import Cell, Table, UnreadableOriginal, UnsupportedFormat, read_tables, text
 from deliciousmap.privacy import scrub, scrub_merchant
@@ -126,33 +128,96 @@ def extract(table: Table, mapping: HeaderMap, source: SourceRef) -> Extraction:
     )
 
 
-def parse_sources(
-    sources: tuple[SourceRef, ...],
-    mappings: tuple[HeaderMap, ...],
-    unresolved: tuple[UnresolvedSource, ...],
-    raw_root: Path,
-) -> ParseOutput:
+@dataclass(frozen=True)
+class _Denominator:
+    """폴백 정책의 분모 하나. 지출 후보 수와 분모에서 뺀 행의 위치·종류다."""
+
+    candidates: int
+    excluded: tuple[str, ...]
+
+
+def _denominator(table: Table, mapping: HeaderMap) -> _Denominator | None:
+    """쓰지 않기로 한 매핑으로도 분모만 센다. 값이 온전하지 않다고 후보에서 빼지 않는다.
+
+    분모는 추출 성공 레코드가 아니라 원본에서 식별한 지출 후보 전체다. 역할이 모자라 후보를
+    가를 수 없거나 후보가 하나도 없으면 세지 않는다 — 쓰지 않기로 한 판정의 0건은 집행 없음의
+    증거가 아니며(`layout=none`도 마찬가지다), 알 수 없음으로 남긴다.
+    """
+    columns = mapping.columns
+    dated = "spent_on" in columns or {"month", "day"} <= columns.keys()
+    if mapping.layout != "table" or not dated or not {"merchant", "amount_krw"} <= columns.keys():
+        return None
+    headers = {
+        _signature(table.rows[row - 1]) for row in mapping.header_rows if row <= len(table.rows)
+    }
+    candidates = 0
+    excluded: list[str] = []
+    # `extract`와 같은 범위인 헤더 아래 전부를 본다. 첫 지출 위치를 잘못 잡은 판정에서는
+    # `extract`가 실패로 끝내는 행까지 세므로 분모가 더 클 수는 있고, 모자라지는 않는다.
+    for row in range(max(mapping.header_rows, default=0) + 1, len(table.rows) + 1):
+        kind = _kind(table, mapping, headers, row)
+        if kind == "candidate":
+            candidates += 1
+        else:
+            excluded.append(f"{table.name}:R{row} {kind}")
+    return _Denominator(candidates, tuple(excluded)) if candidates else None
+
+
+def _unresolved_denominator(mappings: list[HeaderMap], path: Path) -> _Denominator | None:
+    """미해결 원본의 분모. 표 하나라도 세지 못하면 이 원본의 후보 수는 알 수 없음이다."""
+    if not mappings:
+        return None
+    try:
+        tables = _tables(path)
+    except (UnsupportedFormat, UnreadableOriginal):
+        return None
+    if {mapping.table for mapping in mappings} != set(tables):
+        return None
+    candidates = 0
+    excluded: list[str] = []
+    for mapping in mappings:
+        found = _denominator(tables[mapping.table], mapping)
+        if found is None:
+            return None
+        candidates += found.candidates
+        excluded.extend(found.excluded)
+    return _Denominator(candidates, tuple(excluded))
+
+
+def _tables(path: Path) -> dict[str, Table]:
+    return {table.name: table for table in read_tables(path)}
+
+
+def parse_sources(value: ParseInput, raw_root: Path) -> ParseOutput:
     """원본마다 모든 표가 통과해야 레코드를 낸다. 실패한 원본의 일부만 확정하지 않는다."""
     by_source: dict[str, list[HeaderMap]] = {}
-    for mapping in mappings:
+    for mapping in value.mappings:
         by_source.setdefault(mapping.source_hash, []).append(mapping)
-    failed = {item.source_hash: item for item in unresolved}
+    unused: dict[str, list[HeaderMap]] = {}
+    for mapping in value.unresolved_mappings:
+        unused.setdefault(mapping.source_hash, []).append(mapping)
+    failed = {item.source_hash: item for item in value.unresolved}
     records: list[Record] = []
     reports: dict[str, SourceReport] = {}
-    for source in sources:
+    for source in value.sources:
         if source.source_hash in reports:
             continue
         if source.source_hash in failed:
             item = failed[source.source_hash]
+            counted = _unresolved_denominator(
+                unused.get(source.source_hash, []), raw_root / source.path
+            )
             reports[source.source_hash] = SourceReport(
                 source_hash=source.source_hash,
                 status="unresolved",
                 reason=item.reason,
                 detail=item.detail,
+                candidates=counted.candidates if counted else None,
+                excluded=counted.excluded if counted else (),
             )
             continue
         try:
-            tables = {table.name: table for table in read_tables(raw_root / source.path)}
+            tables = _tables(raw_root / source.path)
             results = [
                 extract(tables[mapping.table], mapping, source)
                 for mapping in by_source[source.source_hash]
@@ -204,7 +269,7 @@ def parse_sources(
             if "ambiguous" in checks
             else "absent",
         )
-    merged = merge_repeats(tuple(records), sources)
+    merged = merge_repeats(tuple(records), value.sources, value.confirmations)
     kept = Counter(record.source_hash for record in merged.records)
     return ParseOutput(
         records=merged.records,
@@ -234,6 +299,11 @@ class ExpenseKey(NamedTuple):
     merchant: str
     amount_krw: Decimal
 
+    @classmethod
+    def of(cls, item: Record | ExpenseScope) -> "ExpenseKey":
+        """레코드와 사람이 선언한 범위에서 같은 칸을 읽는다. 동일성 목록은 이 클래스 하나다."""
+        return cls(*(getattr(item, name) for name in cls._fields))
+
 
 # 원본 하나가 실은 지출과 그 횟수. 재게시 판정은 이 둘을 견주어 한다.
 Carried = Counter[ExpenseKey]
@@ -247,12 +317,20 @@ class Merge:
     tally: RepeatedExpenses
 
 
-def merge_repeats(records: tuple[Record, ...], sources: tuple[SourceRef, ...]) -> Merge:
+def merge_repeats(
+    records: tuple[Record, ...],
+    sources: tuple[SourceRef, ...],
+    confirmations: tuple[RepeatConfirmation, ...] = (),
+) -> Merge:
     """원본을 넘어 반복된 지출을 한 건으로 모은다([ADR-0004](
     ../../docs/adr/0004-merge-repeated-reposts.md)).
 
     누적 파일·정정본은 이미 공개한 기간을 다시 싣는다. 두 원본이 같은 지출을 2건 이상 함께 실을
     때만 재게시로 보고 합친다. 근거가 그에 못 미치면 줄이지 않고 남긴 수를 집계에 싣는다.
+
+    사람이 원본을 대조해 확정한 묶음은 그 확정을 기준보다 먼저 적용한다([ADR-0006](
+    ../../docs/adr/0006-human-confirmed-reposts.md)). 확정으로 합친 수와 확정으로 남긴 수는
+    자동 판정과 섞지 않는다.
     """
     posted = {source.source_hash: source.posted or date.max for source in sources}
     # 게시 순서. 게시일을 모르거나 같은 날 올라왔으면 해시로 차례를 고정한다.
@@ -268,23 +346,31 @@ def merge_repeats(records: tuple[Record, ...], sources: tuple[SourceRef, ...]) -
     carried: dict[str, Carried] = {}
     groups: dict[ExpenseKey, dict[str, list[Record]]] = {}
     for record in records:
-        expense = _expense(record)
+        expense = ExpenseKey.of(record)
         carried.setdefault(record.source_hash, Counter())[expense] += 1
         groups.setdefault(expense, {}).setdefault(record.source_hash, []).append(record)
+    decided = _decisions(confirmations, groups)
     reposted = {
         pair
         for found in groups.values()
         if len(found) > 1
         for pair in combinations(sorted(found, key=published.__getitem__), 2)
-        if _reposted(carried[pair[0]], carried[pair[1]])
+        if _reposted(carried[pair[0]], carried[pair[1]], _confirmed_separate(decided, pair))
     }
     kept: list[Record] = []
-    # 묶음마다 (합쳐서 뺀 레코드 수, 가를 근거가 없어 남은 레코드 수).
-    counted: list[tuple[int, int]] = []
-    for found in groups.values():
+    counted: list[_Counted] = []
+    for expense, found in groups.items():
+        decision = decided.get(expense)
+        declared = set(decision.scope.sources) if decision else set()
         hashes = sorted(found, key=published.__getitem__)
-        dropped = 0
-        for component in _components(hashes, reposted):
+        pairs = {pair for pair in combinations(hashes, 2) if set(pair) <= declared}
+        components = _components(hashes, reposted | pairs if _joins(decision) else reposted - pairs)
+        if _separates(decision) and any(len(declared & set(item)) > 1 for item in components):
+            # 다른 원본을 거쳐 이어지면 사람이 가른 두 원본이 한 건이 된다. 확정이 우선이므로
+            # 기준을 조용히 따르지 않고, 그 지출을 다시 읽어야 한다고 알린다(ADR-0006).
+            raise ValueError("a repost relation joins originals confirmed to be separate expenses")
+        keepers: dict[str, int] = {}
+        for component in components:
             ranked = sorted(component, key=published.__getitem__)
             # 한 원본이 적은 최대 건수를 남기고, 같으면 가장 먼저 게시된 원본의 것을 남긴다.
             keeper = max(ranked, key=lambda item: len(found[item]))
@@ -294,21 +380,87 @@ def merge_repeats(records: tuple[Record, ...], sources: tuple[SourceRef, ...]) -
                 if item != keeper
                 for record in found[item]
             )
-            dropped += len(repeats)
             kept.extend(record.model_copy(update={"repeats": repeats}) for record in found[keeper])
+            keepers[keeper] = len(found[keeper])
+        dropped = _dropped(found, components)
+        # 기준이 이미 합쳤을 수는 자동의 몫이다. 확정이 더 합친 만큼만 사람이 적용한 수다.
+        merged = _dropped(found, _components(hashes, reposted)) if _joins(decision) else dropped
+        # 별개 지출로 확정해 장부에 남은 수. 확정이 적은 원본들이 남긴 레코드에서 한 몫을 뺀다.
+        apart = [keepers.get(item, 0) for item in declared] if _separates(decision) else []
+        separated = sum(apart) - max(apart, default=0)
         # 한 묶음에 재게시 관계가 아닌 원본이 남아 있으면 가를 근거가 없어 남긴 것이다.
         remaining = sum(len(item) for item in found.values()) - dropped
-        counted.append((dropped, remaining - max(len(item) for item in found.values())))
+        counted.append(
+            _Counted(
+                merged=merged,
+                confirmed=dropped - merged,
+                separated=separated,
+                left=remaining - max(len(item) for item in found.values()) - separated,
+            )
+        )
     position = {record.record_id: index for index, record in enumerate(records)}
     return Merge(
         # 합치기 전 순서를 그대로 둔다. 레코드 차례가 원본·행 순서를 따르게 하기 위해서다.
         records=tuple(sorted(kept, key=lambda record: position[record.record_id])),
         tally=RepeatedExpenses(
-            merged_expenses=sum(1 for dropped, _ in counted if dropped),
-            merged_records=sum(dropped for dropped, _ in counted),
-            unmerged_expenses=sum(1 for _, left in counted if left),
-            unmerged_records=sum(left for _, left in counted),
+            merged_expenses=sum(1 for item in counted if item.merged),
+            merged_records=sum(item.merged for item in counted),
+            unmerged_expenses=sum(1 for item in counted if item.left),
+            unmerged_records=sum(item.left for item in counted),
+            confirmed_expenses=sum(1 for item in counted if item.confirmed),
+            confirmed_records=sum(item.confirmed for item in counted),
+            separate_expenses=sum(1 for item in counted if item.separated),
+            separate_records=sum(item.separated for item in counted),
         ),
+    )
+
+
+class _Counted(NamedTuple):
+    """지출 묶음 하나의 집계. 합치고 남긴 수를 자동 판정과 사람 확정으로 나누어 센다."""
+
+    # 기준이 합친 수와, 확정이 기준보다 더 합친 수.
+    merged: int
+    confirmed: int
+    # 사람이 별개 지출로 확정해 남긴 수와, 가를 근거가 없어 남긴 수.
+    separated: int
+    left: int
+
+
+def _decisions(
+    confirmations: tuple[RepeatConfirmation, ...],
+    groups: dict[ExpenseKey, dict[str, list[Record]]],
+) -> dict[ExpenseKey, RepeatConfirmation]:
+    """사람이 확정한 판정을 지출 묶음에 붙인다.
+
+    장부에 없는 묶음이나 그 지출을 싣지 않은 원본을 가리키는 확정은 낡은 기록이다. 조용히
+    지나가면 사람이 확정했다고 여긴 묶음이 그대로 남으므로 그 사실을 알린다.
+    """
+    decided: dict[ExpenseKey, RepeatConfirmation] = {}
+    for item in confirmations:
+        expense = ExpenseKey.of(item.scope)
+        if expense in decided:
+            raise ValueError("one expense cannot carry two repeat confirmations")
+        if not set(item.scope.sources) <= groups.get(expense, {}).keys():
+            raise ValueError("repeat confirmation for an expense that is not in the ledger")
+        decided[expense] = item
+    return decided
+
+
+def _joins(decision: RepeatConfirmation | None) -> bool:
+    """이 확정이 원본을 잇는 쪽인지. 별개 지출 확정은 잇지 않으므로 기준과 견주지 않는다."""
+    return decision is not None and decision.decision == "same_expense"
+
+
+def _separates(decision: RepeatConfirmation | None) -> bool:
+    """이 확정이 원본을 가르는 쪽인지."""
+    return decision is not None and decision.decision == "separate_expenses"
+
+
+def _dropped(found: dict[str, list[Record]], components: list[list[str]]) -> int:
+    """이 덩어리들로 합치면 빠지는 레코드 수. 덩어리마다 한 원본이 적은 최대 건수만 남는다."""
+    return sum(
+        sum(len(found[item]) for item in component) - max(len(found[item]) for item in component)
+        for component in components
     )
 
 
@@ -327,23 +479,26 @@ def _components(hashes: list[str], reposted: set[tuple[str, str]]) -> list[list[
     return components
 
 
-def _reposted(carried: Carried, other: Carried) -> bool:
+def _reposted(carried: Carried, other: Carried, apart: set[ExpenseKey]) -> bool:
     """두 원본이 같은 장부를 다시 실은 관계인지. 같은 지출을 2건 이상 함께 실으면 그렇다.
 
     한 건은 같은 날 같은 곳에서 같은 금액을 쓴 우연일 수 있다(원본 안에서 실제로 나온다).
     한 쌍에서 그 우연이 둘 겹치지는 않는다. 근거가 한 건뿐이면 가르지 않고 남긴다(ADR-0004).
+
+    사람이 별개 지출로 확정한 묶음은 같은 지출이 아니라고 확인된 것이므로 근거에서 뺀다.
     """
-    return sum((carried & other).values()) >= 2
+    return sum(count for expense, count in (carried & other).items() if expense not in apart) >= 2
 
 
-def _expense(record: Record) -> ExpenseKey:
-    return ExpenseKey(
-        record.organization,
-        record.department,
-        record.spent_on,
-        record.merchant,
-        record.amount_krw,
-    )
+def _confirmed_separate(
+    decided: dict[ExpenseKey, RepeatConfirmation], pair: tuple[str, str]
+) -> set[ExpenseKey]:
+    """이 원본 쌍에서 사람이 별개 지출로 확정한 묶음. 그 쌍의 재게시 근거가 되지 못한다."""
+    return {
+        expense
+        for expense, item in decided.items()
+        if _separates(item) and set(pair) <= set(item.scope.sources)
+    }
 
 
 def _candidate(table: Table, mapping: HeaderMap, row: int) -> _Candidate:

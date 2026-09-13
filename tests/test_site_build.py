@@ -2,6 +2,8 @@ import json
 import re
 from copy import deepcopy
 from dataclasses import replace
+from datetime import date
+from decimal import Decimal
 from importlib.resources import files
 from pathlib import Path
 from typing import get_args
@@ -16,6 +18,7 @@ from deliciousmap.contracts import (
     MapStatus,
     ParseOutput,
     Provider,
+    RepeatedExpenses,
     SourceReport,
 )
 from deliciousmap.pipeline import ExecutionContext
@@ -166,7 +169,62 @@ def test_markers_name_the_provider_that_supplied_the_coordinates(tmp_path: Path)
     for stage in ("geocode", "closure", "build"):
         assert run_cli(context, stage) == 0
     assert payload(context, "geocode")["results"][0]["reason"] == "human_confirmed"
-    assert published(context, "markers.json")["markers"][0]["coordinate_source"] == "naver"
+    marker = published(context, "markers.json")["markers"][0]
+    assert marker["coordinate_source"] == "naver"
+    assert marker["address"] == "부산 합성로 10"
+
+
+def test_a_candidate_without_an_address_never_names_the_marker_origin(tmp_path: Path) -> None:
+    """같은 좌표에 주소 없는 후보가 있어도 좌표·주소의 근거는 주소가 일치한 후보다."""
+    context = prepare(tmp_path)
+    query = lookup()
+    bare = shared_place("license", "https://example.invalid/license/1")
+    bare["address"] = None
+    query["candidates"].append(bare)
+    save_input(context, query)
+    for stage in ("geocode", "closure", "build"):
+        assert run_cli(context, stage) == 0
+
+    marker = published(context, "markers.json")["markers"][0]
+    assert (marker["coordinate_source"], marker["address"]) == ("local", "부산 합성로 10")
+
+
+def test_markers_summarize_the_visits_bundled_into_each_restaurant(tmp_path: Path) -> None:
+    context = prepare(tmp_path)
+    city = replace(
+        context.target.city,
+        organizations=(*context.target.city.organizations, Organization("other-org", "다른 기관")),
+    )
+    context = replace(context, target=Target(city, context.target.org))
+    store = ArtifactStore(context.paths, context.target)
+    first = store.load("parse", ParseOutput).records[0]
+    decisions = store.load("classify", ClassifyOutput).decisions
+    later = first.model_copy(
+        update={
+            "record_id": "r2",
+            "organization": "other-org",
+            "spent_on": date(2026, 3, 15),
+            "amount_krw": Decimal("25000"),
+            "source_location": "sheet1:r2",
+        }
+    )
+    store.save("parse", ParseOutput(records=(first, later)))
+    store.save(
+        "classify",
+        ClassifyOutput(decisions=(*decisions, decisions[0].model_copy(update={"record_id": "r2"}))),
+    )
+    second = lookup()
+    second["scope"].update(record_id="r2", organization="other-org")
+    save_input(context, lookup(), second)
+    for stage in ("geocode", "closure", "build"):
+        assert run_cli(context, stage) == 0
+
+    [marker] = published(context, "markers.json")["markers"]
+    assert marker["visit_count"] == 2
+    assert marker["address"] == "부산 합성로 10"
+    assert marker["last_visited_on"] == "2026-03-15"
+    assert Decimal(marker["total_amount_krw"]) == Decimal("26000")
+    assert marker["organizations"] == ["other-org", "test-org"]
 
 
 def test_ledger_keeps_unmapped_records_with_the_reason_they_missed_the_map(
@@ -246,8 +304,10 @@ def test_city_page_publishes_the_period_and_every_organization_status(tmp_path: 
     assert "2026년 상반기" in page
     assert "합성 기관" in page and "수집 완료" in page
     assert "보류 기관" in page and "수집 보류" in page and "봇 차단" in page
-    # 수집 보류 기관이 있으면 지도 위에서도 누락 가능성을 알린다.
+    # 수집 보류 기관이 있으면 지도 위에서도 누락 가능성을 알린다. 목록 패널이 아니라 지도 위다.
     assert "data-collection-hold" in page
+    notice = page.index("data-collection-hold")
+    assert page.index('class="map-stage"') < notice < page.index("data-list-panel")
 
 
 def test_city_page_without_a_hold_keeps_the_map_free_of_the_notice(tmp_path: Path) -> None:
@@ -284,6 +344,42 @@ def test_screen_labels_cover_every_published_contract_value() -> None:
     assert labelled("MAP_STATUSES") == set(get_args(MapStatus))
     # 확정된 두 사유는 지도에 오른 레코드의 것이라 장부에서 따로 적지 않는다.
     assert labelled("GEOCODE_REASONS") == set(get_args(GeocodeReason)) - set(CONFIRMED_REASONS)
+
+
+def test_marker_legend_filter_and_colors_share_the_same_visit_bands(tmp_path: Path) -> None:
+    context = build_ready(tmp_path)
+    assert run_cli(context, "build") == 0
+    page = city_page(context)
+    styles = files("deliciousmap.site_assets").joinpath("styles.css").read_text(encoding="utf-8")
+    source = files("deliciousmap.site_assets").joinpath("app.js").read_text(encoding="utf-8")
+
+    filters = re.findall(r'data-visits="(\w+)"', page)
+    legend = re.findall(r'class="legend-swatch band-(\w+)"', page)
+    band_order = re.search(r"const BAND_ORDER = \[(.*?)\];", source)
+    assert band_order is not None
+    assert filters == ["all", *legend]
+    assert legend == re.findall(r'"(\w+)"', band_order.group(1))
+    for band in legend:
+        assert f".band-{band}" in styles, band
+
+
+def test_city_page_pairs_the_map_with_a_restaurant_list_and_its_detail(tmp_path: Path) -> None:
+    context = build_ready(tmp_path)
+    assert run_cli(context, "build") == 0
+    page = city_page(context)
+
+    for hook in (
+        "data-list-panel",
+        "data-sheet-handle",
+        "data-list-view",
+        "data-restaurant-list",
+        "data-restaurant-more",
+        "data-restaurant-detail",
+    ):
+        assert hook in page, hook
+    # 검색·필터는 목록 위에 있다. 따로 뜨던 검색 결과 상자는 목록으로 대신한다.
+    assert page.index("data-search-form") < page.index("data-restaurant-list")
+    assert "data-search-results" not in page
 
 
 def fetched(posted: str, title: str | None, digest: str) -> dict:
@@ -373,3 +469,92 @@ def test_city_page_omits_the_scope_line_when_no_original_was_counted(tmp_path: P
     context = build_ready(tmp_path)
     assert run_cli(context, "build") == 0
     assert "중 대상" not in city_page(context)
+
+
+def repeated_build(tmp_path: Path, repeated: RepeatedExpenses) -> ExecutionContext:
+    """누적 재게시를 합친 제출. parse의 집계만 바꿔 뒤 단계를 그 위에서 다시 만든다."""
+    context = prepare(tmp_path)
+    store = ArtifactStore(context.paths, context.target)
+    classified = store.load("classify", ClassifyOutput)
+    parsed = store.load("parse", ParseOutput)
+    store.save("parse", parsed.model_copy(update={"repeated_expenses": repeated}))
+    store.save("classify", classified)
+    save_input(context, lookup())
+    for stage in ("geocode", "closure", "build"):
+        assert run_cli(context, stage) == 0
+    return context
+
+
+def test_city_page_tells_that_merging_repeats_shrank_the_ledger(tmp_path: Path) -> None:
+    """합친 수를 밝히지 않으면 장부 건수가 조용히 줄어든 것으로 보인다."""
+    page = city_page(
+        repeated_build(
+            tmp_path,
+            RepeatedExpenses(
+                merged_expenses=117, merged_records=122, unmerged_expenses=2, unmerged_records=2
+            ),
+        )
+    )
+    # 한 묶음이 한 건으로 줄지는 않으므로(ADR-0004) 묶음 수와 뺀 건수를 따로 읽을 수 있어야 한다.
+    assert "같은 지출이 여러 원본에 반복된 117묶음을 합쳐" in page
+    assert "장부에서 122건을 뺐습니다" in page
+    assert "가를 근거가 없어 남긴 2묶음 2건은 장부에 중복으로 보일 수 있습니다" in page
+
+
+def test_city_page_does_not_hide_that_no_group_was_left_unmerged(tmp_path: Path) -> None:
+    """센 뒤의 0은 지어낸 값이 아니라 사실이다. 남긴 묶음이 없다는 것도 밝힌다."""
+    page = city_page(
+        repeated_build(tmp_path, RepeatedExpenses(merged_expenses=1, merged_records=1))
+    )
+    assert "가를 근거가 없어 남긴 묶음은 없습니다" in page
+
+
+def test_city_page_reports_groups_left_whole_even_when_nothing_was_merged(tmp_path: Path) -> None:
+    """합친 것이 없어도 중복으로 보이는 묶음이 남았다면 묶음 수와 건수를 함께 내야 한다."""
+    page = city_page(
+        repeated_build(tmp_path, RepeatedExpenses(unmerged_expenses=3, unmerged_records=7))
+    )
+    assert "반복된 지출 가운데 합친 것은 없습니다" in page
+    assert "가를 근거가 없어 남긴 3묶음 7건" in page
+
+
+def test_city_page_tells_that_a_person_confirmed_the_groups_the_criterion_left(
+    tmp_path: Path,
+) -> None:
+    """기준이 가르지 못해 사람이 확정한 수를 밝히지 않으면 그만큼이 조용히 줄어든다(ADR-0006)."""
+    page = city_page(
+        repeated_build(
+            tmp_path,
+            RepeatedExpenses(
+                merged_expenses=117,
+                merged_records=122,
+                confirmed_expenses=2,
+                confirmed_records=2,
+            ),
+        )
+    )
+    assert "원본을 다시 대조해 같은 지출로 확정한 2묶음 2건도 함께 뺐습니다" in page
+    assert "가를 근거가 없어 남긴 묶음은 없습니다" in page
+
+
+def test_city_page_reports_the_groups_a_person_confirmed_as_separate(tmp_path: Path) -> None:
+    """별개 지출로 확정한 묶음은 장부에 남는다. 확인했다는 사실을 0건으로 감추지 않는다."""
+    page = city_page(
+        repeated_build(tmp_path, RepeatedExpenses(separate_expenses=1, separate_records=1))
+    )
+    assert "원본을 다시 대조해 별개 지출로 확정한 1묶음 1건은 장부에 그대로 남습니다" in page
+
+
+def test_city_page_says_nothing_about_confirmations_that_were_not_made(tmp_path: Path) -> None:
+    """사람 확정 입력이 없으면 낼 말이 없다. 기준이 센 수만으로 장부가 다 설명된다."""
+    page = city_page(
+        repeated_build(tmp_path, RepeatedExpenses(merged_expenses=1, merged_records=1))
+    )
+    assert "원본을 다시 대조해" not in page
+
+
+def test_city_page_omits_the_repeat_line_when_nothing_was_merged_or_left(tmp_path: Path) -> None:
+    """합친 것도 남긴 것도 없으면 낼 말이 없다. 0묶음이라고 적는 것은 군말이다."""
+    context = build_ready(tmp_path)
+    assert run_cli(context, "build") == 0
+    assert "묶음" not in city_page(context)

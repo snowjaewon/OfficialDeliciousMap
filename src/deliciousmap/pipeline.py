@@ -178,7 +178,13 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
             targets = store.reporting_sources()
             mapped = store.load("headermap", HeaderMapOutput)
             result = adapters.parse(
-                ParseInput(sources=targets, mappings=mapped.mappings, unresolved=mapped.unresolved),
+                ParseInput(
+                    sources=targets,
+                    mappings=mapped.mappings,
+                    unresolved=mapped.unresolved,
+                    confirmations=store.repeat_confirmations(),
+                    unresolved_mappings=mapped.unresolved_mappings,
+                ),
                 context,
             )
             result = ParseOutput.model_validate(result).model_copy(
@@ -269,6 +275,7 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
                         candidates=candidates,
                         target_sources=len(parsed.sources),
                         excluded_sources=parsed.excluded_sources,
+                        repeated_expenses=parsed.repeated_expenses,
                     ),
                     context,
                 )

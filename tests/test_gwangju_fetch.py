@@ -1,5 +1,6 @@
 """광주광역시청 게시판 수집을 공개 CLI로 실행한다. HTTP 경계에만 응답을 주입한다."""
 
+import email.message
 import importlib
 import json
 import sys
@@ -94,12 +95,17 @@ def paths_at(tmp_path: Path) -> Paths:
     )
 
 
-def run_fetch(paths: Paths, transport: BoardTransport, *, city: str = "gwangju") -> int:
+def run_fetch(
+    paths: Paths, transport: BoardTransport, *, city: str = "gwangju", org: str = "gwangju-city"
+) -> int:
+    """이 파일은 시청 게시판만 다룬다. 같은 도시의 다른 기관은 저마다 구조가 달라 따로 검증한다."""
     return main(
         [
             "fetch",
             "--city",
             city,
+            "--org",
+            org,
             "--raw-root",
             str(paths.raw_root),
             "--data-root",
@@ -111,16 +117,20 @@ def run_fetch(paths: Paths, transport: BoardTransport, *, city: str = "gwangju")
     )
 
 
-def fetch_envelope(paths: Paths, city: str = "gwangju") -> dict[str, Any]:
-    target = select_target(CITIES, city, None)
+def fetch_envelope(
+    paths: Paths, city: str = "gwangju", org: str | None = "gwangju-city"
+) -> dict[str, Any]:
+    target = select_target(CITIES, city, org)
     envelope: dict[str, Any] = json.loads(
         (paths.city_dir(target) / "fetch.json").read_text(encoding="utf-8")
     )
     return envelope
 
 
-def fetch_artifact(paths: Paths, city: str = "gwangju") -> dict[str, Any]:
-    payload: dict[str, Any] = fetch_envelope(paths, city)["payload"]
+def fetch_artifact(
+    paths: Paths, city: str = "gwangju", org: str | None = "gwangju-city"
+) -> dict[str, Any]:
+    payload: dict[str, Any] = fetch_envelope(paths, city, org)["payload"]
     return payload
 
 
@@ -413,7 +423,8 @@ def test_fetch_leaves_held_organizations_uncollected_with_their_reason(tmp_path:
         )
         == 0
     )
-    artifact = fetch_artifact(paths)
+    # 이 검증만 기관을 고르지 않고 도시 전체를 훑는다. 산출물도 기관 아래가 아니라 도시에 남는다.
+    artifact = fetch_artifact(paths, org=None)
     assert artifact["sources"] == []
     assert "bot_blocked" in artifact["empty_reason"]
     assert transport.requests == []
@@ -502,6 +513,10 @@ class _Response:
 
     def __exit__(self, *args: object) -> None:
         return None
+
+    def info(self) -> email.message.Message:
+        """실제 응답처럼 헤더를 낸다. 요청 경계가 여기에서 쿠키를 읽는다."""
+        return email.message.Message()
 
     def read(self, size: int) -> bytes:
         return b"ok"

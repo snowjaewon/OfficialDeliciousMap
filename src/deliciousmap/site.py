@@ -5,6 +5,7 @@ import os
 from collections import Counter
 from collections.abc import Iterable, Mapping
 from dataclasses import asdict, dataclass
+from decimal import Decimal
 from html import escape
 from importlib.resources import files
 from pathlib import Path
@@ -23,6 +24,7 @@ from deliciousmap.contracts import (
     PublishedRecord,
     Record,
     RecordFile,
+    RepeatedExpenses,
 )
 from deliciousmap.registry import CITIES, City, HoldReason, Organization, Target
 from deliciousmap.storage import write_text
@@ -39,6 +41,13 @@ HOLD_REASON_LABELS: dict[HoldReason, str] = {
     "below_threshold": "공개 기준 미달",
 }
 COLLECTION_LABELS = {"collected": "수집 완료", "empty": "레코드 없음", "held": "수집 보류"}
+# 방문 구간: (키, 필터 버튼, 범례). 필터·범례·마커 색이 같은 구간을 쓴다. 판정은 app.js가 한다.
+VISIT_BAND_LABELS = (
+    ("20", "20+", "20회 이상"),
+    ("10", "10–19", "10–19회"),
+    ("5", "5–9", "5–9회"),
+    ("1", "1–4", "1–4회"),
+)
 CLIENT_ID_VARIABLE = "NAVER_MAP_CLIENT_ID"
 KEY_PARAM_VARIABLE = "NAVER_MAP_KEY_PARAM"
 # 신규 발급 키는 ncpKeyId, 2026-06 이전의 구형 키만 ncpClientId를 쓴다.
@@ -89,10 +98,14 @@ class CollectionStatus:
 
 @dataclass(frozen=True)
 class SourceScope:
-    """이번 제출이 읽은 원본과 기간으로 뺀 원본. 읽은 수만 내면 장부가 완전해 보인다."""
+    """화면이 밝히는 이번 제출의 범위. 읽은 수만 내면 장부가 완전해 보인다.
+
+    `excluded`는 기간으로 뺀 원본, `repeated`는 누적 재게시로 합쳐 장부에서 뺀 수다.
+    """
 
     targets: int
     excluded: ExcludedSources
+    repeated: RepeatedExpenses
 
     @property
     def total(self) -> int:
@@ -139,10 +152,13 @@ def _write_json(path: Path, content: Contract) -> None:
 def _marker_file(target: Target, value: BuildInput) -> MarkerFile:
     closures = {item.business_id: item for item in value.closures}
     geocodes = {item.record_id: item for item in value.geocodes}
-    return MarkerFile(
-        city=target.city.slug,
-        org=target.org,
-        markers=tuple(
+    records = {item.record_id: item for item in value.records}
+    markers = []
+    for candidate in value.candidates:
+        # 묶인 레코드는 같은 좌표를 공유하므로 첫 레코드의 근거로 출처와 주소를 밝힌다.
+        source, address = _coordinate_origin(geocodes[candidate.record_ids[0]])
+        visits = [records[record_id] for record_id in candidate.record_ids]
+        markers.append(
             PublishedMarker(
                 business_id=candidate.business_id,
                 merchant=candidate.merchant,
@@ -150,12 +166,14 @@ def _marker_file(target: Target, value: BuildInput) -> MarkerFile:
                 latitude=candidate.latitude,
                 longitude=candidate.longitude,
                 closed=closures[candidate.business_id].status == "closed",
-                # 묶인 레코드는 같은 좌표를 공유하므로 첫 레코드의 근거로 출처를 밝힌다.
-                coordinate_source=_coordinate_source(geocodes[candidate.record_ids[0]]),
+                coordinate_source=source,
+                address=address,
+                last_visited_on=max(visit.spent_on for visit in visits),
+                total_amount_krw=sum((visit.amount_krw for visit in visits), Decimal(0)),
+                organizations=tuple(sorted({visit.organization for visit in visits})),
             )
-            for candidate in value.candidates
-        ),
-    )
+        )
+    return MarkerFile(city=target.city.slug, org=target.org, markers=tuple(markers))
 
 
 def _record_file(target: Target, value: BuildInput) -> RecordFile:
@@ -175,21 +193,24 @@ def _record_file(target: Target, value: BuildInput) -> RecordFile:
     )
 
 
-def _coordinate_source(result: GeocodeResult) -> Provider:
-    """좌표를 준 제공자. 사람이 확인한 건은 확인한 후보의 제공자가 정본이다."""
+def _coordinate_origin(result: GeocodeResult) -> tuple[Provider, str]:
+    """좌표를 준 제공자와 그 근거의 주소. 사람이 확인한 건은 확인한 후보와 주소가 정본이다.
+
+    업소 확인은 상호·지점·주소가 일치한 후보만 채택하므로(`identity.decide_identity`) 주소 없는
+    후보는 좌표의 근거가 될 수 없다.
+    """
     if result.reason == "human_confirmed" and result.confirmation is not None:
-        return result.confirmation.candidate_source.provider
-    providers = sorted(
-        {
-            candidate.source.provider
-            for candidate in result.lookup.candidates
-            if (candidate.latitude, candidate.longitude) == (result.latitude, result.longitude)
-        }
+        return result.confirmation.candidate_source.provider, result.confirmation.address
+    # 여러 제공자의 근거가 같은 좌표로 겹치면 제공자 이름 순으로 하나를 밝힌다.
+    origins = sorted(
+        (candidate.source.provider, candidate.address)
+        for candidate in result.lookup.candidates
+        if (candidate.latitude, candidate.longitude) == (result.latitude, result.longitude)
+        and candidate.address is not None
     )
-    if not providers:
+    if not origins:
         raise ValueError("a confirmed coordinate must come from one of its candidates")
-    # 여러 제공자의 근거가 같은 좌표로 겹치면 이름 순으로 하나를 밝힌다.
-    return providers[0]
+    return origins[0]
 
 
 def _published_record(
@@ -289,9 +310,35 @@ def _map_notice(statuses: tuple[CollectionStatus, ...]) -> str:
     if not held:
         return ""
     message = f"수집 보류 기관 {len(held)}곳이 있어 비어 있는 지역이 집행 없음을 뜻하지 않습니다."
-    return f"""          <p class="collection-warning map-warning" data-collection-hold>
-            {escape(message)}
-          </p>"""
+    return f"""            <p class="collection-warning map-warning" data-collection-hold>
+              {escape(message)}
+            </p>"""
+
+
+def _visit_filters() -> str:
+    buttons = [
+        '            <button type="button" aria-pressed="true" data-visits="all">전체</button>',
+        *(
+            f'            <button type="button" aria-pressed="false" data-visits="{key}">'
+            f"{label}</button>"
+            for key, label, _ in VISIT_BAND_LABELS
+        ),
+    ]
+    return "\n".join(buttons)
+
+
+def _map_legend() -> str:
+    items = "\n".join(
+        f'              <li><span class="legend-swatch band-{key}"></span>{label}</li>'
+        for key, _, label in VISIT_BAND_LABELS
+    )
+    return f"""            <div class="map-legend" aria-label="마커 색 범례">
+              <p>방문 횟수</p>
+              <ul>
+{items}
+              <li><span class="legend-swatch is-closed"></span>폐업</li>
+              </ul>
+            </div>"""
 
 
 def _collection_table(statuses: tuple[CollectionStatus, ...]) -> str:
@@ -346,6 +393,56 @@ def _scope_line(scope: SourceScope) -> str:
     )
 
 
+def _repeated_expense_line(repeated: RepeatedExpenses) -> str:
+    """누적 재게시로 장부에서 뺀 수. 밝히지 않으면 건수가 조용히 줄어든 것으로 보인다.
+
+    기준은 [ADR-0004](../../docs/adr/0004-merge-repeated-reposts.md)이다. 합친 것도 남긴 것도
+    없으면 낼 말이 없어 줄을 내지 않는다. `parse` v3는 언제나 세므로(`extract.merge_repeats`)
+    그 경우는 세지 않은 산출물이 아니라 반복이 없었다는 뜻이다. 한쪽이라도 있으면 나머지 0은
+    센 뒤의 사실이므로 감추지 않는다.
+
+    한 묶음이 언제나 한 건으로 줄지는 않는다. 남는 건수는 한 원본이 적은 최대 건수이므로,
+    합친 묶음 수와 장부에서 뺀 레코드 수를 따로 낸다.
+
+    사람이 원본을 대조해 확정한 수는 따로 낸다([ADR-0006](
+    ../../docs/adr/0006-human-confirmed-reposts.md)). 확정이 없으면 그 말은 내지 않는다 —
+    기준이 센 수만으로 장부가 다 설명되고, 하지 않은 검토의 0건은 군말이다.
+    """
+    if repeated == RepeatedExpenses():
+        return ""
+    merged = (
+        "부서가 이미 공개한 기간을 다시 올려 같은 지출이 여러 원본에 반복된 "
+        f"{repeated.merged_expenses:,}묶음을 합쳐,"
+        f" 장부에서 {repeated.merged_records:,}건을 뺐습니다."
+        if repeated.merged_expenses
+        else "부서가 이미 공개한 기간을 다시 올려 반복된 지출 가운데 합친 것은 없습니다."
+    )
+    left = (
+        "다시 올린 것인지 따로 쓴 것인지 가를 근거가 없어 남긴 "
+        f"{repeated.unmerged_expenses:,}묶음 {repeated.unmerged_records:,}건은"
+        " 장부에 중복으로 보일 수 있습니다."
+        if repeated.unmerged_expenses
+        else "다시 올린 것인지 따로 쓴 것인지 가를 근거가 없어 남긴 묶음은 없습니다."
+    )
+    return f'\n      <p class="collection-scope">{merged}{_confirmed_line(repeated)} {left}</p>'
+
+
+def _confirmed_line(repeated: RepeatedExpenses) -> str:
+    """사람이 확정해 합친 수와 남긴 수. 확정한 것이 없으면 낼 말이 없다(ADR-0006)."""
+    said = ""
+    if repeated.confirmed_expenses:
+        said += (
+            f" 원본을 다시 대조해 같은 지출로 확정한 {repeated.confirmed_expenses:,}묶음"
+            f" {repeated.confirmed_records:,}건도 함께 뺐습니다."
+        )
+    if repeated.separate_expenses:
+        said += (
+            f" 원본을 다시 대조해 별개 지출로 확정한 {repeated.separate_expenses:,}묶음"
+            f" {repeated.separate_records:,}건은 장부에 그대로 남습니다."
+        )
+    return said
+
+
 def _city_page(
     city: City, map_key: MapKey, statuses: tuple[CollectionStatus, ...], scope: SourceScope
 ) -> str:
@@ -389,28 +486,38 @@ def _city_page(
     </nav>
     <main>
       <section class="map-panel" data-panel="map">
-        <form class="search-panel" data-search-form>
-          <label class="search-field"><span class="sr-only">식당명 검색</span>
-            <input type="search" name="query" placeholder="식당명 검색" autocomplete="off">
-          </label>
-          <fieldset class="visit-filters"><legend class="sr-only">방문 횟수</legend>
-            <button type="button" aria-pressed="true" data-visits="all">전체</button>
-            <button type="button" aria-pressed="false" data-visits="20">20+</button>
-            <button type="button" aria-pressed="false" data-visits="10">10–19</button>
-            <button type="button" aria-pressed="false" data-visits="5">5–9</button>
-            <button type="button" aria-pressed="false" data-visits="1">1–4</button>
-          </fieldset>
-          <p class="result-count" aria-live="polite">
-            <strong data-total-count>0</strong>곳 전체 ·
-            <strong data-viewport-count>—</strong>곳 현재 지도 영역
-          </p>
-          <div class="search-results" data-search-results hidden></div>
+        <div class="map-stage">
+          <div id="map" class="map" aria-label="{city_name} 식당 지도">
+            <p class="loading">지도를 준비하고 있습니다.</p>
+          </div>
+          <div class="map-overlay">
 {_map_notice(statuses)}
-        </form>
-        <div id="map" class="map" aria-label="{city_name} 식당 지도">
-          <p class="loading">지도를 준비하고 있습니다.</p>
+{_map_legend()}
+          </div>
         </div>
-        <aside class="restaurant-sheet" data-restaurant-sheet hidden></aside>
+        <aside class="list-panel" data-list-panel data-sheet="collapsed" aria-label="식당 목록">
+          <button class="sheet-handle" type="button" data-sheet-handle
+                  aria-label="목록 높이 바꾸기"></button>
+          <form class="search-panel" data-search-form>
+            <label class="search-field"><span class="sr-only">식당명 검색</span>
+              <input type="search" name="query" placeholder="식당명 검색" autocomplete="off">
+            </label>
+            <fieldset class="visit-filters"><legend class="sr-only">방문 횟수</legend>
+{_visit_filters()}
+            </fieldset>
+            <p class="result-count" aria-live="polite">
+              <strong data-total-count>0</strong>곳 전체 ·
+              <strong data-viewport-count>—</strong>곳 현재 지도 영역
+            </p>
+          </form>
+          <div class="list-view" data-list-view>
+            <ol class="restaurant-list" data-restaurant-list></ol>
+            <button class="more-button" type="button" data-restaurant-more hidden>
+              다음 식당 보기
+            </button>
+          </div>
+          <article class="restaurant-detail" data-restaurant-detail hidden></article>
+        </aside>
       </section>
       <section class="records-panel" data-panel="records" hidden>
         <header><p class="eyebrow">마커가 없는 레코드도 포함</p><h2>전체 장부</h2></header>
@@ -422,7 +529,7 @@ def _city_page(
     <dialog class="source-dialog" data-source-dialog>
       <button type="button" class="dialog-close" data-close-sources aria-label="닫기">×</button>
       <p class="eyebrow">자료 범위</p><h2>대상 기간 {REPORTING_PERIOD}</h2>
-{_collection_table(statuses)}{_scope_line(scope)}
+{_collection_table(statuses)}{_scope_line(scope)}{_repeated_expense_line(scope.repeated)}
       <p class="collection-warning">
         레코드 없음과 수집 보류는 집행이 없었다는 뜻이 아닙니다.
       </p>

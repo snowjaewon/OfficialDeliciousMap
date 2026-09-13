@@ -16,6 +16,13 @@ from deliciousmap.contracts import (
 # identity-2: 업소 확인이 상호 범위를 선언할 수 있게 됐다(#64).
 POLICY_VERSION = "identity-2"
 
+# 판정 키가 레코드에서 담는 칸. `decide_identity`가 레코드에서 읽는 것이 이 둘뿐이다 —
+# `record_id`는 판정을 그 지출에 묶고, `merchant`는 확정 복원명이 없을 때 근거와 맞춰 볼 이름이다.
+# 판정이 읽지 않는 칸을 담으면 판정이 하나도 바뀌지 않은 재실행이 이력을 통째로 다시 쌓는다.
+# 목록을 여기 두는 것은 레코드 계약이 늘 때 키가 조용히 바뀌지 않게 하기 위해서다([ADR-0005](
+# ../../docs/adr/0005-key-only-what-the-decision-reads.md)).
+KEYED_RECORD_FIELDS = ("record_id", "merchant")
+
 
 def normalized(value: str) -> str:
     return " ".join(unicodedata.normalize("NFC", value).split()).casefold()
@@ -52,7 +59,7 @@ def lookup_key(
     return digest(
         {
             "policy": POLICY_VERSION,
-            "record": record.model_dump(mode="json"),
+            "record": record.model_dump(mode="json", include=set(KEYED_RECORD_FIELDS)),
             "dependencies": dependency_key,
             "lookup": lookup.model_dump(mode="json"),
             "confirmation": confirmation.model_dump(mode="json") if confirmation else None,

@@ -53,9 +53,13 @@ class HeaderMapper(Protocol):
 
 
 class Unresolved(Exception):
-    def __init__(self, reason: UnresolvedReason, detail: str = "") -> None:
+    def __init__(
+        self, reason: UnresolvedReason, detail: str = "", mapping: HeaderMap | None = None
+    ) -> None:
         self.reason: UnresolvedReason = reason
         self.detail = detail
+        # 검증에 실패해 쓰지 않는 판정. 분모를 세는 데만 넘기며 없을 수도 있다.
+        self.mapping = mapping
         super().__init__(reason)
 
 
@@ -78,6 +82,7 @@ def resolve(
     stores = _Stores(cache_path, answers_path, budget)
     mappings: list[HeaderMap] = []
     unresolved: list[UnresolvedSource] = []
+    unused: list[HeaderMap] = []
     done: set[str] = set()
     for source in sources:
         # 같은 원본이 여러 게시글에 붙어 있어도 한 번만 판정한다.
@@ -86,38 +91,75 @@ def resolve(
         done.add(source.source_hash)
         try:
             tables = grid.read_tables(raw_root / source.path)
-            if not tables:
-                raise Unresolved("no_table")
-            found = [_map_table(source, table, stores, mapper) for table in tables]
         except grid.UnsupportedFormat:
             unresolved.append(
                 UnresolvedSource(source_hash=source.source_hash, reason="unsupported_format")
             )
+            continue
         except grid.UnreadableOriginal:
             unresolved.append(UnresolvedSource(source_hash=source.source_hash, reason="unreadable"))
-        except Unresolved as exc:
-            unresolved.append(
-                UnresolvedSource(
-                    source_hash=source.source_hash, reason=exc.reason, detail=exc.detail
-                )
+            continue
+        if not tables:
+            unresolved.append(UnresolvedSource(source_hash=source.source_hash, reason="no_table"))
+            continue
+        found = _map_tables(source, tables, stores, mapper)
+        if found.failure is None:
+            mappings.extend(found.mappings)
+            continue
+        # 원본 하나가 미해결이어도 표마다 판정은 끝까지 한다. 그래야 이 원본의 분모를 안다.
+        unresolved.append(
+            UnresolvedSource(
+                source_hash=source.source_hash,
+                reason=found.failure.reason,
+                detail=found.failure.detail,
             )
-        else:
-            mappings.extend(found)
-    return HeaderMapOutput(mappings=tuple(mappings), unresolved=tuple(unresolved))
+        )
+        unused.extend(found.mappings)
+    return HeaderMapOutput(
+        mappings=tuple(mappings),
+        unresolved=tuple(unresolved),
+        unresolved_mappings=tuple(unused),
+    )
+
+
+@dataclass(frozen=True)
+class _Mapped:
+    """원본 하나의 표를 모두 판정한 결과. 실패해도 얻은 매핑은 분모를 세는 데 남긴다."""
+
+    mappings: tuple[HeaderMap, ...]
+    # 첫 실패. 없으면 원본이 통과했다는 뜻이다.
+    failure: Unresolved | None
+
+
+def _map_tables(
+    source: SourceRef, tables: tuple[grid.Table, ...], stores: _Stores, mapper: HeaderMapper | None
+) -> _Mapped:
+    found: list[HeaderMap] = []
+    failure: Unresolved | None = None
+    for table in tables:
+        try:
+            found.append(_map_table(source, table, stores, mapper))
+        except Unresolved as exc:
+            failure = failure or exc
+            if exc.mapping is not None:
+                found.append(exc.mapping)
+    return _Mapped(tuple(found), failure)
 
 
 def _map_table(
     source: SourceRef, table: grid.Table, stores: _Stores, mapper: HeaderMapper | None
 ) -> HeaderMap:
     cached = _cached(source, table, stores.cache)
-    failures: list[str] = []
+    failures: list[tuple[HeaderMap, str]] = []
     for candidate in cached:
         found = _failure(source, table, candidate)
         if found is None:
             return candidate
-        failures.append(found)
+        failures.append((candidate, found))
     # 캐시가 모두 실패하면 이 원본에서는 쓰지 않는다. 재호출에는 최신 판정의 실패 사유를 싣는다.
-    failure: str | None = failures[0] if failures else None
+    failure: str | None = failures[0][1] if failures else None
+    # 쓰지 않기로 한 판정도 남긴다. 분모를 세는 데는 검증에 실패한 매핑도 쓸 수 있다.
+    unused: HeaderMap | None = failures[0][0] if failures else None
     # 이미 받은 답은 다시 묻지 않고 현재 코드로 다시 검증한다(호출 이력으로 중복 호출 방지).
     key = answers_key(source, table)
     recorded = [
@@ -127,11 +169,14 @@ def _map_table(
     ]
     for previous in recorded:
         _settled(table, previous)
-        mapping, failure = _verified(source, table, previous)
-        if mapping is not None:
-            return _accept(stores, table, mapping, previous)
+        checked = _verified(source, table, previous)
+        if checked.accepted is not None:
+            return _accept(stores, table, checked.accepted, previous)
+        unused, failure = checked.unused(unused), checked.failure
     if mapper is None:
-        raise Unresolved("validation_failed" if recorded else "model_not_configured", table.name)
+        raise Unresolved(
+            "validation_failed" if recorded else "model_not_configured", table.name, unused
+        )
     # 캐시 미적중이면 최초 호출과 재호출 한 번, 캐시 검증 실패면 재호출 한 번뿐이다.
     # 한도는 모델·지시문이 바뀌어도 이 표에 받은 답 전체로 센다.
     for _ in range(len(recorded), 1 if cached else 2):
@@ -158,10 +203,11 @@ def _map_table(
             ),
         )
         _settled(table, fresh)
-        mapping, failure = _verified(source, table, fresh)
-        if mapping is not None:
-            return _accept(stores, table, mapping, fresh)
-    raise Unresolved("validation_failed", failure or table.name)
+        checked = _verified(source, table, fresh)
+        if checked.accepted is not None:
+            return _accept(stores, table, checked.accepted, fresh)
+        unused, failure = checked.unused(unused), checked.failure
+    raise Unresolved("validation_failed", failure or table.name, unused)
 
 
 def _settled(table: grid.Table, answer: RecordedAnswer) -> None:
@@ -176,17 +222,32 @@ def answers_key(source: SourceRef, table: grid.Table) -> str:
     return digest({"policy": POLICY_VERSION, "source": source.source_hash, "table": table.name})
 
 
-def _verified(
-    source: SourceRef, table: grid.Table, recorded: RecordedAnswer
-) -> tuple[HeaderMap | None, str | None]:
+@dataclass(frozen=True)
+class _Checked:
+    """판정 하나를 코드로 검증한 결과. 실패해도 옮긴 매핑은 남겨 분모를 세는 데 쓴다."""
+
+    mapping: HeaderMap | None
+    failure: str | None
+
+    @property
+    def accepted(self) -> HeaderMap | None:
+        """검증까지 통과해 레코드를 낼 수 있는 매핑."""
+        return self.mapping if self.failure is None else None
+
+    def unused(self, previous: HeaderMap | None) -> HeaderMap | None:
+        """쓰지 않기로 한 매핑. 이번에 옮긴 것이 있으면 그것이 최신 판정이다."""
+        return self.mapping if self.mapping is not None else previous
+
+
+def _verified(source: SourceRef, table: grid.Table, recorded: RecordedAnswer) -> _Checked:
+    """판정을 계약으로 옮기고 코드로 검증한다. 옮기지 못하면 매핑이 없다."""
     if recorded.answer is None:
-        return None, None
+        return _Checked(None, None)
     try:
         mapping = to_mapping(source, table, recorded.answer)
     except ValidationFailed as exc:
-        return None, exc.detail
-    failure = _failure(source, table, mapping)
-    return (mapping, None) if failure is None else (None, failure)
+        return _Checked(None, exc.detail)
+    return _Checked(mapping, _failure(source, table, mapping))
 
 
 def _accept(

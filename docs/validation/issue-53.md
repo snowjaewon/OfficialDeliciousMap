@@ -153,17 +153,58 @@ PR #80에서 `gh pr checks 80 --required`가 두 체크를 필수로 보였고 �
 키를 바꾸는 곳이 `.env`와 GitHub Variable 두 곳이라 어긋날 수 있다. `scripts/sync-github.sh`가
 `.env` 값을 Variable에 올리므로 키를 바꾸면 이 스크립트를 다시 실행한다.
 
-### 남은 원격 확인
+### 운영 첫 배포 (2026-09-12)
+
+PR #80을 `develop`에 머지했다(`d688411`). 그 `develop` push에서 `gitleaks`·`ci`가 통과했고 `production`은
+건너뛰었다. 이어 AGENTS.md의 릴리스 흐름대로 `release/0.1.0`을 만들고
+[PR #82](https://github.com/snowjaewon/OfficialDeliciousMap/pull/82)를 `main`에 머지했다(`78cc110`).
+그 `main` push의 [run 34695584834](https://github.com/snowjaewon/OfficialDeliciousMap/actions/runs/34695584834)는
+다음 순서로 진행됐다.
+
+- `ci-build` 통과
+- `production`: `wait-check`가 같은 커밋의 `gitleaks` 성공을 확인했다. 이어 Wrangler가 올렸고
+  (9개 파일 중 8개는 미리보기에서 이미 올린 것과 같아 1개만 새로 올림), 검증을 통과했다.
+
+| 항목 | 값 |
+| --- | --- |
+| commit | `78cc110a00645b2c568afb835e3200ab24c1c941` |
+| 배포 ID | `a6778b37-c351-4937-8325-c3bd2369d3f3` |
+| 고유 URL | `https://a6778b37.officialdeliciousmap.pages.dev` — 통과(파일 SHA256·주요 경로) |
+| 운영 alias | `https://officialdeliciousmap.pages.dev` — 통과(파일 SHA256·주요 경로) |
+| 직전 검증 배포 | 없음(`release.json`의 `previous: null`) |
+
+직전 운영 배포는 프로젝트를 만들 때 올린 빈 배포(404)라 자기 manifest가 없다. 그래서 롤백 대상으로
+보존하지 않았다. 이 실행이 실패했다면 사람이 대응해야 했다. artifact `release-78cc110…-1`에
+`release.json`이 남아 있다.
+
+**운영 지도 인증.** Chrome으로 `https://officialdeliciousmap.pages.dev/gwangju/`를 열었다. 결과는 이렇다.
+
+- 인증 요청 `200`, 설정 안내 없음, 인증 오류 콘솔 없음
+- 타일과 마커 묶음(12)이 그려짐
+- 움직이기 전 `12곳 전체 · 12곳 현재 지도 영역`
+- 서비스 워커 `sw.js`가 `/` 범위에서 `activated`, 다시 불렀을 때 페이지를 제어함
+- 받은 `deploy-manifest.json`의 commit은 `78cc110`
+
+창이 가려져 `first-ready`는 기록되지 않았다(#50의 확인 환경 주의).
+
+### 완료 기준 상태
 
 | 완료 기준 | 상태 |
 | --- | --- |
-| PR·push에서 `gitleaks`·`ci-build` 실행 | PR·브랜치 push에서 확인. `develop`·`main` push는 병합 뒤 확인 |
-| 문서만 바뀐 PR에도 두 체크 보고 | 경로 필터가 없다. 문서만 바꾼 PR은 아직 관찰하지 않음 |
-| 같은 저장소 PR 미리보기, summary의 URL·SHA·검증 결과 | 확인 |
+| `develop`·`main` 대상 PR과 두 브랜치 push에서 `gitleaks`·`ci-build` 실행 | 확인(PR #80·#82, `develop` push `d688411`, `main` push `78cc110`) |
+| 문서만 바뀐 PR에도 두 체크 보고 | 경로 필터가 없다. 문서만 바꾼 커밋의 push(PR #80의 `6c710e8`·`a526f8d`)에서 두 체크가 돌았다 |
+| `ci-build` 실패 판정(20MB·`dist/` 한도·참조 누락·build 도시 0곳) | 테스트로 확인 |
+| 같은 저장소 PR 미리보기, summary의 URL·SHA·검증 결과 | 확인(`pr-80`·`pr-82`) |
 | fork PR은 배포하지 않음 | job 조건으로만 확인. fork PR은 관찰하지 않음 |
-| `main` push 운영 배포, 고유 URL·운영 alias 대조 | 미확인(운영 배포 전) |
-| 실제 운영 롤백 | 미확인 |
-| 동결 설정 시 `main` push 미배포, 사유 있는 수동 실행 배포 | 미확인(판정은 테스트로 확인) |
+| `main` push 운영 배포, 고유 URL·운영 alias 대조 | 확인(`78cc110`) |
+| 검증 실패 시 롤백, 실행은 실패 | 판정은 테스트로 확인. 실제 운영 롤백은 **미확인**(정상 운영을 일부러 깨지 않았다) |
+| 동결 설정 시 `main` push 미배포, 사유 있는 수동 실행 배포 | 판정은 테스트로 확인. 실제 동결 실행은 **미확인**(동결 시각 설정은 #53 제외 범위) |
 | ruleset 필수 체크 추가 | 적용 |
-| 운영 URL·첫 PR alias의 실제 지도 인증 | PR alias 성공(Variable 키 교체 뒤), 운영 미확인 |
-| 이전 버전을 연 브라우저의 PWA 갱신 | 미확인 |
+| 운영 URL·첫 PR alias의 실제 지도 인증 | 둘 다 성공(PR alias는 Variable 키 교체 뒤) |
+| 이전 버전을 연 브라우저의 PWA 갱신 | 미리보기에서 관찰(아래) |
+| AGENTS.md 기본 검증 명령과 gitleaks | 확인(로컬과 CI) |
+
+**PWA 갱신.** 미리보기 `pr-80`에서 관찰한 것이다. 같은 Chrome 프로필이 예전 키로 build한 배포를 먼저
+열어 서비스 워커를 등록했다. 새 키로 다시 배포한 뒤 같은 주소를 다시 열자, 새 배포의 페이지와 키를
+받아 지도 인증에 성공했다. `sw.js`는 모든 GET을 네트워크에서 먼저 받고 실패할 때만 캐시를 쓴다.
+그래서 캐시가 예전 화면을 붙잡지 않는다. 운영 주소에서 두 번째 배포로 같은 확인을 되풀이하지는 않았다.

@@ -1,0 +1,3167 @@
+{
+  "measured_at": "2026-09-13T00:28:47.160Z",
+  "code_commit": "fd09233a9c78b81debeb7592c1bb00b3689b602f",
+  "worktree_clean": true,
+  "city": "gwangju",
+  "files": {
+    "markers.json": {
+      "bytes": 2839,
+      "sha256": "c8365fbe00b9325b8d7851e230e0b346973837678f0a90be77ebe0c76eab29dc",
+      "count": 12,
+      "schema_version": 6
+    },
+    "records.json": {
+      "bytes": 1107283,
+      "sha256": "3bdf55d7b73345e362c0cf709afc14dd2572755e7cfa50a4038a3bb7bf1edd9c",
+      "count": 2797,
+      "schema_version": 6
+    }
+  },
+  "shell": {
+    "sw.js": "ad8fe42aaa0b48118a558b9e816f0dbabfad634dba7c9e7703695a8782ad6b09",
+    "manifest.webmanifest": "98c60b4dfebfbbfa7a238547052fc381b5c3c278632112245ac3299c1fd0c03c",
+    "assets/app.js": "11b74cb7c9bb299687b8171b8bb0edc78841dcfa0ec7b4ecc00e28a4120fc0fd",
+    "assets/styles.css": "964908e8d6ac3588a5fc9822de0657c1e018ad50a228f951cf948c0a191be99f",
+    "gwangju/index.html": "c3bfdea8c53c9ed4b92488a5ae4b2e0a379cde9ac42103a088fe4952da330a3a"
+  },
+  "host": {
+    "platform": "Windows_NT 10.0.26200",
+    "cpu": "11th Gen Intel(R) Core(TM) i5-1155G7 @ 2.50GHz",
+    "logical_cpus": 8,
+    "memory_bytes": 16873869312,
+    "node": "v24.17.0",
+    "browser": "Chrome/152.0.7977.83",
+    "gpu_renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x00009A49) Direct3D11 vs_5_0 ps_5_0, D3D11-30.0.100.9836)",
+    "gpu_compositing": "enabled",
+    "headless": true,
+    "refresh_rate": "none (headless)"
+  },
+  "conditions": {
+    "required_runs": 20,
+    "runs": 20,
+    "query": "하",
+    "settle_ms": 1000,
+    "input": "CDP mouse and key events; touch emulation only on mobile",
+    "selection": "first search result, not a map marker tap",
+    "server": "cache-control: public, max-age=0, must-revalidate + weak ETag + gzip",
+    "performance_recording": {
+      "source": "CDP Tracing",
+      "trace_files": "stored outside the repository; only summaries are written to the result JSON",
+      "frame_budget_ms": 16.7,
+      "stutter_frame_ms": 33.3,
+      "freeze_frame_ms": 100,
+      "long_task_ms": 50
+    },
+    "environments": {
+      "mobile": {
+        "network": {
+          "offline": false,
+          "latency": 100,
+          "downloadThroughput": 1250000,
+          "uploadThroughput": 125000
+        },
+        "cpu_slowdown": 4,
+        "device": {
+          "width": 412,
+          "height": 915,
+          "deviceScaleFactor": 2.625,
+          "mobile": true
+        }
+      }
+    }
+  },
+  "environments": {
+    "mobile": {
+      "attempts": {
+        "first-visit": [
+          {
+            "duration_ms": 1016.4,
+            "transferred_bytes": 109926
+          },
+          {
+            "duration_ms": 1182.4,
+            "transferred_bytes": 110007
+          },
+          {
+            "duration_ms": 1012.1,
+            "transferred_bytes": 109935
+          },
+          {
+            "duration_ms": 1072.2,
+            "transferred_bytes": 109890
+          },
+          {
+            "duration_ms": 1013.8,
+            "transferred_bytes": 109878
+          },
+          {
+            "duration_ms": 2281.5,
+            "transferred_bytes": 115593
+          },
+          {
+            "duration_ms": 1800.6,
+            "transferred_bytes": 116575
+          },
+          {
+            "duration_ms": 1587.9,
+            "transferred_bytes": 113475
+          },
+          {
+            "duration_ms": 1369.7,
+            "transferred_bytes": 113457
+          },
+          {
+            "duration_ms": 1615.3,
+            "transferred_bytes": 116629
+          },
+          {
+            "duration_ms": 1070.8,
+            "transferred_bytes": 110375
+          },
+          {
+            "duration_ms": 1178.6,
+            "transferred_bytes": 110384
+          },
+          {
+            "duration_ms": 1170.2,
+            "transferred_bytes": 113478
+          },
+          {
+            "duration_ms": 1045.5,
+            "transferred_bytes": 109953
+          },
+          {
+            "duration_ms": 1286.8,
+            "transferred_bytes": 113460
+          },
+          {
+            "duration_ms": 1026,
+            "transferred_bytes": 109878
+          },
+          {
+            "duration_ms": 2895.1,
+            "transferred_bytes": 116595
+          },
+          {
+            "duration_ms": 1277.4,
+            "transferred_bytes": 113469
+          },
+          {
+            "duration_ms": 1268.5,
+            "transferred_bytes": 113478
+          },
+          {
+            "duration_ms": 980.3,
+            "transferred_bytes": 109899
+          }
+        ],
+        "records-first-list": [
+          {
+            "duration_ms": 694.8
+          },
+          {
+            "duration_ms": 896.5
+          },
+          {
+            "duration_ms": 523.8
+          },
+          {
+            "duration_ms": 676.1
+          },
+          {
+            "duration_ms": 580.7
+          },
+          {
+            "duration_ms": 1524.4
+          },
+          {
+            "duration_ms": 725.3
+          },
+          {
+            "duration_ms": 826.2
+          },
+          {
+            "duration_ms": 803.7
+          },
+          {
+            "duration_ms": 728.7
+          },
+          {
+            "duration_ms": 632.1
+          },
+          {
+            "duration_ms": 662.7
+          },
+          {
+            "duration_ms": 734.5
+          },
+          {
+            "duration_ms": 598.7
+          },
+          {
+            "duration_ms": 597.4
+          },
+          {
+            "duration_ms": 1127.7
+          },
+          {
+            "duration_ms": 724
+          },
+          {
+            "duration_ms": 579.2
+          },
+          {
+            "duration_ms": 666.7
+          },
+          {
+            "duration_ms": 601.7
+          }
+        ],
+        "search-feedback": [
+          {
+            "duration_ms": 64
+          },
+          {
+            "duration_ms": 32
+          },
+          {
+            "duration_ms": 24
+          },
+          {
+            "duration_ms": 24
+          },
+          {
+            "duration_ms": 40
+          },
+          {
+            "duration_ms": 112
+          },
+          {
+            "duration_ms": 88
+          },
+          {
+            "duration_ms": 128
+          },
+          {
+            "duration_ms": 40
+          },
+          {
+            "duration_ms": 136
+          },
+          {
+            "duration_ms": 48
+          },
+          {
+            "duration_ms": 32
+          },
+          {
+            "duration_ms": 40
+          },
+          {
+            "duration_ms": 32
+          },
+          {
+            "duration_ms": 32
+          },
+          {
+            "duration_ms": 112
+          },
+          {
+            "duration_ms": 104
+          },
+          {
+            "duration_ms": 40
+          },
+          {
+            "duration_ms": 40
+          },
+          {
+            "duration_ms": 40
+          }
+        ],
+        "search-result": [
+          {
+            "duration_ms": 51.6
+          },
+          {
+            "duration_ms": 21.8
+          },
+          {
+            "duration_ms": 23.8
+          },
+          {
+            "duration_ms": 19.2
+          },
+          {
+            "duration_ms": 26.5
+          },
+          {
+            "duration_ms": 116.3
+          },
+          {
+            "duration_ms": 84.5
+          },
+          {
+            "duration_ms": 106.2
+          },
+          {
+            "duration_ms": 30.7
+          },
+          {
+            "duration_ms": 102.9
+          },
+          {
+            "duration_ms": 40.1
+          },
+          {
+            "duration_ms": 22.3
+          },
+          {
+            "duration_ms": 21.8
+          },
+          {
+            "duration_ms": 20.6
+          },
+          {
+            "duration_ms": 22.8
+          },
+          {
+            "duration_ms": 92.2
+          },
+          {
+            "duration_ms": 100.2
+          },
+          {
+            "duration_ms": 35.2
+          },
+          {
+            "duration_ms": 23.1
+          },
+          {
+            "duration_ms": 22.4
+          }
+        ],
+        "filter-feedback": [
+          {
+            "duration_ms": 40
+          },
+          {
+            "duration_ms": 24
+          },
+          {
+            "duration_ms": 40
+          },
+          {
+            "duration_ms": 64
+          },
+          {
+            "duration_ms": 24
+          },
+          {
+            "duration_ms": 96
+          },
+          {
+            "duration_ms": 48
+          },
+          {
+            "duration_ms": 64
+          },
+          {
+            "duration_ms": 64
+          },
+          {
+            "duration_ms": 64
+          },
+          {
+            "duration_ms": 40
+          },
+          {
+            "duration_ms": 24
+          },
+          {
+            "duration_ms": 24
+          },
+          {
+            "duration_ms": 32
+          },
+          {
+            "duration_ms": 48
+          },
+          {
+            "duration_ms": 64
+          },
+          {
+            "duration_ms": 64
+          },
+          {
+            "duration_ms": 24
+          },
+          {
+            "duration_ms": 64
+          },
+          {
+            "duration_ms": 56
+          }
+        ],
+        "filter-result": [
+          {
+            "duration_ms": 25.5
+          },
+          {
+            "duration_ms": 23.4
+          },
+          {
+            "duration_ms": 28
+          },
+          {
+            "duration_ms": 53.1
+          },
+          {
+            "duration_ms": 28.1
+          },
+          {
+            "duration_ms": 137.1
+          },
+          {
+            "duration_ms": 43.1
+          },
+          {
+            "duration_ms": 72.1
+          },
+          {
+            "duration_ms": 63.4
+          },
+          {
+            "duration_ms": 78.2
+          },
+          {
+            "duration_ms": 31
+          },
+          {
+            "duration_ms": 22.1
+          },
+          {
+            "duration_ms": 18.8
+          },
+          {
+            "duration_ms": 25.8
+          },
+          {
+            "duration_ms": 44
+          },
+          {
+            "duration_ms": 80.6
+          },
+          {
+            "duration_ms": 72.8
+          },
+          {
+            "duration_ms": 32.4
+          },
+          {
+            "duration_ms": 64.1
+          },
+          {
+            "duration_ms": 34.3
+          }
+        ],
+        "selection-feedback": [
+          {
+            "duration_ms": 128
+          },
+          {
+            "duration_ms": 48
+          },
+          {
+            "duration_ms": 48
+          },
+          {
+            "duration_ms": 48
+          },
+          {
+            "duration_ms": 40
+          },
+          {
+            "duration_ms": 400
+          },
+          {
+            "duration_ms": 144
+          },
+          {
+            "duration_ms": 104
+          },
+          {
+            "duration_ms": 136
+          },
+          {
+            "duration_ms": 56
+          },
+          {
+            "duration_ms": 112
+          },
+          {
+            "duration_ms": 64
+          },
+          {
+            "duration_ms": 56
+          },
+          {
+            "duration_ms": 40
+          },
+          {
+            "duration_ms": 112
+          },
+          {
+            "duration_ms": 344
+          },
+          {
+            "duration_ms": 192
+          },
+          {
+            "duration_ms": 88
+          },
+          {
+            "duration_ms": 56
+          },
+          {
+            "duration_ms": 64
+          }
+        ],
+        "selection-detail": [
+          {
+            "duration_ms": 28.2
+          },
+          {
+            "duration_ms": 36
+          },
+          {
+            "duration_ms": 30
+          },
+          {
+            "duration_ms": 36.5
+          },
+          {
+            "duration_ms": 30.3
+          },
+          {
+            "duration_ms": 217.9
+          },
+          {
+            "duration_ms": 143.2
+          },
+          {
+            "duration_ms": 93.6
+          },
+          {
+            "duration_ms": 116.5
+          },
+          {
+            "duration_ms": 41.7
+          },
+          {
+            "duration_ms": 40.1
+          },
+          {
+            "duration_ms": 38.3
+          },
+          {
+            "duration_ms": 30.1
+          },
+          {
+            "duration_ms": 27
+          },
+          {
+            "duration_ms": 94.6
+          },
+          {
+            "duration_ms": 154.3
+          },
+          {
+            "duration_ms": 180.5
+          },
+          {
+            "duration_ms": 67.9
+          },
+          {
+            "duration_ms": 48.6
+          },
+          {
+            "duration_ms": 39.7
+          }
+        ],
+        "revisit": [
+          {
+            "duration_ms": 1046.9,
+            "transferred_bytes": 467,
+            "service_worker": true
+          },
+          {
+            "duration_ms": 908.6,
+            "transferred_bytes": 467,
+            "service_worker": true
+          },
+          {
+            "duration_ms": 952.4,
+            "transferred_bytes": 467,
+            "service_worker": true
+          },
+          {
+            "duration_ms": 1018.4,
+            "transferred_bytes": 467,
+            "service_worker": true
+          },
+          {
+            "duration_ms": 923.9,
+            "transferred_bytes": 467,
+            "service_worker": true
+          },
+          {
+            "duration_ms": 1658.5,
+            "transferred_bytes": 467,
+            "service_worker": true
+          },
+          {
+            "duration_ms": 1160.8,
+            "transferred_bytes": 467,
+            "service_worker": true
+          },
+          {
+            "duration_ms": 1364.2,
+            "transferred_bytes": 467,
+            "service_worker": true
+          },
+          {
+            "duration_ms": 1124.4,
+            "transferred_bytes": 467,
+            "service_worker": true
+          },
+          {
+            "duration_ms": 1085.3,
+            "transferred_bytes": 467,
+            "service_worker": true
+          },
+          {
+            "duration_ms": 1495.9,
+            "transferred_bytes": 467,
+            "service_worker": true
+          },
+          {
+            "duration_ms": 1510.7,
+            "transferred_bytes": 467,
+            "service_worker": true
+          },
+          {
+            "duration_ms": 1250,
+            "transferred_bytes": 467,
+            "service_worker": true
+          },
+          {
+            "duration_ms": 1427.8,
+            "transferred_bytes": 467,
+            "service_worker": true
+          },
+          {
+            "duration_ms": 1261.5,
+            "transferred_bytes": 467,
+            "service_worker": true
+          },
+          {
+            "duration_ms": 952.3,
+            "transferred_bytes": 467,
+            "service_worker": true
+          },
+          {
+            "duration_ms": 1170.7,
+            "transferred_bytes": 467,
+            "service_worker": true
+          },
+          {
+            "duration_ms": 1349.8,
+            "transferred_bytes": 467,
+            "service_worker": true
+          },
+          {
+            "duration_ms": 1154.2,
+            "transferred_bytes": 467,
+            "service_worker": true
+          },
+          {
+            "duration_ms": 1207.9,
+            "transferred_bytes": 467,
+            "service_worker": true
+          }
+        ]
+      },
+      "failures": [],
+      "summaries": {
+        "first-visit": {
+          "runs": 20,
+          "second_slowest_ms": 2281.5,
+          "maximum_ms": 2895.1,
+          "target_ms": 4000,
+          "verdict": "pass"
+        },
+        "revisit": {
+          "runs": 20,
+          "second_slowest_ms": 1510.7,
+          "maximum_ms": 1658.5,
+          "target_ms": 2000,
+          "verdict": "pass"
+        },
+        "records-first-list": {
+          "runs": 20,
+          "second_slowest_ms": 1127.7,
+          "maximum_ms": 1524.4,
+          "target_ms": 2000,
+          "verdict": "pass"
+        },
+        "search-feedback": {
+          "runs": 20,
+          "second_slowest_ms": 128,
+          "maximum_ms": 136,
+          "target_ms": 50,
+          "verdict": "fail"
+        },
+        "search-result": {
+          "runs": 20,
+          "second_slowest_ms": 106.2,
+          "maximum_ms": 116.3,
+          "target_ms": 200,
+          "verdict": "pass"
+        },
+        "filter-feedback": {
+          "runs": 20,
+          "second_slowest_ms": 64,
+          "maximum_ms": 96,
+          "target_ms": 50,
+          "verdict": "fail"
+        },
+        "filter-result": {
+          "runs": 20,
+          "second_slowest_ms": 80.6,
+          "maximum_ms": 137.1,
+          "target_ms": 200,
+          "verdict": "pass"
+        },
+        "selection-feedback": {
+          "runs": 20,
+          "second_slowest_ms": 344,
+          "maximum_ms": 400,
+          "target_ms": 50,
+          "verdict": "fail"
+        },
+        "selection-detail": {
+          "runs": 20,
+          "second_slowest_ms": 180.5,
+          "maximum_ms": 217.9,
+          "target_ms": 200,
+          "verdict": "pass"
+        }
+      },
+      "frames": {
+        "zoom": [
+          {
+            "frames": 64,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 33.3,
+            "dropped_frames": 2
+          },
+          {
+            "frames": 64,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 66.7,
+            "dropped_frames": 3
+          },
+          {
+            "frames": 66,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 66.6,
+            "dropped_frames": 6
+          },
+          {
+            "frames": 61,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 50.1,
+            "dropped_frames": 2
+          },
+          {
+            "frames": 66,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 83.3,
+            "dropped_frames": 7
+          },
+          {
+            "frames": 44,
+            "median_frame_ms": 16.8,
+            "longest_frame_ms": 233.4,
+            "dropped_frames": 48
+          },
+          {
+            "frames": 54,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 116.7,
+            "dropped_frames": 19
+          },
+          {
+            "frames": 51,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 133.2,
+            "dropped_frames": 21
+          },
+          {
+            "frames": 59,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 66.5,
+            "dropped_frames": 9
+          },
+          {
+            "frames": 62,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 150.1,
+            "dropped_frames": 11
+          },
+          {
+            "frames": 62,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 50.1,
+            "dropped_frames": 9
+          },
+          {
+            "frames": 58,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 133.4,
+            "dropped_frames": 13
+          },
+          {
+            "frames": 62,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 83.4,
+            "dropped_frames": 8
+          },
+          {
+            "frames": 63,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 116.6,
+            "dropped_frames": 13
+          },
+          {
+            "frames": 63,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 66.4,
+            "dropped_frames": 6
+          },
+          {
+            "frames": 47,
+            "median_frame_ms": 16.8,
+            "longest_frame_ms": 266.4,
+            "dropped_frames": 37
+          },
+          {
+            "frames": 48,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 316.7,
+            "dropped_frames": 43
+          },
+          {
+            "frames": 66,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 83.4,
+            "dropped_frames": 6
+          },
+          {
+            "frames": 62,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 49.9,
+            "dropped_frames": 4
+          },
+          {
+            "frames": 65,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 33.5,
+            "dropped_frames": 4
+          }
+        ],
+        "drag": [
+          {
+            "frames": 103,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 50,
+            "dropped_frames": 7
+          },
+          {
+            "frames": 104,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 49.9,
+            "dropped_frames": 6
+          },
+          {
+            "frames": 90,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 66.7,
+            "dropped_frames": 28
+          },
+          {
+            "frames": 103,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 33.3,
+            "dropped_frames": 8
+          },
+          {
+            "frames": 101,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 33.5,
+            "dropped_frames": 5
+          },
+          {
+            "frames": 92,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 66.7,
+            "dropped_frames": 21
+          },
+          {
+            "frames": 99,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 66.6,
+            "dropped_frames": 13
+          },
+          {
+            "frames": 95,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 66.6,
+            "dropped_frames": 15
+          },
+          {
+            "frames": 100,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 66.7,
+            "dropped_frames": 9
+          },
+          {
+            "frames": 99,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 50.2,
+            "dropped_frames": 9
+          },
+          {
+            "frames": 97,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 50,
+            "dropped_frames": 7
+          },
+          {
+            "frames": 103,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 33.4,
+            "dropped_frames": 2
+          },
+          {
+            "frames": 103,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 33.9,
+            "dropped_frames": 5
+          },
+          {
+            "frames": 101,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 33.3,
+            "dropped_frames": 3
+          },
+          {
+            "frames": 107,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 49.9,
+            "dropped_frames": 3
+          },
+          {
+            "frames": 91,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 166.7,
+            "dropped_frames": 41
+          },
+          {
+            "frames": 100,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 66.7,
+            "dropped_frames": 13
+          },
+          {
+            "frames": 91,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 50.1,
+            "dropped_frames": 13
+          },
+          {
+            "frames": 93,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 33.4,
+            "dropped_frames": 7
+          },
+          {
+            "frames": 104,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 33.5,
+            "dropped_frames": 4
+          }
+        ],
+        "scroll": [
+          {
+            "frames": 71,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 16.8,
+            "dropped_frames": 0
+          },
+          {
+            "frames": 75,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 17.3,
+            "dropped_frames": 0
+          },
+          {
+            "frames": 80,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 16.8,
+            "dropped_frames": 0
+          },
+          {
+            "frames": 77,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 17.5,
+            "dropped_frames": 0
+          },
+          {
+            "frames": 75,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 17.2,
+            "dropped_frames": 0
+          },
+          {
+            "frames": 73,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 17.1,
+            "dropped_frames": 0
+          },
+          {
+            "frames": 74,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 16.9,
+            "dropped_frames": 0
+          },
+          {
+            "frames": 77,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 16.9,
+            "dropped_frames": 0
+          },
+          {
+            "frames": 73,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 16.8,
+            "dropped_frames": 0
+          },
+          {
+            "frames": 74,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 16.9,
+            "dropped_frames": 0
+          },
+          {
+            "frames": 76,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 17.9,
+            "dropped_frames": 0
+          },
+          {
+            "frames": 77,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 16.9,
+            "dropped_frames": 0
+          },
+          {
+            "frames": 77,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 17.6,
+            "dropped_frames": 0
+          },
+          {
+            "frames": 72,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 16.9,
+            "dropped_frames": 0
+          },
+          {
+            "frames": 75,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 16.9,
+            "dropped_frames": 0
+          },
+          {
+            "frames": 81,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 17.2,
+            "dropped_frames": 0
+          },
+          {
+            "frames": 76,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 16.9,
+            "dropped_frames": 0
+          },
+          {
+            "frames": 76,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 33.4,
+            "dropped_frames": 1
+          },
+          {
+            "frames": 76,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 16.9,
+            "dropped_frames": 0
+          },
+          {
+            "frames": 76,
+            "median_frame_ms": 16.7,
+            "longest_frame_ms": 16.9,
+            "dropped_frames": 0
+          }
+        ]
+      },
+      "tracing": {
+        "source": "CDP Tracing",
+        "criteria": {
+          "frame_budget_ms": 16.7,
+          "stutter_frame_ms": 33.3,
+          "freeze_frame_ms": 100,
+          "long_task_ms": 50,
+          "verdict": "pass only when all measured attempts have no stutter or freeze; fewer than 20 is unmeasured"
+        },
+        "gestures": {
+          "zoom": {
+            "attempts": [
+              {
+                "frames": 20,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 42,
+                "dropped_frames": 36,
+                "stutter_count": 7,
+                "freeze_count": 3,
+                "longest_frame_ms": 316.6,
+                "long_animation_frames": 3,
+                "longest_long_animation_frame_ms": 77.4,
+                "long_tasks": 0,
+                "longest_long_task_ms": null,
+                "source": {
+                  "application": {
+                    "count": 1,
+                    "total_ms": 77.4,
+                    "maximum_ms": 77.4
+                  },
+                  "naver_sdk": {
+                    "count": 2,
+                    "total_ms": 115.4,
+                    "maximum_ms": 64.9
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "naver_sdk"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 32,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 50,
+                "dropped_frames": 50,
+                "stutter_count": 6,
+                "freeze_count": 2,
+                "longest_frame_ms": 266.7,
+                "long_animation_frames": 4,
+                "longest_long_animation_frame_ms": 94.3,
+                "long_tasks": 1,
+                "longest_long_task_ms": 55.3,
+                "source": {
+                  "application": {
+                    "count": 2,
+                    "total_ms": 123.4,
+                    "maximum_ms": 71.5
+                  },
+                  "naver_sdk": {
+                    "count": 2,
+                    "total_ms": 175.9,
+                    "maximum_ms": 94.3
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "naver_sdk"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 30,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 54,
+                "dropped_frames": 54,
+                "stutter_count": 6,
+                "freeze_count": 5,
+                "longest_frame_ms": 200.2,
+                "long_animation_frames": 3,
+                "longest_long_animation_frame_ms": 103.6,
+                "long_tasks": 1,
+                "longest_long_task_ms": 67.8,
+                "source": {
+                  "application": {
+                    "count": 1,
+                    "total_ms": 72.1,
+                    "maximum_ms": 72.1
+                  },
+                  "naver_sdk": {
+                    "count": 2,
+                    "total_ms": 184.6,
+                    "maximum_ms": 103.6
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "naver_sdk"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 27,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 48,
+                "dropped_frames": 48,
+                "stutter_count": 6,
+                "freeze_count": 5,
+                "longest_frame_ms": 216.7,
+                "long_animation_frames": 4,
+                "longest_long_animation_frame_ms": 109.3,
+                "long_tasks": 1,
+                "longest_long_task_ms": 75.9,
+                "source": {
+                  "application": {
+                    "count": 2,
+                    "total_ms": 186.2,
+                    "maximum_ms": 109.3
+                  },
+                  "naver_sdk": {
+                    "count": 2,
+                    "total_ms": 163,
+                    "maximum_ms": 99.7
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "application"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 28,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 61,
+                "dropped_frames": 61,
+                "stutter_count": 6,
+                "freeze_count": 4,
+                "longest_frame_ms": 300,
+                "long_animation_frames": 6,
+                "longest_long_animation_frame_ms": 130,
+                "long_tasks": 1,
+                "longest_long_task_ms": 69.3,
+                "source": {
+                  "application": {
+                    "count": 3,
+                    "total_ms": 285.5,
+                    "maximum_ms": 130
+                  },
+                  "naver_sdk": {
+                    "count": 3,
+                    "total_ms": 212.8,
+                    "maximum_ms": 91.9
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "application"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 44,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 67,
+                "dropped_frames": 67,
+                "stutter_count": 13,
+                "freeze_count": 11,
+                "longest_frame_ms": 233.4,
+                "long_animation_frames": 17,
+                "longest_long_animation_frame_ms": 251.4,
+                "long_tasks": 6,
+                "longest_long_task_ms": 179.8,
+                "source": {
+                  "application": {
+                    "count": 9,
+                    "total_ms": 610.7,
+                    "maximum_ms": 118.8
+                  },
+                  "naver_sdk": {
+                    "count": 10,
+                    "total_ms": 1332.4,
+                    "maximum_ms": 251.4
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "naver_sdk"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 20,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 54,
+                "dropped_frames": 52,
+                "stutter_count": 11,
+                "freeze_count": 7,
+                "longest_frame_ms": 399.9,
+                "long_animation_frames": 12,
+                "longest_long_animation_frame_ms": 152.2,
+                "long_tasks": 3,
+                "longest_long_task_ms": 75.6,
+                "source": {
+                  "application": {
+                    "count": 4,
+                    "total_ms": 294.9,
+                    "maximum_ms": 126.9
+                  },
+                  "naver_sdk": {
+                    "count": 8,
+                    "total_ms": 678.6,
+                    "maximum_ms": 152.2
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "naver_sdk"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 20,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 48,
+                "dropped_frames": 23,
+                "stutter_count": 6,
+                "freeze_count": 8,
+                "longest_frame_ms": 333.3,
+                "long_animation_frames": 7,
+                "longest_long_animation_frame_ms": 158.8,
+                "long_tasks": 4,
+                "longest_long_task_ms": 102.9,
+                "source": {
+                  "application": {
+                    "count": 1,
+                    "total_ms": 53.1,
+                    "maximum_ms": 53.1
+                  },
+                  "naver_sdk": {
+                    "count": 7,
+                    "total_ms": 737.2,
+                    "maximum_ms": 158.8
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "naver_sdk"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 19,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 47,
+                "dropped_frames": 11,
+                "stutter_count": 5,
+                "freeze_count": 2,
+                "longest_frame_ms": 550,
+                "long_animation_frames": 6,
+                "longest_long_animation_frame_ms": 93.6,
+                "long_tasks": 2,
+                "longest_long_task_ms": 58.3,
+                "source": {
+                  "application": {
+                    "count": 1,
+                    "total_ms": 93.6,
+                    "maximum_ms": 93.6
+                  },
+                  "naver_sdk": {
+                    "count": 6,
+                    "total_ms": 362.9,
+                    "maximum_ms": 74
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "naver_sdk"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 21,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 56,
+                "dropped_frames": 56,
+                "stutter_count": 6,
+                "freeze_count": 5,
+                "longest_frame_ms": 549.9,
+                "long_animation_frames": 5,
+                "longest_long_animation_frame_ms": 197.6,
+                "long_tasks": 2,
+                "longest_long_task_ms": 99,
+                "source": {
+                  "application": {
+                    "count": 2,
+                    "total_ms": 134,
+                    "maximum_ms": 78.5
+                  },
+                  "naver_sdk": {
+                    "count": 3,
+                    "total_ms": 426.1,
+                    "maximum_ms": 197.6
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "naver_sdk"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 24,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 48,
+                "dropped_frames": 48,
+                "stutter_count": 7,
+                "freeze_count": 3,
+                "longest_frame_ms": 300,
+                "long_animation_frames": 7,
+                "longest_long_animation_frame_ms": 73.9,
+                "long_tasks": 1,
+                "longest_long_task_ms": 58.9,
+                "source": {
+                  "application": {
+                    "count": 2,
+                    "total_ms": 143.9,
+                    "maximum_ms": 72.5
+                  },
+                  "naver_sdk": {
+                    "count": 5,
+                    "total_ms": 308.4,
+                    "maximum_ms": 73.9
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "naver_sdk"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 18,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 59,
+                "dropped_frames": 59,
+                "stutter_count": 8,
+                "freeze_count": 5,
+                "longest_frame_ms": 300,
+                "long_animation_frames": 7,
+                "longest_long_animation_frame_ms": 168.8,
+                "long_tasks": 1,
+                "longest_long_task_ms": 95.3,
+                "source": {
+                  "application": {
+                    "count": 2,
+                    "total_ms": 241.1,
+                    "maximum_ms": 168.8
+                  },
+                  "naver_sdk": {
+                    "count": 5,
+                    "total_ms": 396.7,
+                    "maximum_ms": 146.7
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "naver_sdk"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 23,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 49,
+                "dropped_frames": 49,
+                "stutter_count": 5,
+                "freeze_count": 5,
+                "longest_frame_ms": 300,
+                "long_animation_frames": 4,
+                "longest_long_animation_frame_ms": 112.8,
+                "long_tasks": 2,
+                "longest_long_task_ms": 65.1,
+                "source": {
+                  "application": {
+                    "count": 1,
+                    "total_ms": 112.1,
+                    "maximum_ms": 112.1
+                  },
+                  "naver_sdk": {
+                    "count": 3,
+                    "total_ms": 304.4,
+                    "maximum_ms": 112.8
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "naver_sdk"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 26,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 61,
+                "dropped_frames": 61,
+                "stutter_count": 8,
+                "freeze_count": 5,
+                "longest_frame_ms": 350,
+                "long_animation_frames": 5,
+                "longest_long_animation_frame_ms": 132.8,
+                "long_tasks": 1,
+                "longest_long_task_ms": 102.4,
+                "source": {
+                  "application": {
+                    "count": 2,
+                    "total_ms": 147.1,
+                    "maximum_ms": 77.9
+                  },
+                  "naver_sdk": {
+                    "count": 3,
+                    "total_ms": 307.7,
+                    "maximum_ms": 132.8
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "naver_sdk"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 34,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 33,
+                "dropped_frames": 33,
+                "stutter_count": 8,
+                "freeze_count": 2,
+                "longest_frame_ms": 249.9,
+                "long_animation_frames": 5,
+                "longest_long_animation_frame_ms": 86.8,
+                "long_tasks": 1,
+                "longest_long_task_ms": 55.6,
+                "source": {
+                  "application": {
+                    "count": 2,
+                    "total_ms": 148.8,
+                    "maximum_ms": 86.8
+                  },
+                  "naver_sdk": {
+                    "count": 3,
+                    "total_ms": 210.8,
+                    "maximum_ms": 81.3
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "naver_sdk"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 43,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 51,
+                "dropped_frames": 51,
+                "stutter_count": 12,
+                "freeze_count": 7,
+                "longest_frame_ms": 266.5,
+                "long_animation_frames": 18,
+                "longest_long_animation_frame_ms": 298.1,
+                "long_tasks": 7,
+                "longest_long_task_ms": 196.4,
+                "source": {
+                  "application": {
+                    "count": 15,
+                    "total_ms": 1125.2,
+                    "maximum_ms": 178.6
+                  },
+                  "naver_sdk": {
+                    "count": 6,
+                    "total_ms": 840.3,
+                    "maximum_ms": 298.1
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "application"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 12,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 79,
+                "dropped_frames": 39,
+                "stutter_count": 8,
+                "freeze_count": 8,
+                "longest_frame_ms": 633.5,
+                "long_animation_frames": 11,
+                "longest_long_animation_frame_ms": 348.2,
+                "long_tasks": 4,
+                "longest_long_task_ms": 182.7,
+                "source": {
+                  "application": {
+                    "count": 6,
+                    "total_ms": 324,
+                    "maximum_ms": 57.7
+                  },
+                  "naver_sdk": {
+                    "count": 5,
+                    "total_ms": 1083.4,
+                    "maximum_ms": 348.2
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "naver_sdk"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 24,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 47,
+                "dropped_frames": 31,
+                "stutter_count": 5,
+                "freeze_count": 5,
+                "longest_frame_ms": 383.3,
+                "long_animation_frames": 4,
+                "longest_long_animation_frame_ms": 122.6,
+                "long_tasks": 1,
+                "longest_long_task_ms": 58.3,
+                "source": {
+                  "application": {
+                    "count": 1,
+                    "total_ms": 77.9,
+                    "maximum_ms": 77.9
+                  },
+                  "naver_sdk": {
+                    "count": 3,
+                    "total_ms": 290.5,
+                    "maximum_ms": 122.6
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "naver_sdk"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 26,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 44,
+                "dropped_frames": 34,
+                "stutter_count": 6,
+                "freeze_count": 4,
+                "longest_frame_ms": 433.3,
+                "long_animation_frames": 6,
+                "longest_long_animation_frame_ms": 116.4,
+                "long_tasks": 1,
+                "longest_long_task_ms": 82.5,
+                "source": {
+                  "application": {
+                    "count": 2,
+                    "total_ms": 220.9,
+                    "maximum_ms": 116.4
+                  },
+                  "naver_sdk": {
+                    "count": 4,
+                    "total_ms": 255.9,
+                    "maximum_ms": 78.4
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "naver_sdk"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 27,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 61,
+                "dropped_frames": 61,
+                "stutter_count": 8,
+                "freeze_count": 6,
+                "longest_frame_ms": 249.9,
+                "long_animation_frames": 5,
+                "longest_long_animation_frame_ms": 147.1,
+                "long_tasks": 1,
+                "longest_long_task_ms": 97.8,
+                "source": {
+                  "application": {
+                    "count": 2,
+                    "total_ms": 212.1,
+                    "maximum_ms": 147.1
+                  },
+                  "naver_sdk": {
+                    "count": 3,
+                    "total_ms": 245,
+                    "maximum_ms": 127.3
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "naver_sdk"
+                },
+                "verdict": "fail"
+              }
+            ],
+            "summary": {
+              "runs": 20,
+              "passing_runs": 0,
+              "stutter_runs": 20,
+              "freeze_runs": 20,
+              "longest_frame_ms": 633.5,
+              "verdict": "fail"
+            }
+          },
+          "drag": {
+            "attempts": [
+              {
+                "frames": 47,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 30,
+                "dropped_frames": 24,
+                "stutter_count": 14,
+                "freeze_count": 0,
+                "longest_frame_ms": 50.1,
+                "long_animation_frames": 5,
+                "longest_long_animation_frame_ms": 74,
+                "long_tasks": 2,
+                "longest_long_task_ms": 58.9,
+                "source": {
+                  "application": {
+                    "count": 1,
+                    "total_ms": 63.5,
+                    "maximum_ms": 63.5
+                  },
+                  "naver_sdk": {
+                    "count": 6,
+                    "total_ms": 350.7,
+                    "maximum_ms": 74
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "naver_sdk"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 47,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 30,
+                "dropped_frames": 23,
+                "stutter_count": 17,
+                "freeze_count": 0,
+                "longest_frame_ms": 50.1,
+                "long_animation_frames": 5,
+                "longest_long_animation_frame_ms": 64.5,
+                "long_tasks": 1,
+                "longest_long_task_ms": 54.2,
+                "source": {
+                  "application": {
+                    "count": 1,
+                    "total_ms": 64.5,
+                    "maximum_ms": 64.5
+                  },
+                  "naver_sdk": {
+                    "count": 5,
+                    "total_ms": 275.4,
+                    "maximum_ms": 58.1
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "naver_sdk"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 43,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 42,
+                "dropped_frames": 40,
+                "stutter_count": 23,
+                "freeze_count": 0,
+                "longest_frame_ms": 66.7,
+                "long_animation_frames": 15,
+                "longest_long_animation_frame_ms": 83.2,
+                "long_tasks": 2,
+                "longest_long_task_ms": 81,
+                "source": {
+                  "application": {
+                    "count": 1,
+                    "total_ms": 61.9,
+                    "maximum_ms": 61.9
+                  },
+                  "naver_sdk": {
+                    "count": 15,
+                    "total_ms": 973.9,
+                    "maximum_ms": 83.2
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "naver_sdk"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 55,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 32,
+                "dropped_frames": 32,
+                "stutter_count": 9,
+                "freeze_count": 0,
+                "longest_frame_ms": 50,
+                "long_animation_frames": 7,
+                "longest_long_animation_frame_ms": 73.8,
+                "long_tasks": 0,
+                "longest_long_task_ms": null,
+                "source": {
+                  "application": {
+                    "count": 6,
+                    "total_ms": 362,
+                    "maximum_ms": 65.1
+                  },
+                  "naver_sdk": {
+                    "count": 1,
+                    "total_ms": 73.8,
+                    "maximum_ms": 73.8
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "application"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 55,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 31,
+                "dropped_frames": 31,
+                "stutter_count": 13,
+                "freeze_count": 0,
+                "longest_frame_ms": 50.2,
+                "long_animation_frames": 4,
+                "longest_long_animation_frame_ms": 64.2,
+                "long_tasks": 0,
+                "longest_long_task_ms": null,
+                "source": {
+                  "application": {
+                    "count": 3,
+                    "total_ms": 180.2,
+                    "maximum_ms": 64.2
+                  },
+                  "naver_sdk": {
+                    "count": 1,
+                    "total_ms": 50.6,
+                    "maximum_ms": 50.6
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "application"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 48,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 39,
+                "dropped_frames": 39,
+                "stutter_count": 16,
+                "freeze_count": 0,
+                "longest_frame_ms": 66.7,
+                "long_animation_frames": 15,
+                "longest_long_animation_frame_ms": 97.3,
+                "long_tasks": 1,
+                "longest_long_task_ms": 52.9,
+                "source": {
+                  "application": {
+                    "count": 6,
+                    "total_ms": 372.9,
+                    "maximum_ms": 76.8
+                  },
+                  "naver_sdk": {
+                    "count": 9,
+                    "total_ms": 562.3,
+                    "maximum_ms": 97.3
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "naver_sdk"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 54,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 35,
+                "dropped_frames": 35,
+                "stutter_count": 13,
+                "freeze_count": 0,
+                "longest_frame_ms": 66.6,
+                "long_animation_frames": 13,
+                "longest_long_animation_frame_ms": 97.1,
+                "long_tasks": 0,
+                "longest_long_task_ms": null,
+                "source": {
+                  "application": {
+                    "count": 2,
+                    "total_ms": 115.7,
+                    "maximum_ms": 62.6
+                  },
+                  "naver_sdk": {
+                    "count": 11,
+                    "total_ms": 709.3,
+                    "maximum_ms": 97.1
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "naver_sdk"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 50,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 35,
+                "dropped_frames": 35,
+                "stutter_count": 15,
+                "freeze_count": 0,
+                "longest_frame_ms": 66.7,
+                "long_animation_frames": 8,
+                "longest_long_animation_frame_ms": 72.3,
+                "long_tasks": 1,
+                "longest_long_task_ms": 74.2,
+                "source": {
+                  "application": {
+                    "count": 3,
+                    "total_ms": 176.9,
+                    "maximum_ms": 64.4
+                  },
+                  "naver_sdk": {
+                    "count": 6,
+                    "total_ms": 392.8,
+                    "maximum_ms": 74.2
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "naver_sdk"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 52,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 31,
+                "dropped_frames": 31,
+                "stutter_count": 13,
+                "freeze_count": 0,
+                "longest_frame_ms": 66.6,
+                "long_animation_frames": 8,
+                "longest_long_animation_frame_ms": 89.8,
+                "long_tasks": 1,
+                "longest_long_task_ms": 53.4,
+                "source": {
+                  "application": {
+                    "count": 4,
+                    "total_ms": 254.3,
+                    "maximum_ms": 65.1
+                  },
+                  "naver_sdk": {
+                    "count": 4,
+                    "total_ms": 285.8,
+                    "maximum_ms": 89.8
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "naver_sdk"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 48,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 27,
+                "dropped_frames": 26,
+                "stutter_count": 15,
+                "freeze_count": 0,
+                "longest_frame_ms": 50.2,
+                "long_animation_frames": 8,
+                "longest_long_animation_frame_ms": 79.2,
+                "long_tasks": 1,
+                "longest_long_task_ms": 59.8,
+                "source": {
+                  "application": {
+                    "count": 2,
+                    "total_ms": 116.9,
+                    "maximum_ms": 63.9
+                  },
+                  "naver_sdk": {
+                    "count": 7,
+                    "total_ms": 427.1,
+                    "maximum_ms": 79.2
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "naver_sdk"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 48,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 26,
+                "dropped_frames": 26,
+                "stutter_count": 8,
+                "freeze_count": 0,
+                "longest_frame_ms": 50,
+                "long_animation_frames": 6,
+                "longest_long_animation_frame_ms": 76.7,
+                "long_tasks": 0,
+                "longest_long_task_ms": null,
+                "source": {
+                  "application": {
+                    "count": 1,
+                    "total_ms": 64.9,
+                    "maximum_ms": 64.9
+                  },
+                  "naver_sdk": {
+                    "count": 5,
+                    "total_ms": 309.6,
+                    "maximum_ms": 76.7
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "naver_sdk"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 54,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 26,
+                "dropped_frames": 26,
+                "stutter_count": 13,
+                "freeze_count": 0,
+                "longest_frame_ms": 34,
+                "long_animation_frames": 5,
+                "longest_long_animation_frame_ms": 64.6,
+                "long_tasks": 0,
+                "longest_long_task_ms": null,
+                "source": {
+                  "application": {
+                    "count": 3,
+                    "total_ms": 177.5,
+                    "maximum_ms": 64.6
+                  },
+                  "naver_sdk": {
+                    "count": 2,
+                    "total_ms": 122.8,
+                    "maximum_ms": 63.3
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "application"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 50,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 26,
+                "dropped_frames": 26,
+                "stutter_count": 14,
+                "freeze_count": 0,
+                "longest_frame_ms": 50.2,
+                "long_animation_frames": 5,
+                "longest_long_animation_frame_ms": 65.1,
+                "long_tasks": 0,
+                "longest_long_task_ms": null,
+                "source": {
+                  "application": {
+                    "count": 3,
+                    "total_ms": 185.3,
+                    "maximum_ms": 65.1
+                  },
+                  "naver_sdk": {
+                    "count": 2,
+                    "total_ms": 110.2,
+                    "maximum_ms": 56.8
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "application"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 47,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 25,
+                "dropped_frames": 18,
+                "stutter_count": 11,
+                "freeze_count": 0,
+                "longest_frame_ms": 50,
+                "long_animation_frames": 4,
+                "longest_long_animation_frame_ms": 64,
+                "long_tasks": 0,
+                "longest_long_task_ms": null,
+                "source": {
+                  "application": {
+                    "count": 2,
+                    "total_ms": 118.2,
+                    "maximum_ms": 63.9
+                  },
+                  "naver_sdk": {
+                    "count": 2,
+                    "total_ms": 121.6,
+                    "maximum_ms": 64
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "naver_sdk"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 52,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 25,
+                "dropped_frames": 25,
+                "stutter_count": 11,
+                "freeze_count": 0,
+                "longest_frame_ms": 50.1,
+                "long_animation_frames": 3,
+                "longest_long_animation_frame_ms": 81.7,
+                "long_tasks": 0,
+                "longest_long_task_ms": null,
+                "source": {
+                  "application": {
+                    "count": 1,
+                    "total_ms": 64.8,
+                    "maximum_ms": 64.8
+                  },
+                  "naver_sdk": {
+                    "count": 2,
+                    "total_ms": 135.2,
+                    "maximum_ms": 81.7
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "naver_sdk"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 51,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 59,
+                "dropped_frames": 59,
+                "stutter_count": 19,
+                "freeze_count": 5,
+                "longest_frame_ms": 166.8,
+                "long_animation_frames": 18,
+                "longest_long_animation_frame_ms": 184.6,
+                "long_tasks": 6,
+                "longest_long_task_ms": 108.7,
+                "source": {
+                  "application": {
+                    "count": 3,
+                    "total_ms": 169.4,
+                    "maximum_ms": 58.6
+                  },
+                  "naver_sdk": {
+                    "count": 17,
+                    "total_ms": 1369.3,
+                    "maximum_ms": 184.6
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "naver_sdk"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 55,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 36,
+                "dropped_frames": 36,
+                "stutter_count": 14,
+                "freeze_count": 1,
+                "longest_frame_ms": 66.7,
+                "long_animation_frames": 10,
+                "longest_long_animation_frame_ms": 108.8,
+                "long_tasks": 2,
+                "longest_long_task_ms": 52.5,
+                "source": {
+                  "application": {
+                    "count": 6,
+                    "total_ms": 376.1,
+                    "maximum_ms": 66.9
+                  },
+                  "naver_sdk": {
+                    "count": 4,
+                    "total_ms": 302.2,
+                    "maximum_ms": 108.8
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "application"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 49,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 32,
+                "dropped_frames": 32,
+                "stutter_count": 12,
+                "freeze_count": 0,
+                "longest_frame_ms": 50.1,
+                "long_animation_frames": 4,
+                "longest_long_animation_frame_ms": 66.2,
+                "long_tasks": 0,
+                "longest_long_task_ms": null,
+                "source": {
+                  "application": {
+                    "count": 1,
+                    "total_ms": 64,
+                    "maximum_ms": 64
+                  },
+                  "naver_sdk": {
+                    "count": 3,
+                    "total_ms": 169.5,
+                    "maximum_ms": 66.2
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "naver_sdk"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 48,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 23,
+                "dropped_frames": 23,
+                "stutter_count": 8,
+                "freeze_count": 0,
+                "longest_frame_ms": 33.5,
+                "long_animation_frames": 3,
+                "longest_long_animation_frame_ms": 55.9,
+                "long_tasks": 1,
+                "longest_long_task_ms": 53.5,
+                "source": {
+                  "application": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "naver_sdk": {
+                    "count": 4,
+                    "total_ms": 216.3,
+                    "maximum_ms": 55.9
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "naver_sdk"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 50,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 26,
+                "dropped_frames": 24,
+                "stutter_count": 16,
+                "freeze_count": 0,
+                "longest_frame_ms": 50.1,
+                "long_animation_frames": 5,
+                "longest_long_animation_frame_ms": 65,
+                "long_tasks": 0,
+                "longest_long_task_ms": null,
+                "source": {
+                  "application": {
+                    "count": 2,
+                    "total_ms": 116.2,
+                    "maximum_ms": 65
+                  },
+                  "naver_sdk": {
+                    "count": 3,
+                    "total_ms": 161.9,
+                    "maximum_ms": 55.7
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "naver_sdk"
+                },
+                "verdict": "fail"
+              }
+            ],
+            "summary": {
+              "runs": 20,
+              "passing_runs": 0,
+              "stutter_runs": 20,
+              "freeze_runs": 2,
+              "longest_frame_ms": 166.8,
+              "verdict": "fail"
+            }
+          },
+          "scroll": {
+            "attempts": [
+              {
+                "frames": 32,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 37,
+                "dropped_frames": 2,
+                "stutter_count": 10,
+                "freeze_count": 1,
+                "longest_frame_ms": 333.3,
+                "long_animation_frames": 0,
+                "longest_long_animation_frame_ms": null,
+                "long_tasks": 0,
+                "longest_long_task_ms": null,
+                "source": {
+                  "application": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "naver_sdk": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": null
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 31,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 41,
+                "dropped_frames": 1,
+                "stutter_count": 11,
+                "freeze_count": 1,
+                "longest_frame_ms": 333.4,
+                "long_animation_frames": 0,
+                "longest_long_animation_frame_ms": null,
+                "long_tasks": 0,
+                "longest_long_task_ms": null,
+                "source": {
+                  "application": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "naver_sdk": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": null
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 34,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 43,
+                "dropped_frames": 3,
+                "stutter_count": 14,
+                "freeze_count": 1,
+                "longest_frame_ms": 333.3,
+                "long_animation_frames": 0,
+                "longest_long_animation_frame_ms": null,
+                "long_tasks": 0,
+                "longest_long_task_ms": null,
+                "source": {
+                  "application": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "naver_sdk": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": null
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 33,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 40,
+                "dropped_frames": 2,
+                "stutter_count": 11,
+                "freeze_count": 1,
+                "longest_frame_ms": 333.2,
+                "long_animation_frames": 0,
+                "longest_long_animation_frame_ms": null,
+                "long_tasks": 0,
+                "longest_long_task_ms": null,
+                "source": {
+                  "application": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "naver_sdk": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": null
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 32,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 40,
+                "dropped_frames": 1,
+                "stutter_count": 12,
+                "freeze_count": 1,
+                "longest_frame_ms": 333.6,
+                "long_animation_frames": 0,
+                "longest_long_animation_frame_ms": null,
+                "long_tasks": 0,
+                "longest_long_task_ms": null,
+                "source": {
+                  "application": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "naver_sdk": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": null
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 33,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 37,
+                "dropped_frames": 3,
+                "stutter_count": 10,
+                "freeze_count": 1,
+                "longest_frame_ms": 333.4,
+                "long_animation_frames": 0,
+                "longest_long_animation_frame_ms": null,
+                "long_tasks": 0,
+                "longest_long_task_ms": null,
+                "source": {
+                  "application": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "naver_sdk": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": null
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 32,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 40,
+                "dropped_frames": 2,
+                "stutter_count": 13,
+                "freeze_count": 1,
+                "longest_frame_ms": 333.5,
+                "long_animation_frames": 0,
+                "longest_long_animation_frame_ms": null,
+                "long_tasks": 0,
+                "longest_long_task_ms": null,
+                "source": {
+                  "application": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "naver_sdk": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": null
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 35,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 39,
+                "dropped_frames": 3,
+                "stutter_count": 12,
+                "freeze_count": 1,
+                "longest_frame_ms": 333.4,
+                "long_animation_frames": 0,
+                "longest_long_animation_frame_ms": null,
+                "long_tasks": 0,
+                "longest_long_task_ms": null,
+                "source": {
+                  "application": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "naver_sdk": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": null
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 33,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 37,
+                "dropped_frames": 2,
+                "stutter_count": 12,
+                "freeze_count": 1,
+                "longest_frame_ms": 333.3,
+                "long_animation_frames": 0,
+                "longest_long_animation_frame_ms": null,
+                "long_tasks": 0,
+                "longest_long_task_ms": null,
+                "source": {
+                  "application": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "naver_sdk": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": null
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 31,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 39,
+                "dropped_frames": 1,
+                "stutter_count": 10,
+                "freeze_count": 1,
+                "longest_frame_ms": 333.5,
+                "long_animation_frames": 0,
+                "longest_long_animation_frame_ms": null,
+                "long_tasks": 0,
+                "longest_long_task_ms": null,
+                "source": {
+                  "application": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "naver_sdk": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": null
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 33,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 40,
+                "dropped_frames": 3,
+                "stutter_count": 10,
+                "freeze_count": 1,
+                "longest_frame_ms": 333.3,
+                "long_animation_frames": 0,
+                "longest_long_animation_frame_ms": null,
+                "long_tasks": 0,
+                "longest_long_task_ms": null,
+                "source": {
+                  "application": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "naver_sdk": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": null
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 33,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 41,
+                "dropped_frames": 2,
+                "stutter_count": 13,
+                "freeze_count": 1,
+                "longest_frame_ms": 333.4,
+                "long_animation_frames": 0,
+                "longest_long_animation_frame_ms": null,
+                "long_tasks": 0,
+                "longest_long_task_ms": null,
+                "source": {
+                  "application": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "naver_sdk": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": null
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 33,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 40,
+                "dropped_frames": 2,
+                "stutter_count": 14,
+                "freeze_count": 1,
+                "longest_frame_ms": 333.4,
+                "long_animation_frames": 0,
+                "longest_long_animation_frame_ms": null,
+                "long_tasks": 0,
+                "longest_long_task_ms": null,
+                "source": {
+                  "application": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "naver_sdk": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": null
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 32,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 37,
+                "dropped_frames": 2,
+                "stutter_count": 10,
+                "freeze_count": 1,
+                "longest_frame_ms": 333.3,
+                "long_animation_frames": 0,
+                "longest_long_animation_frame_ms": null,
+                "long_tasks": 0,
+                "longest_long_task_ms": null,
+                "source": {
+                  "application": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "naver_sdk": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": null
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 33,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 39,
+                "dropped_frames": 2,
+                "stutter_count": 12,
+                "freeze_count": 1,
+                "longest_frame_ms": 333.2,
+                "long_animation_frames": 0,
+                "longest_long_animation_frame_ms": null,
+                "long_tasks": 0,
+                "longest_long_task_ms": null,
+                "source": {
+                  "application": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "naver_sdk": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": null
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 35,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 42,
+                "dropped_frames": 3,
+                "stutter_count": 12,
+                "freeze_count": 1,
+                "longest_frame_ms": 333.4,
+                "long_animation_frames": 0,
+                "longest_long_animation_frame_ms": null,
+                "long_tasks": 0,
+                "longest_long_task_ms": null,
+                "source": {
+                  "application": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "naver_sdk": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": null
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 32,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 40,
+                "dropped_frames": 2,
+                "stutter_count": 13,
+                "freeze_count": 1,
+                "longest_frame_ms": 333.3,
+                "long_animation_frames": 0,
+                "longest_long_animation_frame_ms": null,
+                "long_tasks": 0,
+                "longest_long_task_ms": null,
+                "source": {
+                  "application": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "naver_sdk": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": null
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 34,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 40,
+                "dropped_frames": 4,
+                "stutter_count": 11,
+                "freeze_count": 1,
+                "longest_frame_ms": 333.3,
+                "long_animation_frames": 1,
+                "longest_long_animation_frame_ms": 61.2,
+                "long_tasks": 0,
+                "longest_long_task_ms": null,
+                "source": {
+                  "application": {
+                    "count": 1,
+                    "total_ms": 61.2,
+                    "maximum_ms": 61.2
+                  },
+                  "naver_sdk": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": "application"
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 31,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 41,
+                "dropped_frames": 1,
+                "stutter_count": 14,
+                "freeze_count": 1,
+                "longest_frame_ms": 333.4,
+                "long_animation_frames": 0,
+                "longest_long_animation_frame_ms": null,
+                "long_tasks": 0,
+                "longest_long_task_ms": null,
+                "source": {
+                  "application": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "naver_sdk": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": null
+                },
+                "verdict": "fail"
+              },
+              {
+                "frames": 33,
+                "frame_budget_ms": 16.7,
+                "delayed_frames": 40,
+                "dropped_frames": 2,
+                "stutter_count": 12,
+                "freeze_count": 1,
+                "longest_frame_ms": 333.3,
+                "long_animation_frames": 0,
+                "longest_long_animation_frame_ms": null,
+                "long_tasks": 0,
+                "longest_long_task_ms": null,
+                "source": {
+                  "application": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "naver_sdk": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "other": {
+                    "count": 0,
+                    "total_ms": 0,
+                    "maximum_ms": null
+                  },
+                  "dominant": null
+                },
+                "verdict": "fail"
+              }
+            ],
+            "summary": {
+              "runs": 20,
+              "passing_runs": 0,
+              "stutter_runs": 20,
+              "freeze_runs": 20,
+              "longest_frame_ms": 333.6,
+              "verdict": "fail"
+            }
+          }
+        }
+      },
+      "diagnostics": {
+        "first_visit_transferred_bytes": [
+          109926,
+          110007,
+          109935,
+          109890,
+          109878,
+          115593,
+          116575,
+          113475,
+          113457,
+          116629,
+          110375,
+          110384,
+          113478,
+          109953,
+          113460,
+          109878,
+          116595,
+          113469,
+          113478,
+          109899
+        ],
+        "heap_used_bytes": [
+          4248748,
+          4239960,
+          4229124,
+          4252012,
+          4229736,
+          4239976,
+          4228540,
+          4229516,
+          4219676,
+          4216548,
+          4248584,
+          4253116,
+          4233576,
+          4239164,
+          4262860,
+          4258200,
+          4203224,
+          4232448,
+          4224884,
+          4228656
+        ]
+      }
+    }
+  },
+  "blocks": [
+    {
+      "measured_at": "2026-09-13T00:28:47.160Z",
+      "runs": 5,
+      "idle_cpu_percent": 12.6
+    },
+    {
+      "measured_at": "2026-09-13T00:33:03.430Z",
+      "runs": 5,
+      "idle_cpu_percent": 9.9
+    },
+    {
+      "measured_at": "2026-09-13T00:34:43.164Z",
+      "runs": 5,
+      "idle_cpu_percent": 8.7
+    },
+    {
+      "measured_at": "2026-09-13T00:39:24.413Z",
+      "runs": 5,
+      "idle_cpu_percent": 11.2
+    }
+  ]
+}

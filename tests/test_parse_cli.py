@@ -8,10 +8,12 @@ from pathlib import Path
 import pytest
 
 from deliciousmap.cli import main
+from deliciousmap.contracts import RepeatDecision
 from deliciousmap.storage import write_text
 from tests import pdf
 from tests.gwangju import (
     ANSWER_B,
+    HEADER_A,
     FakeBoardTransport,
     FakeModel,
     Post,
@@ -219,9 +221,95 @@ def test_failed_cache_hit_is_asked_once_more_then_left_unresolved(
     assert run(tmp_path, "parse") == 0
     report = {item["source_hash"]: item for item in payload(tmp_path, "parse")["sources"]}
     assert report[bad]["status"] == "unresolved"
-    assert report[bad]["candidates"] is None
+    assert report[bad]["candidates"] == 1
     # 실패한 원본의 일부는 확정하지 않고 다른 원본의 레코드는 보존한다.
     assert {row["source_hash"] for row in records(tmp_path)} == {good}
+
+
+def test_unresolved_original_carries_the_candidate_count_of_every_table(
+    tmp_path: Path, configured: None
+) -> None:
+    """검증에 실패한 원본도 후보 수를 장부에 싣는다. 통과한 시트의 후보까지 함께 센다."""
+    record_spending(tmp_path)
+    broken = sheet_a(
+        ("2026-01-05", "합성 식당", "협의", 4.0, 62000.0),
+        ("2026-01-06", "합성 국밥", "협의", 3.0, 27000.0),
+        total=False,
+    )
+    broken.append(("", "", "계", "", "", "2건", 62000.0, "", ""))
+    passing = sheet_a(("2026-02-03", "합성 카페", "협의", 2.0, 18000.0))
+    (source,) = publish(tmp_path, ("합계 불일치.xls", workbook(broken, passing)))
+    model = FakeModel(headers=[header_answer()] * 3)
+    assert run(tmp_path, "headermap", model) == 0
+    mapped = payload(tmp_path, "headermap")
+    assert mapped["mappings"] == []
+    assert mapped["unresolved"] == [
+        {
+            "source_hash": source,
+            "reason": "validation_failed",
+            "detail": "sheet1:R6 total amount mismatch",
+        }
+    ]
+    # 실패한 시트의 매핑도, 그 뒤 시트의 매핑도 parse까지 간다.
+    assert [item["table"] for item in mapped["unresolved_mappings"]] == ["sheet1", "sheet2"]
+
+    assert run(tmp_path, "parse") == 0
+    (report,) = payload(tmp_path, "parse")["sources"]
+    assert (report["status"], report["candidates"], report["records"]) == ("unresolved", 3, 0)
+    # 분모에서 뺀 행도 근거와 위치를 남긴다(빈 행·제목·합계).
+    assert report["excluded"] == ["sheet1:R6 total", "sheet2:R5 total"]
+    assert records(tmp_path) == []
+
+
+def test_table_without_a_mapping_leaves_the_candidate_count_unknown(
+    tmp_path: Path, configured: None
+) -> None:
+    """표 하나라도 매핑이 없으면 원본의 후보 수를 모른다. 0건 손실로 바꾸지 않는다."""
+    record_spending(tmp_path)
+    broken = sheet_a(("2026-01-05", "", "협의", 4.0, 62000.0), total=False)
+    passing = sheet_a(("2026-02-03", "합성 카페", "협의", 2.0, 18000.0))
+    (source,) = publish(tmp_path, ("상호 빈칸.xls", workbook(broken, passing)))
+    card = {**header_answer(), "layout": "key_value"}
+    model = FakeModel(headers=[header_answer(), header_answer(), card])
+    assert run(tmp_path, "headermap", model) == 0
+    mapped = payload(tmp_path, "headermap")
+    assert [item["table"] for item in mapped["unresolved_mappings"]] == ["sheet1"]
+    assert mapped["unresolved"] == [
+        {"source_hash": source, "reason": "validation_failed", "detail": "sheet1:R4 merchant"}
+    ]
+
+    assert run(tmp_path, "parse") == 0
+    (report,) = payload(tmp_path, "parse")["sources"]
+    assert (report["status"], report["candidates"], report["excluded"]) == ("unresolved", None, [])
+
+
+def test_mapping_that_finds_no_candidate_is_not_counted_as_zero(
+    tmp_path: Path, configured: None
+) -> None:
+    """쓰지 않기로 한 판정이 후보를 하나도 찾지 못하면 집행 없음이 아니라 알 수 없음이다."""
+    record_spending(tmp_path)
+    # 지출 행의 금액이 판정한 열에 없는 원본. 지출 행은 후보로 잡히지 않고 합계 행만 읽힌다.
+    sheet = [
+        (),
+        ("", "□ 합성과 업무추진비 사용내역(26.1월)"),
+        HEADER_A,
+        ("", "합성과장", "", "", "현안 업무 협의", 4.0, "", "카드", "62,000"),
+        ("", "", "계", "", "", "1건", 62000.0, "", ""),
+    ]
+    (source,) = publish(tmp_path, ("금액 열이 빈 표.xls", workbook(sheet)))
+    model = FakeModel(headers=[header_answer(), header_answer()])
+    assert run(tmp_path, "headermap", model) == 0
+    assert payload(tmp_path, "headermap")["unresolved"] == [
+        {
+            "source_hash": source,
+            "reason": "validation_failed",
+            "detail": "sheet1:R5 total amount mismatch",
+        }
+    ]
+
+    assert run(tmp_path, "parse") == 0
+    (report,) = payload(tmp_path, "parse")["sources"]
+    assert (report["status"], report["candidates"], report["excluded"]) == ("unresolved", None, [])
 
 
 @pytest.mark.parametrize("recovers", [True, False])
@@ -365,6 +453,8 @@ def test_mapping_that_cannot_be_requested_leaves_the_original_unresolved(
     parsed = payload(tmp_path, "parse")
     assert parsed["empty_reason"] == "no records in the reporting period"
     assert parsed["sources"][0]["status"] == "unresolved"
+    # 판정을 받지 못한 표는 후보 수를 모른다. 0건으로 바꾸지 않는다.
+    assert parsed["sources"][0]["candidates"] is None
     assert records(tmp_path) == []
 
 
@@ -671,6 +761,10 @@ def test_cumulative_repost_is_merged_and_both_originals_stay_traceable(
         "merged_records": 2,
         "unmerged_expenses": 0,
         "unmerged_records": 0,
+        "confirmed_expenses": 0,
+        "confirmed_records": 0,
+        "separate_expenses": 0,
+        "separate_records": 0,
     }
     report = {item["source_hash"]: item for item in parsed["sources"]}
     # 원본별 보고는 합친 뒤 수와 합쳐서 뺀 수를 함께 낸다. 뺀 것을 0으로 감추지 않는다.
@@ -716,4 +810,160 @@ def test_a_single_shared_expense_is_left_in_the_ledger(tmp_path: Path, configure
         "merged_records": 0,
         "unmerged_expenses": 1,
         "unmerged_records": 1,
+        "confirmed_expenses": 0,
+        "confirmed_records": 0,
+        "separate_expenses": 0,
+        "separate_records": 0,
     }
+
+
+ONCE = sheet_a(("2026-01-14\n12:07", "합성 식당", "현안 업무 협의", 23.0, 480000.0))
+AGAIN = sheet_a(
+    ("2026-01-14\n12:07", "합성 식당", "현안 업무 협의", 23.0, 480000.0),
+    ("2026-02-05\n12:10", "합성 국밥", "현안 업무 협의", 21.0, 300000.0),
+)
+
+
+def confirm_repeat(
+    root: Path,
+    *sources: str,
+    decision: RepeatDecision = "same_expense",
+    city: str = "gwangju",
+    organization: str = ORG,
+    merchant: str = "합성 식당",
+    evidence: str = "1월.xls, 2월.xls",
+) -> None:
+    """사람이 원본을 대조해 확정한 재게시 여부. 지출 묶음마다 한 줄이다."""
+    write_text(
+        root / DATA / "manual" / city / "repeats.jsonl",
+        json.dumps(
+            {
+                "scope": {
+                    "city": city,
+                    "organization": organization,
+                    "department": "합성과",
+                    "spent_on": "2026-01-14",
+                    "merchant": merchant,
+                    "amount_krw": "480000",
+                    "sources": list(sources),
+                },
+                "decision": decision,
+                "evidence": evidence,
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+    )
+
+
+def test_a_confirmed_repost_is_merged_and_counted_apart_from_the_criterion(
+    tmp_path: Path, configured: None
+) -> None:
+    """근거가 한 건뿐이라 코드가 남긴 묶음도 사람이 확정하면 합친다(ADR-0006). 출처는 남는다."""
+    record_spending(tmp_path)
+    first, second = publish(
+        tmp_path,
+        ("1월.xls", workbook(ONCE)),
+        ("2월.xls", workbook(AGAIN)),
+        posted=("2026-02-02", "2026-03-03"),
+    )
+    assert run(tmp_path, "headermap", FakeModel(headers=[header_answer()])) == 0
+    assert run(tmp_path, "parse") == 0
+    # 확정이 없으면 가를 근거가 하나뿐이라 장부에 두 건으로 남는다.
+    assert len(records(tmp_path)) == 3
+
+    confirm_repeat(tmp_path, first, second)
+    assert run(tmp_path, "parse") == 0
+    rows = records(tmp_path)
+    assert [(row["spent_on"], row["source_hash"], row["repeats"]) for row in rows] == [
+        ("2026-01-14", first, f"{second}:sheet1:R4"),
+        ("2026-02-05", second, ""),
+    ]
+    parsed = payload(tmp_path, "parse")
+    assert parsed["repeated_expenses"] == {
+        "merged_expenses": 0,
+        "merged_records": 0,
+        "unmerged_expenses": 0,
+        "unmerged_records": 0,
+        "confirmed_expenses": 1,
+        "confirmed_records": 1,
+        "separate_expenses": 0,
+        "separate_records": 0,
+    }
+    report = {item["source_hash"]: item for item in parsed["sources"]}
+    assert (report[first]["records"], report[first]["repeated"]) == (1, 0)
+    assert (report[second]["records"], report[second]["repeated"]) == (1, 1)
+
+
+def test_a_confirmation_that_no_longer_matches_the_ledger_is_rejected(
+    tmp_path: Path, configured: None
+) -> None:
+    """장부에 없는 묶음을 가리키는 확정이 남으면 조용히 지나가지 않는다."""
+    record_spending(tmp_path)
+    first, second = publish(
+        tmp_path,
+        ("1월.xls", workbook(ONCE)),
+        ("2월.xls", workbook(AGAIN)),
+        posted=("2026-02-02", "2026-03-03"),
+    )
+    assert run(tmp_path, "headermap", FakeModel(headers=[header_answer()])) == 0
+    confirm_repeat(tmp_path, first, second, merchant="합성 국밥")
+    assert run(tmp_path, "parse") == 1
+
+
+def test_a_confirmation_from_another_city_is_rejected(tmp_path: Path, configured: None) -> None:
+    record_spending(tmp_path)
+    first, second = publish(
+        tmp_path,
+        ("1월.xls", workbook(ONCE)),
+        ("2월.xls", workbook(AGAIN)),
+        posted=("2026-02-02", "2026-03-03"),
+    )
+    assert run(tmp_path, "headermap", FakeModel(headers=[header_answer()])) == 0
+    confirm_repeat(tmp_path, first, second)
+    path = tmp_path / DATA / "manual" / "gwangju" / "repeats.jsonl"
+    write_text(path, path.read_text(encoding="utf-8").replace('"gwangju"', '"busan"', 1))
+    assert run(tmp_path, "parse") == 1
+
+
+def test_a_confirmation_written_for_the_previous_contract_is_rejected(
+    tmp_path: Path, configured: None
+) -> None:
+    """`evidence`의 뜻이 바뀌었으므로 옛 계약으로 쓴 줄은 조용히 지나가지 않는다(#88)."""
+    record_spending(tmp_path)
+    first, second = publish(
+        tmp_path,
+        ("1월.xls", workbook(ONCE)),
+        ("2월.xls", workbook(AGAIN)),
+        posted=("2026-02-02", "2026-03-03"),
+    )
+    assert run(tmp_path, "headermap", FakeModel(headers=[header_answer()])) == 0
+    confirm_repeat(tmp_path, first, second)
+    path = tmp_path / DATA / "manual" / "gwangju" / "repeats.jsonl"
+    entry = json.loads(path.read_text(encoding="utf-8"))
+    # 옛 버전 표시만으로 거부한다. 그 버전의 `evidence`는 대조 내용을 적는 칸이었다.
+    write_text(path, json.dumps({**entry, "schema_version": 1}, ensure_ascii=False) + "\n")
+    assert run(tmp_path, "parse") == 1
+    # 뺀 칸이 남아 있어도 거부한다.
+    reference = {"kind": "disclosure", "source": "https://example.invalid/1", "detail": "합성 근거"}
+    write_text(path, json.dumps({**entry, "references": [reference]}, ensure_ascii=False) + "\n")
+    assert run(tmp_path, "parse") == 1
+
+
+def test_a_confirmation_for_another_organization_is_left_to_that_organization(
+    tmp_path: Path, configured: None
+) -> None:
+    """기관을 좁혀 돌리면 그 기관의 확정만 본다. 다른 기관의 확정은 이 실행의 소관이 아니다."""
+    record_spending(tmp_path)
+    first, second = publish(
+        tmp_path,
+        ("1월.xls", workbook(ONCE)),
+        ("2월.xls", workbook(AGAIN)),
+        posted=("2026-02-02", "2026-03-03"),
+        org=ORG,
+    )
+    assert run(tmp_path, "headermap", FakeModel(headers=[header_answer()]), org=ORG) == 0
+    confirm_repeat(tmp_path, first, second, organization="합성 다른 기관")
+    assert run(tmp_path, "parse", org=ORG) == 0
+    report = {item["source_hash"]: item for item in payload(tmp_path, "parse", org=ORG)["sources"]}
+    assert (report[first]["records"], report[second]["records"]) == (1, 2)

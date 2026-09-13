@@ -36,7 +36,7 @@
 | `uv run mypy src` | 통과, 29개 소스 파일 |
 | `uv run pytest` | 162 passed, 50.70초 |
 | `node --test tests/site_behavior.test.js` | 6 passed |
-| `uv run python -m deliciousmap --help` | 종료 0 |
+| `.venv/Scripts/python.exe -m deliciousmap --help` | 종료 0 |
 | `uv build --wheel` | 통과, wheel에 4개 정적 자산 포함 |
 | `git diff --check` | 통과 |
 | `gitleaks git --no-banner --redact` | 통과, 비밀 탐지 없음 |
@@ -50,18 +50,19 @@
 
 ## 측정 하네스의 자동 검사
 
-`scripts/measure_map.js`와 `tests/measure_map.test.js`를 더하고 코드 리뷰를 반영한 뒤(2026-09-12) 실행했다.
+`scripts/measure_map.js`와 `tests/measure_map.test.js`를 더하고 코드 리뷰를 반영한 뒤
+(최종 재검증 2026-09-13) 실행했다. 이 환경에는 `uv` 실행 파일이 없어 같은 가상환경의
+도구 경로를 직접 호출했다.
 
 | 검사 | 결과 |
 | --- | --- |
-| `uv sync --locked` | 통과, 31개 패키지 확인 |
-| `uv run ruff check .` | 통과 |
-| `uv run ruff format --check .` | 통과, 91개 파일 |
-| `uv run mypy src` | 통과, 39개 소스 파일 |
-| `uv run pytest` | 375 passed, 94.84초 |
-| `node --test tests/site_behavior.test.js tests/measure_map.test.js` | 24 passed |
+| `.venv/Scripts/ruff.exe check .` | 통과 |
+| `.venv/Scripts/ruff.exe format --check .` | 통과, 99개 파일 |
+| `.venv/Scripts/mypy.exe src` | 통과, 44개 소스 파일 |
+| `.venv/Scripts/pytest.exe --basetemp <저장소 밖 임시 경로>` | 422 passed, 55.12초 |
+| `node --test tests/site_behavior.test.js tests/measure_map.test.js` | 35 passed |
 | `git diff --check` | 통과 |
-| `uv run python -m deliciousmap --help` | 종료 0 |
+| `.venv/Scripts/python.exe -m deliciousmap --help` | 종료 0 |
 
 하네스의 요약·판정, 모의 모바일 조건, 프레임 간격 통계, 결과 표, 내장 정적 서버(재검증·304·
 gzip·루트 밖 경로 거부)는 `node:test`로 검증한다. Chrome을 CDP로 움직이는 부분은 단위 테스트가
@@ -158,8 +159,38 @@ gzip·루트 밖 경로 거부)는 `node:test`로 검증한다. Chrome을 CDP로
 | 모의 모바일 | 드래그 | 2,850 | 181 | 116.6ms | 19/20 |
 | 모의 모바일 | 장부 스크롤 | 1,451 | 0 | 17.9ms | 0/20 |
 
-결정은 프레임 부드러움을 브라우저 성능 기록으로 판정하게 한다. 위 값은 끊김이 어디서 나는지
-보는 진단이며 드래그·줌·스크롤의 판정은 아직 하지 않았다.
+결정은 프레임 부드러움을 브라우저 성능 기록으로 판정하게 한다. 위 rAF 값은 당시 끊김이
+어디서 나는지 보는 진단으로만 남겼고, 성능 기록 판정은 아래 #78에서 추가했다.
+
+### 성능 기록 판정 (#78, 2026-09-12)
+
+이전 rAF 값은 진단용으로 남기고, 이번에는 각 드래그·줌·장부 스크롤 구간에 CDP
+`Tracing`을 붙였다. `console.timeStamp` marker 사이의 `PipelineReporter` 표시 프레임을
+기준으로 하며, 60Hz 한 프레임(16.7ms)의 두 배인 33.3ms 이상 간격을 **끊김**, 100ms
+이상 간격 또는 100ms 이상 Long Animation Frame·긴 작업을 **멈춤**으로 정의했다. 20회
+모두 끊김·멈춤이 없어야 조작 판정을 충족으로 적고, 긴 작업의 URL이 `naver.com`이면
+네이버 SDK, 로컬 앱 URL이면 애플리케이션으로 귀속했다. URL이 없는 compositor 작업은
+미분류로 남겼다. 원본 120개 trace는 저장소 밖 gzip 파일이며, 커밋된 축약 검증 보고서만
+[`issue-78-gwangju-2026-09-12.json`](issue-29/issue-78-gwangju-2026-09-12.json)에 남겼다.
+보고서의 `code_commit`은 trace를 캡처한 커밋이고, `summary_parser_commit`은 같은 원본을
+겹친 작업 제거와 멈춤 판정 보강 후 다시 요약한 커밋이다.
+
+| 환경 | 조작 | 회차 | 충족 회차 | 끊김 회차 | 멈춤 회차 | 가장 긴 간격 | 긴 프레임 | 판정 |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| 데스크톱 | 줌 | 20 | 11 | 9 | 6 | 299.9ms | 0 | 미달 |
+| 데스크톱 | 드래그 | 20 | 0 | 20 | 0 | 50.1ms | 0 | 미달 |
+| 데스크톱 | 장부 스크롤 | 20 | 0 | 20 | 0 | 50.1ms | 0 | 미달 |
+| 모의 모바일 | 줌 | 20 | 0 | 20 | 20 | 500.1ms | 42 (최대 102.7ms) | 미달 |
+| 모의 모바일 | 드래그 | 20 | 0 | 20 | 0 | 50.2ms | 14 (최대 75ms) | 미달 |
+| 모의 모바일 | 장부 스크롤 | 20 | 0 | 20 | 20 | 333.5ms | 0 | 미달 |
+
+모의 모바일 줌의 긴 프레임은 네이버 SDK 27건(총 1,719.7ms)과 애플리케이션 15건
+(총 1,044.4ms), 드래그는 네이버 SDK 6건(362.2ms)과 애플리케이션 8건(494ms)이 겹친
+구간으로 귀속됐다. 이는 URL이 포함된 스크립트 작업의 원인 단서이지 지도 SDK 전체의
+책임을 증명하지 않는다. 한 긴 프레임 안에 두 출처의 긴 작업이 겹치면 자식 작업을 출처별로
+나눠 세어 한쪽 출처로 임의 귀속하지 않으며, 합계가 같으면 `dominant`도 `mixed`로 남긴다.
+데스크톱의 끊김과 모바일 장부 스크롤의 멈춤은 긴 작업 URL
+근거가 없어 미분류로 남겼으며, 다음 개선에서 별도 프로파일링이 필요하다.
 
 ### 원인 진단
 
@@ -202,36 +233,39 @@ JSON에 넣지 않았다.
   입력·선택 피드백 셋은 미달이었다. 같은 세션의 다른 실행에서 첫 방문이 4,000ms를 넘은 적도 있어
   이 호스트의 모의 모바일 판정은 충족·미달 모두 **잠정**이다.
 - 실제 Android Chrome·iPhone Safari: 기기가 없어 **미측정**이다.
-- 드래그·줌·스크롤: 성능 기록 판정 **미실시**다. 데스크톱 Chrome에서는 CDP Tracing으로 할 수
-  있으나 이번 세션 범위에 넣지 않았다.
+- 드래그·줌·스크롤: #78에서 CDP 성능 기록으로 판정했다. 데스크톱과 모의 모바일 모두
+  적어도 한 조작에서 끊김이 있어 **미달**이며, 모바일 줌·드래그의 긴 작업은 네이버 SDK와
+  애플리케이션 단서를 분리했지만 나머지는 미분류다.
 - 지도 마커를 직접 누르는 선택, 실제 터치 입력: **미측정**이다.
 - 6개 도시: 정제 산출물이 없어 **미측정**이다.
 
 ## 닫기 전에 남은 것
 
-남은 완료 기준은 아래 후속 이슈로 나눴다(2026-09-12). 각 이슈가 끝나 결과가 이 문서에 기록될 때까지
-#29를 닫거나 완료로 표시하지 않는다.
+남은 완료 기준은 아래 후속 이슈로 나눴다(2026-09-12). #78의 성능 기록 판정은 아래 결과와
+요약 JSON으로 기록했으며, 실제 기기 확인과 도시별 데이터 확보가 끝날 때까지 #29를 닫거나
+완료로 표시하지 않는다.
 
 | 후속 이슈 | 넘긴 범위 |
 | --- | --- |
 | [#75](https://github.com/snowjaewon/OfficialDeliciousMap/issues/75) | 6개 도시의 기관·게시판 수집과 정제 산출물. 광주광역시청은 [#51](https://github.com/snowjaewon/OfficialDeliciousMap/issues/51)에서 구현됐다 |
 | [#76](https://github.com/snowjaewon/OfficialDeliciousMap/issues/76) | 실제 Android Chrome·iPhone Safari 사용감. 지도 마커 직접 선택과 터치 입력 포함 |
 | [#77](https://github.com/snowjaewon/OfficialDeliciousMap/issues/77) | 조용한 호스트에서 모의 모바일 9개 시나리오 재측정(충족 판정 포함), 재방문 서비스 워커 캐시 우선 전략과 번갈아 잰 전후 비교, 준비된 도시와 [#73](https://github.com/snowjaewon/OfficialDeliciousMap/issues/73) 이후 마커 밀집 측정, 필요 시 [#22](https://github.com/snowjaewon/OfficialDeliciousMap/issues/22) 기준 재조정 |
-| [#78](https://github.com/snowjaewon/OfficialDeliciousMap/issues/78) | 드래그·줌·스크롤을 브라우저 성능 기록으로 판정 |
 
 ## 측정 절차
 
 같은 코드 커밋에서 도시를 build하고 아래 명령을 실행한다.
 
 ```text
-양쪽 공통: node scripts/measure_map.js --city <city> --out <결과.json>
+양쪽 공통: node scripts/measure_map.js --city <city> --out <결과.json> --trace-dir <저장소 밖 경로>
 ```
- 하네스는 결정의 20회 절차, 캐시 초기화, 서비스 워커를 포함한 재방문, 모의 모바일 조건을
+하네스는 결정의 20회 절차, 캐시 초기화, 서비스 워커를 포함한 재방문, 모의 모바일 조건을
 자동으로 적용하고 표를 출력한다. 결과 JSON에는 코드 커밋, 작업 트리 상태, 파일 크기·해시,
-호스트·브라우저·GPU, 회차별 값이 남는다. 개선 전후는 같은 호스트·같은 명령으로 재고 이 문서와
-결정 티켓에 근거를 연결한다. 실제 기기 확인과 성능 기록 판정은 하네스 밖에서 수행한다.
+호스트·브라우저·GPU, 회차별 값과 조작별 CDP 성능 기록 요약이 남는다. 원본 trace는 저장소
+밖에 두고 결과 JSON에는 이벤트를 넣지 않는다. 개선 전후는 같은 호스트·같은 명령으로 재고
+이 문서와 결정 티켓에 근거를 연결한다. 실제 기기 확인은 여전히 #76 범위다.
 
-위 광주 결과는 `8dd11ab`의 하네스로 쟀다. 그 뒤 코드 리뷰를 반영해 CDP 응답 제한 시간, Chrome
-기동 실패 정리, 회차 중간 실패의 단계별 기록(`failures`), 필터 초기화 반영 뒤 줌 측정 시작,
-피드백 판독 전 두 프레임 대기, rAF 간격 중앙값, 선택 시나리오 이름을 고쳤다. 시나리오의 측정
-경계는 바뀌지 않았다. 다음 측정부터는 고친 하네스를 쓴다.
+기존 광주 시간·rAF 결과는 `8dd11ab`의 하네스로 쟀다. 그 뒤 코드 리뷰를 반영해 CDP 응답
+제한 시간, Chrome 기동 실패 정리, 회차 중간 실패의 단계별 기록(`failures`), 필터 초기화
+반영 뒤 줌 측정 시작, 피드백 판독 전 두 프레임 대기, rAF 간격 중앙값, 선택 시나리오 이름을
+고쳤다. #78의 최종 성능 기록은 `58b040b`에서 2026-09-12에 같은 광주 산출물로 다시 쟀고,
+조작 marker 경계와 trace 요약을 결과 JSON에 추가했다.

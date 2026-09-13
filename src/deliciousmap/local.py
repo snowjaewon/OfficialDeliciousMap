@@ -52,9 +52,7 @@ class LocalAdapters:
         )
 
     def parse(self, value: ParseInput, context: ExecutionContext) -> ParseOutput:
-        return extract.parse_sources(
-            value.sources, value.mappings, value.unresolved, context.paths.raw_root
-        )
+        return extract.parse_sources(value, context.paths.raw_root)
 
     def classify(self, value: ClassifyInput, context: ExecutionContext) -> ClassifyOutput:
         return classify.resolve(
@@ -118,7 +116,11 @@ class LocalAdapters:
                 directory,
                 context.map_key,
                 collection_status(context.target.organizations, value.records),
-                SourceScope(targets=value.target_sources, excluded=value.excluded_sources),
+                SourceScope(
+                    targets=value.target_sources,
+                    excluded=value.excluded_sources,
+                    repeated=value.repeated_expenses,
+                ),
             )
         return BuildOutput(
             files=files,

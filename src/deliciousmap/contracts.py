@@ -244,6 +244,54 @@ class SourceReview(Contract):
     confirmed_by: str = ""
 
 
+# 사람이 지출 묶음을 읽고 내리는 결론. 이 둘뿐이며 나머지 상태는 확정이 아니다.
+RepeatDecision = Literal["same_expense", "separate_expenses"]
+
+
+class ExpenseScope(Contract):
+    """확인 근거가 뒷받침하는 지출 하나와 그 지출을 실은 원본들.
+
+    지출의 동일성은 `기관·부서·집행일·상호·금액`이다([ADR-0004](
+    ../../docs/adr/0004-merge-repeated-reposts.md)). 범위는 레코드 하나가 아니라 지출 하나이므로
+    한 원본이 같은 지출을 두 번 적었어도 그 원본은 한 번만 적는다.
+    """
+
+    city: Text
+    organization: Text
+    department: str
+    spent_on: date
+    merchant: Text
+    amount_krw: Decimal = Field(allow_inf_nan=False)
+    # 이 지출을 실은 원본들. 재게시 관계는 원본 쌍의 관계이므로 둘 이상을 적는다.
+    sources: tuple[Sha256, ...] = Field(min_length=2)
+
+    @model_validator(mode="after")
+    def distinct_sources(self) -> "ExpenseScope":
+        if len(set(self.sources)) != len(self.sources):
+            raise ValueError("an expense scope cannot list the same original twice")
+        return self
+
+
+class RepeatConfirmation(Contract):
+    """data/manual/<city>/repeats.jsonl 한 줄. 사람이 원본을 대조해 확정한 재게시 여부.
+
+    코드는 두 원본이 같은 지출을 2건 이상 함께 실을 때만 재게시로 본다(ADR-0004). 근거가 그에
+    못 미쳐 남은 묶음을 사람이 원본으로 읽고 확정하는 자리가 여기다. 확정은 자동 판정보다 먼저
+    적용하며, 합치더라도 겹친 원본은 레코드의 `repeats`에 모두 남는다. `separate_expenses`도
+    확인했다는 사실이 근거이므로 장부에 남기고 집계에서 감추지 않는다([ADR-0006](
+    ../../docs/adr/0006-human-confirmed-reposts.md)).
+
+    사람이 직접 쓰거나 에이전트가 써서 사람이 PR로 승인한다(`IdentityConfirmation`과 같다).
+    `evidence`에는 판단을 글로 옮기지 않고 대조한 원본의 파일명을 적는다
+    (`10887-1.xlsx, 11009-1.xlsx`). 승인하는 사람은 그 파일을 직접 연다.
+    """
+
+    schema_version: Literal[2] = 2
+    scope: ExpenseScope
+    decision: RepeatDecision
+    evidence: Text
+
+
 class IdentityFacts(Contract):
     merchant: Text
     # None means unknown; an empty branch explicitly means an unbranched business.
@@ -418,6 +466,12 @@ class PublishedMarker(Contract):
     closed: bool
     # 좌표를 준 제공자. 인허가 좌표도 지도에서 구별하지 않고 상세에서만 밝힌다.
     coordinate_source: Provider
+    # 좌표를 준 근거의 주소. 업소 확인은 주소가 일치한 후보만 채택하므로 확정 마커에는 언제나 있다.
+    address: Text
+    # 아래 셋은 이 식당으로 묶인 레코드의 요약이다. 목록·상세가 장부를 받지 않고도 보여 준다.
+    last_visited_on: date
+    total_amount_krw: Decimal = Field(allow_inf_nan=False)
+    organizations: tuple[Text, ...] = Field(min_length=1)
 
 
 class PublishedRecord(Contract):
@@ -450,14 +504,14 @@ class PublishedRecord(Contract):
 
 
 class MarkerFile(Contract):
-    schema_version: Literal[6] = 6
+    schema_version: Literal[7] = 7
     city: Text
     org: str | None = None
     markers: tuple[PublishedMarker, ...]
 
 
 class RecordFile(Contract):
-    schema_version: Literal[6] = 6
+    schema_version: Literal[7] = 7
     city: Text
     org: str | None = None
     records: tuple[PublishedRecord, ...]
@@ -712,12 +766,29 @@ class UnresolvedSource(Contract):
 class HeaderMapOutput(Contract):
     mappings: tuple[HeaderMap, ...]
     unresolved: tuple[UnresolvedSource, ...] = ()
+    # 미해결 원본의 표마다 얻은 헤더 매핑. 검증에 실패한 것도, 그 원본의 다른 표가 통과시킨 것도
+    # 함께 싣는다. 레코드로 쓰지 않으며 `parse`가 분모를 세는 데만 쓴다(폴백 정책의 후보 수).
+    unresolved_mappings: tuple[HeaderMap, ...] = ()
+
+    @model_validator(mode="after")
+    def mappings_belong_to_their_original(self) -> "HeaderMapOutput":
+        unresolved = {item.source_hash for item in self.unresolved}
+        if any(item.source_hash not in unresolved for item in self.unresolved_mappings):
+            raise ValueError("an unresolved mapping must belong to an unresolved original")
+        identities = [(item.source_hash, item.table) for item in self.unresolved_mappings]
+        if len(identities) != len(set(identities)):
+            raise ValueError("duplicate mapping for a table of an unresolved original")
+        return self
 
 
 class ParseInput(Contract):
     sources: tuple[SourceRef, ...]
     mappings: tuple[HeaderMap, ...]
     unresolved: tuple[UnresolvedSource, ...] = ()
+    # 미해결 원본의 헤더 매핑. 분모를 세는 데만 쓰고 레코드는 내지 않는다.
+    unresolved_mappings: tuple[HeaderMap, ...] = ()
+    # 사람이 확정한 재게시 여부. 누적 재게시 병합이 자동 판정보다 먼저 적용한다.
+    confirmations: tuple[RepeatConfirmation, ...] = ()
 
 
 # 합계 대조 결과. 합계가 없거나 범위를 확정할 수 없으면 대조하지 않았다는 뜻이다.
@@ -775,6 +846,8 @@ class RepeatedExpenses(Contract):
 
     기준은 [ADR-0004](../../docs/adr/0004-merge-repeated-reposts.md)이다. `unmerged_expenses`가
     0이 아니면 재게시인지 별개 지출인지 가를 근거가 없어 남긴 묶음이 그만큼 있다는 뜻이다.
+    사람이 원본을 대조해 확정한 묶음은 자동 판정과 섞지 않고 `confirmed_*`·`separate_*`에
+    따로 싣는다([ADR-0006](../../docs/adr/0006-human-confirmed-reposts.md)).
     """
 
     # 합친 지출 묶음 수와 그때 뺀 레코드 수.
@@ -783,6 +856,12 @@ class RepeatedExpenses(Contract):
     # 가를 근거가 없어 남긴 묶음 수와 그 묶음들에 원본을 넘어 남은 레코드 수.
     unmerged_expenses: int = Field(default=0, ge=0)
     unmerged_records: int = Field(default=0, ge=0)
+    # 사람이 같은 지출로 확정해 합친 묶음 수와 그때 뺀 레코드 수(ADR-0006).
+    confirmed_expenses: int = Field(default=0, ge=0)
+    confirmed_records: int = Field(default=0, ge=0)
+    # 사람이 별개 지출로 확정해 남긴 묶음 수와 그 묶음들에 원본을 넘어 남은 레코드 수.
+    separate_expenses: int = Field(default=0, ge=0)
+    separate_records: int = Field(default=0, ge=0)
 
 
 class ParseOutput(Contract):
@@ -850,6 +929,8 @@ class BuildInput(Contract):
     # 이번 제출이 읽은 원본 수와 뺀 원본의 사유별 수. 화면의 자료 범위가 둘을 같이 낸다.
     target_sources: int = Field(default=0, ge=0)
     excluded_sources: ExcludedSources = ExcludedSources()
+    # 누적 재게시로 합쳐 장부에서 뺀 수. 화면의 자료 범위가 이 수를 함께 낸다.
+    repeated_expenses: RepeatedExpenses = RepeatedExpenses()
 
 
 class BuildOutput(Contract):

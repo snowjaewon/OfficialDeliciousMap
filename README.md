@@ -74,13 +74,20 @@ uv run python -m deliciousmap geocode --city seoul --retry-failed
 
 - `headermap`: 표마다 공통 헤더 서명 캐시 → 원본별 답변 이력 → Gemini 순으로 매핑을 찾고,
   코드 검증을 통과한 매핑만 쓴다. 표마다 호출은 최초 1회와 실패 사유를 담은 재호출 1회뿐이다.
-  잘리거나 해석할 수 없는 응답과 카드형 표는 다시 묻지 않고 미해결로 남긴다.
+  잘리거나 해석할 수 없는 응답과 카드형 표는 다시 묻지 않고 미해결로 남긴다. 표 하나가 실패해도
+  남은 표는 끝까지 판정하고, 그 원본의 매핑을 `unresolved_mappings`로 `parse`에 넘긴다 — 원본의
+  분모는 표 하나가 아니라 원본 전체다. 원본의 사유는 첫 실패의 것이다.
 - `parse`: xls·xlsx(ISO Strict 포함)를 읽는다. 모든 표가 통과한 원본만 레코드를 낸다. 원본마다
   후보·범위 밖 건수, 분모에서 뺀 행의 위치·종류, 0원·음수 레코드의 위치, 미해결 사유를
-  `parse.json`의 `sources`에 남긴다. 목적·상호의 개인정보를 지우고, 경조사 수령인처럼 상호 칸에
+  `parse.json`의 `sources`에 남긴다. 미해결 원본도 넘겨받은 매핑으로 후보 수와 뺀 행을 남기되
+  레코드는 내지 않는다. 표 하나라도 매핑이 없거나 후보가 0건이면 후보 수는 `알 수 없음`이며,
+  0건 손실로 바꾸지 않는다. 목적·상호의 개인정보를 지우고, 경조사 수령인처럼 상호 칸에
   사람 이름이 적힌 경우 `개인(성명 비공개)`로 가린다. 부서가 누적 파일·정정본으로 다시 올려
   여러 원본에 반복된 지출은 [ADR-0004](docs/adr/0004-merge-repeated-reposts.md)의 기준으로 합치고,
-  가를 근거가 없는 묶음은 남긴 뒤 그 수를 `parse.json`의 `repeated_expenses`에 싣는다.
+  가를 근거가 없는 묶음은 남긴 뒤 그 수를 `parse.json`의 `repeated_expenses`에 싣는다. 사람이
+  원본을 대조해 확정한 묶음은 그 확정을 기준보다 먼저 적용하며([ADR-0006](
+  docs/adr/0006-human-confirmed-reposts.md)), 확정으로 합치거나 남긴 수를 자동 판정과 구별해
+  같은 집계에 싣는다.
 - `classify`: 사람 보정 → 도시 무관 LLM 캐시 → Gemini 순. 호출 실패는 판단 보류로 두고 캐시에 남기지 않는다.
 
 PDF·HWP·원본 묶음 ZIP과 전량 추출 폴백은 파일 단위 미해결로 남으며 후속 작업이다.
@@ -133,8 +140,12 @@ PowerShell: Get-Content .env | ForEach-Object { if ($_ -match '^(\w+)=(.*)$') { 
 도시 전체 build를 실행하면 `dist/index.html`에 7개 도시 랜딩이, `dist/<city>/index.html`에
 선택 도시 화면이 생긴다. 랜딩은 7개 도시 카드를 모두 두되 이미 build한 도시만 링크하고
 나머지는 `준비 중`으로 남겨 미수집 도시를 열 수 있는 것처럼 보이지 않게 한다. 화면은
-`markers.json`을 먼저 받아 식당명 검색, 20+ / 10~19 / 5~9 / 1~4 방문 횟수 필터, 전체 결과와
-현재 지도 영역 결과 수, 마커 상세와 네이버 지도 연결을 제공한다. `records.json`은 장부 탭을
+`markers.json`을 먼저 받아 지도와 식당 순위 목록을 함께 보인다. 데스크톱은 지도 오른쪽 패널,
+폭 720px 이하는 지도 위에서 끌어올리는 시트(접힘·중간·펼침)다. 목록은 식당명 검색과
+20+ / 10~19 / 5~9 / 1~4 방문 횟수 필터의 결과를 방문 횟수 순으로 50곳씩 그리고, 전체 결과와
+현재 지도 영역 결과 수를 따로 센다. 목록 항목과 마커는 같은 상세(주소·최근 방문일·방문 기관·
+합계 금액·폐업·좌표 출처·네이버 지도 연결)를 열며 닫기로 목록에 돌아간다. 마커 색과 범례는
+방문 구간을 따른다. `records.json`은 장부 탭을
 처음 열 때만 받으며 비식당·판단 보류·지오코딩 실패 레코드도 상태와 사유를 함께 표시한다.
 한 번에 100건씩 그려 긴 장부의 첫 목록 렌더링을 제한한다.
 
@@ -147,19 +158,25 @@ PowerShell: Get-Content .env | ForEach-Object { if ($_ -match '^(\w+)=(.*)$') { 
 집행이 없었다는 뜻이 아니다. 수집 보류 기관이 있을 때만 지도 위에도 짧은 안내를 둔다.
 기관의 수집 보류는 상호의 판단 보류와 다른 상태다. 장부는 레코드의 기관 slug를 담으므로
 진입 페이지가 slug와 기관 이름의 대응을 함께 실어 화면에서 이름으로 보여 준다.
+같은 대화상자에 누적 재게시로 장부에서 뺀 묶음·건수와 가를 근거가 없어 남긴 수를 적고, 사람이
+확정해 뺀 수와 별개 지출로 확정해 남긴 수가 있으면 그것도 함께 적는다. 밝히지 않으면 장부 건수가
+조용히 줄어든 것으로 보인다.
 
 #### 공개 데이터 파일
 
 | 파일 | 내용 |
 | --- | --- |
-| `markers.json` | `schema_version`(6), `city`, `org`, `markers` |
-| `records.json` | `schema_version`(6), `city`, `org`, `records` |
+| `markers.json` | `schema_version`(7), `city`, `org`, `markers` |
+| `records.json` | `schema_version`(7), `city`, `org`, `records` |
 
 마커 하나는 `business_id`, 확정 상호 `merchant`, `visit_count`(묶인 레코드 수), `latitude`,
-`longitude`, `closed`, `coordinate_source`를 가진다. `coordinate_source`는 좌표를 준 제공자
+`longitude`, `closed`, `coordinate_source`, `address`와 묶인 레코드의 요약인
+`last_visited_on`(가장 늦은 `spent_on`), `total_amount_krw`(금액 합계), `organizations`(기관 slug)를
+가진다. `coordinate_source`는 좌표를 준 제공자
 (`local`·`naver`·`license`)다. 마커에 묶인 레코드는 좌표가 같으므로 첫 레코드의 판정에서 고르며,
 그 판정이 사람 확인이면 확인한 후보의 제공자, 아니면 결과 좌표와 일치하는 후보의 제공자다.
-여러 제공자의 근거가 같은 좌표로 겹치면 이름 순으로 하나를 밝힌다.
+여러 제공자의 근거가 같은 좌표로 겹치면 이름 순으로 하나를 밝힌다. `address`는 같은 근거의 주소다.
+업소 확인은 상호·지점·주소가 일치한 후보만 채택하므로 확정 마커에는 언제나 주소가 있다.
 폐업으로 확인된 마커도 파일에서 빼지 않는다.
 
 장부 레코드 하나는 `record_id`, `spent_on`, `organization`, `department`, `merchant`, `purpose`,
@@ -176,8 +193,9 @@ PowerShell: Get-Content .env | ForEach-Object { if ($_ -match '^(\w+)=(.*)$') { 
 기본 파라미터는 `ncpKeyId`이며 구형 키만 `NAVER_MAP_KEY_PARAM=ncpClientId`로 바꾼다. 그 밖의
 값은 종료 코드 2로 거부한다. 키는 페이지 설정에만 들어가고 저장소 파일·로그·산출물
 메타데이터에는 남기지 않는다. 키가 잘못되어 지도 인증이 실패하면 지도 자리에 설정 안내를
-띄우고 검색 집계·구간 필터·장부는 계속 제공한다. 도시별 `MapBounds`는 초기 `fitBounds`,
-최소 축소 수준, 지도 중심 이동 제한에 함께 사용한다.
+띄우고 검색 집계·구간 필터·목록·장부는 계속 제공한다. 도시별 `MapBounds`는 최소 축소 수준과
+지도 중심 이동 제한에 쓴다. 첫 화면은 그 안의 식당이 모인 영역(20곳 이상이면 위도·경도 양끝 5%를
+뺀 범위)에 맞추고 14단계보다 더 확대하지 않는다. 식당이 없으면 도시 전체다.
 
 build한 결과는 정적 파일이므로 로컬 서버로 확인한다. 기본 `--output-root`인 `dist/`를 쓴 경우다.
 
@@ -198,7 +216,7 @@ PowerShell: Get-Content .env | ForEach-Object { if ($_ -match '^(\w+)=(.*)$') { 
 브라우저 로직 테스트에는 Node.js 20 이상이 필요하며 아래 명령은 외부 패키지를 설치하지 않는다.
 
 ```text
-node --test tests/site_behavior.test.js tests/measure_map.test.js
+node --test tests/site_behavior.test.js tests/measure_map.test.js tests/service_worker.test.js
 ```
 
 #### 지도 성능 측정
@@ -216,9 +234,34 @@ node --test tests/site_behavior.test.js tests/measure_map.test.js
 재어 표를 출력한다. 첫 방문은 매번 새 브라우저 컨텍스트(캐시·서비스 워커 없음)에서, 재방문은
 캐시와 서비스 워커를 채운 컨텍스트의 새 탭에서 잰다. 입력·선택 피드백은 Event Timing(16ms
 미만은 16ms로 적음), 결과·상세·장부 첫 목록은 앱의 `window.deliciousmapMetrics`로 잰다.
-식당 선택은 검색 결과 첫 항목을 누르며 지도 마커를 누르는 경로와 실제 터치 입력은 재지 않는다.
-드래그·줌·장부 스크롤의 rAF 간격은 진단 값이며 판정하지 않는다. 20회를 채우지 못한
-시나리오는 `미측정`이다. Chrome 경로는 `--chrome` 또는 `CHROME_PATH`로 바꾼다.
+식당 선택은 검색으로 거른 목록의 첫 항목을 누르며 지도 마커를 누르는 경로와 실제 터치 입력은 재지 않는다.
+드래그·줌·장부 스크롤은 각 조작 구간에 CDP `Tracing`을 붙여 브라우저 성능 기록을 남긴다.
+`PipelineReporter`의 표시 프레임과 프레임 간격, Long Animation Frame·긴 작업을 요약하며,
+판정에 쓰지 않은 원본 기록은 저장소 밖의 trace 디렉터리에 gzip 파일로 둔다. 결과 JSON에는
+원본 이벤트가 아니라 요약만 들어간다. 60Hz 기준 한 프레임(16.7ms)의 두 배인 33.3ms
+이상 간격을 끊김, 100ms 이상 간격이나 100ms 이상 Long Animation Frame·긴 작업을 멈춤으로
+판정한다. 20회 모두 끊김·멈춤이 없어야 `충족`이고, 20회를 채우지 못하면 `미측정`이다.
+URL이 `naver.com`이면 네이버 SDK, 로컬 주소이면 애플리케이션, 나머지는 미분류로 긴 작업
+원인을 요약한다. trace 디렉터리는 기본적으로 임시 폴더에 만들며 `--trace-dir`로 저장 위치를
+지정할 수 있지만 저장소 안은 거부한다. Chrome 경로는 `--chrome` 또는 `CHROME_PATH`로 바꾼다.
+
+Chrome을 띄우기 전 10초 동안 호스트의 CPU 사용률을 재어 `idle_cpu_percent`로 남기고, 실제로 내준
+셸(`sw.js`·manifest·공유 JavaScript·CSS·도시 HTML)의 SHA-256을 `shell`에 남긴다. 개선 전후처럼
+셸만 다른 사이트를 비교할 때는 각 사이트를 `--site`로 바꿔 `--runs 5`씩 번갈아 잰 뒤, 같은 셸의
+블록끼리 합쳐 20회로 다시 판정한다. 셸·데이터·측정 조건·호스트·코드 커밋이 다른 블록은 합치지 않는다.
+
+```text
+양쪽 공통: node scripts/measure_map.js --merge --out <합친 결과.json> <블록1.json> <블록2.json> ...
+```
+
+재방문 서비스 워커는 셸(도시 HTML·공유 JavaScript·CSS·manifest)을 캐시에서 먼저 내주고
+동시에 네트워크에서 갱신하는 stale-while-revalidate 전략을 쓴다. 설치할 때 워커를 등록한
+도시 화면도 캐시하므로 첫 재방문부터 셸은 네트워크 재검증을 기다리지 않는다. 다른 출처(네이버
+SDK·지도 타일) 요청은 가로채지 않는다. `markers.json`과
+`records.json`은 매번 네트워크 응답을 우선하고 성공한 응답만 캐시에 저장해 오프라인 때
+마지막 산출물을 대신 보여준다. 서비스 워커 캐시 이름(`deliciousmap-shell-v2`)은 셸 계약이
+바뀔 때 올리며, 새 버전이 활성화되면 이전 셸 캐시만 지우고 열린 페이지를 제어한다.
+데이터 폴백용 `deliciousmap-data-v1` 캐시는 셸 버전 변경에도 보존한다.
 
 ## 단계 계약과 후속 구현 접점
 
@@ -236,8 +279,8 @@ license_transport=...)`로 외부 응답만 대신한다. 게시판 요청도 �
 | 단계 | 입력 → 출력 |
 | --- | --- |
 | fetch | `FetchInput.target` → 외부 `SourceRef`(경로·SHA-256·기관·게시판·출처 URL·컨테이너)와 받지 못한 원본 |
-| headermap | 원본 참조 → 표별 `HeaderMap`과 공통 캐시 참조 |
-| parse | 원본 참조 + 매핑 → `ParseOutput.records` |
+| headermap | 원본 참조 → 표별 `HeaderMap`과 공통 캐시 참조, 미해결 원본과 그 표별 매핑 |
+| parse | 원본 참조 + 매핑(미해결 원본의 것 포함) + 도시별 재게시 확정 → `ParseOutput.records` |
 | classify | 레코드·고유 상호(`merchants`)·도시별 사람 보정 → 레코드별 최종 판정과 근거 |
 | geocode | 식당 판정 레코드·범위가 명시된 후보/근거·조회한 후보·사람 확인·이전 결과 → 레코드별 동일 업소·좌표 또는 미확정 이유 |
 | closure | 좌표가 있는 마커 후보·외부 인허가 루트 참조 → `open` / `closed` / `unknown` |
@@ -262,13 +305,25 @@ Node 기반 빌드 도구를 쓰지 않는다. 폐업으로 확인된 후보도 
 `data/<city>/orgs/<org>/`에 분리한다. 기관별 산출물을 도시 전체로 합치는 기능은 후속 작업이다.
 공통 캐시는 `data/_shared/`에 둔다. 사람 검토 입력은 의미별로 나누어
 `data/manual/<city>/`의 `classify.jsonl`(사람 보정), `restore.jsonl`(상호 복원),
-`geocode.jsonl`(업소 확인)에 둔다. 자세한 내용은 [상호 복원](docs/restoration.md)에 있다.
-커밋된 광주 산출물은 아직 누적 재게시 병합(`parse` v3)과 PDF 읽기 이전이다. 조회·지도 키를 갖춘
-실행에서 `run --city gwangju`로 한 번에 다시 만든다. 근거는
-[#63 검증 기록](docs/validation/issue-63.md)에 있다.
+`geocode.jsonl`(업소 확인), `compare.jsonl`(후보 비교 지정), `sources.jsonl`(미해결 원본 대조),
+`repeats.jsonl`(재게시 확정)에 둔다. 자세한 내용은 [상호 복원](docs/restoration.md)에 있다.
+각 줄은 계약 하나이며 없는 파일은 검토가 없는 것과 같다. 도시가 맞지 않는 줄은 그 단계가 거부하고,
+`--org` 실행은 그 기관에 해당하는 줄만 읽는다(기관을 적지 않은 줄은 도시 전체에 걸린다).
+범위를 선언하는 `restore`·`geocode`·`compare`·`repeats`는 같은 범위를 두 번 선언한 줄을,
+`sources`는 한 원본을 두 번 적은 줄을 거부한다. `classify.jsonl`은 상호 범위가 겹칠 수 있어,
+한 레코드에 서로 다른 판정이 걸릴 때 `classify`가 거부한다.
+커밋된 광주 산출물은 아직 PDF 읽기와 미해결 원본 16개의 사람 최종 확인
+이전이다([#66](https://github.com/snowjaewon/OfficialDeliciousMap/issues/66)). 그 둘을 갖춘
+실행에서 `run --city gwangju`로 다시 만든다.
 
-단계 메타데이터 파일은 `<stage>.json`이며 `schema_version`(fetch·parse는 3, geocode·closure는 4,
-build는 6, 나머지는 1), `city`, `org`, 입력 해시인
+`repeats.jsonl`의 각 줄은 `schema_version=2`, 지출 하나(`기관·부서·집행일·상호·금액`)와 그 지출을
+실은 원본 해시를 담은 `scope`, `same_expense`/`separate_expenses` 중 하나인 `decision`, 대조한
+원본의 파일명인 `evidence`를 가진다. 판단을 글로 옮기지 않고 승인하는 사람이 그 파일을 직접 연다.
+장부에 없는 묶음이나 그 지출을 싣지 않은 원본을 가리키면 `parse`가 거부한다. 입력을 고치면
+`parse`부터 다시 돌린다.
+
+단계 메타데이터 파일은 `<stage>.json`이며 `schema_version`(fetch는 3, parse는 4, geocode는 5,
+closure는 4, build는 6, 나머지는 1), `city`, `org`, 입력 해시인
 `dependencies`, 실제 출력인 `payload`를 가진다. `fetch.json`은 받은 원본의 `sources` 외에
 게시판이 링크했지만 받지 못한 원본을 `missing`(기관·게시판·게시글 주소·파일 이름·사유)에 남긴다.
 `sources`·`missing`의 각 줄은 게시판 목록이 밝힌 `posted`(게시일)와 `title`(제목)도 싣고,
@@ -315,9 +370,11 @@ JSON 객체의 키와 줄의 `(key, revision)`을 정렬하며, 이력의 기존
 유효 판정은 `valid=true`인 가장 큰 revision이다. 검증 실패 이력은 이전 유효 판정을 삭제하지 않는다.
 캐시에서 찾은 매핑이 검증에 실패하면 그 원본에서는 캐시를 쓰지 않고 한 번만 다시 묻는다.
 
-`geocode.json`은 현 실행의 결과이고 `geocode-history-v2.jsonl`은 레코드·범위·후보·근거·
-사람 확인·확정 복원명·판정 정책 버전의 해시 키로 성공·미확정을 추가 보존한다. 선행 산출물과
-검토 파일의 해시는 이 키에 넣지 않는다([ADR-0004](docs/adr/0003-narrow-geocode-history-key.md)).
+`geocode.json`은 현 실행의 결과이고 `geocode-history-v2.jsonl`은 판정이 레코드에서 읽는 값·범위·
+후보·근거·사람 확인·확정 복원명·판정 정책 버전의 해시 키로 성공·미확정을 추가 보존한다. 선행
+산출물과 검토 파일의 해시는 이 키에 넣지 않으며([ADR-0003](docs/adr/0003-narrow-geocode-history-key.md)),
+레코드도 통째로 넣지 않고 판정이 읽는 `record_id`·`merchant`만 넣는다
+([ADR-0005](docs/adr/0005-key-only-what-the-decision-reads.md)).
 `geocode-lookup-v1.jsonl`은 제공자·요청 맥락·응답 해석 버전의 해시 키로 조회 결과만 따로 보존한다.
 조회 캐시 적중은 동일 업소 확정이나 사람 확인이 아니며 판정 이력과 섞지 않는다.
 변경 없는 재실행은 이력을 중복 추가하지 않는다. 옛 `geocode-history.jsonl`은 보존만 하며
