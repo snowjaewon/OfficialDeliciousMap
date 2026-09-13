@@ -346,9 +346,10 @@ Node 기반 빌드 도구를 쓰지 않는다. 폐업으로 확인된 후보도 
 범위를 선언하는 `restore`·`geocode`·`compare`·`repeats`는 같은 범위를 두 번 선언한 줄을,
 `sources`는 한 원본을 두 번 적은 줄을 거부한다. `classify.jsonl`은 상호 범위가 겹칠 수 있어,
 한 레코드에 서로 다른 판정이 걸릴 때 `classify`가 거부한다.
-커밋된 광주 산출물은 아직 PDF 읽기와 미해결 원본 16개의 사람 최종 확인
-이전이다([#66](https://github.com/snowjaewon/OfficialDeliciousMap/issues/66)). 그 둘을 갖춘
-실행에서 `run --city gwangju`로 다시 만든다.
+커밋된 광주 산출물은 PDF를 읽은 실행의 것이며([#66](
+https://github.com/snowjaewon/OfficialDeliciousMap/issues/66)), 시청과 5개 자치구를 함께 담는다
+([#99](https://github.com/snowjaewon/OfficialDeliciousMap/issues/99)). 사람이 원본과 대조해
+남긴 미해결 기록은 `data/manual/gwangju/sources.jsonl` 9줄이다.
 
 `repeats.jsonl`의 각 줄은 `schema_version=2`, 지출 하나(`기관·부서·집행일·상호·금액`)와 그 지출을
 실은 원본 해시를 담은 `scope`, `same_expense`/`separate_expenses` 중 하나인 `decision`, 대조한
@@ -357,7 +358,7 @@ Node 기반 빌드 도구를 쓰지 않는다. 폐업으로 확인된 후보도 
 `parse`부터 다시 돌린다.
 
 단계 메타데이터 파일은 `<stage>.json`이며 `schema_version`(fetch는 4, parse는 4, geocode는 5,
-closure는 4, build는 6, 나머지는 1), `city`, `org`, 입력 해시인
+closure는 4, build는 7, 나머지는 1), `city`, `org`, 입력 해시인
 `dependencies`, 실제 출력인 `payload`를 가진다. `fetch.json`은 받은 원본의 `sources` 외에
 게시판이 링크했지만 받지 못한 원본을 `missing`(기관·게시판·게시글 주소·파일 이름·사유)에,
 게시일이 대상 연도 밖이라 받지 않은 게시글 수를 `uncollected_postings`에 남긴다.

@@ -501,16 +501,20 @@ def _confirmed_separate(
     }
 
 
+def _purpose(table: Table, mapping: HeaderMap, row: int) -> str:
+    """그 행의 집행목적. 매핑이 목적 열을 주지 않으면 빈 글자다."""
+    if "purpose" not in mapping.columns:
+        return ""
+    return text(table.cell(row, mapping.columns["purpose"]))
+
+
 def _payee(table: Table, mapping: HeaderMap, row: int) -> str:
     """상호 칸이 빈 지출의 받는 사람. 경조사 지출은 받는 사람이 개인이라 상호가 없다(북구 실측).
 
-    가린 표시를 상호 자리에 남기는 것은 이름이 적힌 경조사 지출과 같은 처리다(privacy.py).
-    경조사 근거가 없으면 무엇이 빠졌는지 알 수 없으므로 빈 값으로 두어 검증이 알린다.
+    가린 표시는 이름이 적힌 경조사 지출과 같은 값이다(`privacy.REDACTED`). 경조사 근거가
+    없으면 무엇이 빠졌는지 알 수 없으므로 빈 값으로 두어 검증이 알린다.
     """
-    purpose = (
-        text(table.cell(row, mapping.columns["purpose"])) if "purpose" in mapping.columns else ""
-    )
-    return REDACTED if PERSONAL_EVENT.search(purpose) else ""
+    return REDACTED if PERSONAL_EVENT.search(_purpose(table, mapping, row)) else ""
 
 
 def _candidate(table: Table, mapping: HeaderMap, row: int) -> _Candidate:
@@ -602,7 +606,7 @@ def _record(table: Table, mapping: HeaderMap, source: SourceRef, candidate: _Can
     department = (
         text(table.cell(candidate.row, columns["department"])) if "department" in columns else ""
     )
-    purpose = text(table.cell(candidate.row, columns["purpose"])) if "purpose" in columns else ""
+    purpose = _purpose(table, mapping, candidate.row)
     return Record(
         record_id=f"{source.source_hash[:16]}-{table.name}-R{candidate.row}",
         spent_on=candidate.spent_on,

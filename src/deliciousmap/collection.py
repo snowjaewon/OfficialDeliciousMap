@@ -90,16 +90,19 @@ def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
     scraper: boards.BoardScraper = board.scraper(board, transport)
     unmeasured: list[dict[str, str]] = []
     uncollected = 0
+
+    def skip(post_id: str, posted: date | None) -> bool:
+        """본문을 열지 않고 넘길 게시글. 아래 루프가 같은 판정을 다시 쓰므로 여기 한 곳에 둔다."""
+        return post_id in done or not period.collects(posted)
+
     try:
-        for posting in scraper.postings(
-            lambda post_id, posted: post_id in done or not period.collects(posted)
-        ):
+        for posting in scraper.postings(skip):
             if posting.posted is not None or posting.title:
                 # 이미 끝낸 게시글도 목록에서 읽은 값은 이번 훑기의 것으로 갱신한다.
                 listed[posting.post_id] = Listed(posting.posted, posting.title, posting.department)
             if posting.post_id in done:
                 continue
-            if not period.collects(posting.posted):
+            if skip(posting.post_id, posting.posted):
                 # 이번 수집이 받지 않는 게시글. 장부에 남기지 않으므로 기간을 넓히면 다시 받는다.
                 uncollected += 1
                 continue
