@@ -83,6 +83,10 @@ SITE_FILES = {
     "manifest.webmanifest",
     "assets/app.js",
     "assets/styles.css",
+    "assets/icon-192.png",
+    "assets/icon-512.png",
+    "assets/icon-maskable-512.png",
+    "assets/apple-touch-icon.png",
     "seoul/index.html",
     "seoul/markers.json",
     "seoul/records.json",
@@ -186,3 +190,25 @@ def test_check_dist_rejects_references_to_files_that_are_not_published(
     assert "index.html -> busan/index.html" in error
     assert "sw.js -> assets/old.css" in error
     assert not (dist / "deploy-manifest.json").exists()
+
+
+def test_check_dist_rejects_an_app_icon_that_is_not_published(
+    dist: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """manifest가 없는 아이콘을 가리키면 설치 조건이 조용히 깨진다."""
+    replace_in(dist / "manifest.webmanifest", '"assets/icon-512.png"', '"assets/icon-1024.png"')
+
+    assert check_dist(dist, "seoul") == 1
+
+    assert "manifest.webmanifest -> assets/icon-1024.png" in capsys.readouterr().err
+    assert not (dist / "deploy-manifest.json").exists()
+
+
+def test_check_dist_still_rejects_an_image_outside_the_published_icons(
+    dist: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    (dist / "assets" / "icon-1024.png").write_bytes((dist / "assets" / "icon-512.png").read_bytes())
+
+    assert check_dist(dist, "seoul") == 1
+
+    assert "not a screen file: assets/icon-1024.png" in capsys.readouterr().err

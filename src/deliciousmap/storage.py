@@ -47,6 +47,7 @@ from deliciousmap.registry import Target
 
 # 정제 산출물의 파일당 상한(ADR-0001). 이력도 이 상한 안에서 조각으로 나눈다.
 SIZE_LIMIT = 20_000_000
+TOO_LARGE = "artifact exceeds 20MB; partition before writing"
 
 RECORD_FIELDS = (
     "record_id",
@@ -73,8 +74,8 @@ OUTPUT_MODELS: dict[str, type[Contract]] = {
 
 # fetch는 출처·유실에 게시일·제목을 담은 v3, headermap은 미해결 원본의 매핑을 담은 v2,
 # parse는 사람이 확정한 재게시 수를 담은 v4, geocode는 확인한 업소를 담은 v5,
-# closure는 조회 요청 기록을 포함하는 v4, build는 좌표 출처·장부 사유를 담은 v6다.
-SCHEMA_VERSIONS = {"fetch": 3, "headermap": 2, "parse": 4, "geocode": 5, "closure": 4, "build": 6}
+# closure는 조회 요청 기록을 포함하는 v4, build는 식당별 방문 요약을 담은 v7이다.
+SCHEMA_VERSIONS = {"fetch": 3, "headermap": 2, "parse": 4, "geocode": 5, "closure": 4, "build": 7}
 
 # 제공자 조회 캐시. 확정 업소 판정 이력(geocode-history-v2.jsonl)과 분리해 둔다.
 LOOKUP_CACHE = "geocode-lookup-v1.jsonl"
@@ -135,13 +136,16 @@ def require_exact_keys(actual: list[str], expected: set[str]) -> None:
 
 
 def write_text(path: Path, content: str) -> None:
-    require_size(content)
+    write_bytes(path, content.encode("utf-8"))
+
+
+def write_bytes(path: Path, content: bytes) -> None:
+    if len(content) > SIZE_LIMIT:
+        raise ValueError(TOO_LARGE)
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary: Path | None = None
     try:
-        with tempfile.NamedTemporaryFile(
-            mode="w", encoding="utf-8", newline="", dir=path.parent, delete=False
-        ) as stream:
+        with tempfile.NamedTemporaryFile(dir=path.parent, delete=False) as stream:
             temporary = Path(stream.name)
             stream.write(content)
         os.replace(temporary, path)
@@ -156,7 +160,7 @@ def _within_limit(content: str) -> bool:
 
 def require_size(content: str) -> None:
     if not _within_limit(content):
-        raise ValueError("artifact exceeds 20MB; partition before writing")
+        raise ValueError(TOO_LARGE)
 
 
 def dump_repeats(origins: tuple[RecordOrigin, ...]) -> str:
