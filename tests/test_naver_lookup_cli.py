@@ -5,11 +5,12 @@ from pathlib import Path
 
 import pytest
 
+from deliciousmap import storage
 from deliciousmap.cli import main
 from deliciousmap.pipeline import ExecutionContext
 from deliciousmap.storage import write_text
 from tests.fakes import FakeTransport, naver_body, naver_item
-from tests.test_geocoding_cli import lookup, payload, prepare, save_input
+from tests.test_geocoding_cli import lookup, payload, prepare, prepare_many, save_input
 from tests.test_restoration_cli import FULL_NAME, classify_records, restore_entry, save_restorations
 
 CLIENT_ID = "합성-검색-아이디"
@@ -358,3 +359,54 @@ def test_changed_lookup_cache_blocks_a_stale_build(tmp_path: Path, configured: N
     assert payload(context, "build")["marker_count"] == 1
     write_text(context.paths.city_dir(context.target) / "geocode-lookup-v1.jsonl", "")
     assert run_cli(context, "build", transport=transport) == 1
+
+
+def count_lookup_reads(monkeypatch: pytest.MonkeyPatch) -> list[Path]:
+    """조회 캐시 파일을 처음부터 끝까지 파싱한 횟수. 레코드마다 다시 파싱하면 여기서 드러난다."""
+    reads: list[Path] = []
+    parse_cache = storage.read_cache
+
+    def counted(path: Path) -> tuple[storage.CacheEntry, ...]:
+        if path.name == "geocode-lookup-v1.jsonl":
+            reads.append(path)
+        return parse_cache(path)
+
+    monkeypatch.setattr(storage, "read_cache", counted)
+    return reads
+
+
+def test_a_rerun_that_only_hits_reads_the_lookup_cache_once(
+    tmp_path: Path, configured: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """적중뿐인 재실행의 비용은 레코드 수에 캐시 줄 수를 곱한 값이 아니다."""
+    merchants = ("첫 식당", "둘째 식당", "셋째 식당")
+    context = prepare_many(tmp_path, merchants)
+    save_input(
+        context,
+        *(evidence_only(f"r{index}", merchant=name) for index, name in enumerate(merchants, 1)),
+    )
+    transport = FakeTransport(naver_body(matching_place()))
+    assert run_cli(context, "geocode", transport=transport) == 0
+    assert len(cache_lines(context)) == 3
+
+    asked = len(transport.requests)
+    reads = count_lookup_reads(monkeypatch)
+    assert run_cli(context, "geocode", transport=transport) == 0
+    # 재실행은 세 건 모두 적중이라 제공자를 다시 부르지 않는다.
+    assert len(transport.requests) == asked
+    assert len(reads) == 1
+
+
+def test_a_lookup_found_mid_run_hits_the_later_records_of_the_same_run(
+    tmp_path: Path, configured: None
+) -> None:
+    """같은 상호가 뒤에 또 나와도 두 번 묻지 않는다. 실행 중 얻은 조회도 그 실행이 본다."""
+    context = prepare_many(tmp_path, ("같은 식당", "같은 식당"))
+    save_input(context, evidence_only("r1"), evidence_only("r2"))
+    transport = FakeTransport(naver_body(matching_place()))
+    assert run_cli(context, "geocode", transport=transport) == 0
+    assert len(transport.requests) == 1
+    assert len(cache_lines(context)) == 1
+    results = payload(context, "geocode")["results"]
+    assert [item["status"] for item in results] == ["success", "success"]
+    assert [item["lookup"]["queries"][0]["cache"]["revision"] for item in results] == [1, 1]
