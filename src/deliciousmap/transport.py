@@ -1,5 +1,6 @@
 """제공자와 무관한 HTTP 경계. 테스트는 이 자리에 응답만 주입하고 어댑터는 그대로 실행한다."""
 
+import http.cookiejar
 import time
 import urllib.error
 import urllib.parse
@@ -39,6 +40,18 @@ class JsonTransport(Protocol):
     def post(self, url: str, body: bytes, headers: Mapping[str, str]) -> bytes: ...
 
 
+class SessionTransport(Protocol):
+    """한 기관 안에서 쿠키를 이어 가며 조회와 본문 요청을 함께 쓰는 경계.
+
+    진입 화면이 세션과 1회용 토큰을 발급한 뒤에야 목록을 주는 게시판이 있어(광산구 실측)
+    두 요청 모양과 쿠키 유지를 한 자리에 묶는다. 쿠키는 이 경계 하나의 수명만큼만 산다.
+    """
+
+    def fetch(self, url: str, params: Mapping[str, str], headers: Mapping[str, str]) -> bytes: ...
+
+    def post(self, url: str, body: bytes, headers: Mapping[str, str]) -> bytes: ...
+
+
 class HttpTransport:
     def __init__(
         self,
@@ -47,6 +60,7 @@ class HttpTransport:
         interval: float = 0.0,
         attempts: int = 1,
         backoff: float = 0.0,
+        session: bool = False,
     ) -> None:
         self.timeout = timeout
         # 조회 응답과 원본 첨부는 크기가 달라 상한을 호출자가 정한다.
@@ -56,6 +70,10 @@ class HttpTransport:
         # 일시적 실패를 다시 시도하는 횟수와 그 사이에 두는 대기. 1이면 다시 보내지 않는다.
         self.attempts = max(1, attempts)
         self.backoff = backoff
+        # 발급받은 쿠키를 이어 쓸 자리. 없으면 요청마다 쿠키 없이 보낸다(기존 게시판의 동작).
+        # 여는 방법은 그대로 두고 쿠키만 직접 싣는다. 보내는 자리가 하나여야
+        # 재시도·상한·간격이 요청 모양에 따라 갈리지 않는다.
+        self.cookies = http.cookiejar.CookieJar() if session else None
 
     def fetch(self, url: str, params: Mapping[str, str], headers: Mapping[str, str]) -> bytes:
         request = urllib.request.Request(f"{url}?{query(params)}", headers=dict(headers))
@@ -71,7 +89,11 @@ class HttpTransport:
             if self.interval > 0:
                 time.sleep(self.interval)
             try:
+                if self.cookies is not None:
+                    self.cookies.add_cookie_header(request)
                 with urllib.request.urlopen(request, timeout=self.timeout) as response:
+                    if self.cookies is not None:
+                        self.cookies.extract_cookies(response, request)
                     return bytes(response.read(self.limit + 1))
             except urllib.error.HTTPError as error:
                 if error.code in GONE_STATUSES:
