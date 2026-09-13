@@ -877,6 +877,58 @@ class ParseOutput(Contract):
     repeated_expenses: RepeatedExpenses = RepeatedExpenses()
 
 
+class ConfirmedDefect(Contract):
+    """원본 결함 확정 한 사유의 수. 사람이 원본과 대조해 원본 자체의 결함으로 확정한 원본이다.
+
+    후보 수는 사람이 전수로 센 `SourceReview.candidates`다. 코드가 센 수가 아니라 대조한 사람이
+    본 수를 내야 무엇을 확인하고 남겼는지가 드러난다.
+    """
+
+    finding: SourceFinding
+    sources: int = Field(ge=1)
+    candidates: int = Field(ge=0)
+
+
+class RemainingSource(Contract):
+    """아직 확정에 이르지 못한 미해결 원본 한 사유의 수.
+
+    후보 수를 모르는 원본이 하나라도 섞이면 `candidates`는 None이다. 나머지만 더한 수를 전체인
+    것처럼 내면 폴백 정책이 막은 `알 수 없음`을 0건 손실로 보고하는 것이 된다.
+    """
+
+    reason: UnresolvedReason
+    sources: int = Field(ge=1)
+    candidates: int | None = Field(default=None, ge=0)
+
+
+class UnconfirmedPlace(Contract):
+    """좌표를 확정하지 못한 식당 레코드 한 사유의 수. 마커가 되지 못하고 장부에만 남는다."""
+
+    reason: GeocodeReason
+    records: int = Field(ge=1)
+
+
+class SubmissionTally(Contract):
+    """제출 시점 기준이 공개하는 남은 미해결의 수([#106](
+    https://github.com/snowjaewon/OfficialDeliciousMap/issues/106)).
+
+    사유별 건수를 밝히면 제출할 수 있다는 기준이지, 0건 기준을 대신하는 수가 아니다. 세지 않은
+    값은 0으로 내지 않는다 — `counted_sources`가 False면 원본을 세지 않았다는 뜻이고,
+    `classified_records`가 0이면 판정한 레코드가 없다는 뜻이다.
+    """
+
+    # 사람 대조가 있는 원본 결함만 담는다. 대조가 없으면 같은 사유라도 미해결로 남는다.
+    confirmed_defects: tuple[ConfirmedDefect, ...] = ()
+    remaining_sources: tuple[RemainingSource, ...] = ()
+    # parse가 원본별 보고를 남겼는지. 위 두 값의 빈 튜플이 0개인지 세지 않은 것인지를 가른다.
+    counted_sources: bool = False
+    classified_records: int = Field(default=0, ge=0)
+    pending_records: int = Field(default=0, ge=0)
+    # 지오코딩 판정 대상. 미확정 수의 분모이며 비식당·판단 보류는 대상이 아니다.
+    restaurant_records: int = Field(default=0, ge=0)
+    unconfirmed_places: tuple[UnconfirmedPlace, ...] = ()
+
+
 class ClassifyInput(Contract):
     records: tuple[Record, ...]
     manual: tuple[ManualCorrection, ...] = ()
@@ -931,6 +983,8 @@ class BuildInput(Contract):
     excluded_sources: ExcludedSources = ExcludedSources()
     # 누적 재게시로 합쳐 장부에서 뺀 수. 화면의 자료 범위가 이 수를 함께 낸다.
     repeated_expenses: RepeatedExpenses = RepeatedExpenses()
+    # 제출 시점 기준이 공개하는 남은 미해결(#106). 화면의 자료 범위가 사유별로 낸다.
+    tally: SubmissionTally = SubmissionTally()
 
 
 class BuildOutput(Contract):

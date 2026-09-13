@@ -17,6 +17,7 @@ from deliciousmap.contracts import (
     ClassificationStatus,
     Contract,
     ExcludedSources,
+    GeocodeReason,
     GeocodeResult,
     MarkerFile,
     Provider,
@@ -25,6 +26,9 @@ from deliciousmap.contracts import (
     Record,
     RecordFile,
     RepeatedExpenses,
+    SourceFinding,
+    SubmissionTally,
+    UnresolvedReason,
 )
 from deliciousmap.registry import CITIES, City, HoldReason, Organization, Target
 from deliciousmap.storage import write_bytes, write_text
@@ -43,6 +47,41 @@ HOLD_REASON_LABELS: dict[HoldReason, str] = {
     "below_threshold": "공개 기준 미달",
 }
 COLLECTION_LABELS = {"collected": "수집 완료", "empty": "레코드 없음", "held": "수집 보류"}
+# 사람이 원본과 대조해 확정한 원본 자체의 결함. 사유 자체의 단일 출처는 계약이다.
+SOURCE_FINDING_LABELS: dict[SourceFinding, str] = {
+    "merchant_blank": "상호 빈칸",
+    "total_mismatch": "합계 불일치",
+}
+# 원본을 끝내 읽지 못한 사유의 화면 표기. 사유를 적지 않고 수만 내면 무엇이 남았는지 알 수 없다.
+UNRESOLVED_REASON_LABELS: dict[UnresolvedReason, str] = {
+    "unsupported_format": "지원하지 않는 형식",
+    "unreadable": "읽지 못함",
+    "unsupported_layout": "지원하지 않는 배치",
+    "no_table": "표 없음",
+    "model_not_configured": "모델 미설정",
+    "unavailable": "호출 장애",
+    "invalid_response": "잘못된 응답",
+    "incomplete_response": "잘린 응답",
+    "oversized_request": "요청 크기 초과",
+    "budget_exhausted": "예산 소진",
+    "unknown_prior_usage": "기존 사용액 미확인",
+    "concurrent_execution": "동시 실행",
+    "validation_failed": "검증 실패",
+    "no_candidates": "후보 없음",
+}
+# 좌표를 확정하지 못한 사유의 화면 표기. 장부(app.js의 `GEOCODE_REASONS`)와 같은 말을 쓴다.
+GEOCODE_REASON_LABELS: dict[GeocodeReason, str] = {
+    "no_candidates": "후보 없음",
+    "missing_address": "주소 근거 없음",
+    "unknown_branch": "지점 미확인",
+    "conflicting_evidence": "근거 충돌",
+    "ambiguous": "후보 모호",
+    "unconfirmed_name": "상호 미확인",
+    "no_match": "일치 후보 없음",
+    "missing_coordinates": "좌표 없음",
+    "lookup_error": "조회 실패",
+    "insufficient_evidence": "근거 부족",
+}
 # 방문 구간: (키, 필터 버튼, 범례). 필터·범례·마커 색이 같은 구간을 쓴다. 판정은 app.js가 한다.
 VISIT_BAND_LABELS = (
     ("20", "20+", "20회 이상"),
@@ -109,6 +148,8 @@ class SourceScope:
     targets: int
     excluded: ExcludedSources
     repeated: RepeatedExpenses
+    # 제출 시점 기준이 공개하는 남은 미해결(#106). 세지 않은 값은 0으로 내지 않는다.
+    tally: SubmissionTally = SubmissionTally()
 
     @property
     def total(self) -> int:
@@ -471,10 +512,82 @@ def _confirmed_line(repeated: RepeatedExpenses) -> str:
     return said
 
 
+def _tally_lines(tally: SubmissionTally) -> str:
+    """제출 시점 기준이 공개하는 남은 미해결(#106). 세지 않은 값은 줄을 내지 않는다."""
+    return "".join(
+        f'\n      <p class="collection-scope">{line}</p>'
+        for line in (_unresolved_source_line(tally), _unmapped_record_line(tally))
+        if line
+    )
+
+
+def _unresolved_source_line(tally: SubmissionTally) -> str:
+    """원본 결함 확정과 그 밖의 미해결 원본. 원본을 세지 않은 산출물에는 낼 말이 없다.
+
+    사람이 원본과 대조해 원본 자체의 결함으로 확정한 원본만 따로 센다. 대조가 없으면 사유가
+    같아도 미해결이므로, 하지 않은 검토의 0개는 적지 않는다. 미해결이 0개인 것은 센 뒤의
+    사실이므로 감추지 않는다. 이 공개가 [#9](
+    https://github.com/snowjaewon/OfficialDeliciousMap/issues/9)의 0개 기준을 대신하지는 않는다.
+    """
+    if not tally.counted_sources:
+        return ""
+    said = ""
+    if tally.confirmed_defects:
+        confirmed = sum(item.sources for item in tally.confirmed_defects)
+        detail = " · ".join(
+            f"{SOURCE_FINDING_LABELS[item.finding]} {item.sources:,}개"
+            f"(지출 후보 {item.candidates:,}건)"
+            for item in tally.confirmed_defects
+        )
+        said += (
+            f"사람이 원본과 대조해 원본 자체의 결함으로 확정한 원본 {confirmed:,}개는"
+            f" 레코드를 내지 않습니다: {detail}. "
+        )
+    if not tally.remaining_sources:
+        return f"{said}아직 확정하지 못해 미해결로 남은 원본은 없습니다."
+    remaining = sum(item.sources for item in tally.remaining_sources)
+    detail = " · ".join(
+        f"{UNRESOLVED_REASON_LABELS[item.reason]} {item.sources:,}개"
+        f"({_candidates(item.candidates)})"
+        for item in tally.remaining_sources
+    )
+    return f"{said}아직 확정하지 못해 미해결로 남은 원본 {remaining:,}개: {detail}."
+
+
+def _candidates(count: int | None) -> str:
+    """후보 수를 모르는 원본이 섞이면 알 수 없음으로 적는다. 0건 손실로 보고하지 않는다."""
+    return "지출 후보 수 알 수 없음" if count is None else f"지출 후보 {count:,}건"
+
+
+def _unmapped_record_line(tally: SubmissionTally) -> str:
+    """지도에 오르지 못한 레코드. 밝히지 않으면 장부가 지도와 같아 보인다(#106)."""
+    if not tally.classified_records:
+        return ""
+    parts = []
+    if tally.pending_records:
+        parts.append(f"식당 여부를 가르지 못한 판단 보류 {tally.pending_records:,}건")
+    if tally.unconfirmed_places:
+        unconfirmed = sum(item.records for item in tally.unconfirmed_places)
+        detail = " · ".join(
+            f"{GEOCODE_REASON_LABELS[item.reason]} {item.records:,}건"
+            for item in tally.unconfirmed_places
+        )
+        parts.append(
+            f"식당 {tally.restaurant_records:,}건 가운데"
+            f" 좌표를 확정하지 못한 {unconfirmed:,}건({detail})"
+        )
+    if not parts:
+        return "판단 보류와 좌표 미확정 없이 모든 레코드를 판정했습니다."
+    return f"{' · '.join(parts)}은 지도에 오르지 못하고 장부에만 남습니다."
+
+
 def _city_page(
     city: City, map_key: MapKey, statuses: tuple[CollectionStatus, ...], scope: SourceScope
 ) -> str:
     city_name = escape(city.name)
+    scope_lines = (
+        f"{_scope_line(scope)}{_repeated_expense_line(scope.repeated)}{_tally_lines(scope.tally)}"
+    )
     config = json.dumps(
         {
             "city": city.slug,
@@ -557,7 +670,7 @@ def _city_page(
     <dialog class="source-dialog" data-source-dialog>
       <button type="button" class="dialog-close" data-close-sources aria-label="닫기">×</button>
       <p class="eyebrow">자료 범위</p><h2>대상 기간 {REPORTING_PERIOD}</h2>
-{_collection_table(statuses)}{_scope_line(scope)}{_repeated_expense_line(scope.repeated)}
+{_collection_table(statuses)}{scope_lines}
       <p class="collection-warning">
         레코드 없음과 수집 보류는 집행이 없었다는 뜻이 아닙니다.
       </p>
