@@ -272,7 +272,22 @@ test("install precaches the current shell", async () => {
     "./assets/app.js",
     "./assets/styles.css",
     "./manifest.webmanifest",
+    "./assets/icon-192.png",
+    "./assets/icon-512.png",
+    "./assets/icon-maskable-512.png",
+    "./assets/apple-touch-icon.png",
   ]);
+});
+
+test("an installed app's icon is served from the shell cache", async () => {
+  const harness = workerHarness({
+    entries: { "/assets/icon-192.png": fakeResponse("cached icon") },
+    fetchImpl: async () => fakeResponse("network icon"),
+  });
+
+  const response = await harness.dispatchFetch(request("/assets/icon-192.png")).response;
+
+  assert.equal(response?.body, "cached icon");
 });
 
 test("install caches the city page that registered the worker so the first revisit opens from cache", async () => {

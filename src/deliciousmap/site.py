@@ -27,9 +27,11 @@ from deliciousmap.contracts import (
     RepeatedExpenses,
 )
 from deliciousmap.registry import CITIES, City, HoldReason, Organization, Target
-from deliciousmap.storage import write_text
+from deliciousmap.storage import write_bytes, write_text
 
 ASSET_NAMES = ("app.js", "styles.css")
+# 앱 아이콘. `scripts/make_icons.py`로 만든 PNG를 그대로 낸다. 크기는 manifest의 선언과 같다.
+ICON_NAMES = ("icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png")
 # 도시 전체 build가 도시마다 내는 화면과 두 데이터 파일.
 CITY_FILES = ("index.html", "markers.json", "records.json")
 REPORTING_PERIOD = period.LABEL
@@ -72,7 +74,8 @@ class MapKey:
 
 def public_paths(city_slugs: Iterable[str]) -> frozenset[str]:
     """도시 전체 build가 `dist/`에 내는 공개 파일 전부. 배포 검사는 이것만 허용한다."""
-    shell = {"index.html", "manifest.webmanifest", "sw.js", *(f"assets/{n}" for n in ASSET_NAMES)}
+    assets = (*ASSET_NAMES, *ICON_NAMES)
+    shell = {"index.html", "manifest.webmanifest", "sw.js", *(f"assets/{n}" for n in assets)}
     return frozenset({*shell, *(f"{slug}/{name}" for slug in city_slugs for name in CITY_FILES)})
 
 
@@ -262,6 +265,11 @@ def write_site_shell(
         path = asset_root / name
         write_text(path, packaged_assets.joinpath(name).read_text(encoding="utf-8"))
         written.append(path)
+    # 텍스트 자산은 읽을 때 줄바꿈이 LF로 맞춰진다. 아이콘은 바이트를 그대로 옮긴다.
+    for name in ICON_NAMES:
+        path = asset_root / name
+        write_bytes(path, packaged_assets.joinpath(name).read_bytes())
+        written.append(path)
 
     manifest = output_root / "manifest.webmanifest"
     write_text(
@@ -273,6 +281,13 @@ def write_site_shell(
     write_text(service_worker, packaged_assets.joinpath("sw.js").read_text(encoding="utf-8"))
     written.append(service_worker)
     return tuple(written)
+
+
+def _icon_links(root: str) -> str:
+    """manifest와 아이콘. iPhone Safari는 manifest 아이콘 대신 apple-touch-icon을 홈 화면에 쓴다."""
+    return f"""    <link rel="manifest" href="{root}manifest.webmanifest">
+    <link rel="icon" type="image/png" sizes="192x192" href="{root}assets/icon-192.png">
+    <link rel="apple-touch-icon" href="{root}assets/apple-touch-icon.png">"""
 
 
 def _landing_page(output_root: Path) -> str:
@@ -287,7 +302,7 @@ def _landing_page(output_root: Path) -> str:
     <meta property="og:title" content="공무원 맛집 지도">
     <meta property="og:description" content="업무추진비 레코드에서 자주 찾은 식당을 확인하세요.">
     <title>공무원 맛집 지도</title>
-    <link rel="manifest" href="./manifest.webmanifest">
+{_icon_links("./")}
     <link rel="stylesheet" href="./assets/styles.css">
   </head>
   <body class="landing-page">
@@ -299,9 +314,22 @@ def _landing_page(output_root: Path) -> str:
 {cards}
       </nav>
     </main>
+{_install_guide()}
+    <script id="site-config" type="application/json">{json.dumps({"site_root": "./"})}</script>
+    <script src="./assets/app.js" defer></script>
   </body>
 </html>
 """
+
+
+def _install_guide() -> str:
+    """홈 화면 설치 안내의 자리. 문구와 표시 여부는 브라우저에 따라 app.js가 정한다."""
+    return """    <aside class="install-guide" data-install-guide aria-label="앱 설치 안내" hidden>
+      <p data-install-message></p>
+      <button class="install-accept" type="button" data-install-accept hidden>설치</button>
+      <button class="install-dismiss" type="button" data-install-dismiss
+              aria-label="설치 안내 닫기">×</button>
+    </aside>"""
 
 
 def _map_notice(statuses: tuple[CollectionStatus, ...]) -> str:
@@ -471,7 +499,7 @@ def _city_page(
     <meta property="og:description"
           content="{city_name} 업무추진비 레코드에서 자주 찾은 식당을 확인하세요.">
     <title>{city_name} 공무원 맛집 지도</title>
-    <link rel="manifest" href="{SITE_ROOT}manifest.webmanifest">
+{_icon_links(SITE_ROOT)}
     <link rel="stylesheet" href="{SITE_ROOT}assets/styles.css">
   </head>
   <body class="city-page">
@@ -534,6 +562,7 @@ def _city_page(
         레코드 없음과 수집 보류는 집행이 없었다는 뜻이 아닙니다.
       </p>
     </dialog>
+{_install_guide()}
     <script id="site-config" type="application/json">{config}</script>
     <script src="{SITE_ROOT}assets/app.js" defer></script>
   </body>

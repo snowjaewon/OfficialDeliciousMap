@@ -15,7 +15,9 @@ const {
   renderRecords,
   renderRestaurantList,
   selectMarker,
+  setupInstallGuide,
   setupListSheet,
+  start,
   summarizeMetrics,
   viewportBounds,
   visitBand,
@@ -819,4 +821,216 @@ test("city-wide counts survive a map that cannot report its viewport", () => {
   assert.deepEqual(viewportBounds(working), bounds);
   assert.equal(viewportBounds(broken), undefined);
   assert.equal(viewportBounds(undefined), undefined);
+});
+
+const ANDROID_CHROME =
+  "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36";
+
+// 설치 안내가 있는 화면. 브라우저 이벤트·표시 방식·저장소를 테스트가 정한다.
+function installPage({ userAgent = ANDROID_CHROME, storage = new Map() } = {}) {
+  const guide = new FakeElement("aside");
+  guide.hidden = true;
+  const message = new FakeElement("p");
+  const accept = new FakeElement("button");
+  accept.hidden = true;
+  const dismiss = new FakeElement("button");
+  const listeners = {};
+  const windowObject = {
+    document: new FakeDocument({
+      "[data-install-guide]": guide,
+      "[data-install-message]": message,
+      "[data-install-accept]": accept,
+      "[data-install-dismiss]": dismiss,
+    }),
+    navigator: { userAgent, maxTouchPoints: 0 },
+    matchMedia: () => ({ matches: false }),
+    localStorage: {
+      getItem: (key) => storage.get(key) ?? null,
+      setItem: (key, value) => storage.set(key, String(value)),
+    },
+    addEventListener(name, listener) {
+      (listeners[name] ||= []).push(listener);
+    },
+  };
+  const dispatch = (name, event = {}) => {
+    for (const listener of listeners[name] || []) listener(event);
+  };
+  return { window: windowObject, guide, message, accept, dismiss, dispatch, storage };
+}
+
+// Chrome의 beforeinstallprompt. 사용자가 설치 창에서 고른 결과를 정해 둔다.
+function installOffer(outcome) {
+  return {
+    defaultPrevented: false,
+    prompted: 0,
+    preventDefault() {
+      this.defaultPrevented = true;
+    },
+    async prompt() {
+      this.prompted += 1;
+    },
+    userChoice: Promise.resolve({ outcome }),
+  };
+}
+
+test("Android Chrome's install offer becomes an install button that opens the install dialog", async () => {
+  const page = installPage();
+  setupInstallGuide(page.window);
+  assert.equal(page.guide.hidden, true);
+
+  const offer = installOffer("accepted");
+  page.dispatch("beforeinstallprompt", offer);
+  // 브라우저의 기본 안내 대신 이 화면의 버튼으로 설치한다.
+  assert.equal(offer.defaultPrevented, true);
+  assert.equal(page.guide.hidden, false);
+  assert.equal(page.accept.hidden, false);
+  assert.match(page.message.textContent, /설치/);
+
+  await page.accept.click();
+  assert.equal(offer.prompted, 1);
+  assert.equal(page.guide.hidden, true);
+});
+
+test("a closed install guide stays closed on later visits", () => {
+  const storage = new Map();
+  const first = installPage({ storage });
+  setupInstallGuide(first.window);
+  first.dispatch("beforeinstallprompt", installOffer("accepted"));
+  first.dismiss.click();
+  assert.equal(first.guide.hidden, true);
+
+  const later = installPage({ storage });
+  setupInstallGuide(later.window);
+  const offer = installOffer("accepted");
+  later.dispatch("beforeinstallprompt", offer);
+  assert.equal(later.guide.hidden, true);
+  // 닫은 사람에게는 브라우저의 기본 설치 안내도 띄우지 않는다.
+  assert.equal(offer.defaultPrevented, true);
+});
+
+test("declining the install dialog counts as closing the guide", async () => {
+  const storage = new Map();
+  const first = installPage({ storage });
+  setupInstallGuide(first.window);
+  first.dispatch("beforeinstallprompt", installOffer("dismissed"));
+  await first.accept.click();
+
+  const later = installPage({ storage });
+  setupInstallGuide(later.window);
+  later.dispatch("beforeinstallprompt", installOffer("accepted"));
+  assert.equal(later.guide.hidden, true);
+});
+
+const IPHONE_SAFARI =
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1";
+
+test("iPhone Safari shows how to add the site to the home screen once", () => {
+  const storage = new Map();
+  const page = installPage({ userAgent: IPHONE_SAFARI, storage });
+  setupInstallGuide(page.window);
+
+  // Safari에는 설치 제안 이벤트가 없어 사용자가 공유 메뉴에서 직접 추가한다.
+  assert.equal(page.guide.hidden, false);
+  assert.equal(page.accept.hidden, true);
+  assert.match(page.message.textContent, /공유/);
+  assert.match(page.message.textContent, /홈 화면에 추가/);
+
+  // 닫지 않고 다른 화면으로 옮겨도 다시 띄우지 않는다.
+  const later = installPage({ userAgent: IPHONE_SAFARI, storage });
+  setupInstallGuide(later.window);
+  assert.equal(later.guide.hidden, true);
+
+  // 처음 본 화면에서는 닫을 때까지 남는다.
+  assert.equal(page.guide.hidden, false);
+  page.dismiss.click();
+  assert.equal(page.guide.hidden, true);
+});
+
+test("an iPad asking for the desktop site is still treated as Safari on iOS", () => {
+  const page = installPage({
+    userAgent:
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Safari/605.1.15",
+  });
+  page.window.navigator.maxTouchPoints = 5;
+  setupInstallGuide(page.window);
+  assert.equal(page.guide.hidden, false);
+
+  // 터치가 없는 Mac의 Safari는 홈 화면이 없다.
+  const mac = installPage({ userAgent: page.window.navigator.userAgent });
+  setupInstallGuide(mac.window);
+  assert.equal(mac.guide.hidden, true);
+});
+
+test("iOS browsers other than Safari do not get the Safari instructions", () => {
+  for (const userAgent of [
+    // iOS Chrome
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/128.0.6613.98 Mobile/15E148 Safari/604.1",
+    // 카카오톡 인앱 브라우저
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 KAKAOTALK 25.7.0",
+    // 네이버 앱
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/605.1 NAVER(inapp; search; 2000; 12.10.2)",
+  ]) {
+    const page = installPage({ userAgent });
+    setupInstallGuide(page.window);
+    assert.equal(page.guide.hidden, true, userAgent);
+  }
+});
+
+test("an app already opened from the home screen never shows the install guide", () => {
+  const fromHomeScreen = installPage({ userAgent: IPHONE_SAFARI });
+  fromHomeScreen.window.navigator.standalone = true;
+  setupInstallGuide(fromHomeScreen.window);
+  assert.equal(fromHomeScreen.guide.hidden, true);
+
+  const installed = installPage();
+  installed.window.matchMedia = (query) => ({ matches: query === "(display-mode: standalone)" });
+  setupInstallGuide(installed.window);
+  installed.dispatch("beforeinstallprompt", installOffer("accepted"));
+  assert.equal(installed.guide.hidden, true);
+});
+
+test("a browser that refuses storage still shows and closes the guide on this page", () => {
+  const page = installPage({ userAgent: IPHONE_SAFARI });
+  page.window.localStorage = {
+    getItem() {
+      throw new Error("SecurityError");
+    },
+    setItem() {
+      throw new Error("QuotaExceededError");
+    },
+  };
+  setupInstallGuide(page.window);
+  assert.equal(page.guide.hidden, false);
+
+  page.dismiss.click();
+  assert.equal(page.guide.hidden, true);
+});
+
+test("installing from the browser menu hides the install button", () => {
+  const page = installPage();
+  setupInstallGuide(page.window);
+  page.dispatch("beforeinstallprompt", installOffer("accepted"));
+  assert.equal(page.guide.hidden, false);
+
+  page.dispatch("appinstalled");
+  assert.equal(page.guide.hidden, true);
+});
+
+test("the landing page shows the install guide and registers the service worker", async () => {
+  const page = installPage({ userAgent: IPHONE_SAFARI });
+  const registered = [];
+  page.window.navigator.serviceWorker = {
+    register: async (url, options) => registered.push([String(url), options.scope]),
+  };
+  page.window.location = { href: "https://map.example/" };
+  // 랜딩에는 도시가 없다. 지도·목록은 만들지 않는다.
+  page.window.document.documentElement = { dataset: {} };
+  const config = new FakeElement("script");
+  config.textContent = JSON.stringify({ site_root: "./" });
+  page.window.document.elements["#site-config"] = config;
+
+  await start(page.window);
+
+  assert.equal(page.guide.hidden, false);
+  assert.deepEqual(registered, [["https://map.example/sw.js", "./"]]);
 });

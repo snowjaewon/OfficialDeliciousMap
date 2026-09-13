@@ -644,6 +644,61 @@ h1 {
   font-size: 0.8rem;
 }
 
+/* 홈 화면 설치 안내. 브라우저의 설치 막대처럼 화면 아래에 떠서 지도의 크기를 바꾸지 않는다.
+   iPhone Safari의 공유 버튼도 아래에 있다. 목록 시트(z-index 20)보다 위에 둔다. */
+.install-guide {
+  position: fixed;
+  z-index: 30;
+  right: 0;
+  bottom: calc(0.75rem + env(safe-area-inset-bottom));
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: min(28rem, calc(100% - 1.5rem));
+  padding: 0.75rem 0.6rem 0.75rem 1rem;
+  margin: 0 auto;
+  border: 1px solid rgb(23 63 53 / 14%);
+  border-radius: 1rem;
+  background: #fffdf8;
+  box-shadow: 0 0.8rem 2.4rem rgb(23 63 53 / 24%);
+}
+
+.install-guide[hidden],
+.install-accept[hidden] {
+  display: none;
+}
+
+.install-guide p {
+  flex: 1;
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.install-accept {
+  flex: 0 0 auto;
+  padding: 0.55rem 1rem;
+  border: 0;
+  border-radius: 999px;
+  background: #173f35;
+  color: white;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.install-dismiss {
+  flex: 0 0 auto;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #52665f;
+  font-size: 1.35rem;
+  cursor: pointer;
+}
+
 @media (max-width: 640px) {
   .topbar {
     grid-template-columns: auto 1fr auto;

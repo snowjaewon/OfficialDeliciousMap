@@ -20,7 +20,8 @@ MANIFEST_VERSION = 1
 # Cloudflare Pages Free 플랜의 배포 asset 한도. 정제 산출물 상한(20MB)과 다른 검사다.
 PAGES_FILE_LIMIT = 25 * 1024 * 1024
 PAGES_FILE_COUNT = 20_000
-# 공개 파일이 서로를 가리키는 자리. site.py가 쓰는 속성과 sw.js의 사전 캐시 목록이다.
+# 공개 파일이 서로를 가리키는 자리. site.py가 쓰는 속성, sw.js의 사전 캐시 목록, manifest의
+# 시작 주소·아이콘이다.
 HTML_REFERENCE = re.compile(r'\b(?:href|src|data-markers-url|data-records-url)="([^"]*)"')
 SITE_CONFIG = re.compile(r'<script id="site-config" type="application/json">(.*?)</script>', re.S)
 SERVICE_WORKER_SHELL = re.compile(r"const SHELL = (\[[^\]]*\]);")
@@ -125,7 +126,9 @@ def _local_targets(relative: str, text: str) -> tuple[str, ...]:
         shell = SERVICE_WORKER_SHELL.search(text)
         references += json.loads(shell.group(1)) if shell is not None else []
     elif relative == "manifest.webmanifest":
-        references.append(json.loads(text)["start_url"])
+        manifest = json.loads(text)
+        # 아이콘이 없으면 브라우저가 설치를 제안하지 않는다.
+        references += [manifest["start_url"], *(icon["src"] for icon in manifest["icons"])]
     return tuple(
         target for reference in references if (target := _resolve(relative, reference)) is not None
     )
