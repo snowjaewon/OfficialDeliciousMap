@@ -466,6 +466,12 @@ class PublishedMarker(Contract):
     closed: bool
     # 좌표를 준 제공자. 인허가 좌표도 지도에서 구별하지 않고 상세에서만 밝힌다.
     coordinate_source: Provider
+    # 좌표를 준 근거의 주소. 업소 확인은 주소가 일치한 후보만 채택하므로 확정 마커에는 언제나 있다.
+    address: Text
+    # 아래 셋은 이 식당으로 묶인 레코드의 요약이다. 목록·상세가 장부를 받지 않고도 보여 준다.
+    last_visited_on: date
+    total_amount_krw: Decimal = Field(allow_inf_nan=False)
+    organizations: tuple[Text, ...] = Field(min_length=1)
 
 
 class PublishedRecord(Contract):
@@ -498,14 +504,14 @@ class PublishedRecord(Contract):
 
 
 class MarkerFile(Contract):
-    schema_version: Literal[6] = 6
+    schema_version: Literal[7] = 7
     city: Text
     org: str | None = None
     markers: tuple[PublishedMarker, ...]
 
 
 class RecordFile(Contract):
-    schema_version: Literal[6] = 6
+    schema_version: Literal[7] = 7
     city: Text
     org: str | None = None
     records: tuple[PublishedRecord, ...]

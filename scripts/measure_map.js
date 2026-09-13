@@ -1067,7 +1067,7 @@ async function measureColdRun(context, url, query, run, traceDirectory, environm
     run["search-feedback"] = search.feedback;
 
     const selection = await page.measureInteraction("marker-selection", () =>
-      page.click(".search-result"),
+      page.click(".restaurant-item"),
     );
     run["selection-detail"] = selection.result;
     run["selection-feedback"] = selection.feedback;

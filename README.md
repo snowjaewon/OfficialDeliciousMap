@@ -140,8 +140,12 @@ PowerShell: Get-Content .env | ForEach-Object { if ($_ -match '^(\w+)=(.*)$') { 
 도시 전체 build를 실행하면 `dist/index.html`에 7개 도시 랜딩이, `dist/<city>/index.html`에
 선택 도시 화면이 생긴다. 랜딩은 7개 도시 카드를 모두 두되 이미 build한 도시만 링크하고
 나머지는 `준비 중`으로 남겨 미수집 도시를 열 수 있는 것처럼 보이지 않게 한다. 화면은
-`markers.json`을 먼저 받아 식당명 검색, 20+ / 10~19 / 5~9 / 1~4 방문 횟수 필터, 전체 결과와
-현재 지도 영역 결과 수, 마커 상세와 네이버 지도 연결을 제공한다. `records.json`은 장부 탭을
+`markers.json`을 먼저 받아 지도와 식당 순위 목록을 함께 보인다. 데스크톱은 지도 오른쪽 패널,
+폭 720px 이하는 지도 위에서 끌어올리는 시트(접힘·중간·펼침)다. 목록은 식당명 검색과
+20+ / 10~19 / 5~9 / 1~4 방문 횟수 필터의 결과를 방문 횟수 순으로 50곳씩 그리고, 전체 결과와
+현재 지도 영역 결과 수를 따로 센다. 목록 항목과 마커는 같은 상세(주소·최근 방문일·방문 기관·
+합계 금액·폐업·좌표 출처·네이버 지도 연결)를 열며 닫기로 목록에 돌아간다. 마커 색과 범례는
+방문 구간을 따른다. `records.json`은 장부 탭을
 처음 열 때만 받으며 비식당·판단 보류·지오코딩 실패 레코드도 상태와 사유를 함께 표시한다.
 한 번에 100건씩 그려 긴 장부의 첫 목록 렌더링을 제한한다.
 
@@ -162,14 +166,17 @@ PowerShell: Get-Content .env | ForEach-Object { if ($_ -match '^(\w+)=(.*)$') { 
 
 | 파일 | 내용 |
 | --- | --- |
-| `markers.json` | `schema_version`(6), `city`, `org`, `markers` |
-| `records.json` | `schema_version`(6), `city`, `org`, `records` |
+| `markers.json` | `schema_version`(7), `city`, `org`, `markers` |
+| `records.json` | `schema_version`(7), `city`, `org`, `records` |
 
 마커 하나는 `business_id`, 확정 상호 `merchant`, `visit_count`(묶인 레코드 수), `latitude`,
-`longitude`, `closed`, `coordinate_source`를 가진다. `coordinate_source`는 좌표를 준 제공자
+`longitude`, `closed`, `coordinate_source`, `address`와 묶인 레코드의 요약인
+`last_visited_on`(가장 늦은 `spent_on`), `total_amount_krw`(금액 합계), `organizations`(기관 slug)를
+가진다. `coordinate_source`는 좌표를 준 제공자
 (`local`·`naver`·`license`)다. 마커에 묶인 레코드는 좌표가 같으므로 첫 레코드의 판정에서 고르며,
 그 판정이 사람 확인이면 확인한 후보의 제공자, 아니면 결과 좌표와 일치하는 후보의 제공자다.
-여러 제공자의 근거가 같은 좌표로 겹치면 이름 순으로 하나를 밝힌다.
+여러 제공자의 근거가 같은 좌표로 겹치면 이름 순으로 하나를 밝힌다. `address`는 같은 근거의 주소다.
+업소 확인은 상호·지점·주소가 일치한 후보만 채택하므로 확정 마커에는 언제나 주소가 있다.
 폐업으로 확인된 마커도 파일에서 빼지 않는다.
 
 장부 레코드 하나는 `record_id`, `spent_on`, `organization`, `department`, `merchant`, `purpose`,
@@ -186,8 +193,9 @@ PowerShell: Get-Content .env | ForEach-Object { if ($_ -match '^(\w+)=(.*)$') { 
 기본 파라미터는 `ncpKeyId`이며 구형 키만 `NAVER_MAP_KEY_PARAM=ncpClientId`로 바꾼다. 그 밖의
 값은 종료 코드 2로 거부한다. 키는 페이지 설정에만 들어가고 저장소 파일·로그·산출물
 메타데이터에는 남기지 않는다. 키가 잘못되어 지도 인증이 실패하면 지도 자리에 설정 안내를
-띄우고 검색 집계·구간 필터·장부는 계속 제공한다. 도시별 `MapBounds`는 초기 `fitBounds`,
-최소 축소 수준, 지도 중심 이동 제한에 함께 사용한다.
+띄우고 검색 집계·구간 필터·목록·장부는 계속 제공한다. 도시별 `MapBounds`는 최소 축소 수준과
+지도 중심 이동 제한에 쓴다. 첫 화면은 그 안의 식당이 모인 영역(20곳 이상이면 위도·경도 양끝 5%를
+뺀 범위)에 맞추고 14단계보다 더 확대하지 않는다. 식당이 없으면 도시 전체다.
 
 build한 결과는 정적 파일이므로 로컬 서버로 확인한다. 기본 `--output-root`인 `dist/`를 쓴 경우다.
 
@@ -226,7 +234,7 @@ node --test tests/site_behavior.test.js tests/measure_map.test.js tests/service_
 재어 표를 출력한다. 첫 방문은 매번 새 브라우저 컨텍스트(캐시·서비스 워커 없음)에서, 재방문은
 캐시와 서비스 워커를 채운 컨텍스트의 새 탭에서 잰다. 입력·선택 피드백은 Event Timing(16ms
 미만은 16ms로 적음), 결과·상세·장부 첫 목록은 앱의 `window.deliciousmapMetrics`로 잰다.
-식당 선택은 검색 결과 첫 항목을 누르며 지도 마커를 누르는 경로와 실제 터치 입력은 재지 않는다.
+식당 선택은 검색으로 거른 목록의 첫 항목을 누르며 지도 마커를 누르는 경로와 실제 터치 입력은 재지 않는다.
 드래그·줌·장부 스크롤은 각 조작 구간에 CDP `Tracing`을 붙여 브라우저 성능 기록을 남긴다.
 `PipelineReporter`의 표시 프레임과 프레임 간격, Long Animation Frame·긴 작업을 요약하며,
 판정에 쓰지 않은 원본 기록은 저장소 밖의 trace 디렉터리에 gzip 파일로 둔다. 결과 JSON에는

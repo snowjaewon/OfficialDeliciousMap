@@ -173,22 +173,192 @@ h1 {
   color: white;
 }
 
+/* 도시 화면은 창 높이에 맞춘다. 머리글 아래를 지도 탭이 채우고, 장부 탭은 그 안에서 스크롤한다. */
+.city-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+}
+
+.city-page > main {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* 지도와 식당 목록을 나란히 둔다. 좁은 화면에서는 목록이 지도 위의 시트가 된다(아래 미디어 쿼리). */
 .map-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 24rem;
+  height: 100%;
+}
+
+.map-panel[hidden] {
+  display: none;
+}
+
+/* 지도 SDK의 컨트롤이 목록 시트 위로 올라오지 않게 지도를 한 층에 가둔다. */
+.map-stage {
   position: relative;
-  min-height: calc(100vh - 8.5rem);
+  z-index: 0;
+  min-width: 0;
+  min-height: 0;
+}
+
+.list-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-left: 1px solid #d8d1c5;
+  background: #fffdf8;
+}
+
+.sheet-handle {
+  display: none;
 }
 
 .search-panel {
-  position: absolute;
-  z-index: 10;
-  top: 1rem;
-  left: 1rem;
-  width: min(32rem, calc(100% - 2rem));
-  padding: 0.8rem;
-  border: 1px solid rgb(23 63 53 / 12%);
-  border-radius: 1rem;
-  background: rgb(255 253 248 / 95%);
-  box-shadow: 0 0.8rem 2rem rgb(23 63 53 / 12%);
+  padding: 0.9rem 1rem 0.75rem;
+  border-bottom: 1px solid #e4ddd1;
+}
+
+.list-view,
+.restaurant-detail {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.list-view[hidden],
+.restaurant-detail[hidden] {
+  display: none;
+}
+
+.restaurant-list {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.restaurant-item {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 0;
+  border-bottom: 1px solid #eee8dd;
+  background: transparent;
+  color: #173f35;
+  text-align: left;
+  cursor: pointer;
+}
+
+.restaurant-item:hover,
+.restaurant-item:focus-visible {
+  background: #f6f1e7;
+}
+
+.item-rank {
+  color: #8a978f;
+  font-size: 0.85rem;
+  font-weight: 750;
+  text-align: center;
+}
+
+.item-body {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.item-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.item-address {
+  overflow: hidden;
+  color: #6d7f78;
+  font-size: 0.8rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.closed-tag {
+  justify-self: start;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: #fff0d9;
+  color: #7b3c20;
+  font-size: 0.7rem;
+  font-weight: 750;
+}
+
+.visit-badge {
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.list-empty {
+  padding: 1.5rem 1rem;
+  color: #6d7f78;
+  text-align: center;
+}
+
+.list-view .more-button {
+  display: block;
+  margin: 0.9rem auto 1.2rem;
+}
+
+.list-view .more-button[hidden] {
+  display: none;
+}
+
+.restaurant-detail {
+  padding: 0.9rem 1.15rem 1.5rem;
+}
+
+.restaurant-detail h2 {
+  margin: 0.6rem 0 0.35rem;
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
+}
+
+.restaurant-detail p {
+  margin-bottom: 0.45rem;
+}
+
+.detail-close {
+  padding: 0.35rem 0.1rem;
+  border: 0;
+  background: transparent;
+  color: #52665f;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.detail-visits {
+  font-weight: 750;
+}
+
+.detail-address,
+.detail-line {
+  color: #52665f;
+  font-size: 0.92rem;
+}
+
+.naver-link {
+  display: inline-block;
+  margin-top: 0.4rem;
+  font-weight: 750;
 }
 
 .search-field input {
@@ -227,37 +397,9 @@ h1 {
   font-size: 0.82rem;
 }
 
-.search-results {
-  display: grid;
-  gap: 0.35rem;
-  max-height: 9rem;
-  margin-top: 0.65rem;
-  overflow-y: auto;
-}
-
-.search-results[hidden] {
-  display: none;
-}
-
-.search-result {
-  padding: 0.55rem 0.65rem;
-  border: 1px solid #ddd5c8;
-  border-radius: 0.6rem;
-  background: white;
-  color: #173f35;
-  text-align: left;
-  cursor: pointer;
-}
-
-.map-warning {
-  padding: 0.55rem 0.65rem;
-  margin: 0.65rem 0 0;
-  font-size: 0.75rem;
-}
-
 .map {
   width: 100%;
-  min-height: calc(100vh - 8.5rem);
+  height: 100%;
   background: #dce5dc;
 }
 
@@ -297,22 +439,96 @@ h1 {
   transform: rotate(45deg);
 }
 
-.map-marker.is-closed {
+/* 방문 구간 색. 많을수록 짙다. 필터·범례·목록 배지가 같은 구간을 쓴다(site.VISIT_BAND_LABELS). */
+.band-20 {
+  background: #7a2412;
+  color: white;
+}
+
+.band-10 {
+  background: #b24d2d;
+  color: white;
+}
+
+.band-5 {
+  background: #df8a4c;
+  color: #3b1a0c;
+}
+
+.band-1 {
+  background: #f1c27d;
+  color: #3b1a0c;
+}
+
+.map-marker.is-closed,
+.legend-swatch.is-closed {
   background: #59645f;
+  color: white;
+}
+
+.map-marker.is-closed {
   text-decoration: line-through;
 }
 
-.restaurant-sheet {
+/* 지도 위의 안내와 범례. 오른쪽 위의 확대 컨트롤을 피해 왼쪽 위에 쌓는다. */
+.map-overlay {
   position: absolute;
-  z-index: 20;
-  right: 1rem;
-  bottom: 1rem;
-  width: min(23rem, calc(100% - 2rem));
-  padding: 1.15rem;
-  border: 1px solid rgb(23 63 53 / 13%);
-  border-radius: 1rem;
-  background: #fffdf8;
-  box-shadow: 0 1rem 3rem rgb(23 63 53 / 20%);
+  z-index: 10;
+  top: 0.75rem;
+  left: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  max-width: min(22rem, calc(100% - 5rem));
+  pointer-events: none;
+}
+
+.map-overlay > * {
+  pointer-events: auto;
+}
+
+.map-warning {
+  padding: 0.55rem 0.65rem;
+  margin: 0;
+  font-size: 0.75rem;
+  box-shadow: 0 0.4rem 1.2rem rgb(23 63 53 / 12%);
+}
+
+.map-legend {
+  padding: 0.55rem 0.7rem;
+  border: 1px solid rgb(23 63 53 / 12%);
+  border-radius: 0.7rem;
+  background: rgb(255 253 248 / 94%);
+  box-shadow: 0 0.4rem 1.2rem rgb(23 63 53 / 12%);
+  font-size: 0.75rem;
+}
+
+.map-legend p {
+  margin: 0 0 0.3rem;
+  font-weight: 800;
+}
+
+.map-legend ul {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.map-legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.legend-swatch {
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 2px solid #fffdf8;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgb(23 63 53 / 20%);
 }
 
 .records-panel {
@@ -432,19 +648,74 @@ h1 {
   .topbar {
     grid-template-columns: auto 1fr auto;
   }
+}
 
-  .search-panel {
-    top: 0.6rem;
-    left: 0.6rem;
-    width: calc(100% - 1.2rem);
+/* 좁은 화면: 지도가 화면을 채우고 목록은 아래에서 끌어올리는 시트다. app.js는 손잡이가 보이는지로 시트를 안다.
+   시트가 보이는 높이(--sheet-visible)는 app.js가 접힘·중간·펼침에 맞춰 정한다. */
+@media (max-width: 720px) {
+  .map-panel {
+    position: relative;
+    display: block;
+    overflow: hidden;
   }
 
-  .restaurant-sheet {
-    position: fixed;
+  .map-stage {
+    position: absolute;
+    inset: 0;
+  }
+
+  .map-overlay {
+    top: 0.6rem;
+    left: 0.6rem;
+  }
+
+  .list-panel {
+    position: absolute;
+    z-index: 20;
     right: 0;
     bottom: 0;
-    width: 100%;
+    left: 0;
+    height: calc(100% - 1rem);
+    border: 1px solid rgb(23 63 53 / 13%);
+    border-bottom: 0;
     border-radius: 1.2rem 1.2rem 0 0;
-    padding-bottom: calc(1.15rem + env(safe-area-inset-bottom));
+    box-shadow: 0 -0.6rem 2rem rgb(23 63 53 / 16%);
+    transform: translateY(calc(100% - var(--sheet-visible, 11rem)));
+    transition: transform 180ms ease-out;
+  }
+
+  .list-panel.is-dragging {
+    transition: none;
+  }
+
+  .sheet-handle {
+    display: block;
+    flex: 0 0 auto;
+    width: 100%;
+    height: 1.4rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: grab;
+    touch-action: none;
+  }
+
+  .sheet-handle::before {
+    display: block;
+    width: 2.6rem;
+    height: 0.3rem;
+    margin: 0 auto;
+    border-radius: 999px;
+    background: #cfc7ba;
+    content: "";
+  }
+
+  .search-panel {
+    padding-top: 0.2rem;
+  }
+
+  .list-view,
+  .restaurant-detail {
+    padding-bottom: env(safe-area-inset-bottom);
   }
 }
