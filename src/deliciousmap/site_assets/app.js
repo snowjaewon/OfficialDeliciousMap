@@ -78,15 +78,51 @@
     return String(value).normalize("NFKC").trim().toLocaleLowerCase("ko-KR");
   }
 
-  function filterMarkers(markers, query, visitBand) {
+  function selectedVisitBands(visitBands) {
+    if (visitBands === "all" || visitBands === undefined || visitBands === null) return [];
+    const values =
+      visitBands instanceof Set ? [...visitBands] : Array.isArray(visitBands) ? visitBands : [visitBands];
+    for (const band of values) {
+      if (band === "all" || !Object.hasOwn(VISIT_BANDS, band)) throw new Error("unknown visit band");
+    }
+    return values;
+  }
+
+  function filterMarkers(markers, query, visitBands) {
     const normalizedQuery = normalizeSearch(query);
-    const matchesVisits = VISIT_BANDS[visitBand];
-    if (!matchesVisits) throw new Error("unknown visit band");
+    const selected = selectedVisitBands(visitBands);
     return markers.filter(
       (marker) =>
-        matchesVisits(marker.visit_count) &&
+        (selected.length === 0 || selected.some((band) => VISIT_BANDS[band](marker.visit_count))) &&
         normalizeSearch(marker.merchant).includes(normalizedQuery),
     );
+  }
+
+  function setupVisitFilters(documentObject, onChange = () => {}) {
+    const selected = new Set();
+    const buttons = [...documentObject.querySelectorAll("[data-visits]")];
+
+    function syncButtons() {
+      for (const button of buttons) {
+        button.setAttribute(
+          "aria-pressed",
+          String(button.dataset.visits === "all" ? selected.size === 0 : selected.has(button.dataset.visits)),
+        );
+      }
+    }
+
+    for (const button of buttons) {
+      button.addEventListener("click", (event) => {
+        const band = button.dataset.visits;
+        if (band === "all") selected.clear();
+        else if (selected.has(band)) selected.delete(band);
+        else selected.add(band);
+        syncButtons();
+        onChange(event);
+      });
+    }
+    syncButtons();
+    return selected;
   }
 
   function visitBand(count) {
@@ -397,6 +433,7 @@
   function markerIcon(naverMaps, marker) {
     const classes = ["map-marker", `band-${visitBand(marker.visit_count)}`];
     if (marker.closed) classes.push("is-closed");
+    if (marker.selected) classes.push("is-selected");
     return {
       content: `<button class="${classes.join(" ")}" type="button" aria-label="식당 마커"><span>${marker.visit_count}</span></button>`,
       anchor: new naverMaps.Point(22, 22),
@@ -454,6 +491,7 @@
     link.rel = "noopener noreferrer";
     children.push(link);
     detail.replaceChildren(...children);
+    detail.scrollTop = 0;
     detail.hidden = false;
     const listView = documentObject.querySelector("[data-list-view]");
     // 상세끼리 옮겨 다닐 때는 이미 숨긴 목록의 위치를 덮어쓰지 않는다.
@@ -516,7 +554,7 @@
     markers,
     onViewportChange,
     onSelect,
-    { bottomInset = 0 } = {},
+    { bottomInset = 0, onClearSelection = () => {} } = {},
   ) {
     const documentObject = windowObject.document;
     const cityBounds = toNaverBounds(naverMaps, config.map_bounds);
@@ -525,14 +563,16 @@
     const map = new naverMaps.Map(mapElement, {
       bounds: cityBounds,
       maxBounds: cityBounds,
-      zoomControl: true,
-      zoomControlOptions: { position: naverMaps.Position.TOP_RIGHT },
+      zoomControl: false,
     });
 
     let markReady;
     const ready = new Promise((resolve) => {
       markReady = resolve;
     });
+    let selectedMarkerKey;
+    const topMarkerZIndex =
+      markers.reduce((highest, marker) => Math.max(highest, marker.visit_count), 0) + 1;
     const overlays = markers.map((data) => {
       const overlay = new naverMaps.Marker({
         map,
@@ -542,9 +582,38 @@
         // 방문이 많은 식당이 겹친 마커 위에 온다.
         zIndex: data.visit_count,
       });
-      naverMaps.Event.addListener(overlay, "click", (event) => onSelect(data, event));
+      naverMaps.Event.addListener(overlay, "click", (event) => {
+        setMarkerSelection(data);
+        onSelect(data, event);
+      });
       return { data, overlay };
     });
+
+    function setMarkerSelection(markerOrId) {
+      selectedMarkerKey =
+        markerOrId === undefined
+          ? undefined
+          : typeof markerOrId === "object"
+            ? (markerOrId.business_id ?? markerOrId)
+            : markerOrId;
+      for (const item of overlays) {
+        const selected = (item.data.business_id ?? item.data) === selectedMarkerKey;
+        const icon = markerIcon(naverMaps, { ...item.data, selected });
+        if (typeof item.overlay.setIcon === "function") item.overlay.setIcon(icon);
+        else item.overlay.options.icon = icon;
+        const zIndex = selected ? topMarkerZIndex : item.data.visit_count;
+        if (typeof item.overlay.setZIndex === "function") item.overlay.setZIndex(zIndex);
+        else item.overlay.options.zIndex = zIndex;
+      }
+    }
+
+    function clearSelection() {
+      if (selectedMarkerKey === undefined) return;
+      setMarkerSelection(undefined);
+      onClearSelection();
+    }
+
+    naverMaps.Event.addListener(map, "click", clearSelection);
 
     const reportViewport = () => onViewportChange(naverBoundsToPlain(map.getBounds()));
     // SDK는 첫 화면에서 idle 없이 init만 보낸다. 도시 전체가 보이는 이 시점에 축소 한계를 고정한다.
@@ -556,7 +625,7 @@
     });
     naverMaps.Event.addListener(map, "idle", reportViewport);
     map.fitBounds(cityBounds);
-    return { map, overlays, ready };
+    return { map, overlays, ready, setMarkerSelection, clearSelection };
   }
 
   // 목록 시트를 끌어 세 높이 중 가까운 곳에 놓는다. 넓은 화면에서는 목록이 지도 옆이라 하는 일이 없다.
@@ -578,42 +647,57 @@
       return { collapsed, half: Math.max(collapsed, Math.round(full * 0.5)), full };
     }
 
-    function settle(next) {
+    function settle(next, measuredHeights) {
       state = next;
       // 장부 탭처럼 지도가 숨어 있으면 높이를 잴 수 없다. 0으로 적으면 시트가 화면 밖으로 사라진다.
-      if (!active() || panel.offsetHeight === 0) return;
+      if (!active()) return;
+      const dimensions = measuredHeights ?? heights();
+      if (!measuredHeights && panel.offsetHeight === 0) return;
       panel.dataset.sheet = next;
-      panel.style.setProperty("--sheet-visible", `${heights()[next]}px`);
+      panel.style.setProperty("--sheet-visible", `${dimensions[next]}px`);
     }
 
     // 창 폭이 바뀌어 시트가 되었다 말았다 할 수 있으므로 리스너는 늘 두고 누를 때 확인한다.
     if (panel && header && handle) {
-      handle.addEventListener("pointerdown", (event) => {
+      const startDrag = (event, source) => {
         if (!active()) return;
+        // 검색 입력·필터 버튼은 브라우저의 입력/클릭을 그대로 둔다. 손잡이는 예외다.
+        if (source !== handle && event.target?.closest?.("input, button, label")) return;
         // 끌기 뒤에 click이 오지 않는 기기도 있다. 새로 누를 때마다 지난 끌기를 잊는다.
         draggedLast = false;
-        drag = { startY: event.clientY, startVisible: heights()[state], visible: undefined };
-        handle.setPointerCapture?.(event.pointerId);
+        const measuredHeights = heights();
+        drag = {
+          startY: event.clientY,
+          startVisible: measuredHeights[state],
+          visible: undefined,
+          heights: measuredHeights,
+        };
+        source.setPointerCapture?.(event.pointerId);
         panel.classList.add("is-dragging");
-      });
-      handle.addEventListener("pointermove", (event) => {
+      };
+      const moveDrag = (event) => {
         // 손가락이 조금 떨린 것은 끌기가 아니라 누르기다.
         if (!drag || Math.abs(event.clientY - drag.startY) < DRAG_THRESHOLD) return;
-        const { collapsed, full } = heights();
+        const { collapsed, full } = drag.heights;
         const visible = drag.startVisible + (drag.startY - event.clientY);
         drag.visible = Math.min(full, Math.max(collapsed, visible));
         panel.style.setProperty("--sheet-visible", `${drag.visible}px`);
-      });
+      };
       const finish = () => {
         if (!drag) return;
+        const measuredHeights = drag.heights;
         panel.classList.remove("is-dragging");
         // 조금도 끌지 않았으면 누른 것이다. 그때는 뒤따르는 click이 높이를 바꾼다.
         draggedLast = drag.visible !== undefined;
-        settle(draggedLast ? nearestSheetState(drag.visible, heights()) : state);
+        settle(draggedLast ? nearestSheetState(drag.visible, measuredHeights) : state, measuredHeights);
         drag = undefined;
       };
-      handle.addEventListener("pointerup", finish);
-      handle.addEventListener("pointercancel", finish);
+      for (const source of [handle, header]) {
+        source.addEventListener("pointerdown", (event) => startDrag(event, source));
+        source.addEventListener("pointermove", moveDrag);
+        source.addEventListener("pointerup", finish);
+        source.addEventListener("pointercancel", finish);
+      }
       // 누르거나 키보드로 고르면 한 단계씩 올리고, 가장 높으면 접는다.
       handle.addEventListener("click", () => {
         if (!active()) return;
@@ -631,6 +715,10 @@
       // 시트를 적어도 이 높이까지 올린다. 이미 더 높으면 그대로 둔다.
       raise(next) {
         if (SHEET_STATES.indexOf(next) > SHEET_STATES.indexOf(state)) settle(next);
+      },
+      state: () => state,
+      restore(next) {
+        if (SHEET_STATES.includes(next)) settle(next);
       },
       // 지도 탭으로 돌아오면 숨어 있는 동안 바뀐 창 크기에 높이를 다시 맞춘다.
       refresh: () => settle(state),
@@ -763,15 +851,26 @@
     const viewportCount = documentObject.querySelector("[data-viewport-count]");
     const search = documentObject.querySelector('[name="query"]');
     const sheet = setupListSheet(windowObject, documentObject);
-    let selectedBand = "all";
     let filtered = allMarkers;
     let mapState;
     let mapUnusable = false;
+    let selectedMarker;
+    let selectionSheetState;
 
     function selectMarkerFromPage(marker, event) {
+      if (selectedMarker === undefined) selectionSheetState = sheet.state();
+      selectedMarker = marker;
+      mapState?.setMarkerSelection(marker);
       // 상세가 보이도록 시트를 먼저 올린다. 지도는 올린 시트가 가린 만큼을 비켜 식당을 보인다.
       sheet.raise("half");
       void selectMarker(windowObject, documentObject, config, mapState, marker, event);
+    }
+
+    function clearSelectionFromPage() {
+      selectedMarker = undefined;
+      showRestaurantList(documentObject);
+      if (selectionSheetState !== undefined) sheet.restore(selectionSheetState);
+      selectionSheetState = undefined;
     }
 
     function updateCounts(bounds) {
@@ -797,7 +896,7 @@
 
     function applyFilters() {
       // 검색·필터 결과와 집계는 지도가 없어도 도시 전체를 대상으로 먼저 반영한다.
-      filtered = filterMarkers(allMarkers, search.value, selectedBand);
+      filtered = filterMarkers(allMarkers, search.value, selectedBands);
       renderRestaurantList(documentObject, filtered, selectMarkerFromPage);
       // 조건을 바꾸면 보고 있던 상세 대신 바뀐 목록을 보인다.
       showRestaurantList(documentObject);
@@ -831,17 +930,11 @@
       applyFilters();
       void recordMetricAfterPaint(windowObject, "filter-result", startedAt);
     });
-    for (const button of documentObject.querySelectorAll("[data-visits]")) {
-      button.addEventListener("click", (event) => {
-        const startedAt = interactionStartedAt(windowObject, event);
-        selectedBand = button.dataset.visits;
-        for (const peer of documentObject.querySelectorAll("[data-visits]")) {
-          peer.setAttribute("aria-pressed", String(peer === button));
-        }
-        applyFilters();
-        void recordMetricAfterPaint(windowObject, "filter-result", startedAt);
-      });
-    }
+    const selectedBands = setupVisitFilters(documentObject, (event) => {
+      const startedAt = interactionStartedAt(windowObject, event);
+      applyFilters();
+      void recordMetricAfterPaint(windowObject, "filter-result", startedAt);
+    });
     // 목록은 지도를 기다리지 않는다. 지도가 늦거나 실패해도 식당을 둘러볼 수 있다.
     applyFilters();
 
@@ -883,13 +976,17 @@
         allMarkers,
         updateCounts,
         selectMarkerFromPage,
-        { bottomInset: sheet.collapsedHeight() },
+        {
+          bottomInset: sheet.collapsedHeight(),
+          onClearSelection: clearSelectionFromPage,
+        },
       );
       mapState = {
         ...created,
         naverMaps: mapApi.naverMaps,
         coveredBottom: sheet.coveredBottom,
       };
+      if (selectedMarker !== undefined) created.setMarkerSelection(selectedMarker);
       await created.ready;
       // 기다리는 동안 인증이 실패했으면 안내는 이미 떠 있다.
       if (mapUnusable) return;
@@ -918,6 +1015,7 @@
     selectMarker,
     setupInstallGuide,
     setupListSheet,
+    setupVisitFilters,
     start,
     summarizeMetrics,
     viewportBounds,

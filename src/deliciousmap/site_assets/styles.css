@@ -114,6 +114,46 @@ h1 {
   font-weight: 700;
 }
 
+@media (max-width: 640px) {
+  .landing-shell {
+    padding: 2rem 0;
+  }
+
+  .landing-shell h1 {
+    max-width: 20rem;
+    margin-bottom: 0.45rem;
+    font-size: clamp(2rem, 8vw, 3rem);
+    line-height: 1.05;
+  }
+
+  .landing-shell .lede {
+    max-width: 22rem;
+    margin-bottom: 0;
+    font-size: 0.95rem;
+    line-height: 1.4;
+  }
+
+  .city-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem;
+    margin-top: 1.2rem;
+  }
+
+  .city-card {
+    min-height: 5rem;
+    padding: 0.7rem;
+    border-radius: 0.8rem;
+  }
+
+  .city-card strong {
+    font-size: 1.15rem;
+  }
+
+  .city-card span {
+    font-size: 0.72rem;
+  }
+}
+
 .topbar {
   display: grid;
   grid-template-columns: 5rem 1fr auto;
@@ -470,7 +510,13 @@ h1 {
   text-decoration: line-through;
 }
 
-/* 지도 위의 안내와 범례. 오른쪽 위의 확대 컨트롤을 피해 왼쪽 위에 쌓는다. */
+.map-marker.is-selected {
+  outline: 3px solid #173f35;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 5px rgb(255 253 248 / 90%), 0 0.35rem 0.8rem rgb(23 63 53 / 34%);
+}
+
+/* 지도 위의 안내와 범례. 지도 조작을 가리지 않도록 왼쪽 위에 쌓는다. */
 .map-overlay {
   position: absolute;
   z-index: 10;
@@ -480,7 +526,7 @@ h1 {
   flex-direction: column;
   align-items: flex-start;
   gap: 0.5rem;
-  max-width: min(22rem, calc(100% - 5rem));
+  max-width: min(22rem, calc(100% - 1.5rem));
   pointer-events: none;
 }
 
@@ -767,6 +813,13 @@ h1 {
 
   .search-panel {
     padding-top: 0.2rem;
+    touch-action: none;
+    cursor: grab;
+  }
+
+  .search-panel input,
+  .search-panel button {
+    cursor: pointer;
   }
 
   .list-view,
