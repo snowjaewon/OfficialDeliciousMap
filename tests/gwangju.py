@@ -61,7 +61,7 @@ def workbook(*sheets: Sequence[Sequence[Value]]) -> bytes:
 
 
 def bundle(*files: tuple[str, bytes]) -> bytes:
-    """엑셀 통합문서가 없는 ZIP. 게시판의 첨부 묶음·HWPX처럼 안을 풀지 않는 형식이다."""
+    """엑셀 통합문서도 HWPX 본문도 없는 ZIP. 게시판의 첨부 묶음처럼 안을 풀지 않는 형식이다."""
     stream = io.BytesIO()
     with zipfile.ZipFile(stream, "w") as archive:
         for name, body in files:

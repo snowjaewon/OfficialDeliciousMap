@@ -1,11 +1,13 @@
 """원본을 표 격자로 읽는다. 형식 판별은 확장자가 아니라 파일 앞 바이트로 한다."""
 
 import io
+import re
 import warnings
 import zipfile
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime, time
 from pathlib import Path
+from xml.etree import ElementTree
 
 import openpyxl
 import pdfplumber
@@ -38,10 +40,21 @@ STRICT_NAMESPACES = (
         b"http://schemas.openxmlformats.org/drawingml/2006/main",
     ),
 )
+# HWPX 본문. 쪽이 아니라 구역마다 파일이 나뉘고 번호는 0부터 이어진다.
+SECTION = re.compile(r"Contents/section(\d+)\.xml")
+# OWPML 문단 이름공간. 표·행·칸·글자가 모두 여기에 있다.
+OWPML = "http://www.hancom.co.kr/hwpml/2011/paragraph"
+TABLE = f"{{{OWPML}}}tbl"
+ROW = f"{{{OWPML}}}tr"
+CELL = f"{{{OWPML}}}tc"
+ADDRESS = f"{{{OWPML}}}cellAddr"
+SPAN = f"{{{OWPML}}}cellSpan"
+PARAGRAPH = f"{{{OWPML}}}p"
+LETTERS = f"{{{OWPML}}}t"
 
 
 class UnsupportedFormat(Exception):
-    """이번 구현이 읽지 않는 형식(HWP·HWPX·ZIP 묶음 등). 자동으로 LLM에 넘기지 않는다."""
+    """이번 구현이 읽지 않는 형식(HWP·ZIP 묶음 등). 자동으로 LLM에 넘기지 않는다."""
 
 
 class UnreadableOriginal(Exception):
@@ -72,20 +85,21 @@ def text(value: Cell) -> str:
 
 
 def read_tables(path: Path) -> tuple[Table, ...]:
-    """통합문서는 시트마다, PDF는 괘선으로 나뉜 표마다 표 하나다.
+    """통합문서는 시트마다, PDF는 괘선으로 나뉜 표마다, HWPX는 `<hp:tbl>`마다 표 하나다.
 
     내용이 없는 시트·표는 표가 아니며 뒤쪽의 빈 칸·빈 행은 잘라 낸다. 위치 표기는
-    통합문서가 `sheet1`, PDF가 `table1`이고 `label`이 시트 이름 또는 나온 쪽을 남긴다.
+    통합문서가 `sheet1`, PDF·HWPX가 `table1`이고 `label`이 시트 이름, 나온 쪽, 표 앞
+    제목 문단을 남긴다.
     """
     content = path.read_bytes()
     if content.startswith(OLE2):
         prefix, blocks = "sheet", _legacy(content)
     elif content.startswith(ZIP):
-        prefix, blocks = "sheet", _xlsx(content)
+        prefix, blocks = _zip(content)
     elif content.startswith(PDF):
         prefix, blocks = "table", _pdf(content)
     else:
-        raise UnsupportedFormat("not a workbook or PDF")
+        raise UnsupportedFormat("not a workbook, HWPX, or PDF")
     tables = []
     for index, (label, rows) in enumerate(blocks, start=1):
         trimmed = _trim(rows)
@@ -123,15 +137,27 @@ def _legacy(content: bytes) -> list[Block]:
     ]
 
 
-def _xlsx(content: bytes) -> list[Block]:
+def _zip(content: bytes) -> tuple[str, list[Block]]:
+    """ZIP 컨테이너는 엑셀 통합문서이거나 HWPX 본문이다. 둘 다 아니면 읽지 않는다."""
     try:
         with zipfile.ZipFile(io.BytesIO(content)) as archive:
-            names = set(archive.namelist())
+            names = archive.namelist()
     except zipfile.BadZipFile:
         raise UnsupportedFormat("broken ZIP container") from None
-    if "xl/workbook.xml" not in names:
-        # HWPX·원본 묶음 ZIP 등 엑셀이 아닌 ZIP 컨테이너.
-        raise UnsupportedFormat("ZIP container without an Excel workbook")
+    if "xl/workbook.xml" in names:
+        return "sheet", _xlsx(content)
+    sections = sorted(
+        (int(found.group(1)), name)
+        for name in names
+        if (found := SECTION.fullmatch(name)) is not None
+    )
+    if not sections:
+        # 게시판의 첨부 묶음 등 엑셀도 HWPX도 아닌 ZIP 컨테이너.
+        raise UnsupportedFormat("ZIP container without an Excel workbook or an HWPX body")
+    return "table", _hwpx(content, [name for _, name in sections])
+
+
+def _xlsx(content: bytes) -> list[Block]:
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -181,6 +207,124 @@ def _pdf(content: bytes) -> list[Block]:
     except Exception:
         # 암호가 걸렸거나 구조가 깨진 PDF. 원본 내용은 사유에 담지 않는다.
         raise UnreadableOriginal("PDF could not be read") from None
+
+
+@dataclass
+class _Body:
+    """본문 하나를 훑는 동안의 상태. 표 바로 앞의 문단을 그 표의 이름표로 쓴다."""
+
+    # 표 앞에 문단이 없을 때 쓸 본문 이름(`section0`).
+    default: str
+    blocks: list[Block] = field(default_factory=list)
+    label: str = ""
+
+
+def _hwpx(content: bytes, sections: list[str]) -> list[Block]:
+    """OWPML 본문의 `<hp:tbl>`마다 표 하나다. 표 밖 문단은 표로 만들지 않는다.
+
+    HWPX에는 시트 이름이 없어 표 바로 앞의 비어 있지 않은 문단을 `label`로 남긴다. 실제
+    원본에서 그 자리는 `2026. 1분기 업무추진비 집행내역(회계과)` 같은 표 제목이다.
+    """
+    try:
+        with zipfile.ZipFile(io.BytesIO(content)) as archive:
+            bodies = [(name, archive.read(name)) for name in sections]
+    except (zipfile.BadZipFile, KeyError):
+        raise UnreadableOriginal("HWPX body could not be read") from None
+    blocks: list[Block] = []
+    for name, body in bodies:
+        found = _Body(Path(name).stem)
+        try:
+            _scan(ElementTree.fromstring(body), found)
+        except Exception:
+            # 구조가 깨졌거나 자리 표기가 격자를 감당하지 못하는 본문. 원본 내용은 사유에
+            # 담지 않는다.
+            raise UnreadableOriginal("HWPX body could not be read") from None
+        blocks.extend(found.blocks)
+    return blocks
+
+
+def _scan(element: ElementTree.Element, body: _Body) -> None:
+    """본문을 적힌 순서대로 훑는다. 칸 안에 든 표도 제 표로 따로 낸다."""
+    for child in element:
+        if child.tag == TABLE:
+            body.blocks.append((body.label or body.default, _hwpx_rows(child)))
+            body.label = ""
+            for row in child.findall(ROW):
+                for cell in row.findall(CELL):
+                    _scan(cell, body)
+            body.label = ""
+            continue
+        if child.tag == PARAGRAPH:
+            found = _letters(child)
+            if found.strip():
+                body.label = found.strip()
+        _scan(child, body)
+
+
+def _hwpx_rows(table: ElementTree.Element) -> list[tuple[Cell, ...]]:
+    """`<hp:cellAddr>`가 가리키는 자리에 칸을 놓아 행·열 번호를 원본과 같게 둔다.
+
+    병합으로 덮인 자리는 비워 둔다. 통합문서의 병합 칸도 왼쪽 위에만 값이 있고 나머지는
+    비어 있으므로 `Table.cell`을 읽는 쪽이 형식마다 다른 규칙을 알 필요가 없다.
+    """
+    placed: dict[tuple[int, int], Cell] = {}
+    taken: set[tuple[int, int]] = set()
+    height = 0
+    width = 0
+    for index, element in enumerate(table.findall(ROW)):
+        column = 0
+        for cell in element.findall(CELL):
+            while (index, column) in taken:
+                column += 1
+            row, column = _at(cell, index, column)
+            rows, columns = _span(cell)
+            placed[(row, column)] = _letters(cell)
+            taken.update((row + r, column + c) for r in range(rows) for c in range(columns))
+            height = max(height, row + rows)
+            width = max(width, column + columns)
+            column += columns
+    return [
+        tuple(placed.get((row, column), "") for column in range(width)) for row in range(height)
+    ]
+
+
+def _at(cell: ElementTree.Element, row: int, column: int) -> tuple[int, int]:
+    """칸이 놓인 자리. `<hp:cellAddr>`가 없는 표는 적힌 차례대로 왼쪽부터 채운다."""
+    address = cell.find(ADDRESS)
+    if address is None:
+        return row, column
+    return _number(address.get("rowAddr"), row), _number(address.get("colAddr"), column)
+
+
+def _span(cell: ElementTree.Element) -> tuple[int, int]:
+    """칸이 덮는 행·열 수. 병합하지 않은 칸은 하나씩이다."""
+    span = cell.find(SPAN)
+    if span is None:
+        return 1, 1
+    return _number(span.get("rowSpan"), 1, 1), _number(span.get("colSpan"), 1, 1)
+
+
+def _number(value: str | None, fallback: int, floor: int = 0) -> int:
+    """자리도 크기도 음수일 수 없다. 읽지 못한 값은 적힌 차례에서 얻은 값으로 둔다."""
+    try:
+        found = int(value) if value is not None else fallback
+    except ValueError:
+        found = fallback
+    return max(found, floor)
+
+
+def _letters(element: ElementTree.Element) -> str:
+    """칸·문단의 글자를 잇는다. 한 칸이 `<hp:t>` 여러 개로 쪼개져 있어도 한 값이다.
+
+    실제 원본은 칸 안에서 줄을 나눠 `결제`·`방법`을 따로 적는다. 그 사이에 무엇도 끼우지
+    않아야 원본이 보여 주는 `결제방법`이 된다. 칸 안에 든 표는 제 표로 따로 내므로 여기서
+    글자를 가져오지 않는다.
+    """
+    return "".join(
+        "".join(child.itertext()) if child.tag == LETTERS else _letters(child)
+        for child in element
+        if child.tag != TABLE
+    )
 
 
 def _transitional(content: bytes) -> bytes:
