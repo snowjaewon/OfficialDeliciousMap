@@ -333,7 +333,8 @@ def test_three_digit_year_is_read_only_when_one_digit_makes_the_hint() -> None:
     assert parse_spent_on("206/05/08 20:41", 2026) == SpentOn(2026, 5, 8)
     assert parse_spent_on("206/05/08 20:41") is None
     assert parse_spent_on("205/05/08", 2026) is None
-    # 네 자리로 적힌 연도는 근거와 달라도 그대로 읽는다. 기간 밖의 유효한 날짜는 고치지 않는다.
+    # 네 자리로 적힌 연도는 근거와 달라도 그대로 읽는다(#119 결정). 기간 밖의 유효한 날짜를 고쳐
+    # 읽지 않는 규칙 그대로이며, 2060년은 읽힌 뒤 기간 밖으로 걸러진다.
     assert parse_spent_on("2060/05/08", 2026) == SpentOn(2060, 5, 8)
 
 
