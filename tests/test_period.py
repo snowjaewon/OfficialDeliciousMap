@@ -7,7 +7,17 @@ from datetime import date
 
 import pytest
 
-from deliciousmap.period import END, START, Span, declared, exclusion, targets
+from deliciousmap.contracts import SpentOn
+from deliciousmap.period import (
+    END,
+    START,
+    Span,
+    contains,
+    declared,
+    exclusion,
+    span,
+    targets,
+)
 
 
 @pytest.mark.parametrize(
@@ -146,3 +156,36 @@ def test_target_is_the_absence_of_an_exclusion_reason(
 ) -> None:
     """두 함수가 같은 판단을 낸다. 사유를 붙이는 일이 대상 판정을 바꾸지 않는다."""
     assert targets(posted, title) is (exclusion(posted, title) is None)
+
+
+@pytest.mark.parametrize(
+    ("spent_on", "expected"),
+    [
+        # 일이 있는 집행일은 그 하루다. 판정이 지금과 같다.
+        (SpentOn(2026, 3, 17), Span(date(2026, 3, 17), date(2026, 3, 17))),
+        # 일이 빈 집행일은 그 달 전체다. 1일·말일 어느 쪽으로도 좁히지 않는다.
+        (SpentOn(2026, 3), Span(date(2026, 3, 1), date(2026, 3, 31))),
+        (SpentOn(2026, 2), Span(date(2026, 2, 1), date(2026, 2, 28))),
+    ],
+)
+def test_spending_day_points_at_a_span(spent_on: SpentOn, expected: Span) -> None:
+    assert span(spent_on) == expected
+
+
+@pytest.mark.parametrize(
+    ("spent_on", "expected"),
+    [
+        (SpentOn(2026, 3, 17), True),
+        (SpentOn(2025, 12, 31), False),
+        (SpentOn(2026, 7, 1), False),
+        # 달 단위 집행일은 그 달의 구간이 대상 기간과 겹치면 대상이다.
+        (SpentOn(2026, 3), True),
+        (SpentOn(2026, 6), True),
+        (SpentOn(2025, 12), False),
+        (SpentOn(2026, 7), False),
+    ],
+)
+def test_target_period_holds_a_month_whose_span_overlaps_it(
+    spent_on: SpentOn, expected: bool
+) -> None:
+    assert contains(spent_on) is expected

@@ -77,7 +77,30 @@ def test_record_csv_round_trip_preserves_values_order_and_utf8(tmp_path: Path) -
     )
 
 
-@pytest.mark.parametrize("invalid_date", ["2026-02-30", "20260102", "1767312000"])
+def test_record_csv_keeps_a_day_less_date_as_the_original_wrote_it(tmp_path: Path) -> None:
+    """일이 빈 집행일은 원본 표기 그대로 오간다. 장부가 없는 일자를 지어내지 않는다."""
+    record = Record(
+        record_id="expense-3",
+        spent_on="2026.03.",
+        organization="test-org",
+        department="총무과",
+        merchant="개인(성명 비공개)",
+        purpose="통합돌봄과 직원(부의금)지급",
+        amount_krw=Decimal(50000),
+        source_hash="a" * 64,
+        source_location="sheet1:R10",
+    )
+    path = tmp_path / "records.csv"
+    write_records(path, (record,))
+    assert path.read_text(encoding="utf-8").splitlines()[1].split(",")[1] == "2026.03."
+    (loaded,) = read_records(path)
+    assert loaded == record
+    assert (loaded.spent_on.year, loaded.spent_on.month, loaded.spent_on.day) == (2026, 3, None)
+
+
+@pytest.mark.parametrize(
+    "invalid_date", ["2026-02-30", "20260102", "1767312000", "2026-13", "2026.", "3월"]
+)
 def test_csv_rejects_noncanonical_or_invalid_dates(tmp_path: Path, invalid_date: str) -> None:
     fixture = Path(__file__).parent / "fixtures" / "seoul" / "records.csv"
     path = tmp_path / "records.csv"
