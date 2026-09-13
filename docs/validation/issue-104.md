@@ -43,10 +43,10 @@
 
 최종 검증에서 다음 결과를 확인했다.
 
-- `.tools\\uv\\bin\\uv.exe run pytest`: 485 passed
+- `.tools\\uv\\bin\\uv.exe run pytest`: 531 passed
 - `.tools\\uv\\bin\\uv.exe run ruff check .`: 통과
-- `.tools\\uv\\bin\\uv.exe run ruff format --check .`: 116 files already formatted
-- `.tools\\uv\\bin\\uv.exe run mypy src`: 47 source files, issues 없음
+- `.tools\\uv\\bin\\uv.exe run ruff format --check .`: 121 files already formatted
+- `.tools\\uv\\bin\\uv.exe run mypy src`: 48 source files, issues 없음
 - `node --test tests/site_behavior.test.js`: 46 passed
 - `node --test tests/*.test.js`: 86 passed
 - `git diff --check`: 통과

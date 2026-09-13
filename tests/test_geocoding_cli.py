@@ -897,8 +897,8 @@ def test_a_geocode_artifact_over_the_limit_is_split_into_numbered_parts(
     context = prepare_many(tmp_path, merchants)
     save_input(context, *(bulky_lookup(f"r{i}", m, 100) for i, m in enumerate(merchants, start=1)))
     # 선행 산출물과 후보 파일을 준비한 뒤에 상한을 낮춰 산출물 쓰기만 넘치게 한다.
-    # 사이트 자산(app.js 약 22KB)은 넘지 않는 값이어야 build까지 볼 수 있다.
-    limit = 40_000
+    # 사이트 자산(app.js)이 넘지 않는 값이어야 build까지 볼 수 있다.
+    limit = 50_000
     monkeypatch.setattr(storage, "SIZE_LIMIT", limit)
     assert run_cli(context, "geocode") == 0
 
