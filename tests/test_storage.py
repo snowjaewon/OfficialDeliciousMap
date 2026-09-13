@@ -208,3 +208,27 @@ def test_latest_valid_follows_revision_not_the_order_of_the_parts(tmp_path: Path
     assert chosen is not None and chosen.revision == 2
     # 검증 실패 이력은 그 키의 유효 판정을 만들지 않는다.
     assert select_cache(path, "나") is None
+
+
+def test_artifact_chunks_stay_within_the_limit_when_many_small_items_split(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """항목 사이 구분자까지 세야 조각이 상한을 넘지 않는다. 작은 항목이 많을수록 어긋난다(#73)."""
+    import json
+
+    from deliciousmap import storage
+
+    monkeypatch.setattr(storage, "SIZE_LIMIT", 2_000)
+    results = [{"record_id": f"r{index}", "merchant": "가나다라마"} for index in range(200)]
+    envelope = {
+        "schema_version": 5,
+        "city": "gwangju",
+        "org": None,
+        "dependencies": {"policy": "identity-2"},
+        "payload": {"results": results},
+    }
+    chunks = tuple(storage._artifact_chunks(envelope, "results"))
+    assert len(chunks) > 1
+    assert all(len(chunk.encode("utf-8")) <= storage.SIZE_LIMIT for chunk in chunks)
+    # 나눈 뒤에도 항목이 순서 그대로 하나도 빠지지 않는다.
+    assert [item for chunk in chunks for item in json.loads(chunk)["payload"]["results"]] == results

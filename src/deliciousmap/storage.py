@@ -330,6 +330,10 @@ def _jsonl(entries: Iterable[Contract]) -> str:
     )
 
 
+# `json.dumps`가 목록 항목 사이에 넣는 기본 구분자. 조각 크기를 셀 때 이 자리도 센다.
+ITEM_SEPARATOR = ", "
+
+
 def artifact_text(envelope: Mapping[str, Any]) -> str:
     return json.dumps(envelope, ensure_ascii=False, sort_keys=True) + "\n"
 
@@ -345,8 +349,11 @@ def _artifact_chunks(envelope: Mapping[str, Any], field: str) -> Iterator[str]:
     chunk: list[object] = []
     size = 0
     for item in items:
-        # 항목 하나가 차지하는 자리. 항목을 가르는 쉼표 한 자를 함께 센다.
-        length = len(json.dumps(item, ensure_ascii=False, sort_keys=True).encode("utf-8")) + 1
+        # 항목 하나가 차지하는 자리. `json.dumps`의 기본 구분자가 쉼표와 공백 두 자이므로
+        # 그만큼을 함께 센다. 한 자로 세면 작은 항목이 많을 때 조각이 그 수만큼 넘친다.
+        length = len(json.dumps(item, ensure_ascii=False, sort_keys=True).encode("utf-8")) + len(
+            ITEM_SEPARATOR
+        )
         if chunk and size + length > budget:
             yield artifact_text({**envelope, "payload": {**payload, field: chunk}})
             chunk, size = [], 0
