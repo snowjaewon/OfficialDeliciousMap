@@ -108,7 +108,7 @@ def test_headerless_mapping_cannot_reference_shared_header_cache() -> None:
 
 def test_cache_history_opens_a_new_part_instead_of_passing_the_size_limit(tmp_path: Path) -> None:
     from deliciousmap.contracts import CacheEntry
-    from deliciousmap.storage import append_cache_entries, cache_parts, read_cache, select_cache
+    from deliciousmap.storage import append_cache_entries, numbered_parts, read_cache, select_cache
 
     path = tmp_path / "gwangju" / "geocode-history-v2.jsonl"
     bulky = tuple(
@@ -124,13 +124,13 @@ def test_cache_history_opens_a_new_part_instead_of_passing_the_size_limit(tmp_pa
     )
     append_cache_entries(path, bulky[:2])
     first = path.read_bytes()
-    assert cache_parts(path) == (path,)
+    assert numbered_parts(path) == (path,)
     append_cache_entries(path, bulky[2:])
     rolled = path.parent / "geocode-history-v2.002.jsonl"
     # 앞 조각은 그대로 두고 새 조각을 연다. 두 파일 모두 상한 안이다.
     assert path.read_bytes() == first
-    assert cache_parts(path) == (path, rolled)
-    assert all(part.stat().st_size <= 20_000_000 for part in cache_parts(path))
+    assert numbered_parts(path) == (path, rolled)
+    assert all(part.stat().st_size <= 20_000_000 for part in numbered_parts(path))
     assert read_cache(path) == bulky
     assert select_cache(path, "c" * 64) == bulky[2]
     # 이미 쌓인 항목의 재추가는 어느 조각도 다시 쓰지 않는다.
@@ -160,8 +160,8 @@ def test_cache_rejects_an_entry_that_cannot_fit_a_part(tmp_path: Path) -> None:
     assert not path.exists()
 
 
-def test_cache_parts_must_be_numbered_without_gaps_and_keep_pairs_unique(tmp_path: Path) -> None:
-    from deliciousmap.storage import cache_parts, read_cache, write_text
+def test_numbered_parts_must_be_numbered_without_gaps_and_keep_pairs_unique(tmp_path: Path) -> None:
+    from deliciousmap.storage import numbered_parts, read_cache, write_text
 
     path = tmp_path / "geocode-history-v2.jsonl"
     line = (
@@ -172,7 +172,7 @@ def test_cache_parts_must_be_numbered_without_gaps_and_keep_pairs_unique(tmp_pat
     write_text(path, line)
     write_text(path.parent / "geocode-history-v2.003.jsonl", line)
     with pytest.raises(ValueError, match="parts"):
-        cache_parts(path)
+        numbered_parts(path)
     (path.parent / "geocode-history-v2.003.jsonl").rename(
         path.parent / "geocode-history-v2.002.jsonl"
     )
@@ -208,3 +208,45 @@ def test_latest_valid_follows_revision_not_the_order_of_the_parts(tmp_path: Path
     assert chosen is not None and chosen.revision == 2
     # 검증 실패 이력은 그 키의 유효 판정을 만들지 않는다.
     assert select_cache(path, "나") is None
+
+
+def test_artifact_chunks_stay_within_the_limit_when_many_small_items_split(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """항목 사이 구분자까지 세야 조각이 상한을 넘지 않는다. 작은 항목이 많을수록 어긋난다(#73)."""
+    import json
+
+    from deliciousmap import storage
+
+    monkeypatch.setattr(storage, "SIZE_LIMIT", 2_000)
+    results = [{"record_id": f"r{index}", "merchant": "가나다라마"} for index in range(200)]
+    # 한 자만 세면 이 조각들이 항목 수만큼 넘쳐 artifact_contents가 거부한다.
+    envelope = {
+        "schema_version": 5,
+        "city": "gwangju",
+        "org": None,
+        "dependencies": {"policy": "identity-2"},
+        "payload": {"results": results},
+    }
+    chunks = storage.artifact_contents(envelope, "results")
+    assert len(chunks) > 1
+    assert all(len(chunk.encode("utf-8")) <= storage.SIZE_LIMIT for chunk in chunks)
+    # 나눈 뒤에도 항목이 순서 그대로 하나도 빠지지 않는다.
+    assert [item for chunk in chunks for item in json.loads(chunk)["payload"]["results"]] == results
+
+
+def test_artifact_digest_refuses_a_missing_file_instead_of_hashing_nothing(tmp_path: Path) -> None:
+    """없는 선행 산출물을 빈 해시로 덮으면 낡음 검사가 그대로 통과한다(#73)."""
+    import hashlib
+
+    from deliciousmap.storage import artifact_digest, write_text
+
+    path = tmp_path / "gwangju" / "geocode.json"
+    with pytest.raises(FileNotFoundError):
+        artifact_digest(path)
+    write_text(path, "{}")
+    assert artifact_digest(path) == hashlib.sha256(b"{}").hexdigest()
+    # 조각이 늘면 해시도 달라진다. 첫 조각만 보면 뒤 조각의 변경이 지나간다.
+    first = artifact_digest(path)
+    write_text(path.parent / "geocode.002.json", "{}")
+    assert artifact_digest(path) != first

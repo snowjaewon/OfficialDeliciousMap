@@ -153,13 +153,38 @@ PowerShell: Get-Content .env | ForEach-Object { if ($_ -match '^(\w+)=(.*)$') { 
 도시 전체 build를 실행하면 `dist/index.html`에 7개 도시 랜딩이, `dist/<city>/index.html`에
 선택 도시 화면이 생긴다. 랜딩은 7개 도시 카드를 모두 두되 이미 build한 도시만 링크하고
 나머지는 `준비 중`으로 남겨 미수집 도시를 열 수 있는 것처럼 보이지 않게 한다. 화면은
-`markers.json`을 먼저 받아 식당명 검색, 20+ / 10~19 / 5~9 / 1~4 방문 횟수 필터, 전체 결과와
-현재 지도 영역 결과 수, 마커 상세와 네이버 지도 연결을 제공한다. `records.json`은 장부 탭을
+`markers.json`을 먼저 받아 지도와 식당 순위 목록을 함께 보인다. 데스크톱은 지도 오른쪽 패널,
+폭 720px 이하는 지도 위에서 끌어올리는 시트(접힘·중간·펼침)다. 목록은 식당명 검색과
+20+ / 10~19 / 5~9 / 1~4 방문 횟수 필터의 결과를 방문 횟수 순으로 50곳씩 그리고, 전체 결과와
+현재 지도 영역 결과 수를 따로 센다. 목록 항목과 마커는 같은 상세(주소·최근 방문일·방문 기관·
+합계 금액·폐업·좌표 출처·네이버 지도 연결)를 열며 닫기로 목록에 돌아간다. 마커 색과 범례는
+방문 구간을 따른다. `records.json`은 장부 탭을
 처음 열 때만 받으며 비식당·판단 보류·지오코딩 실패 레코드도 상태와 사유를 함께 표시한다.
 한 번에 100건씩 그려 긴 장부의 첫 목록 렌더링을 제한한다.
 
 `--org` 실행은 `dist/<city>/orgs/<org>/`에 두 데이터 파일만 낸다. 도시 셸·랜딩·PWA 파일은
 도시 전체 실행에서만 만들며 기관 실행이 이를 덮어쓰지 않는다.
+
+#### 홈 화면 설치
+
+`manifest.webmanifest`는 시작 주소를 랜딩으로 두고 192·512 아이콘과 maskable 512 아이콘을 싣는다.
+Android Chrome은 192·512 아이콘이 없으면 설치를 제안하지 않는다. 랜딩과 도시 화면은
+`apple-touch-icon`(180)도 연결한다. iPhone Safari는 manifest 아이콘 대신 이것을 홈 화면 아이콘으로
+쓴다. 아이콘은 `scripts/make_icons.py`(표준 라이브러리만 사용)로 만든 PNG를
+`site_assets/`에 커밋해 두고 build가 `dist/assets/`로 복사한다. 모양을 바꿀 때만 다시 만든다.
+
+```text
+양쪽 공통: uv run python scripts/make_icons.py
+```
+
+두 화면 아래에 설치 안내가 뜬다. Android Chrome에서는 설치 제안(`beforeinstallprompt`)을 받으면
+`설치` 버튼을 보이고, 누르면 브라우저의 설치 창을 연다. 설치 제안 이벤트가 없는 iOS Safari에는
+공유 메뉴의 `홈 화면에 추가`를 한 번 알린다(본 화면에서는 닫을 때까지 남는다). 메뉴가 다른 iOS
+Chrome·앱 안 브라우저(카카오톡·네이버 등)에는 이 안내를 띄우지 않는다. 홈 화면 앱으로
+열렸거나(standalone), 안내를 닫았거나, 설치 창에서 거절했으면 다시 띄우지 않는다. 이 기억은 브라우저
+저장소(`localStorage`)에만 두며, 저장소를 쓸 수 없는 브라우저에서는 그 화면에서만 닫힌다. 안내를 닫은
+사람에게 Chrome의 기본 설치 막대도 띄우지 않도록 설치 제안은 늘 이 화면이 받는다. 설치한 앱을 처음 열
+때도 오프라인 셸이 있도록 랜딩도 service worker를 등록한다.
 
 자료 범위 대화상자에 대상 기간(`site.REPORTING_PERIOD`, 현재 2026년 상반기)과 레지스트리에
 선언한 기관별 수집 상태를 적는다. 상태는 `수집 완료`(이번 빌드에 레코드 있음), `레코드 없음`,
@@ -175,14 +200,17 @@ PowerShell: Get-Content .env | ForEach-Object { if ($_ -match '^(\w+)=(.*)$') { 
 
 | 파일 | 내용 |
 | --- | --- |
-| `markers.json` | `schema_version`(6), `city`, `org`, `markers` |
-| `records.json` | `schema_version`(6), `city`, `org`, `records` |
+| `markers.json` | `schema_version`(7), `city`, `org`, `markers` |
+| `records.json` | `schema_version`(7), `city`, `org`, `records` |
 
 마커 하나는 `business_id`, 확정 상호 `merchant`, `visit_count`(묶인 레코드 수), `latitude`,
-`longitude`, `closed`, `coordinate_source`를 가진다. `coordinate_source`는 좌표를 준 제공자
+`longitude`, `closed`, `coordinate_source`, `address`와 묶인 레코드의 요약인
+`last_visited_on`(가장 늦은 `spent_on`), `total_amount_krw`(금액 합계), `organizations`(기관 slug)를
+가진다. `coordinate_source`는 좌표를 준 제공자
 (`local`·`naver`·`license`)다. 마커에 묶인 레코드는 좌표가 같으므로 첫 레코드의 판정에서 고르며,
 그 판정이 사람 확인이면 확인한 후보의 제공자, 아니면 결과 좌표와 일치하는 후보의 제공자다.
-여러 제공자의 근거가 같은 좌표로 겹치면 이름 순으로 하나를 밝힌다.
+여러 제공자의 근거가 같은 좌표로 겹치면 이름 순으로 하나를 밝힌다. `address`는 같은 근거의 주소다.
+업소 확인은 상호·지점·주소가 일치한 후보만 채택하므로 확정 마커에는 언제나 주소가 있다.
 폐업으로 확인된 마커도 파일에서 빼지 않는다.
 
 장부 레코드 하나는 `record_id`, `spent_on`, `organization`, `department`, `merchant`, `purpose`,
@@ -199,8 +227,9 @@ PowerShell: Get-Content .env | ForEach-Object { if ($_ -match '^(\w+)=(.*)$') { 
 기본 파라미터는 `ncpKeyId`이며 구형 키만 `NAVER_MAP_KEY_PARAM=ncpClientId`로 바꾼다. 그 밖의
 값은 종료 코드 2로 거부한다. 키는 페이지 설정에만 들어가고 저장소 파일·로그·산출물
 메타데이터에는 남기지 않는다. 키가 잘못되어 지도 인증이 실패하면 지도 자리에 설정 안내를
-띄우고 검색 집계·구간 필터·장부는 계속 제공한다. 도시별 `MapBounds`는 초기 `fitBounds`,
-최소 축소 수준, 지도 중심 이동 제한에 함께 사용한다.
+띄우고 검색 집계·구간 필터·목록·장부는 계속 제공한다. 도시별 `MapBounds`는 최소 축소 수준과
+지도 중심 이동 제한에 쓴다. 첫 화면은 그 안의 식당이 모인 영역(20곳 이상이면 위도·경도 양끝 5%를
+뺀 범위)에 맞추고 14단계보다 더 확대하지 않는다. 식당이 없으면 도시 전체다.
 
 build한 결과는 정적 파일이므로 로컬 서버로 확인한다. 기본 `--output-root`인 `dist/`를 쓴 경우다.
 
@@ -239,7 +268,7 @@ node --test tests/site_behavior.test.js tests/measure_map.test.js tests/service_
 재어 표를 출력한다. 첫 방문은 매번 새 브라우저 컨텍스트(캐시·서비스 워커 없음)에서, 재방문은
 캐시와 서비스 워커를 채운 컨텍스트의 새 탭에서 잰다. 입력·선택 피드백은 Event Timing(16ms
 미만은 16ms로 적음), 결과·상세·장부 첫 목록은 앱의 `window.deliciousmapMetrics`로 잰다.
-식당 선택은 검색 결과 첫 항목을 누르며 지도 마커를 누르는 경로와 실제 터치 입력은 재지 않는다.
+식당 선택은 검색으로 거른 목록의 첫 항목을 누르며 지도 마커를 누르는 경로와 실제 터치 입력은 재지 않는다.
 드래그·줌·장부 스크롤은 각 조작 구간에 CDP `Tracing`을 붙여 브라우저 성능 기록을 남긴다.
 `PipelineReporter`의 표시 프레임과 프레임 간격, Long Animation Frame·긴 작업을 요약하며,
 판정에 쓰지 않은 원본 기록은 저장소 밖의 trace 디렉터리에 gzip 파일로 둔다. 결과 JSON에는
@@ -259,7 +288,7 @@ Chrome을 띄우기 전 10초 동안 호스트의 CPU 사용률을 재어 `idle_
 양쪽 공통: node scripts/measure_map.js --merge --out <합친 결과.json> <블록1.json> <블록2.json> ...
 ```
 
-재방문 서비스 워커는 셸(도시 HTML·공유 JavaScript·CSS·manifest)을 캐시에서 먼저 내주고
+재방문 서비스 워커는 셸(도시 HTML·공유 JavaScript·CSS·manifest·앱 아이콘)을 캐시에서 먼저 내주고
 동시에 네트워크에서 갱신하는 stale-while-revalidate 전략을 쓴다. 설치할 때 워커를 등록한
 도시 화면도 캐시하므로 첫 재방문부터 셸은 네트워크 재검증을 기다리지 않는다. 다른 출처(네이버
 SDK·지도 타일) 요청은 가로채지 않는다. `markers.json`과
@@ -388,10 +417,12 @@ JSON 객체의 키와 줄의 `(key, revision)`을 정렬하며, 이력의 기존
 직렬화 도구는 단일 작성자용이다. 동시 쓰기 잠금·실제 LLM/검색 캐시 엔진은 후속 범위다.
 정제 산출물의 파일당 20MB 상한과 원본·인허가 원본·`dist/` 커밋 금지는
 [ADR-0001](docs/adr/0001-commit-refined-artifacts.md)을 따른다. 파일 쓰기는 20,000,000바이트를 초과하면
-분할을 요구하며 실패한다. 추가형 이력만 예외로, 이번 배치가 마지막 조각에 들어가지 않으면 그
-조각을 그대로 닫고 `<이름>.002.<확장자>`부터 세 자리 번호를 붙인 다음 조각을 연다. 앞 조각은 다시
-쓰지 않고 마지막 조각만 정렬을 지켜 다시 쓴다. 읽는 쪽은 번호 순으로 이어 읽고, 번호가 비었거나
-같은 `(key, revision)`이 두 조각에 있으면 실패한다. CI는 build 전에 커밋된 파일마다 이 상한을
+분할을 요구하며 실패한다. 추가형 이력과 `geocode.json`만 예외로 `<이름>.002.<확장자>`부터 세 자리
+번호를 붙인 다음 조각을 연다. 이력은 이번 배치가 마지막 조각에 들어가지 않으면 그 조각을 그대로
+닫고, 앞 조각은 다시 쓰지 않으며 마지막 조각만 정렬을 지켜 다시 쓴다. `geocode.json`은 매번 전체를
+다시 쓰므로 `results`만 조각에 나눠 담고 봉투 머리는 조각마다 되풀이한다. 읽는 쪽은 둘 다 번호
+순으로 이어 읽고, 번호가 비었거나 이력의 같은 `(key, revision)`이 두 조각에 있거나 산출물 조각의
+봉투 머리가 서로 다르면 실패한다. 낡음 검사는 조각을 모두 해시한다. CI는 build 전에 커밋된 파일마다 이 상한을
 다시 검사한다([CI·배포](#ci배포)).
 
 사람 보정의 각 줄은 `schema_version=1`, `city`, `merchant`, `status`
@@ -427,7 +458,7 @@ build하지 않는다. 판정은 모두 `python -m deliciousmap.ci`가 하고 �
 | 명령 | 판정 |
 | --- | --- |
 | `check-data` | 정제 산출물 파일당 20,000,000바이트 초과, 등록되지 않은 도시 디렉터리, build할 도시 0곳을 실패로 본다. 통과하면 `data/<city>/`가 있는 도시를 레지스트리 순서로 낸다 |
-| `check-dist` | Pages 한도(파일당 25MiB, 20,000개), `site.public_paths`의 화면용 파일 외 파일, 빠진 화면 파일, HTML·`sw.js`·`manifest.webmanifest`의 끊긴 참조를 실패로 본다. 통과하면 `dist/deploy-manifest.json`(상대 경로·SHA256·바이트·commit)을 쓴다 |
+| `check-dist` | Pages 한도(파일당 25MiB, 20,000개), `site.public_paths`의 화면용 파일 외 파일, 빠진 화면 파일, HTML·`sw.js`·`manifest.webmanifest`(시작 주소·아이콘)의 끊긴 참조를 실패로 본다. 통과하면 `dist/deploy-manifest.json`(상대 경로·SHA256·바이트·commit)을 쓴다 |
 | `preview` | 올린 뒤 배포 고유 URL과 PR alias를 검증하고 결과를 Actions summary에 쓴다. build한 커밋은 PR의 임시 merge commit이므로 PR head SHA도 함께 적는다. 롤백하지 않는다 |
 | `production` | 아래 운영 절차 |
 | `wait-check` | 같은 커밋의 다른 workflow 체크(`gitleaks`)가 `success`로 끝날 때까지 기다린다. 실패·취소·건너뜀·15분 초과는 실패다 |

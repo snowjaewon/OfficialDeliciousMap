@@ -14,7 +14,9 @@ from deliciousmap.transport import MAX_RESPONSE_BYTES, HttpTransport, Transport
 
 PROVIDER = "license"
 # 응답 해석 규칙·조회 업종이 바뀌면 올린다. 조회 캐시는 이 버전을 구별한다.
-INTERPRETATION_VERSION = "food-license-1"
+# food-license-2: 성공 값을 실측에 맞췄다(#73). 앞 버전은 모든 조회를 `unavailable`로 남겼으므로
+# 그때 쌓인 실패를 재시도 없이 되읽지 않도록 키를 가른다.
+INTERPRETATION_VERSION = "food-license-2"
 # localdata.go.kr은 2026-04-16 종료했다. 인허가 자료는 공공데이터포털의 조회서비스로 받는다.
 BASE_URL = "https://apis.data.go.kr/1741000"
 # 마커가 될 수 있는 업종만 본다. 카페는 휴게음식점, 빵집·떡집은 제과점영업에만 있다.
@@ -22,7 +24,9 @@ SERVICES = ("general_restaurants", "rest_cafes", "bakeries")
 KEY_VARIABLE = "DATA_GO_KR_KEY"
 # 조회서비스는 한 쪽에 최대 100건을 준다. 이 경로는 첫 쪽만 본다.
 RESULT_LIMIT = 100
-SUCCESS_CODE = "200"
+# 조회서비스는 성공을 `resultCode` "0"·`resultMsg` "정상"으로 알린다. HTTP 상태 코드가 아니다.
+# 업종 세 가지를 실제 키로 조회해 확인했다(#73).
+SUCCESS_CODE = "0"
 # 좌표정보는 보정계수 없는 Bessel 중부원점TM이다. 위경도는 제공하지 않는다.
 COORDINATE_REFERENCE = "EPSG:5174"
 

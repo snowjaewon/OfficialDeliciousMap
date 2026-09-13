@@ -9,10 +9,12 @@ from pathlib import Path
 
 import pytest
 
+from deliciousmap import storage
 from deliciousmap.cli import main
 from deliciousmap.contracts import (
     Classification,
     ClassifyOutput,
+    GeocodeOutput,
     ParseOutput,
     Record,
     RecordOrigin,
@@ -177,12 +179,16 @@ def test_build_separates_map_data_from_complete_record_list(tmp_path: Path) -> N
     assert "records" not in markers
     assert markers["markers"] == [
         {
+            "address": "부산 합성로 10",
             "business_id": markers["markers"][0]["business_id"],
             "closed": False,
             "coordinate_source": "local",
+            "last_visited_on": "2026-01-02",
             "latitude": 35.1,
             "longitude": 129.1,
             "merchant": "같은 식당",
+            "organizations": ["test-org"],
+            "total_amount_krw": "1000",
             "visit_count": 1,
         }
     ]
@@ -641,18 +647,36 @@ def test_invalid_input_reports_only_safe_failure_code(
 
 
 def test_oversized_refined_result_is_rejected_before_geocode_history_write(tmp_path: Path) -> None:
+    """결과 하나가 혼자 상한을 넘으면 나눌 수 없다. 이력에 손대기 전에 거부한다(#73)."""
     context = prepare(tmp_path)
     query = lookup()
-    # Each individual result fits; the combined stage must fail before a partial history write.
+    query["facts"][0]["source"] = "x" * 21_000_000
+    path = context.paths.city_dir(context.target) / "geocode-input.json"
+    path.write_text(json.dumps({"schema_version": 1, "lookups": [query]}), encoding="utf-8")
+    assert run_cli(context, "geocode") == 1
+    assert not (context.paths.city_dir(context.target) / "geocode.json").exists()
+    assert not (context.paths.city_dir(context.target) / "geocode-history-v2.jsonl").exists()
+
+
+def test_results_that_only_together_pass_the_limit_are_split_instead_of_refused(
+    tmp_path: Path,
+) -> None:
+    """결과가 각각 들어가면 조각으로 나눈다. 예전에는 합쳐 넘친다는 이유로 거부했다(#73)."""
+    context = prepare(tmp_path)
+    query = lookup()
     query["facts"][0]["source"] = "x" * 10_000_000
     add_record(context, "r2")
     second = deepcopy(query)
     second["scope"]["record_id"] = "r2"
     path = context.paths.city_dir(context.target) / "geocode-input.json"
     path.write_text(json.dumps({"schema_version": 1, "lookups": [query, second]}), encoding="utf-8")
-    assert run_cli(context, "geocode") == 1
-    assert not (context.paths.city_dir(context.target) / "geocode.json").exists()
-    assert not (context.paths.city_dir(context.target) / "geocode-history-v2.jsonl").exists()
+    assert run_cli(context, "geocode") == 0
+    directory = context.paths.city_dir(context.target)
+    parts = storage.numbered_parts(directory / "geocode.json")
+    assert [part.name for part in parts] == ["geocode.json", "geocode.002.json"]
+    assert all(part.stat().st_size <= storage.SIZE_LIMIT for part in parts)
+    loaded = ArtifactStore(context.paths, context.target).load("geocode", GeocodeOutput)
+    assert [item.record_id for item in loaded.results] == ["r1", "r2"]
 
 
 def test_upstream_metadata_change_alone_does_not_repeat_settled_geocode_history(
@@ -815,3 +839,86 @@ def test_confirmations_disagreeing_on_the_place_are_reported_not_chosen(tmp_path
         + line({**city_scope, "source_hash": "a" * 64}, chosen, "원본 범위"),
     )
     assert run_cli(context, "geocode") == 1
+
+
+def bulky_lookup(record_id: str, merchant: str, candidates: int) -> dict:
+    """한 레코드가 실제 인허가 조회처럼 후보를 잔뜩 받은 입력(#73)."""
+    query = lookup()
+    query["scope"]["record_id"] = record_id
+    query["facts"][0]["merchant"] = merchant
+    query["candidates"] = [
+        {
+            "source": {
+                "provider": "license",
+                "source_id": f"general_restaurants/{record_id}-{index:04d}",
+                "reference": "https://apis.data.go.kr/1741000/general_restaurants/info",
+            },
+            "merchant": f"{merchant} {index}호",
+            "branch": "",
+            "address": f"합성광역시 합성구 합성대로 {index}번길 {index} 합성빌딩 {index}층",
+            "latitude": None,
+            "longitude": None,
+        }
+        for index in range(candidates)
+    ]
+    return query
+
+
+def prepare_many(tmp_path: Path, merchants: tuple[str, ...]) -> ExecutionContext:
+    """레코드 여러 건으로 선행 산출물을 준비한다. 조각 분할을 관찰하려면 둘 이상이 필요하다."""
+    context = context_at(tmp_path)
+    store = ArtifactStore(context.paths, context.target)
+    records = tuple(
+        synthetic_record(
+            record_id=f"r{index}", merchant=merchant, source_location=f"sheet1:R{index}"
+        )
+        for index, merchant in enumerate(merchants, start=1)
+    )
+    store.save("parse", ParseOutput(records=records))
+    store.save(
+        "classify",
+        ClassifyOutput(
+            decisions=tuple(
+                Classification(
+                    record_id=record.record_id, status="restaurant", evidence="합성 분류"
+                )
+                for record in records
+            )
+        ),
+    )
+    return context
+
+
+def test_a_geocode_artifact_over_the_limit_is_split_into_numbered_parts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """산출물도 이력처럼 상한 안에서 조각으로 나눈다. 뒤 단계는 이어 읽는다(ADR-0001)."""
+    merchants = ("첫 식당", "둘째 식당", "셋째 식당")
+    context = prepare_many(tmp_path, merchants)
+    save_input(context, *(bulky_lookup(f"r{i}", m, 100) for i, m in enumerate(merchants, start=1)))
+    # 선행 산출물과 후보 파일을 준비한 뒤에 상한을 낮춰 산출물 쓰기만 넘치게 한다.
+    # 사이트 자산(app.js 약 22KB)은 넘지 않는 값이어야 build까지 볼 수 있다.
+    limit = 40_000
+    monkeypatch.setattr(storage, "SIZE_LIMIT", limit)
+    assert run_cli(context, "geocode") == 0
+
+    directory = context.paths.city_dir(context.target)
+    first = directory / "geocode.json"
+    parts = storage.numbered_parts(first)
+    assert len(parts) > 1, "상한을 넘은 산출물은 조각으로 나뉘어야 한다"
+    assert [part.name for part in parts[1:]] == [
+        f"geocode.{number:03d}.json" for number in range(2, len(parts) + 1)
+    ]
+    assert all(part.stat().st_size <= limit for part in parts)
+
+    # 조각을 이어 읽으면 레코드가 하나도 빠지지 않는다.
+    loaded = ArtifactStore(context.paths, context.target).load("geocode", GeocodeOutput)
+    assert [item.record_id for item in loaded.results] == ["r1", "r2", "r3"]
+    assert all(len(item.lookup.candidates) == 100 for item in loaded.results)
+    # 뒤 단계는 나뉜 산출물을 그대로 읽는다.
+    assert run_cli(context, "closure") == 0
+    assert run_cli(context, "build") == 0
+
+    # 뒤 조각만 바뀐 낡음도 잡는다. 첫 조각만 해시하면 이 변경이 build를 그대로 지나간다.
+    storage.write_text(parts[-1], parts[-1].read_text(encoding="utf-8") + "\n")
+    assert run_cli(context, "build") == 1

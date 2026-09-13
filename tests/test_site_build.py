@@ -1,7 +1,10 @@
 import json
 import re
+import struct
 from copy import deepcopy
 from dataclasses import replace
+from datetime import date
+from decimal import Decimal
 from importlib.resources import files
 from pathlib import Path
 from typing import get_args
@@ -167,7 +170,62 @@ def test_markers_name_the_provider_that_supplied_the_coordinates(tmp_path: Path)
     for stage in ("geocode", "closure", "build"):
         assert run_cli(context, stage) == 0
     assert payload(context, "geocode")["results"][0]["reason"] == "human_confirmed"
-    assert published(context, "markers.json")["markers"][0]["coordinate_source"] == "naver"
+    marker = published(context, "markers.json")["markers"][0]
+    assert marker["coordinate_source"] == "naver"
+    assert marker["address"] == "부산 합성로 10"
+
+
+def test_a_candidate_without_an_address_never_names_the_marker_origin(tmp_path: Path) -> None:
+    """같은 좌표에 주소 없는 후보가 있어도 좌표·주소의 근거는 주소가 일치한 후보다."""
+    context = prepare(tmp_path)
+    query = lookup()
+    bare = shared_place("license", "https://example.invalid/license/1")
+    bare["address"] = None
+    query["candidates"].append(bare)
+    save_input(context, query)
+    for stage in ("geocode", "closure", "build"):
+        assert run_cli(context, stage) == 0
+
+    marker = published(context, "markers.json")["markers"][0]
+    assert (marker["coordinate_source"], marker["address"]) == ("local", "부산 합성로 10")
+
+
+def test_markers_summarize_the_visits_bundled_into_each_restaurant(tmp_path: Path) -> None:
+    context = prepare(tmp_path)
+    city = replace(
+        context.target.city,
+        organizations=(*context.target.city.organizations, Organization("other-org", "다른 기관")),
+    )
+    context = replace(context, target=Target(city, context.target.org))
+    store = ArtifactStore(context.paths, context.target)
+    first = store.load("parse", ParseOutput).records[0]
+    decisions = store.load("classify", ClassifyOutput).decisions
+    later = first.model_copy(
+        update={
+            "record_id": "r2",
+            "organization": "other-org",
+            "spent_on": date(2026, 3, 15),
+            "amount_krw": Decimal("25000"),
+            "source_location": "sheet1:r2",
+        }
+    )
+    store.save("parse", ParseOutput(records=(first, later)))
+    store.save(
+        "classify",
+        ClassifyOutput(decisions=(*decisions, decisions[0].model_copy(update={"record_id": "r2"}))),
+    )
+    second = lookup()
+    second["scope"].update(record_id="r2", organization="other-org")
+    save_input(context, lookup(), second)
+    for stage in ("geocode", "closure", "build"):
+        assert run_cli(context, stage) == 0
+
+    [marker] = published(context, "markers.json")["markers"]
+    assert marker["visit_count"] == 2
+    assert marker["address"] == "부산 합성로 10"
+    assert marker["last_visited_on"] == "2026-03-15"
+    assert Decimal(marker["total_amount_krw"]) == Decimal("26000")
+    assert marker["organizations"] == ["other-org", "test-org"]
 
 
 def test_ledger_keeps_unmapped_records_with_the_reason_they_missed_the_map(
@@ -212,12 +270,13 @@ def test_public_files_carry_no_original_or_lookup_provenance(tmp_path: Path) -> 
 
     written = [path for path in context.paths.output_root.rglob("*") if path.is_file()]
     assert written
+    # 아이콘 같은 바이너리 파일도 함께 보도록 바이트로 찾는다.
     for path in written:
-        content = path.read_text(encoding="utf-8")
+        content = path.read_bytes()
         for secret in ("source_hash", "source_location", "lookup_key", "dependency_key"):
-            assert secret not in content, path
+            assert secret.encode() not in content, path
         for value in ("a" * 64, "example.invalid", "합성 분류"):
-            assert value not in content, path
+            assert value.encode() not in content, path
 
 
 def with_held_organization(
@@ -247,8 +306,10 @@ def test_city_page_publishes_the_period_and_every_organization_status(tmp_path: 
     assert "2026년 상반기" in page
     assert "합성 기관" in page and "수집 완료" in page
     assert "보류 기관" in page and "수집 보류" in page and "봇 차단" in page
-    # 수집 보류 기관이 있으면 지도 위에서도 누락 가능성을 알린다.
+    # 수집 보류 기관이 있으면 지도 위에서도 누락 가능성을 알린다. 목록 패널이 아니라 지도 위다.
     assert "data-collection-hold" in page
+    notice = page.index("data-collection-hold")
+    assert page.index('class="map-stage"') < notice < page.index("data-list-panel")
 
 
 def test_city_page_without_a_hold_keeps_the_map_free_of_the_notice(tmp_path: Path) -> None:
@@ -285,6 +346,104 @@ def test_screen_labels_cover_every_published_contract_value() -> None:
     assert labelled("MAP_STATUSES") == set(get_args(MapStatus))
     # 확정된 두 사유는 지도에 오른 레코드의 것이라 장부에서 따로 적지 않는다.
     assert labelled("GEOCODE_REASONS") == set(get_args(GeocodeReason)) - set(CONFIRMED_REASONS)
+
+
+def test_marker_legend_filter_and_colors_share_the_same_visit_bands(tmp_path: Path) -> None:
+    context = build_ready(tmp_path)
+    assert run_cli(context, "build") == 0
+    page = city_page(context)
+    styles = files("deliciousmap.site_assets").joinpath("styles.css").read_text(encoding="utf-8")
+    source = files("deliciousmap.site_assets").joinpath("app.js").read_text(encoding="utf-8")
+
+    filters = re.findall(r'data-visits="(\w+)"', page)
+    legend = re.findall(r'class="legend-swatch band-(\w+)"', page)
+    band_order = re.search(r"const BAND_ORDER = \[(.*?)\];", source)
+    assert band_order is not None
+    assert filters == ["all", *legend]
+    assert legend == re.findall(r'"(\w+)"', band_order.group(1))
+    for band in legend:
+        assert f".band-{band}" in styles, band
+
+
+def test_city_page_pairs_the_map_with_a_restaurant_list_and_its_detail(tmp_path: Path) -> None:
+    context = build_ready(tmp_path)
+    assert run_cli(context, "build") == 0
+    page = city_page(context)
+
+    for hook in (
+        "data-list-panel",
+        "data-sheet-handle",
+        "data-list-view",
+        "data-restaurant-list",
+        "data-restaurant-more",
+        "data-restaurant-detail",
+    ):
+        assert hook in page, hook
+    # 검색·필터는 목록 위에 있다. 따로 뜨던 검색 결과 상자는 목록으로 대신한다.
+    assert page.index("data-search-form") < page.index("data-restaurant-list")
+    assert "data-search-results" not in page
+
+
+def png_size(path: Path) -> tuple[int, int]:
+    """PNG 서명과 IHDR에서 읽은 가로·세로."""
+    data = path.read_bytes()
+    assert data[:8] == b"\x89PNG\r\n\x1a\n" and data[12:16] == b"IHDR", path
+    width, height = struct.unpack(">II", data[16:24])
+    return width, height
+
+
+def test_manifest_icons_are_published_at_the_sizes_it_declares(tmp_path: Path) -> None:
+    """Android Chrome은 192·512 아이콘이 없으면 설치를 제안하지 않는다. maskable도 따로 싣는다."""
+    context = build_ready(tmp_path)
+    assert run_cli(context, "build") == 0
+    output = context.paths.output_root
+    manifest = json.loads((output / "manifest.webmanifest").read_text(encoding="utf-8"))
+
+    declared = set()
+    for icon in manifest["icons"]:
+        assert icon["type"] == "image/png"
+        width, height = png_size(output / icon["src"])
+        assert icon["sizes"] == f"{width}x{height}", icon
+        declared.add((icon["sizes"], icon.get("purpose", "any")))
+    assert {("192x192", "any"), ("512x512", "any")} <= declared
+    assert any(purpose == "maskable" for _, purpose in declared)
+
+
+def test_every_page_links_the_home_screen_icon(tmp_path: Path) -> None:
+    """iPhone Safari는 manifest 아이콘 대신 apple-touch-icon을 홈 화면 아이콘으로 쓴다."""
+    context = build_ready(tmp_path)
+    assert run_cli(context, "build") == 0
+    output = context.paths.output_root
+
+    for page in (output / "index.html", output / "seoul" / "index.html"):
+        html = page.read_text(encoding="utf-8")
+        match = re.search(r'<link rel="apple-touch-icon" href="([^"]+)">', html)
+        assert match is not None, page
+        assert png_size((page.parent / match.group(1)).resolve()) == (180, 180)
+
+
+def test_landing_and_city_pages_both_carry_the_install_guide(tmp_path: Path) -> None:
+    """설치 시작 주소는 랜딩이고, 도시 링크로 바로 들어온 사람도 있다. 두 화면 모두 안내한다."""
+    context = build_ready(tmp_path)
+    assert run_cli(context, "build") == 0
+    output = context.paths.output_root
+
+    for page, root in ((output / "index.html", "./"), (output / "seoul" / "index.html", "../")):
+        html = page.read_text(encoding="utf-8")
+        for hook in (
+            "data-install-guide",
+            "data-install-message",
+            "data-install-accept",
+            "data-install-dismiss",
+        ):
+            assert hook in html, (page, hook)
+        # 안내는 app.js가 필요할 때만 보인다. 스크립트가 못 돌면 빈 안내가 남지 않는다.
+        assert re.search(r"<aside [^>]*data-install-guide[^>]*hidden", html), page
+        assert f'<script src="{root}assets/app.js" defer></script>' in html, page
+        match = re.search(r'<script id="site-config" type="application/json">(.*?)</script>', html)
+        assert match is not None, page
+        # 랜딩에서 설치해 처음 연 앱도 service worker를 등록한다.
+        assert json.loads(match.group(1))["site_root"] == root
 
 
 def fetched(posted: str, title: str | None, digest: str) -> dict:
