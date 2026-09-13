@@ -41,6 +41,13 @@ HOLD_REASON_LABELS: dict[HoldReason, str] = {
     "below_threshold": "공개 기준 미달",
 }
 COLLECTION_LABELS = {"collected": "수집 완료", "empty": "레코드 없음", "held": "수집 보류"}
+# 방문 구간: (키, 필터 버튼, 범례). 필터·범례·마커 색이 같은 구간을 쓴다. 판정은 app.js가 한다.
+VISIT_BANDS = (
+    ("20", "20+", "20회 이상"),
+    ("10", "10–19", "10–19회"),
+    ("5", "5–9", "5–9회"),
+    ("1", "1–4", "1–4회"),
+)
 CLIENT_ID_VARIABLE = "NAVER_MAP_CLIENT_ID"
 KEY_PARAM_VARIABLE = "NAVER_MAP_KEY_PARAM"
 # 신규 발급 키는 ncpKeyId, 2026-06 이전의 구형 키만 ncpClientId를 쓴다.
@@ -306,6 +313,32 @@ def _map_notice(statuses: tuple[CollectionStatus, ...]) -> str:
           </p>"""
 
 
+def _visit_filters() -> str:
+    buttons = [
+        '            <button type="button" aria-pressed="true" data-visits="all">전체</button>',
+        *(
+            f'            <button type="button" aria-pressed="false" data-visits="{key}">'
+            f"{label}</button>"
+            for key, label, _ in VISIT_BANDS
+        ),
+    ]
+    return "\n".join(buttons)
+
+
+def _map_legend() -> str:
+    items = "\n".join(
+        f'            <li><span class="legend-swatch band-{key}"></span>{label}</li>'
+        for key, _, label in VISIT_BANDS
+    )
+    return f"""          <div class="map-legend" aria-label="마커 색 범례">
+            <p>방문 횟수</p>
+            <ul>
+{items}
+            <li><span class="legend-swatch is-closed"></span>폐업</li>
+            </ul>
+          </div>"""
+
+
 def _collection_table(statuses: tuple[CollectionStatus, ...]) -> str:
     """기관별 수집 상태. 선언된 기관이 없으면 그 사실을 그대로 적는다."""
     if not statuses:
@@ -451,28 +484,36 @@ def _city_page(
     </nav>
     <main>
       <section class="map-panel" data-panel="map">
-        <form class="search-panel" data-search-form>
-          <label class="search-field"><span class="sr-only">식당명 검색</span>
-            <input type="search" name="query" placeholder="식당명 검색" autocomplete="off">
-          </label>
-          <fieldset class="visit-filters"><legend class="sr-only">방문 횟수</legend>
-            <button type="button" aria-pressed="true" data-visits="all">전체</button>
-            <button type="button" aria-pressed="false" data-visits="20">20+</button>
-            <button type="button" aria-pressed="false" data-visits="10">10–19</button>
-            <button type="button" aria-pressed="false" data-visits="5">5–9</button>
-            <button type="button" aria-pressed="false" data-visits="1">1–4</button>
-          </fieldset>
-          <p class="result-count" aria-live="polite">
-            <strong data-total-count>0</strong>곳 전체 ·
-            <strong data-viewport-count>—</strong>곳 현재 지도 영역
-          </p>
-          <div class="search-results" data-search-results hidden></div>
-{_map_notice(statuses)}
-        </form>
-        <div id="map" class="map" aria-label="{city_name} 식당 지도">
-          <p class="loading">지도를 준비하고 있습니다.</p>
+        <div class="map-stage">
+          <div id="map" class="map" aria-label="{city_name} 식당 지도">
+            <p class="loading">지도를 준비하고 있습니다.</p>
+          </div>
+{_map_legend()}
         </div>
-        <aside class="restaurant-sheet" data-restaurant-sheet hidden></aside>
+        <aside class="list-panel" data-list-panel data-sheet="collapsed" aria-label="식당 목록">
+          <button class="sheet-handle" type="button" data-sheet-handle
+                  aria-label="목록 높이 바꾸기"></button>
+          <form class="search-panel" data-search-form>
+            <label class="search-field"><span class="sr-only">식당명 검색</span>
+              <input type="search" name="query" placeholder="식당명 검색" autocomplete="off">
+            </label>
+            <fieldset class="visit-filters"><legend class="sr-only">방문 횟수</legend>
+{_visit_filters()}
+            </fieldset>
+            <p class="result-count" aria-live="polite">
+              <strong data-total-count>0</strong>곳 전체 ·
+              <strong data-viewport-count>—</strong>곳 현재 지도 영역
+            </p>
+{_map_notice(statuses)}
+          </form>
+          <div class="list-view" data-list-view>
+            <ol class="restaurant-list" data-restaurant-list></ol>
+            <button class="more-button" type="button" data-restaurant-more hidden>
+              다음 식당 보기
+            </button>
+          </div>
+          <article class="restaurant-detail" data-restaurant-detail hidden></article>
+        </aside>
       </section>
       <section class="records-panel" data-panel="records" hidden>
         <header><p class="eyebrow">마커가 없는 레코드도 포함</p><h2>전체 장부</h2></header>

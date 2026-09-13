@@ -2,16 +2,22 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 const {
+  centerAbove,
   countMarkersInBounds,
   createMap,
   createRecordsLoader,
   filterMarkers,
+  initialViewBounds,
+  markerIcon,
   markerInBounds,
+  nearestSheetState,
+  rankMarkers,
   renderRecords,
-  renderSearchResults,
+  renderRestaurantList,
   selectMarker,
   summarizeMetrics,
   viewportBounds,
+  visitBand,
 } = require("../src/deliciousmap/site_assets/app.js");
 
 class FakeElement {
@@ -21,6 +27,7 @@ class FakeElement {
     this.hidden = false;
     this.listeners = {};
     this.textContent = "";
+    this.className = "";
   }
 
   addEventListener(name, listener) {
@@ -39,7 +46,14 @@ class FakeElement {
   }
 
   click() {
-    return this.listeners.click?.({ timeStamp: 5 });
+    const event = { timeStamp: 5 };
+    this.onclick?.(event);
+    return this.listeners.click?.(event);
+  }
+
+  // 자식까지 포함한 글자. 화면에 보이는 문장을 순서와 무관하게 확인할 때 쓴다.
+  get text() {
+    return [this.textContent, ...this.children.map((child) => child.text)].join(" ");
   }
 }
 
@@ -129,9 +143,12 @@ function fakeNaverMaps() {
       this.panning = undefined;
     }
 
-    fitBounds(bounds) {
+    // 실제 SDK는 영역 크기로 줌을 정한다. 가짜는 좁은 영역일수록 크게 확대하는 것만 흉내 낸다.
+    fitBounds(bounds, margin) {
       this.bounds = bounds;
-      this.zoom = 10;
+      this.margin = margin;
+      const span = bounds.getNE().lat() - bounds.getSW().lat();
+      this.zoom = span < 0.05 ? 17 : 10;
     }
 
     getBounds() {
@@ -237,33 +254,183 @@ test("twenty-run summaries retain the second-slowest and maximum measurements", 
   });
 });
 
-test("a city-wide search result can reveal an out-of-bound restaurant", async () => {
-  const results = new FakeElement();
-  const sheet = new FakeElement();
-  sheet.hidden = true;
-  const documentObject = new FakeDocument({
-    "[data-restaurant-sheet]": sheet,
-    "[data-search-results]": results,
+function listDocument() {
+  const detail = new FakeElement();
+  detail.hidden = true;
+  return new FakeDocument({
+    "[data-list-view]": new FakeElement(),
+    "[data-restaurant-detail]": detail,
+    "[data-restaurant-list]": new FakeElement("ol"),
+    "[data-restaurant-more]": new FakeElement("button"),
   });
+}
+
+function listed(documentObject) {
+  return documentObject.querySelector("[data-restaurant-list]").children;
+}
+
+test("restaurants are ranked by visits, then by name", () => {
+  const tied = [
+    { merchant: "나중 식당", visit_count: 3, business_id: "b" },
+    { merchant: "가장 많이 간 곳", visit_count: 9, business_id: "c" },
+    { merchant: "가나다 식당", visit_count: 3, business_id: "a" },
+  ];
+  assert.deepEqual(
+    rankMarkers(tied).map((marker) => marker.merchant),
+    ["가장 많이 간 곳", "가나다 식당", "나중 식당"],
+  );
+  // 순위를 매겨도 받은 목록의 순서는 바꾸지 않는다.
+  assert.equal(tied[0].merchant, "나중 식당");
+});
+
+test("the restaurant list shows fifty places at a time in the order it was given", () => {
+  const documentObject = listDocument();
+  const many = Array.from({ length: 51 }, (_, index) => ({
+    merchant: `식당 ${index + 1}`,
+    visit_count: 60 - index,
+    address: `합성로 ${index + 1}`,
+  }));
+
+  renderRestaurantList(documentObject, many, () => {});
+  const more = documentObject.querySelector("[data-restaurant-more]");
+  assert.equal(listed(documentObject).length, 50);
+  assert.equal(more.hidden, false);
+  const first = listed(documentObject)[0].text;
+  for (const shown of ["1", "식당 1", "합성로 1", "60회"]) assert.ok(first.includes(shown), shown);
+
+  more.click();
+  assert.equal(listed(documentObject).length, 51);
+  assert.ok(listed(documentObject)[50].text.includes("51"));
+  assert.equal(more.hidden, true);
+
+  // 다시 그리면 앞선 목록과 더 보기가 누적되지 않는다.
+  renderRestaurantList(documentObject, many.slice(0, 2), () => {});
+  assert.equal(listed(documentObject).length, 2);
+  assert.equal(more.hidden, true);
+});
+
+test("an empty result says so instead of showing a blank list", () => {
+  const documentObject = listDocument();
+  renderRestaurantList(documentObject, [], () => {});
+  assert.equal(listed(documentObject).length, 1);
+  assert.match(listed(documentObject)[0].text, /조건에 맞는 식당이 없습니다/);
+});
+
+test("a listed restaurant without a known address says the address is unknown", () => {
+  const documentObject = listDocument();
+  renderRestaurantList(documentObject, [{ ...markers[0], address: null, closed: true }], () => {});
+  const item = listed(documentObject)[0].text;
+  assert.ok(item.includes("주소 미상"));
+  assert.ok(item.includes("폐업"));
+});
+
+test("a listed restaurant opens its detail and closing it returns to the list", async () => {
+  const documentObject = listDocument();
   const windowObject = fakeWindow();
-  const outside = { ...markers[1], business_id: "outside", closed: false };
-  const config = { map_bounds: { south: 37.4, west: 126.9, north: 37.6, east: 127.1 } };
+  const config = {
+    map_bounds: { south: 37.4, west: 126.9, north: 37.6, east: 127.1 },
+    organizations: { "west-gu": "서구청", city: "시청" },
+  };
+  const outside = {
+    ...markers[1],
+    business_id: "outside",
+    closed: false,
+    address: "부산 합성로 10",
+    last_visited_on: "2026-03-15",
+    total_amount_krw: "1234000",
+    organizations: ["city", "west-gu"],
+  };
   let selection;
 
-  renderSearchResults(documentObject, [outside], "바다", (marker, event) => {
+  renderRestaurantList(documentObject, [outside], (marker, event) => {
     selection = selectMarker(windowObject, documentObject, config, undefined, marker, event);
   });
-  results.children[0].click();
+  listed(documentObject)[0].children[0].click();
   windowObject.frames.shift()();
   assert.equal(windowObject.deliciousmapMetrics, undefined);
   windowObject.frames.shift()();
   await selection;
 
-  assert.equal(sheet.hidden, false);
-  assert.equal(sheet.children[3].textContent, "도시 지도 범위 밖의 식당입니다.");
+  const detail = documentObject.querySelector("[data-restaurant-detail]");
+  const listView = documentObject.querySelector("[data-list-view]");
+  assert.equal(detail.hidden, false);
+  assert.equal(listView.hidden, true);
+  for (const shown of [
+    "바다횟집",
+    "방문 14회",
+    "합계 1,234,000원",
+    "부산 합성로 10",
+    "최근 방문 2026-03-15",
+    "시청, 서구청",
+    "도시 지도 범위 밖의 식당입니다.",
+  ]) {
+    assert.ok(detail.text.includes(shown), shown);
+  }
   assert.deepEqual(windowObject.deliciousmapMetrics, [
     { name: "marker-selection", duration_ms: 20 },
   ]);
+
+  detail.children.find((child) => child.className === "detail-close").click();
+  assert.equal(detail.hidden, true);
+  assert.equal(listView.hidden, false);
+});
+
+test("marker color follows the same visit bands as the filter", () => {
+  assert.deepEqual([25, 20, 19, 10, 9, 5, 4, 1].map(visitBand), [
+    "20",
+    "20",
+    "10",
+    "10",
+    "5",
+    "5",
+    "1",
+    "1",
+  ]);
+  const sdk = fakeNaverMaps();
+  assert.match(markerIcon(sdk, { visit_count: 12, closed: false }).content, /map-marker band-10"/);
+  assert.match(markerIcon(sdk, { visit_count: 3, closed: true }).content, /band-1 is-closed/);
+});
+
+test("the first view frames where the restaurants are, dropping far outliers", () => {
+  const city = { south: 34.8, west: 126.6, north: 35.4, east: 127.1 };
+  assert.equal(initialViewBounds([], city), undefined);
+
+  const few = [
+    { latitude: 35.15, longitude: 126.85 },
+    { latitude: 35.16, longitude: 126.86 },
+  ];
+  assert.deepEqual(initialViewBounds(few, city), {
+    south: 35.15,
+    west: 126.85,
+    north: 35.16,
+    east: 126.86,
+  });
+
+  // 도심에 몰린 식당 사이에 멀리 떨어진 한 곳이 있으면 첫 화면은 도심을 따른다.
+  const clustered = Array.from({ length: 39 }, (_, index) => ({
+    latitude: 35.15 + index * 0.0005,
+    longitude: 126.85 + index * 0.0005,
+  }));
+  const bounds = initialViewBounds([...clustered, { latitude: 34.9, longitude: 127.05 }], city);
+  assert.ok(bounds.south > 35.14 && bounds.east < 126.9, JSON.stringify(bounds));
+
+  // 도시 범위 밖의 식당은 첫 화면을 넓히지 않는다.
+  const outside = [...few, { latitude: 37.5, longitude: 127.0 }];
+  assert.deepEqual(initialViewBounds(outside, city), initialViewBounds(few, city));
+});
+
+test("the list sheet settles on the nearest of its three heights", () => {
+  const heights = { collapsed: 160, half: 360, full: 700 };
+  assert.equal(nearestSheetState(100, heights), "collapsed");
+  assert.equal(nearestSheetState(300, heights), "half");
+  assert.equal(nearestSheetState(600, heights), "full");
+});
+
+test("a centre south of the restaurant keeps it above the sheet that covers the map", () => {
+  assert.equal(centerAbove(35.15, 16, 0), 35.15);
+  const shifted = centerAbove(35.15, 16, 100);
+  // 16단계에서 100화소는 수백 미터 안쪽이다.
+  assert.ok(shifted < 35.15 && shifted > 35.14, String(shifted));
 });
 
 test("the record view renders its first hundred rows before requesting more", () => {
@@ -295,7 +462,7 @@ test("the record view renders its first hundred rows before requesting more", ()
 
 test("a selected restaurant shows where its coordinate came from", async () => {
   const sheet = new FakeElement();
-  const documentObject = new FakeDocument({ "[data-restaurant-sheet]": sheet });
+  const documentObject = new FakeDocument({ "[data-restaurant-detail]": sheet });
   const windowObject = fakeWindow();
   const config = { map_bounds: { south: 34, west: 126, north: 38, east: 130 } };
   const marker = {
@@ -313,6 +480,8 @@ test("a selected restaurant shows where its coordinate came from", async () => {
   const lines = sheet.children.map((child) => child.textContent);
   assert.ok(lines.includes("폐업 확인"));
   assert.ok(lines.includes("좌표 출처: 인허가 자료"));
+  // 주소를 모르면 모른다고 적는다. 다른 값으로 채우지 않는다.
+  assert.ok(lines.includes("주소 미상"));
 });
 
 test("the record view explains why an unmapped record missed the map", () => {
@@ -391,7 +560,7 @@ test("the city view reports its area and fixes its zoom-out limit as soon as the
 test("selecting a restaurant brings the map onto it at street level", async () => {
   const sdk = fakeNaverMaps();
   const sheet = new FakeElement();
-  const documentObject = new FakeDocument({ "[data-restaurant-sheet]": sheet });
+  const documentObject = new FakeDocument({ "[data-restaurant-detail]": sheet });
   const windowObject = fakeWindow();
   const config = { map_bounds: SEOUL_BOUNDS };
   const map = new sdk.Map(new FakeElement(), { center: new sdk.LatLng(37.56, 126.98), zoom: 10 });
@@ -411,6 +580,69 @@ test("selecting a restaurant brings the map onto it at street level", async () =
   await selection;
 
   assert.deepEqual([map.center.lat(), map.center.lng(), map.getZoom()], [37.4979, 127.0276, 16]);
+});
+
+test("a selection under the mobile sheet lands the restaurant above the sheet", async () => {
+  const sdk = fakeNaverMaps();
+  const documentObject = new FakeDocument({ "[data-restaurant-detail]": new FakeElement() });
+  const windowObject = fakeWindow();
+  const map = new sdk.Map(new FakeElement(), { center: new sdk.LatLng(37.56, 126.98), zoom: 10 });
+  const marker = { ...markers[0], latitude: 37.4979, longitude: 127.0276, business_id: "gangnam" };
+
+  const selection = selectMarker(
+    windowObject,
+    documentObject,
+    { map_bounds: SEOUL_BOUNDS },
+    { map, naverMaps: sdk, coveredBottom: () => 300 },
+    marker,
+    {},
+  );
+  windowObject.frames.shift()();
+  windowObject.frames.shift()();
+  await selection;
+
+  assert.equal(map.center.lat(), centerAbove(37.4979, 16, 150));
+  assert.equal(map.center.lng(), 127.0276);
+});
+
+test("the city view opens on its restaurants but still zooms out to the whole city", async () => {
+  const sdk = fakeNaverMaps();
+  const windowObject = { document: new FakeDocument({ "#map": new FakeElement() }) };
+  const viewports = [];
+  const nearby = [
+    { ...markers[0], latitude: 37.5, longitude: 127.0 },
+    { ...markers[1], latitude: 37.51, longitude: 127.01 },
+  ];
+
+  const created = createMap(
+    windowObject,
+    sdk,
+    { map_bounds: SEOUL_BOUNDS },
+    nearby,
+    (bounds) => viewports.push(bounds),
+    () => {},
+    { bottomInset: 120 },
+  );
+  sdk.Event.trigger(created.map, "init");
+  await created.ready;
+
+  // 축소 한계는 도시 전체가 보이던 수준 그대로다.
+  assert.equal(created.map.options.minZoom, 10);
+  assert.deepEqual(viewports, [{ south: 37.5, west: 127.0, north: 37.51, east: 127.01 }]);
+  // 시트가 가린 아래쪽만큼 여백을 더 둔다.
+  assert.ok(created.map.margin.bottom > created.map.margin.top);
+  // 몇 곳만 모여 있어도 골목 수준까지 들어가지 않는다.
+  assert.equal(created.map.getZoom(), 14);
+});
+
+test("markers with more visits are drawn above the others", () => {
+  const sdk = fakeNaverMaps();
+  const windowObject = { document: new FakeDocument({ "#map": new FakeElement() }) };
+  const created = createMap(windowObject, sdk, { map_bounds: SEOUL_BOUNDS }, markers, () => {});
+  assert.deepEqual(
+    created.overlays.map((item) => item.overlay.options.zIndex),
+    markers.map((marker) => marker.visit_count),
+  );
 });
 
 test("city-wide counts survive a map that cannot report its viewport", () => {

@@ -327,6 +327,42 @@ def test_screen_labels_cover_every_published_contract_value() -> None:
     assert labelled("GEOCODE_REASONS") == set(get_args(GeocodeReason)) - set(CONFIRMED_REASONS)
 
 
+def test_marker_legend_filter_and_colors_share_the_same_visit_bands(tmp_path: Path) -> None:
+    context = build_ready(tmp_path)
+    assert run_cli(context, "build") == 0
+    page = city_page(context)
+    styles = files("deliciousmap.site_assets").joinpath("styles.css").read_text(encoding="utf-8")
+    source = files("deliciousmap.site_assets").joinpath("app.js").read_text(encoding="utf-8")
+
+    filters = re.findall(r'data-visits="(\w+)"', page)
+    legend = re.findall(r'class="legend-swatch band-(\w+)"', page)
+    band_order = re.search(r"const BAND_ORDER = \[(.*?)\];", source)
+    assert band_order is not None
+    assert filters == ["all", *legend]
+    assert legend == re.findall(r'"(\w+)"', band_order.group(1))
+    for band in legend:
+        assert f".band-{band}" in styles, band
+
+
+def test_city_page_pairs_the_map_with_a_restaurant_list_and_its_detail(tmp_path: Path) -> None:
+    context = build_ready(tmp_path)
+    assert run_cli(context, "build") == 0
+    page = city_page(context)
+
+    for hook in (
+        "data-list-panel",
+        "data-sheet-handle",
+        "data-list-view",
+        "data-restaurant-list",
+        "data-restaurant-more",
+        "data-restaurant-detail",
+    ):
+        assert hook in page, hook
+    # 검색·필터는 목록 위에 있다. 따로 뜨던 검색 결과 상자는 목록으로 대신한다.
+    assert page.index("data-search-form") < page.index("data-restaurant-list")
+    assert "data-search-results" not in page
+
+
 def fetched(posted: str, title: str | None, digest: str) -> dict:
     """수집 장부 한 줄. 대상 선별은 게시일과 제목만 보므로 나머지는 합성값이다."""
     return {

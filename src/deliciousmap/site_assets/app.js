@@ -20,6 +20,16 @@
     5: (count) => count >= 5 && count <= 9,
     1: (count) => count >= 1 && count <= 4,
   };
+  // 마커 색과 범례가 쓰는 구간. 필터와 같은 구간을 많은 쪽부터 적는다.
+  const BAND_ORDER = ["20", "10", "5", "1"];
+  // 목록은 한 번에 이만큼 그린다. 서울처럼 식당이 많아도 첫 목록이 늦지 않게 한다.
+  const LIST_BATCH = 50;
+  // 첫 화면의 확대 상한. 몇 곳만 모여 있어도 동네가 보이는 수준에서 멈춘다.
+  const INITIAL_ZOOM_LIMIT = 14;
+  // 첫 화면에서 양끝을 뺄 비율. 식당이 이보다 적으면 모두 담는다.
+  const OUTLIER_SHARE = 0.05;
+  const OUTLIER_MINIMUM = 20;
+  const SHEET_STATES = ["collapsed", "half", "full"];
 
   // 좌표를 준 자료의 이름. 지도에서 모양으로 구분하지 않고 상세에서만 밝힌다.
   const COORDINATE_SOURCES = {
@@ -67,6 +77,51 @@
       (marker) =>
         matchesVisits(marker.visit_count) &&
         normalizeSearch(marker.merchant).includes(normalizedQuery),
+    );
+  }
+
+  function visitBand(count) {
+    return BAND_ORDER.find((band) => VISIT_BANDS[band](count));
+  }
+
+  function rankMarkers(markers) {
+    return [...markers].sort(
+      (left, right) =>
+        right.visit_count - left.visit_count ||
+        left.merchant.localeCompare(right.merchant, "ko-KR") ||
+        String(left.business_id).localeCompare(String(right.business_id)),
+    );
+  }
+
+  function percentile(sorted, share) {
+    return sorted[Math.round(share * (sorted.length - 1))];
+  }
+
+  // 첫 화면은 도시 안의 식당이 모인 영역이다. 식당이 많으면 양끝의 먼 곳을 빼고 잡는다.
+  function initialViewBounds(markers, cityBounds) {
+    const inside = markers.filter((marker) => markerInBounds(marker, cityBounds));
+    if (inside.length === 0) return undefined;
+    const share = inside.length >= OUTLIER_MINIMUM ? OUTLIER_SHARE : 0;
+    const latitudes = inside.map((marker) => marker.latitude).sort((a, b) => a - b);
+    const longitudes = inside.map((marker) => marker.longitude).sort((a, b) => a - b);
+    return {
+      south: percentile(latitudes, share),
+      west: percentile(longitudes, share),
+      north: percentile(latitudes, 1 - share),
+      east: percentile(longitudes, 1 - share),
+    };
+  }
+
+  // 웹 메르카토르에서 화소만큼 남쪽의 위도. 지도를 가린 시트 위에 식당이 오도록 중심을 내린다.
+  function centerAbove(latitude, zoom, pixels) {
+    if (!pixels) return latitude;
+    const degreesPerPixel = (360 / (256 * 2 ** zoom)) * Math.cos((latitude * Math.PI) / 180);
+    return latitude - pixels * degreesPerPixel;
+  }
+
+  function nearestSheetState(visible, heights) {
+    return SHEET_STATES.reduce((best, state) =>
+      Math.abs(heights[state] - visible) < Math.abs(heights[best] - visible) ? state : best,
     );
   }
 
@@ -208,30 +263,72 @@
     appendBatch();
   }
 
-  function renderSearchResults(documentObject, markers, query, onSelect) {
-    const results = documentObject.querySelector("[data-search-results]");
-    if (!normalizeSearch(query)) {
-      results.replaceChildren();
-      results.hidden = true;
-      return;
+  function textElement(documentObject, tagName, className, text) {
+    const element = documentObject.createElement(tagName);
+    element.className = className;
+    element.textContent = text;
+    return element;
+  }
+
+  function restaurantItem(documentObject, marker, rank, onSelect) {
+    const item = documentObject.createElement("li");
+    const button = documentObject.createElement("button");
+    button.type = "button";
+    button.className = "restaurant-item";
+    const body = documentObject.createElement("span");
+    body.className = "item-body";
+    body.append(
+      textElement(documentObject, "strong", "item-name", marker.merchant),
+      textElement(documentObject, "span", "item-address", marker.address ?? "주소 미상"),
+    );
+    if (marker.closed) body.append(textElement(documentObject, "span", "closed-tag", "폐업"));
+    button.append(
+      textElement(documentObject, "span", "item-rank", String(rank)),
+      body,
+      textElement(
+        documentObject,
+        "span",
+        `visit-badge band-${visitBand(marker.visit_count)}`,
+        `${marker.visit_count.toLocaleString("ko-KR")}회`,
+      ),
+    );
+    button.addEventListener("click", (event) => onSelect(marker, event));
+    item.append(button);
+    return item;
+  }
+
+  // 받은 순서 그대로 목록을 그린다. 순위는 호출하는 쪽이 rankMarkers로 매겨 넘긴다.
+  function renderRestaurantList(documentObject, markers, onSelect) {
+    const list = documentObject.querySelector("[data-restaurant-list]");
+    const more = documentObject.querySelector("[data-restaurant-more]");
+    let shown = 0;
+
+    function appendBatch() {
+      const fragment = documentObject.createDocumentFragment();
+      markers.slice(shown, shown + LIST_BATCH).forEach((marker, offset) => {
+        fragment.append(restaurantItem(documentObject, marker, shown + offset + 1, onSelect));
+      });
+      shown = Math.min(shown + LIST_BATCH, markers.length);
+      list.append(fragment);
+      more.hidden = shown >= markers.length;
     }
 
-    const fragment = documentObject.createDocumentFragment();
+    list.replaceChildren();
+    // 다시 그릴 때마다 새 목록의 더 보기로 바꾼다. 리스너를 쌓으면 한 번에 여러 묶음이 붙는다.
+    more.onclick = appendBatch;
     if (markers.length === 0) {
-      const empty = documentObject.createElement("p");
-      empty.textContent = "검색 결과가 없습니다.";
-      fragment.append(empty);
+      list.append(textElement(documentObject, "li", "list-empty", "조건에 맞는 식당이 없습니다."));
+      more.hidden = true;
+      return;
     }
-    for (const marker of markers.slice(0, 20)) {
-      const button = documentObject.createElement("button");
-      button.type = "button";
-      button.className = "search-result";
-      button.textContent = `${marker.merchant} · 방문 ${marker.visit_count.toLocaleString("ko-KR")}회`;
-      button.addEventListener("click", (event) => onSelect(marker, event));
-      fragment.append(button);
-    }
-    results.replaceChildren(fragment);
-    results.hidden = false;
+    appendBatch();
+  }
+
+  function showRestaurantList(documentObject) {
+    const detail = documentObject.querySelector("[data-restaurant-detail]");
+    const listView = documentObject.querySelector("[data-list-view]");
+    if (detail) detail.hidden = true;
+    if (listView) listView.hidden = false;
   }
 
   function loadNaverMaps(windowObject, config) {
@@ -275,51 +372,92 @@
   }
 
   function markerIcon(naverMaps, marker) {
-    const className = marker.closed ? "map-marker is-closed" : "map-marker";
+    const classes = ["map-marker", `band-${visitBand(marker.visit_count)}`];
+    if (marker.closed) classes.push("is-closed");
     return {
-      content: `<button class="${className}" type="button" aria-label="식당 마커"><span>${marker.visit_count}</span></button>`,
+      content: `<button class="${classes.join(" ")}" type="button" aria-label="식당 마커"><span>${marker.visit_count}</span></button>`,
       anchor: new naverMaps.Point(22, 22),
     };
   }
 
-  function renderRestaurant(documentObject, marker, withinCity) {
-    const sheet = documentObject.querySelector("[data-restaurant-sheet]");
-    const heading = documentObject.createElement("h2");
-    heading.textContent = marker.merchant;
-    const visits = documentObject.createElement("p");
-    visits.textContent = `방문 ${marker.visit_count.toLocaleString("ko-KR")}회`;
-    const closure = documentObject.createElement("p");
-    closure.className = marker.closed ? "closed-state" : "open-state";
-    closure.textContent = marker.closed ? "폐업 확인" : "폐업 확인 없음";
-    const origin = documentObject.createElement("p");
-    origin.className = "coordinate-source";
-    origin.textContent = `좌표 출처: ${COORDINATE_SOURCES[marker.coordinate_source] ?? "미상"}`;
-    const link = documentObject.createElement("a");
+  function formatWon(amount) {
+    return `${new Intl.NumberFormat("ko-KR").format(Number(amount))}원`;
+  }
+
+  function renderRestaurant(documentObject, marker, withinCity, organizations = {}) {
+    const detail = documentObject.querySelector("[data-restaurant-detail]");
+    const close = textElement(documentObject, "button", "detail-close", "← 목록");
+    close.type = "button";
+    close.addEventListener("click", () => showRestaurantList(documentObject));
+    const visits = [`방문 ${marker.visit_count.toLocaleString("ko-KR")}회`];
+    if (marker.total_amount_krw !== undefined) {
+      visits.push(`합계 ${formatWon(marker.total_amount_krw)}`);
+    }
+    const children = [
+      close,
+      textElement(documentObject, "h2", "detail-name", marker.merchant),
+      textElement(documentObject, "p", "detail-visits", visits.join(" · ")),
+      textElement(documentObject, "p", "detail-address", marker.address ?? "주소 미상"),
+    ];
+    if (marker.last_visited_on) {
+      children.push(
+        textElement(documentObject, "p", "detail-line", `최근 방문 ${marker.last_visited_on}`),
+      );
+    }
+    if (marker.organizations?.length) {
+      const names = marker.organizations.map((slug) => organizations[slug] ?? slug);
+      children.push(
+        textElement(documentObject, "p", "detail-line", `방문 기관 ${names.join(", ")}`),
+      );
+    }
+    children.push(
+      textElement(
+        documentObject,
+        "p",
+        marker.closed ? "closed-state" : "open-state",
+        marker.closed ? "폐업 확인" : "폐업 확인 없음",
+      ),
+    );
+    if (!withinCity) {
+      children.push(
+        textElement(documentObject, "p", "outside-city", "도시 지도 범위 밖의 식당입니다."),
+      );
+    }
+    children.push(
+      textElement(
+        documentObject,
+        "p",
+        "coordinate-source",
+        `좌표 출처: ${COORDINATE_SOURCES[marker.coordinate_source] ?? "미상"}`,
+      ),
+    );
+    const link = textElement(documentObject, "a", "naver-link", "네이버 지도에서 확인");
     link.href = `https://map.naver.com/p/search/${encodeURIComponent(marker.merchant)}`;
     link.target = "_blank";
     link.rel = "noopener noreferrer";
-    link.textContent = "네이버 지도에서 확인";
-    const children = [heading, visits, closure, origin, link];
-    if (!withinCity) {
-      const boundaryNotice = documentObject.createElement("p");
-      boundaryNotice.className = "outside-city";
-      boundaryNotice.textContent = "도시 지도 범위 밖의 식당입니다.";
-      children.splice(3, 0, boundaryNotice);
-    }
-    sheet.replaceChildren(...children);
-    sheet.hidden = false;
+    children.push(link);
+    detail.replaceChildren(...children);
+    detail.hidden = false;
+    const listView = documentObject.querySelector("[data-list-view]");
+    if (listView) listView.hidden = true;
   }
 
   function selectMarker(windowObject, documentObject, config, mapState, marker, event) {
     const startedAt = interactionStartedAt(windowObject, event);
     const withinCity = markerInBounds(marker, config.map_bounds);
-    renderRestaurant(documentObject, marker, withinCity);
+    renderRestaurant(documentObject, marker, withinCity, config.organizations);
     if (mapState && withinCity) {
       try {
+        const zoom = Math.max(mapState.map.getZoom(), 16);
+        // 모바일 시트가 지도 아래를 가리면 그 절반만큼 중심을 내려 식당을 보이는 곳에 둔다.
+        const covered = mapState.coveredBottom?.() ?? 0;
         // panTo 뒤에 setZoom을 부르면 이동이 끊겨 원래 중심에서 확대된다. 좌표와 줌을 한 번에 옮긴다.
         mapState.map.morph(
-          new mapState.naverMaps.LatLng(marker.latitude, marker.longitude),
-          Math.max(mapState.map.getZoom(), 16),
+          new mapState.naverMaps.LatLng(
+            centerAbove(marker.latitude, zoom, covered / 2),
+            marker.longitude,
+          ),
+          zoom,
         );
       } catch (error) {
         // 지도를 움직이지 못해도 선택한 식당의 상세는 그대로 보여 준다.
@@ -329,13 +467,38 @@
     return recordMetricAfterPaint(windowObject, "marker-selection", startedAt);
   }
 
-  function createMap(windowObject, naverMaps, config, markers, onViewportChange, onSelect) {
-    const documentObject = windowObject.document;
-    const { south, west, north, east } = config.map_bounds;
-    const cityBounds = new naverMaps.LatLngBounds(
+  function toNaverBounds(naverMaps, { south, west, north, east }) {
+    return new naverMaps.LatLngBounds(
       new naverMaps.LatLng(south, west),
       new naverMaps.LatLng(north, east),
     );
+  }
+
+  // 도시 전체는 축소 한계로 남기고, 첫 화면은 식당이 모인 영역으로 옮긴다. 식당이 없으면 옮기지 않는다.
+  function showInitialView(naverMaps, map, config, markers, bottomInset) {
+    const initial = initialViewBounds(markers, config.map_bounds);
+    if (!initial) return;
+    const edge = 48;
+    map.fitBounds(toNaverBounds(naverMaps, initial), {
+      top: edge,
+      right: edge,
+      bottom: edge + bottomInset,
+      left: edge,
+    });
+    if (map.getZoom() > INITIAL_ZOOM_LIMIT) map.setZoom(INITIAL_ZOOM_LIMIT, false);
+  }
+
+  function createMap(
+    windowObject,
+    naverMaps,
+    config,
+    markers,
+    onViewportChange,
+    onSelect,
+    { bottomInset = 0 } = {},
+  ) {
+    const documentObject = windowObject.document;
+    const cityBounds = toNaverBounds(naverMaps, config.map_bounds);
     const mapElement = documentObject.getElementById("map");
     mapElement.replaceChildren();
     const map = new naverMaps.Map(mapElement, {
@@ -355,6 +518,8 @@
         position: new naverMaps.LatLng(data.latitude, data.longitude),
         icon: markerIcon(naverMaps, data),
         title: data.merchant,
+        // 방문이 많은 식당이 겹친 마커 위에 온다.
+        zIndex: data.visit_count,
       });
       naverMaps.Event.addListener(overlay, "click", (event) => onSelect(data, event));
       return { data, overlay };
@@ -364,12 +529,85 @@
     // SDK는 첫 화면에서 idle 없이 init만 보낸다. 도시 전체가 보이는 이 시점에 축소 한계를 고정한다.
     naverMaps.Event.addListener(map, "init", () => {
       map.setOptions({ minZoom: map.getZoom(), maxBounds: cityBounds });
+      showInitialView(naverMaps, map, config, markers, bottomInset);
       reportViewport();
       markReady();
     });
     naverMaps.Event.addListener(map, "idle", reportViewport);
     map.fitBounds(cityBounds);
     return { map, overlays, ready };
+  }
+
+  // 좁은 화면에서만 목록이 지도 위의 시트가 된다. styles.css의 같은 폭 기준과 맞춘다.
+  const SHEET_QUERY = "(max-width: 720px)";
+
+  // 목록 시트를 끌어 세 높이 중 가까운 곳에 놓는다. 넓은 화면에서는 목록이 지도 옆이라 하는 일이 없다.
+  function setupListSheet(windowObject, documentObject) {
+    const panel = documentObject.querySelector("[data-list-panel]");
+    const handle = documentObject.querySelector("[data-sheet-handle]");
+    const header = documentObject.querySelector("[data-search-form]");
+    const media = windowObject.matchMedia?.(SHEET_QUERY);
+    const active = () => Boolean(panel && handle && header && media?.matches);
+    let state = "collapsed";
+    let drag;
+    let draggedLast = false;
+
+    function heights() {
+      const full = panel.offsetHeight;
+      const collapsed = Math.min(full, handle.offsetHeight + header.offsetHeight);
+      return { collapsed, half: Math.max(collapsed, Math.round(full * 0.5)), full };
+    }
+
+    function settle(next) {
+      state = next;
+      if (!active()) return;
+      panel.dataset.sheet = next;
+      panel.style.setProperty("--sheet-visible", `${heights()[next]}px`);
+    }
+
+    if (active()) {
+      handle.addEventListener("pointerdown", (event) => {
+        drag = { startY: event.clientY, startVisible: heights()[state], visible: undefined };
+        handle.setPointerCapture?.(event.pointerId);
+        panel.classList.add("is-dragging");
+      });
+      handle.addEventListener("pointermove", (event) => {
+        if (!drag) return;
+        const { collapsed, full } = heights();
+        const visible = drag.startVisible + (drag.startY - event.clientY);
+        drag.visible = Math.min(full, Math.max(collapsed, visible));
+        panel.style.setProperty("--sheet-visible", `${drag.visible}px`);
+      });
+      const finish = () => {
+        if (!drag) return;
+        panel.classList.remove("is-dragging");
+        // 조금도 끌지 않았으면 누른 것이다. 그때는 뒤따르는 click이 높이를 바꾼다.
+        draggedLast = drag.visible !== undefined;
+        settle(draggedLast ? nearestSheetState(drag.visible, heights()) : state);
+        drag = undefined;
+      };
+      handle.addEventListener("pointerup", finish);
+      handle.addEventListener("pointercancel", finish);
+      // 누르거나 키보드로 고르면 한 단계씩 올리고, 가장 높으면 접는다.
+      handle.addEventListener("click", () => {
+        if (draggedLast) {
+          draggedLast = false;
+          return;
+        }
+        settle(SHEET_STATES[(SHEET_STATES.indexOf(state) + 1) % SHEET_STATES.length]);
+      });
+    }
+    windowObject.addEventListener?.("resize", () => settle(state));
+    settle(state);
+
+    return {
+      // 시트를 적어도 이 높이까지 올린다. 이미 더 높으면 그대로 둔다.
+      raise(next) {
+        if (SHEET_STATES.indexOf(next) > SHEET_STATES.indexOf(state)) settle(next);
+      },
+      coveredBottom: () => (active() ? heights()[state] : 0),
+      collapsedHeight: () => (active() ? heights().collapsed : 0),
+    };
   }
 
   function registerServiceWorker(windowObject) {
@@ -400,16 +638,20 @@
     const markerPayload = await fetchJson(windowObject, root.dataset.markersUrl);
     if (!Array.isArray(markerPayload.markers)) throw new Error("invalid marker data");
     recordMetric(windowObject, "marker-data", markerStartedAt);
-    const allMarkers = markerPayload.markers;
+    // 한 번 순위를 매겨 두면 검색·필터 결과도 그 순서를 그대로 따른다.
+    const allMarkers = rankMarkers(markerPayload.markers);
     const totalCount = documentObject.querySelector("[data-total-count]");
     const viewportCount = documentObject.querySelector("[data-viewport-count]");
     const search = documentObject.querySelector('[name="query"]');
-    let visitBand = "all";
+    const sheet = setupListSheet(windowObject, documentObject);
+    let selectedBand = "all";
     let filtered = allMarkers;
     let mapState;
     let mapUnusable = false;
 
     function selectMarkerFromPage(marker, event) {
+      // 상세가 보이도록 시트를 먼저 올린다. 지도는 올린 시트가 가린 만큼을 비켜 식당을 보인다.
+      sheet.raise("half");
       void selectMarker(windowObject, documentObject, config, mapState, marker, event);
     }
 
@@ -421,10 +663,7 @@
         : "—";
     }
 
-    function applyFilters() {
-      // 검색·필터 결과와 집계는 지도가 없어도 도시 전체를 대상으로 먼저 반영한다.
-      filtered = filterMarkers(allMarkers, search.value, visitBand);
-      renderSearchResults(documentObject, filtered, search.value, selectMarkerFromPage);
+    function syncMap() {
       updateCounts(viewportBounds(mapState));
       if (!mapState) return;
       const visible = new Set(filtered.map((marker) => marker.business_id));
@@ -437,6 +676,15 @@
       }
     }
 
+    function applyFilters() {
+      // 검색·필터 결과와 집계는 지도가 없어도 도시 전체를 대상으로 먼저 반영한다.
+      filtered = filterMarkers(allMarkers, search.value, selectedBand);
+      renderRestaurantList(documentObject, filtered, selectMarkerFromPage);
+      // 조건을 바꾸면 보고 있던 상세 대신 바뀐 목록을 보인다.
+      showRestaurantList(documentObject);
+      syncMap();
+    }
+
     function reportUnusableMap(error) {
       // 지도를 쓸 수 없다는 사실을 숨기지 않는다. 검색·집계·장부는 계속 제공한다.
       mapUnusable = true;
@@ -447,7 +695,7 @@
         "네이버 지도 설정을 확인해 주세요. 검색 집계와 장부는 계속 볼 수 있습니다.";
       documentObject.getElementById("map").replaceChildren(message);
       windowObject.console.error(error);
-      applyFilters();
+      syncMap();
     }
 
     // 키가 잘못되면 SDK는 내려받아지지만 지도는 동작하지 않는다. 공식 훅으로 그 사실을 받는다.
@@ -459,13 +707,15 @@
     });
     search.addEventListener("input", (event) => {
       const startedAt = interactionStartedAt(windowObject, event);
+      // 접힌 시트에서 글자를 치면 결과가 보이게 올린다.
+      sheet.raise("half");
       applyFilters();
       void recordMetricAfterPaint(windowObject, "filter-result", startedAt);
     });
     for (const button of documentObject.querySelectorAll("[data-visits]")) {
       button.addEventListener("click", (event) => {
         const startedAt = interactionStartedAt(windowObject, event);
-        visitBand = button.dataset.visits;
+        selectedBand = button.dataset.visits;
         for (const peer of documentObject.querySelectorAll("[data-visits]")) {
           peer.setAttribute("aria-pressed", String(peer === button));
         }
@@ -473,7 +723,8 @@
         void recordMetricAfterPaint(windowObject, "filter-result", startedAt);
       });
     }
-    updateCounts();
+    // 목록은 지도를 기다리지 않는다. 지도가 늦거나 실패해도 식당을 둘러볼 수 있다.
+    applyFilters();
 
     const loadRecords = createRecordsLoader(async (startedAt) => {
       const status = documentObject.querySelector("[data-records-status]");
@@ -512,12 +763,18 @@
         allMarkers,
         updateCounts,
         selectMarkerFromPage,
+        { bottomInset: sheet.collapsedHeight() },
       );
-      mapState = { ...created, naverMaps: mapApi.naverMaps };
+      mapState = {
+        ...created,
+        naverMaps: mapApi.naverMaps,
+        coveredBottom: sheet.coveredBottom,
+      };
       await created.ready;
       // 기다리는 동안 인증이 실패했으면 안내는 이미 떠 있다.
       if (mapUnusable) return;
-      applyFilters();
+      // 보고 있던 상세를 닫지 않고, 지도가 생기기 전의 검색·필터를 마커에 반영한다.
+      syncMap();
       await recordMetricAfterPaint(windowObject, "first-ready", 0);
     } catch (error) {
       reportUnusableMap(error);
@@ -525,17 +782,23 @@
   }
 
   return {
+    centerAbove,
     countMarkersInBounds,
     createMap,
     createRecordsLoader,
     filterMarkers,
+    initialViewBounds,
+    markerIcon,
     markerInBounds,
+    nearestSheetState,
+    rankMarkers,
     recordState,
     renderRecords,
-    renderSearchResults,
+    renderRestaurantList,
     selectMarker,
     start,
     summarizeMetrics,
     viewportBounds,
+    visitBand,
   };
 });
