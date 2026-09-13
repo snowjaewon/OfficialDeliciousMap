@@ -14,8 +14,8 @@ from deliciousmap.scrapers.gwangju_gwangsan import GwangsanInfoOpenBoard
 from deliciousmap.scrapers.gwangju_seogu import SeoguExpenseBoard
 
 
-def nothing_collected(post_id: str) -> bool:
-    """아직 아무것도 수집하지 않은 상태. 스크래퍼가 모든 게시글의 본문을 연다."""
+def nothing_collected(post_id: str, posted: date | None) -> bool:
+    """아직 아무것도 수집하지 않았고 기간으로도 거르지 않은 상태. 모든 게시글의 본문을 연다."""
     return False
 
 
@@ -293,7 +293,7 @@ def test_district_board_does_not_open_a_posting_already_collected() -> None:
     rows = buk_row(1204, "제목", "세무1과", "2026/08/11")
     transport = FakeTransport(buk_answers(rows, {}))
     scraper = GwangjuDistrictBoard(board(BUK_URL, GwangjuDistrictBoard), transport)
-    (posting,) = list(scraper.postings(lambda post_id: post_id == "1204"))
+    (posting,) = list(scraper.postings(lambda post_id, posted: post_id == "1204"))
     assert posting.attachments == ()
     assert posting.posted == date(2026, 8, 11)
     assert [params.get("act") for _, params in transport.requests] == [None]
@@ -436,3 +436,46 @@ def test_board_url_must_declare_what_its_scraper_needs(url: str, scraper: type) 
     """빠진 조건은 선언한 자리에서 걸린다. 요청을 보내고 빈 목록으로 끝나지 않는다."""
     with pytest.raises(ValueError):
         scraper(board(url, scraper), FakeTransport({}))
+
+
+def asked(calls: list[tuple[str, date | None]]) -> "boards.Skipped":
+    """무엇을 물어 왔는지 적어 두고 모두 넘긴다. 스크래퍼는 본문을 열지 않는다."""
+
+    def skipped(post_id: str, posted: date | None) -> bool:
+        calls.append((post_id, posted))
+        return True
+
+    return skipped
+
+
+def test_district_board_asks_with_the_posting_date_the_listing_declares() -> None:
+    """수집이 기간 밖 게시글의 본문까지 여는 일을 막으려면 게시일을 함께 물어야 한다."""
+    calls: list[tuple[str, date | None]] = []
+    rows = buk_row(1204, "제목", "세무1과", "2019/08/11")
+    transport = FakeTransport(buk_answers(rows, {}))
+    scraper = GwangjuDistrictBoard(board(BUK_URL, GwangjuDistrictBoard), transport)
+    assert [item.attachments for item in scraper.postings(asked(calls))] == [()]
+    assert calls == [("1204", date(2019, 8, 11))]
+    assert [params.get("act") for _, params in transport.requests] == [None]
+
+
+def test_seogu_board_asks_with_the_posting_date_the_listing_declares() -> None:
+    calls: list[tuple[str, date | None]] = []
+    answers = {
+        boards.address(
+            "https://seogu.example.invalid/openInfoCostList.es",
+            {"mid": "a10518030100", "oi_seq": "110"},
+        ): seo_rows(((4631, "2019년 2/4분기 기관장 업무추진비 공개", "2019-07-10"),))
+    }
+    scraper = SeoguExpenseBoard(board(SEO_URL, SeoguExpenseBoard), FakeTransport(answers))
+    assert [item.attachments for item in scraper.postings(asked(calls))] == [()]
+    assert calls == [("4631", date(2019, 7, 10))]
+
+
+def test_gwangsan_board_asks_with_the_posting_date_the_listing_declares() -> None:
+    calls: list[tuple[str, date | None]] = []
+    answers = gwangsan_answers(((1660, "제목", "시민소통과", "2019-08-29"),), {})
+    declared = board(GWANGSAN_URL, GwangsanInfoOpenBoard)
+    scraper = GwangsanInfoOpenBoard(declared, FakeTransport(answers))
+    assert [item.attachments for item in scraper.postings(asked(calls))] == [()]
+    assert calls == [("1660", date(2019, 8, 29))]

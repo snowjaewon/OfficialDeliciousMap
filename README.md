@@ -58,12 +58,21 @@ uv run python -m deliciousmap geocode --city seoul --retry-failed
 함께 남긴다. 일시적 실패(연결 끊김·타임아웃·
 5xx·429)만 4회까지 2초 배수로 다시 시도하고, 그래도 안 되면 `service-unavailable`로 실패한다. 한 기관에 연달아 보내는 요청에는 간격을 둔다.
 이미 받은 원본은 다시 내려받지 않는다. 목록은 매번 다시 훑어 이미 받아 둔 게시글의 게시일·제목도
-저장소 밖 `listing.jsonl`에 채운다. 게시판을 아직 선언하지 않은 도시는 0건 성공이 아니라
-`not-implemented`로 실패한다. 현재 선언된 게시판은 광주광역시청 하나뿐이고
-근거와 첫 실행 규모는 [정찰 기록](docs/validation/issue-51.md)에 있다.
+저장소 밖 `listing.jsonl`에 채운다. **게시일이 대상 기간의 해 밖인 게시글은 받지 않고 본문도 열지
+않는다**(`period.collects`). 게시판은 20년치를 한 곳에 쌓아 두는데 이번 제출이 다루는 것은 대상
+기간뿐이라, 나머지를 받으면 기관에 보내는 요청만 열 배가 된다. 달이 아니라 해로 자르는 것은 분기
+정산이 분기가 끝난 뒤에 올라오기 때문이다. 받지 않은 게시글 수는 `fetch.json`의
+`uncollected_postings`에 남으며 0건으로 숨기지 않는다. 게시일을 밝히지 않는 게시판은 가를 근거가
+없어 받는다. 이미 받아 둔 원본은 이 규칙과 무관하게 장부에 그대로 남고 출처로 나온다. 대상 기간을
+넓히면(`period.START`·`END`) 그때 받지 않은 게시글부터 이어서 받는다.
+게시판을 아직 선언하지 않은 도시는 0건 성공이 아니라
+`not-implemented`로 실패한다. 현재 선언된 게시판은 광주광역시청과 광주 5개 자치구이고
+근거와 첫 실행 규모는 [시청 정찰 기록](docs/validation/issue-51.md)과
+[자치구 실측](docs/validation/issue-97.md)에 있다.
 
-`headermap`·`parse`·`classify`도 광주광역시청(`gwangju-city`) 게시판 하나에 대해
-구현했다([이슈 #51](https://github.com/snowjaewon/OfficialDeliciousMap/issues/51)).
+`headermap`·`parse`·`classify`는 광주광역시청(`gwangju-city`)에서 구현했고([이슈 #51](
+https://github.com/snowjaewon/OfficialDeliciousMap/issues/51)) 광주 5개 자치구까지 실제로
+흘렸다([이슈 #99 검증](docs/validation/issue-99.md)).
 
 `headermap` 이후 단계는 받아 둔 원본 전체가 아니라 **이번 제출의 대상 원본**만 다룬다.
 게시판은 22년치를 한 곳에 쌓아 두고 지출 기간은 게시글 제목에만 있으므로, 게시일의 해와
@@ -82,7 +91,11 @@ uv run python -m deliciousmap geocode --city seoul --retry-failed
   `parse.json`의 `sources`에 남긴다. 미해결 원본도 넘겨받은 매핑으로 후보 수와 뺀 행을 남기되
   레코드는 내지 않는다. 표 하나라도 매핑이 없거나 후보가 0건이면 후보 수는 `알 수 없음`이며,
   0건 손실로 바꾸지 않는다. 목적·상호의 개인정보를 지우고, 경조사 수령인처럼 상호 칸에
-  사람 이름이 적힌 경우 `개인(성명 비공개)`로 가린다. 부서가 누적 파일·정정본으로 다시 올려
+  사람 이름이 적힌 경우 `개인(성명 비공개)`로 가린다. 경조사 지출은 상호 칸이 아예 비기도 하며
+  그때도 같은 가린 표시를 남긴다 — 받는 사람이 개인이라 상호가 없다. 경조사 근거가 없는데
+  상호가 비어 있으면 무엇이 빠졌는지 알 수 없으므로 그 표를 미해결로 남긴다.
+  상호도 금액도 없는 행은 구역 제목·안내문으로 보고 분모에서 빼며(날짜 열에 적힌 제목 포함),
+  지출을 가릴 칸이 비고 금액만 있는 행은 딱지가 없어도 합계로 보고 그 값을 대조한다. 부서가 누적 파일·정정본으로 다시 올려
   여러 원본에 반복된 지출은 [ADR-0004](docs/adr/0004-merge-repeated-reposts.md)의 기준으로 합치고,
   가를 근거가 없는 묶음은 남긴 뒤 그 수를 `parse.json`의 `repeated_expenses`에 싣는다. 사람이
   원본을 대조해 확정한 묶음은 그 확정을 기준보다 먼저 적용하며([ADR-0006](
@@ -333,9 +346,10 @@ Node 기반 빌드 도구를 쓰지 않는다. 폐업으로 확인된 후보도 
 범위를 선언하는 `restore`·`geocode`·`compare`·`repeats`는 같은 범위를 두 번 선언한 줄을,
 `sources`는 한 원본을 두 번 적은 줄을 거부한다. `classify.jsonl`은 상호 범위가 겹칠 수 있어,
 한 레코드에 서로 다른 판정이 걸릴 때 `classify`가 거부한다.
-커밋된 광주 산출물은 아직 PDF 읽기와 미해결 원본 16개의 사람 최종 확인
-이전이다([#66](https://github.com/snowjaewon/OfficialDeliciousMap/issues/66)). 그 둘을 갖춘
-실행에서 `run --city gwangju`로 다시 만든다.
+커밋된 광주 산출물은 PDF를 읽은 실행의 것이며([#66](
+https://github.com/snowjaewon/OfficialDeliciousMap/issues/66)), 시청과 5개 자치구를 함께 담는다
+([#99](https://github.com/snowjaewon/OfficialDeliciousMap/issues/99)). 사람이 원본과 대조해
+남긴 미해결 기록은 `data/manual/gwangju/sources.jsonl` 9줄이다.
 
 `repeats.jsonl`의 각 줄은 `schema_version=2`, 지출 하나(`기관·부서·집행일·상호·금액`)와 그 지출을
 실은 원본 해시를 담은 `scope`, `same_expense`/`separate_expenses` 중 하나인 `decision`, 대조한
@@ -343,10 +357,11 @@ Node 기반 빌드 도구를 쓰지 않는다. 폐업으로 확인된 후보도 
 장부에 없는 묶음이나 그 지출을 싣지 않은 원본을 가리키면 `parse`가 거부한다. 입력을 고치면
 `parse`부터 다시 돌린다.
 
-단계 메타데이터 파일은 `<stage>.json`이며 `schema_version`(fetch는 3, parse는 4, geocode는 5,
-closure는 4, build는 6, 나머지는 1), `city`, `org`, 입력 해시인
+단계 메타데이터 파일은 `<stage>.json`이며 `schema_version`(fetch는 4, parse는 4, geocode는 5,
+closure는 4, build는 7, 나머지는 1), `city`, `org`, 입력 해시인
 `dependencies`, 실제 출력인 `payload`를 가진다. `fetch.json`은 받은 원본의 `sources` 외에
-게시판이 링크했지만 받지 못한 원본을 `missing`(기관·게시판·게시글 주소·파일 이름·사유)에 남긴다.
+게시판이 링크했지만 받지 못한 원본을 `missing`(기관·게시판·게시글 주소·파일 이름·사유)에,
+게시일이 대상 연도 밖이라 받지 않은 게시글 수를 `uncollected_postings`에 남긴다.
 `sources`·`missing`의 각 줄은 게시판 목록이 밝힌 `posted`(게시일)와 `title`(제목)도 싣고,
 `sources`는 목록이 밝힌 작성 부서를 `department`에 싣는다. 원본 표에 부서 열이 없을 때 이 값이
 부서가 된다. 목록 구조를 읽지 않는 스크래퍼는 이 셋을 채우지 않는다. `parse.json`에는 레코드를 중복 저장하지 않는다.

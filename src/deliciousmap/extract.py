@@ -28,7 +28,7 @@ from deliciousmap.contracts import (
     TotalCheck,
 )
 from deliciousmap.grid import Cell, Table, UnreadableOriginal, UnsupportedFormat, read_tables, text
-from deliciousmap.privacy import scrub, scrub_merchant
+from deliciousmap.privacy import PERSONAL_EVENT, REDACTED, scrub, scrub_merchant
 
 # 공백을 지운 셀 글자에 적용한다. `2월 소계`·`합 계`처럼 앞말이 붙거나 띄어 쓴 표기도 있다.
 TOTAL = re.compile(r"합계|총계|총합계|계")
@@ -501,6 +501,22 @@ def _confirmed_separate(
     }
 
 
+def _purpose(table: Table, mapping: HeaderMap, row: int) -> str:
+    """그 행의 집행목적. 매핑이 목적 열을 주지 않으면 빈 글자다."""
+    if "purpose" not in mapping.columns:
+        return ""
+    return text(table.cell(row, mapping.columns["purpose"]))
+
+
+def _payee(table: Table, mapping: HeaderMap, row: int) -> str:
+    """상호 칸이 빈 지출의 받는 사람. 경조사 지출은 받는 사람이 개인이라 상호가 없다(북구 실측).
+
+    가린 표시는 이름이 적힌 경조사 지출과 같은 값이다(`privacy.REDACTED`). 경조사 근거가
+    없으면 무엇이 빠졌는지 알 수 없으므로 빈 값으로 두어 검증이 알린다.
+    """
+    return REDACTED if PERSONAL_EVENT.search(_purpose(table, mapping, row)) else ""
+
+
 def _candidate(table: Table, mapping: HeaderMap, row: int) -> _Candidate:
     columns = mapping.columns
     if "spent_on" in columns:
@@ -514,7 +530,7 @@ def _candidate(table: Table, mapping: HeaderMap, row: int) -> _Candidate:
     amount = _amount(table.cell(row, columns["amount_krw"]))
     if amount is None:
         raise ValidationFailed(f"{table.name}:R{row} amount_krw")
-    merchant = text(table.cell(row, columns["merchant"]))
+    merchant = text(table.cell(row, columns["merchant"])) or _payee(table, mapping, row)
     if not merchant:
         raise ValidationFailed(f"{table.name}:R{row} merchant")
     return _Candidate(row, spent_on, merchant, amount * mapping.amount_multiplier)
@@ -547,13 +563,19 @@ def _kind(table: Table, mapping: HeaderMap, headers: set[tuple[str, ...]], row: 
     columns = mapping.columns
     date_columns = [columns[role] for role in ("spent_on", "month", "day") if role in columns]
     identity = [*date_columns, columns["merchant"]]
-    unlabeled_total = _count(cells) is not None and all(
-        text(table.cell(row, column)) == "" for column in identity
+    # 집행일시·사용장소가 비어 있으면 지출 1건이 아니다. 금액만 남은 행은 딱지가 없어도
+    # 합계로 보고 그 값을 대조한다(2026-09-13 광산구 실측). 맞지 않으면 대조가 알린다.
+    unlabeled_total = all(text(table.cell(row, column)) == "" for column in identity) and (
+        _count(cells) is not None or _amount(table.cell(row, columns["amount_krw"])) is not None
     )
     if unlabeled_total or any(TOTAL.fullmatch(label) for label in labels):
         return "total"
-    if all(text(table.cell(row, column)) == "" for column in (*identity, columns["amount_krw"])):
+    if all(
+        text(table.cell(row, column)) == ""
+        for column in (columns["merchant"], columns["amount_krw"])
+    ):
         # 구역 제목·안내문처럼 지출 항목이 비어 있는 행. 위치만 세고 분모에서 뺀다.
+        # 제목이 날짜 열에 적힌 표가 있어(북구 실측) 날짜 칸은 비어 있지 않아도 된다.
         return "note"
     return "candidate"
 
@@ -584,7 +606,7 @@ def _record(table: Table, mapping: HeaderMap, source: SourceRef, candidate: _Can
     department = (
         text(table.cell(candidate.row, columns["department"])) if "department" in columns else ""
     )
-    purpose = text(table.cell(candidate.row, columns["purpose"])) if "purpose" in columns else ""
+    purpose = _purpose(table, mapping, candidate.row)
     return Record(
         record_id=f"{source.source_hash[:16]}-{table.name}-R{candidate.row}",
         spent_on=candidate.spent_on,
@@ -604,7 +626,8 @@ def parse_date(value: Cell, year_hint: int | None = None) -> date | None:
     if isinstance(value, datetime):
         return value.date()
     if isinstance(value, float):
-        if value.is_integer() and SERIAL_RANGE[0] <= value <= SERIAL_RANGE[1]:
+        # 날짜 서식이 아닌 칸은 일련값 그대로 온다. 소수부는 그날의 시각이므로 날짜는 정수부다.
+        if SERIAL_RANGE[0] <= value <= SERIAL_RANGE[1]:
             return (EXCEL_EPOCH + timedelta(days=int(value))).date()
         if value.is_integer() and 20000101 <= value <= 20991231:
             return _date(int(value) // 10000, int(value) // 100 % 100, int(value) % 100)
@@ -617,7 +640,8 @@ def parse_date(value: Cell, year_hint: int | None = None) -> date | None:
     compact = re.match(r"(20\d{2})(\d{2})(\d{2})(?!\d)", raw)
     if compact:
         return _date(*(int(part) for part in compact.groups()))
-    short = re.match(r"(\d{2})\s*[-./]\s*(\d{1,2})\s*[-./]\s*(\d{1,2})(?!\d)", raw)
+    # 마지막 칸에 시각이 이어지면 두 자리 연도 표기가 아니다(`03.03. 12:25`는 3월 3일 12시다).
+    short = re.match(r"(\d{2})\s*[-./]\s*(\d{1,2})\s*[-./]\s*(\d{1,2})(?![\d:])", raw)
     if short:
         year, month, day = (int(part) for part in short.groups())
         return _date(2000 + year, month, day)

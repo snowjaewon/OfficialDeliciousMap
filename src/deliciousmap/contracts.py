@@ -731,6 +731,9 @@ class FetchOutput(Contract):
     # 받지 못한 원본. 성공한 수집에도 남을 수 있다.
     missing: tuple[MissingOriginal, ...] = ()
     empty_reason: Text | None = None
+    # 게시일이 이번 수집의 대상 연도 밖이라 받지 않은 게시글 수(`period.collects`). 게시판에
+    # 남아 있다는 사실을 0건으로 숨기지 않으려고 싣는다. 이미 받아 둔 원본은 여기에 세지 않는다.
+    uncollected_postings: int = Field(default=0, ge=0)
 
 
 class HeaderMapInput(Contract):

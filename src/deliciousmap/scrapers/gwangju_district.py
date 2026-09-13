@@ -60,13 +60,13 @@ class GwangjuDistrictBoard:
                 raise ValueError("board url must declare mid and bid")
         self.transport = transport
 
-    def postings(self, collected: boards.Collected) -> Iterator[boards.Posting]:
+    def postings(self, skipped: boards.Skipped) -> Iterator[boards.Posting]:
         page = 1
         while True:
             listing = self._listing(page)
             for row in _with_attachments(listing):
-                # 이미 끝낸 게시글은 본문을 열지 않고 목록에서 읽은 값만 낸다.
-                yield row.posting(()) if collected(row.post_id) else self._posting(row)
+                # 넘기기로 한 게시글은 본문을 열지 않고 목록에서 읽은 값만 낸다.
+                yield (row.posting(()) if skipped(row.post_id, row.posted) else self._posting(row))
             if page >= _total_pages(listing):
                 return
             page += 1
