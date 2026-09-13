@@ -30,6 +30,8 @@
   const OUTLIER_SHARE = 0.05;
   const OUTLIER_MINIMUM = 20;
   const SHEET_STATES = ["collapsed", "half", "full"];
+  // 이만큼 움직여야 시트 손잡이를 끈 것으로 본다(화소).
+  const DRAG_THRESHOLD = 6;
 
   // 좌표를 준 자료의 이름. 지도에서 모양으로 구분하지 않고 상세에서만 밝힌다.
   const COORDINATE_SOURCES = {
@@ -113,7 +115,7 @@
   }
 
   // 웹 메르카토르에서 화소만큼 남쪽의 위도. 지도를 가린 시트 위에 식당이 오도록 중심을 내린다.
-  function centerAbove(latitude, zoom, pixels) {
+  function latitudeSouthOf(latitude, zoom, pixels) {
     if (!pixels) return latitude;
     const degreesPerPixel = (360 / (256 * 2 ** zoom)) * Math.cos((latitude * Math.PI) / 180);
     return latitude - pixels * degreesPerPixel;
@@ -279,7 +281,7 @@
     body.className = "item-body";
     body.append(
       textElement(documentObject, "strong", "item-name", marker.merchant),
-      textElement(documentObject, "span", "item-address", marker.address ?? "주소 미상"),
+      textElement(documentObject, "span", "item-address", marker.address),
     );
     if (marker.closed) body.append(textElement(documentObject, "span", "closed-tag", "폐업"));
     button.append(
@@ -297,23 +299,33 @@
     return item;
   }
 
-  // 받은 순서 그대로 목록을 그린다. 순위는 호출하는 쪽이 rankMarkers로 매겨 넘긴다.
+  // 받은 순서 그대로 목록을 그린다. 순서는 호출하는 쪽이 rankMarkers로 매겨 넘긴다.
+  // 방문 횟수가 같으면 같은 순위다. 이름순은 보이는 순서일 뿐 순위가 아니다.
   function renderRestaurantList(documentObject, markers, onSelect) {
     const list = documentObject.querySelector("[data-restaurant-list]");
     const more = documentObject.querySelector("[data-restaurant-more]");
+    const listView = documentObject.querySelector("[data-list-view]");
     let shown = 0;
+    let rank = 0;
 
     function appendBatch() {
       const fragment = documentObject.createDocumentFragment();
-      markers.slice(shown, shown + LIST_BATCH).forEach((marker, offset) => {
-        fragment.append(restaurantItem(documentObject, marker, shown + offset + 1, onSelect));
-      });
+      for (let index = shown; index < Math.min(shown + LIST_BATCH, markers.length); index += 1) {
+        if (index === 0 || markers[index - 1].visit_count !== markers[index].visit_count) {
+          rank = index + 1;
+        }
+        fragment.append(restaurantItem(documentObject, markers[index], rank, onSelect));
+      }
       shown = Math.min(shown + LIST_BATCH, markers.length);
       list.append(fragment);
       more.hidden = shown >= markers.length;
     }
 
     list.replaceChildren();
+    if (listView) {
+      listView.scrollTop = 0;
+      listView.savedScrollTop = 0;
+    }
     // 다시 그릴 때마다 새 목록의 더 보기로 바꾼다. 리스너를 쌓으면 한 번에 여러 묶음이 붙는다.
     more.onclick = appendBatch;
     if (markers.length === 0) {
@@ -328,7 +340,11 @@
     const detail = documentObject.querySelector("[data-restaurant-detail]");
     const listView = documentObject.querySelector("[data-list-view]");
     if (detail) detail.hidden = true;
-    if (listView) listView.hidden = false;
+    if (listView?.hidden) {
+      listView.hidden = false;
+      // 숨겼던 목록은 스크롤 위치를 잃는다. 상세를 열기 전에 보던 자리로 돌린다.
+      listView.scrollTop = listView.savedScrollTop ?? 0;
+    }
   }
 
   function loadNaverMaps(windowObject, config) {
@@ -389,27 +405,21 @@
     const close = textElement(documentObject, "button", "detail-close", "← 목록");
     close.type = "button";
     close.addEventListener("click", () => showRestaurantList(documentObject));
-    const visits = [`방문 ${marker.visit_count.toLocaleString("ko-KR")}회`];
-    if (marker.total_amount_krw !== undefined) {
-      visits.push(`합계 ${formatWon(marker.total_amount_krw)}`);
-    }
+    const visits = `방문 ${marker.visit_count.toLocaleString("ko-KR")}회`;
+    const names = marker.organizations.map((slug) => organizations[slug] ?? slug);
     const children = [
       close,
       textElement(documentObject, "h2", "detail-name", marker.merchant),
-      textElement(documentObject, "p", "detail-visits", visits.join(" · ")),
-      textElement(documentObject, "p", "detail-address", marker.address ?? "주소 미상"),
+      textElement(
+        documentObject,
+        "p",
+        "detail-visits",
+        `${visits} · 합계 ${formatWon(marker.total_amount_krw)}`,
+      ),
+      textElement(documentObject, "p", "detail-address", marker.address),
+      textElement(documentObject, "p", "detail-line", `최근 방문 ${marker.last_visited_on}`),
+      textElement(documentObject, "p", "detail-line", `방문 기관 ${names.join(", ")}`),
     ];
-    if (marker.last_visited_on) {
-      children.push(
-        textElement(documentObject, "p", "detail-line", `최근 방문 ${marker.last_visited_on}`),
-      );
-    }
-    if (marker.organizations?.length) {
-      const names = marker.organizations.map((slug) => organizations[slug] ?? slug);
-      children.push(
-        textElement(documentObject, "p", "detail-line", `방문 기관 ${names.join(", ")}`),
-      );
-    }
     children.push(
       textElement(
         documentObject,
@@ -439,7 +449,11 @@
     detail.replaceChildren(...children);
     detail.hidden = false;
     const listView = documentObject.querySelector("[data-list-view]");
-    if (listView) listView.hidden = true;
+    // 상세끼리 옮겨 다닐 때는 이미 숨긴 목록의 위치를 덮어쓰지 않는다.
+    if (listView && !listView.hidden) {
+      listView.savedScrollTop = listView.scrollTop;
+      listView.hidden = true;
+    }
   }
 
   function selectMarker(windowObject, documentObject, config, mapState, marker, event) {
@@ -454,7 +468,7 @@
         // panTo 뒤에 setZoom을 부르면 이동이 끊겨 원래 중심에서 확대된다. 좌표와 줌을 한 번에 옮긴다.
         mapState.map.morph(
           new mapState.naverMaps.LatLng(
-            centerAbove(marker.latitude, zoom, covered / 2),
+            latitudeSouthOf(marker.latitude, zoom, covered / 2),
             marker.longitude,
           ),
           zoom,
@@ -538,16 +552,15 @@
     return { map, overlays, ready };
   }
 
-  // 좁은 화면에서만 목록이 지도 위의 시트가 된다. styles.css의 같은 폭 기준과 맞춘다.
-  const SHEET_QUERY = "(max-width: 720px)";
-
   // 목록 시트를 끌어 세 높이 중 가까운 곳에 놓는다. 넓은 화면에서는 목록이 지도 옆이라 하는 일이 없다.
+  // 시트인지는 styles.css가 손잡이를 보이는지로 안다. 폭 기준을 한 곳에만 둔다.
   function setupListSheet(windowObject, documentObject) {
     const panel = documentObject.querySelector("[data-list-panel]");
     const handle = documentObject.querySelector("[data-sheet-handle]");
     const header = documentObject.querySelector("[data-search-form]");
-    const media = windowObject.matchMedia?.(SHEET_QUERY);
-    const active = () => Boolean(panel && handle && header && media?.matches);
+    const active = () =>
+      Boolean(panel && header && handle) &&
+      windowObject.getComputedStyle(handle).display !== "none";
     let state = "collapsed";
     let drag;
     let draggedLast = false;
@@ -560,19 +573,25 @@
 
     function settle(next) {
       state = next;
-      if (!active()) return;
+      // 장부 탭처럼 지도가 숨어 있으면 높이를 잴 수 없다. 0으로 적으면 시트가 화면 밖으로 사라진다.
+      if (!active() || panel.offsetHeight === 0) return;
       panel.dataset.sheet = next;
       panel.style.setProperty("--sheet-visible", `${heights()[next]}px`);
     }
 
-    if (active()) {
+    // 창 폭이 바뀌어 시트가 되었다 말았다 할 수 있으므로 리스너는 늘 두고 누를 때 확인한다.
+    if (panel && header && handle) {
       handle.addEventListener("pointerdown", (event) => {
+        if (!active()) return;
+        // 끌기 뒤에 click이 오지 않는 기기도 있다. 새로 누를 때마다 지난 끌기를 잊는다.
+        draggedLast = false;
         drag = { startY: event.clientY, startVisible: heights()[state], visible: undefined };
         handle.setPointerCapture?.(event.pointerId);
         panel.classList.add("is-dragging");
       });
       handle.addEventListener("pointermove", (event) => {
-        if (!drag) return;
+        // 손가락이 조금 떨린 것은 끌기가 아니라 누르기다.
+        if (!drag || Math.abs(event.clientY - drag.startY) < DRAG_THRESHOLD) return;
         const { collapsed, full } = heights();
         const visible = drag.startVisible + (drag.startY - event.clientY);
         drag.visible = Math.min(full, Math.max(collapsed, visible));
@@ -590,6 +609,7 @@
       handle.addEventListener("pointercancel", finish);
       // 누르거나 키보드로 고르면 한 단계씩 올리고, 가장 높으면 접는다.
       handle.addEventListener("click", () => {
+        if (!active()) return;
         if (draggedLast) {
           draggedLast = false;
           return;
@@ -605,6 +625,8 @@
       raise(next) {
         if (SHEET_STATES.indexOf(next) > SHEET_STATES.indexOf(state)) settle(next);
       },
+      // 지도 탭으로 돌아오면 숨어 있는 동안 바뀐 창 크기에 높이를 다시 맞춘다.
+      refresh: () => settle(state),
       coveredBottom: () => (active() ? heights()[state] : 0),
       collapsedHeight: () => (active() ? heights().collapsed : 0),
     };
@@ -739,6 +761,7 @@
       tab.addEventListener("click", async (event) => {
         const startedAt = interactionStartedAt(windowObject, event);
         switchTab(documentObject, tab.dataset.tab);
+        if (tab.dataset.tab === "map") sheet.refresh();
         if (tab.dataset.tab === "records") {
           try {
             await loadRecords(startedAt);
@@ -782,7 +805,7 @@
   }
 
   return {
-    centerAbove,
+    latitudeSouthOf,
     countMarkersInBounds,
     createMap,
     createRecordsLoader,
@@ -796,6 +819,7 @@
     renderRecords,
     renderRestaurantList,
     selectMarker,
+    setupListSheet,
     start,
     summarizeMetrics,
     viewportBounds,

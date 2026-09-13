@@ -397,12 +397,6 @@ h1 {
   font-size: 0.82rem;
 }
 
-.map-warning {
-  padding: 0.55rem 0.65rem;
-  margin: 0.65rem 0 0;
-  font-size: 0.75rem;
-}
-
 .map {
   width: 100%;
   height: 100%;
@@ -445,7 +439,7 @@ h1 {
   transform: rotate(45deg);
 }
 
-/* 방문 구간 색. 많을수록 짙다. 필터·범례·목록 배지가 같은 구간을 쓴다(site.VISIT_BANDS). */
+/* 방문 구간 색. 많을수록 짙다. 필터·범례·목록 배지가 같은 구간을 쓴다(site.VISIT_BAND_LABELS). */
 .band-20 {
   background: #7a2412;
   color: white;
@@ -476,11 +470,32 @@ h1 {
   text-decoration: line-through;
 }
 
-.map-legend {
+/* 지도 위의 안내와 범례. 오른쪽 위의 확대 컨트롤을 피해 왼쪽 위에 쌓는다. */
+.map-overlay {
   position: absolute;
   z-index: 10;
-  bottom: 1.8rem;
+  top: 0.75rem;
   left: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  max-width: min(22rem, calc(100% - 5rem));
+  pointer-events: none;
+}
+
+.map-overlay > * {
+  pointer-events: auto;
+}
+
+.map-warning {
+  padding: 0.55rem 0.65rem;
+  margin: 0;
+  font-size: 0.75rem;
+  box-shadow: 0 0.4rem 1.2rem rgb(23 63 53 / 12%);
+}
+
+.map-legend {
   padding: 0.55rem 0.7rem;
   border: 1px solid rgb(23 63 53 / 12%);
   border-radius: 0.7rem;
@@ -635,7 +650,7 @@ h1 {
   }
 }
 
-/* 좁은 화면: 지도가 화면을 채우고 목록은 아래에서 끌어올리는 시트다. 폭 기준은 app.js의 SHEET_QUERY와 같다.
+/* 좁은 화면: 지도가 화면을 채우고 목록은 아래에서 끌어올리는 시트다. app.js는 손잡이가 보이는지로 시트를 안다.
    시트가 보이는 높이(--sheet-visible)는 app.js가 접힘·중간·펼침에 맞춰 정한다. */
 @media (max-width: 720px) {
   .map-panel {
@@ -649,9 +664,8 @@ h1 {
     inset: 0;
   }
 
-  .map-legend {
+  .map-overlay {
     top: 0.6rem;
-    bottom: auto;
     left: 0.6rem;
   }
 

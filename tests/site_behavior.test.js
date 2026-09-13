@@ -2,7 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 const {
-  centerAbove,
+  latitudeSouthOf,
   countMarkersInBounds,
   createMap,
   createRecordsLoader,
@@ -15,6 +15,7 @@ const {
   renderRecords,
   renderRestaurantList,
   selectMarker,
+  setupListSheet,
   summarizeMetrics,
   viewportBounds,
   visitBand,
@@ -205,11 +206,18 @@ function fakeWindow() {
   };
 }
 
+// markers.json v7의 마커. 방문 요약 값은 합성값이다.
+const summary = {
+  address: "합성로 1",
+  last_visited_on: "2026-01-02",
+  total_amount_krw: "1000",
+  organizations: ["test-org"],
+};
 const markers = [
-  { merchant: "해뜰 식당", visit_count: 23, latitude: 37.5, longitude: 127.0 },
-  { merchant: "바다횟집", visit_count: 14, latitude: 35.1, longitude: 129.1 },
-  { merchant: "한밭 빵집", visit_count: 7, latitude: 36.3, longitude: 127.4 },
-  { merchant: "골목 카페", visit_count: 2, latitude: 37.7, longitude: 127.3 },
+  { ...summary, merchant: "해뜰 식당", visit_count: 23, latitude: 37.5, longitude: 127.0 },
+  { ...summary, merchant: "바다횟집", visit_count: 14, latitude: 35.1, longitude: 129.1 },
+  { ...summary, merchant: "한밭 빵집", visit_count: 7, latitude: 36.3, longitude: 127.4 },
+  { ...summary, merchant: "골목 카페", visit_count: 2, latitude: 37.7, longitude: 127.3 },
 ];
 
 const SEOUL_BOUNDS = { south: 37.41, west: 126.73, north: 37.72, east: 127.27 };
@@ -309,6 +317,45 @@ test("the restaurant list shows fifty places at a time in the order it was given
   assert.equal(more.hidden, true);
 });
 
+function ranks(documentObject) {
+  return listed(documentObject).map(
+    (item) => item.children[0].children.find((child) => child.className === "item-rank").textContent,
+  );
+}
+
+test("restaurants with the same visits share a rank instead of being ordered by name", () => {
+  const documentObject = listDocument();
+  const tied = [9, 9, 9, 4].map((visit_count, index) => ({
+    ...summary,
+    merchant: `식당 ${index}`,
+    visit_count,
+  }));
+  renderRestaurantList(documentObject, tied, () => {});
+  assert.deepEqual(ranks(documentObject), ["1", "1", "1", "4"]);
+
+  // 묶음 경계에서 이어지는 동률도 같은 순위다.
+  const across = Array.from({ length: 52 }, (_, index) => ({
+    ...summary,
+    merchant: `식당 ${index}`,
+    visit_count: index < 49 ? 100 - index : 3,
+  }));
+  renderRestaurantList(documentObject, across, () => {});
+  documentObject.querySelector("[data-restaurant-more]").click();
+  assert.deepEqual(ranks(documentObject).slice(48), ["49", "50", "50", "50"]);
+});
+
+test("a search or band keeps the ranked order of the whole city", () => {
+  const ranked = rankMarkers(markers);
+  assert.deepEqual(
+    filterMarkers(ranked, "", "all").map((marker) => marker.visit_count),
+    [23, 14, 7, 2],
+  );
+  assert.deepEqual(
+    filterMarkers(ranked, "집", "all").map((marker) => marker.merchant),
+    ["바다횟집", "한밭 빵집"],
+  );
+});
+
 test("an empty result says so instead of showing a blank list", () => {
   const documentObject = listDocument();
   renderRestaurantList(documentObject, [], () => {});
@@ -316,12 +363,10 @@ test("an empty result says so instead of showing a blank list", () => {
   assert.match(listed(documentObject)[0].text, /조건에 맞는 식당이 없습니다/);
 });
 
-test("a listed restaurant without a known address says the address is unknown", () => {
+test("a closed restaurant stays in the list and says it is closed", () => {
   const documentObject = listDocument();
-  renderRestaurantList(documentObject, [{ ...markers[0], address: null, closed: true }], () => {});
-  const item = listed(documentObject)[0].text;
-  assert.ok(item.includes("주소 미상"));
-  assert.ok(item.includes("폐업"));
+  renderRestaurantList(documentObject, [{ ...markers[0], closed: true }], () => {});
+  assert.ok(listed(documentObject)[0].text.includes("폐업"));
 });
 
 test("a listed restaurant opens its detail and closing it returns to the list", async () => {
@@ -345,6 +390,8 @@ test("a listed restaurant opens its detail and closing it returns to the list", 
   renderRestaurantList(documentObject, [outside], (marker, event) => {
     selection = selectMarker(windowObject, documentObject, config, undefined, marker, event);
   });
+  const listView = documentObject.querySelector("[data-list-view]");
+  listView.scrollTop = 480;
   listed(documentObject)[0].children[0].click();
   windowObject.frames.shift()();
   assert.equal(windowObject.deliciousmapMetrics, undefined);
@@ -352,9 +399,10 @@ test("a listed restaurant opens its detail and closing it returns to the list", 
   await selection;
 
   const detail = documentObject.querySelector("[data-restaurant-detail]");
-  const listView = documentObject.querySelector("[data-list-view]");
   assert.equal(detail.hidden, false);
   assert.equal(listView.hidden, true);
+  // 숨긴 목록은 브라우저가 스크롤 위치를 잃는다.
+  listView.scrollTop = 0;
   for (const shown of [
     "바다횟집",
     "방문 14회",
@@ -373,6 +421,25 @@ test("a listed restaurant opens its detail and closing it returns to the list", 
   detail.children.find((child) => child.className === "detail-close").click();
   assert.equal(detail.hidden, true);
   assert.equal(listView.hidden, false);
+  // 닫으면 보던 자리로 돌아간다.
+  assert.equal(listView.scrollTop, 480);
+
+  // 목록을 새로 그리면 새 목록의 처음부터 보인다.
+  renderRestaurantList(documentObject, [outside], () => {});
+  assert.equal(listView.scrollTop, 0);
+});
+
+test("pressing a map marker opens the same detail as the list", () => {
+  const sdk = fakeNaverMaps();
+  const windowObject = { document: new FakeDocument({ "#map": new FakeElement() }) };
+  const selected = [];
+  const created = createMap(windowObject, sdk, { map_bounds: SEOUL_BOUNDS }, markers, () => {}, (
+    marker,
+  ) => selected.push(marker));
+
+  const [first] = created.overlays;
+  sdk.Event.trigger(first.overlay, "click");
+  assert.deepEqual(selected, [markers[0]]);
 });
 
 test("marker color follows the same visit bands as the filter", () => {
@@ -426,9 +493,96 @@ test("the list sheet settles on the nearest of its three heights", () => {
   assert.equal(nearestSheetState(600, heights), "full");
 });
 
+// 좁은 화면의 목록 시트. 손잡이가 보이면(display) 시트이고, 높이는 offsetHeight로 잰다.
+function sheetFixture({ narrow = true } = {}) {
+  const panel = new FakeElement("aside");
+  panel.offsetHeight = 700;
+  panel.dataset = {};
+  panel.style = { values: {}, setProperty(name, value) { this.values[name] = value; } };
+  const classes = new Set();
+  panel.classList = { add: (name) => classes.add(name), remove: (name) => classes.delete(name) };
+  const handle = new FakeElement("button");
+  handle.offsetHeight = 20;
+  handle.display = narrow ? "block" : "none";
+  handle.setPointerCapture = () => {};
+  const header = new FakeElement("form");
+  header.offsetHeight = 140;
+  const windowObject = {
+    getComputedStyle: (element) => ({ display: element.display ?? "block" }),
+    addEventListener() {},
+  };
+  const documentObject = new FakeDocument({
+    "[data-list-panel]": panel,
+    "[data-sheet-handle]": handle,
+    "[data-search-form]": header,
+  });
+  const sheet = setupListSheet(windowObject, documentObject);
+  const press = (y) => handle.listeners.pointerdown({ clientY: y, pointerId: 1 });
+  const move = (y) => handle.listeners.pointermove({ clientY: y });
+  const release = () => handle.listeners.pointerup({});
+  return { sheet, panel, handle, press, move, release };
+}
+
+test("the list sheet opens collapsed and a tap raises it one step at a time", () => {
+  const { panel, handle } = sheetFixture();
+  assert.equal(panel.style.values["--sheet-visible"], "160px");
+  handle.click();
+  assert.equal(panel.dataset.sheet, "half");
+  assert.equal(panel.style.values["--sheet-visible"], "350px");
+  handle.click();
+  handle.click();
+  assert.equal(panel.dataset.sheet, "collapsed");
+});
+
+test("a shaky tap on the sheet handle is still a tap, and a drag settles nearby", () => {
+  const { panel, handle, press, move, release } = sheetFixture();
+  press(600);
+  move(603);
+  release();
+  handle.click();
+  assert.equal(panel.dataset.sheet, "half");
+
+  // 끌어 올리면 가까운 높이에 멈추고, 뒤따르는 click은 높이를 또 바꾸지 않는다.
+  press(600);
+  move(300);
+  release();
+  handle.click();
+  assert.equal(panel.dataset.sheet, "full");
+
+  // 끌어 내려 중간에 멈춘 뒤 click이 오지 않았어도, 다음 누르기는 한 단계 올린다.
+  press(600);
+  move(900);
+  release();
+  assert.equal(panel.dataset.sheet, "half");
+  press(600);
+  release();
+  handle.click();
+  assert.equal(panel.dataset.sheet, "full");
+});
+
+test("a hidden map keeps the sheet where it was instead of shrinking it to nothing", () => {
+  const { sheet, panel, handle } = sheetFixture();
+  handle.click();
+  panel.offsetHeight = 0;
+  sheet.refresh();
+  assert.equal(panel.style.values["--sheet-visible"], "350px");
+  panel.offsetHeight = 800;
+  sheet.refresh();
+  assert.equal(panel.style.values["--sheet-visible"], "400px");
+});
+
+test("a wide screen has no sheet and nothing covers the map", () => {
+  const { sheet, panel, handle } = sheetFixture({ narrow: false });
+  handle.click();
+  sheet.raise("full");
+  assert.equal(panel.dataset.sheet, undefined);
+  assert.equal(sheet.coveredBottom(), 0);
+  assert.equal(sheet.collapsedHeight(), 0);
+});
+
 test("a centre south of the restaurant keeps it above the sheet that covers the map", () => {
-  assert.equal(centerAbove(35.15, 16, 0), 35.15);
-  const shifted = centerAbove(35.15, 16, 100);
+  assert.equal(latitudeSouthOf(35.15, 16, 0), 35.15);
+  const shifted = latitudeSouthOf(35.15, 16, 100);
   // 16단계에서 100화소는 수백 미터 안쪽이다.
   assert.ok(shifted < 35.15 && shifted > 35.14, String(shifted));
 });
@@ -480,8 +634,7 @@ test("a selected restaurant shows where its coordinate came from", async () => {
   const lines = sheet.children.map((child) => child.textContent);
   assert.ok(lines.includes("폐업 확인"));
   assert.ok(lines.includes("좌표 출처: 인허가 자료"));
-  // 주소를 모르면 모른다고 적는다. 다른 값으로 채우지 않는다.
-  assert.ok(lines.includes("주소 미상"));
+  assert.ok(lines.includes("합성로 1"));
 });
 
 test("the record view explains why an unmapped record missed the map", () => {
@@ -601,7 +754,7 @@ test("a selection under the mobile sheet lands the restaurant above the sheet", 
   windowObject.frames.shift()();
   await selection;
 
-  assert.equal(map.center.lat(), centerAbove(37.4979, 16, 150));
+  assert.equal(map.center.lat(), latitudeSouthOf(37.4979, 16, 150));
   assert.equal(map.center.lng(), 127.0276);
 });
 

@@ -466,8 +466,8 @@ class PublishedMarker(Contract):
     closed: bool
     # 좌표를 준 제공자. 인허가 좌표도 지도에서 구별하지 않고 상세에서만 밝힌다.
     coordinate_source: Provider
-    # 좌표를 준 근거의 주소. 근거가 주소를 주지 않았으면 비워 두고 다른 값으로 채우지 않는다.
-    address: Text | None
+    # 좌표를 준 근거의 주소. 업소 확인은 주소가 일치한 후보만 채택하므로 확정 마커에는 언제나 있다.
+    address: Text
     # 아래 셋은 이 식당으로 묶인 레코드의 요약이다. 목록·상세가 장부를 받지 않고도 보여 준다.
     last_visited_on: date
     total_amount_krw: Decimal = Field(allow_inf_nan=False)

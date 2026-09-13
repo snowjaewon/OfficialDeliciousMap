@@ -169,7 +169,24 @@ def test_markers_name_the_provider_that_supplied_the_coordinates(tmp_path: Path)
     for stage in ("geocode", "closure", "build"):
         assert run_cli(context, stage) == 0
     assert payload(context, "geocode")["results"][0]["reason"] == "human_confirmed"
-    assert published(context, "markers.json")["markers"][0]["coordinate_source"] == "naver"
+    marker = published(context, "markers.json")["markers"][0]
+    assert marker["coordinate_source"] == "naver"
+    assert marker["address"] == "부산 합성로 10"
+
+
+def test_a_candidate_without_an_address_never_names_the_marker_origin(tmp_path: Path) -> None:
+    """같은 좌표에 주소 없는 후보가 있어도 좌표·주소의 근거는 주소가 일치한 후보다."""
+    context = prepare(tmp_path)
+    query = lookup()
+    bare = shared_place("license", "https://example.invalid/license/1")
+    bare["address"] = None
+    query["candidates"].append(bare)
+    save_input(context, query)
+    for stage in ("geocode", "closure", "build"):
+        assert run_cli(context, stage) == 0
+
+    marker = published(context, "markers.json")["markers"][0]
+    assert (marker["coordinate_source"], marker["address"]) == ("local", "부산 합성로 10")
 
 
 def test_markers_summarize_the_visits_bundled_into_each_restaurant(tmp_path: Path) -> None:
@@ -287,8 +304,10 @@ def test_city_page_publishes_the_period_and_every_organization_status(tmp_path: 
     assert "2026년 상반기" in page
     assert "합성 기관" in page and "수집 완료" in page
     assert "보류 기관" in page and "수집 보류" in page and "봇 차단" in page
-    # 수집 보류 기관이 있으면 지도 위에서도 누락 가능성을 알린다.
+    # 수집 보류 기관이 있으면 지도 위에서도 누락 가능성을 알린다. 목록 패널이 아니라 지도 위다.
     assert "data-collection-hold" in page
+    notice = page.index("data-collection-hold")
+    assert page.index('class="map-stage"') < notice < page.index("data-list-panel")
 
 
 def test_city_page_without_a_hold_keeps_the_map_free_of_the_notice(tmp_path: Path) -> None:

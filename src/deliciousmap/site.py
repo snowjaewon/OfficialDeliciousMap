@@ -42,7 +42,7 @@ HOLD_REASON_LABELS: dict[HoldReason, str] = {
 }
 COLLECTION_LABELS = {"collected": "수집 완료", "empty": "레코드 없음", "held": "수집 보류"}
 # 방문 구간: (키, 필터 버튼, 범례). 필터·범례·마커 색이 같은 구간을 쓴다. 판정은 app.js가 한다.
-VISIT_BANDS = (
+VISIT_BAND_LABELS = (
     ("20", "20+", "20회 이상"),
     ("10", "10–19", "10–19회"),
     ("5", "5–9", "5–9회"),
@@ -193,22 +193,24 @@ def _record_file(target: Target, value: BuildInput) -> RecordFile:
     )
 
 
-def _coordinate_origin(result: GeocodeResult) -> tuple[Provider, str | None]:
-    """좌표를 준 제공자와 그 근거의 주소. 사람이 확인한 건은 확인한 후보와 주소가 정본이다."""
+def _coordinate_origin(result: GeocodeResult) -> tuple[Provider, str]:
+    """좌표를 준 제공자와 그 근거의 주소. 사람이 확인한 건은 확인한 후보와 주소가 정본이다.
+
+    업소 확인은 상호·지점·주소가 일치한 후보만 채택하므로(`identity.decide_identity`) 주소 없는
+    후보는 좌표의 근거가 될 수 없다.
+    """
     if result.reason == "human_confirmed" and result.confirmation is not None:
         return result.confirmation.candidate_source.provider, result.confirmation.address
     # 여러 제공자의 근거가 같은 좌표로 겹치면 제공자 이름 순으로 하나를 밝힌다.
     origins = sorted(
-        (
-            candidate
-            for candidate in result.lookup.candidates
-            if (candidate.latitude, candidate.longitude) == (result.latitude, result.longitude)
-        ),
-        key=lambda candidate: candidate.source.provider,
+        (candidate.source.provider, candidate.address)
+        for candidate in result.lookup.candidates
+        if (candidate.latitude, candidate.longitude) == (result.latitude, result.longitude)
+        and candidate.address is not None
     )
     if not origins:
         raise ValueError("a confirmed coordinate must come from one of its candidates")
-    return origins[0].source.provider, origins[0].address
+    return origins[0]
 
 
 def _published_record(
@@ -308,9 +310,9 @@ def _map_notice(statuses: tuple[CollectionStatus, ...]) -> str:
     if not held:
         return ""
     message = f"수집 보류 기관 {len(held)}곳이 있어 비어 있는 지역이 집행 없음을 뜻하지 않습니다."
-    return f"""          <p class="collection-warning map-warning" data-collection-hold>
-            {escape(message)}
-          </p>"""
+    return f"""            <p class="collection-warning map-warning" data-collection-hold>
+              {escape(message)}
+            </p>"""
 
 
 def _visit_filters() -> str:
@@ -319,7 +321,7 @@ def _visit_filters() -> str:
         *(
             f'            <button type="button" aria-pressed="false" data-visits="{key}">'
             f"{label}</button>"
-            for key, label, _ in VISIT_BANDS
+            for key, label, _ in VISIT_BAND_LABELS
         ),
     ]
     return "\n".join(buttons)
@@ -327,16 +329,16 @@ def _visit_filters() -> str:
 
 def _map_legend() -> str:
     items = "\n".join(
-        f'            <li><span class="legend-swatch band-{key}"></span>{label}</li>'
-        for key, _, label in VISIT_BANDS
+        f'              <li><span class="legend-swatch band-{key}"></span>{label}</li>'
+        for key, _, label in VISIT_BAND_LABELS
     )
-    return f"""          <div class="map-legend" aria-label="마커 색 범례">
-            <p>방문 횟수</p>
-            <ul>
+    return f"""            <div class="map-legend" aria-label="마커 색 범례">
+              <p>방문 횟수</p>
+              <ul>
 {items}
-            <li><span class="legend-swatch is-closed"></span>폐업</li>
-            </ul>
-          </div>"""
+              <li><span class="legend-swatch is-closed"></span>폐업</li>
+              </ul>
+            </div>"""
 
 
 def _collection_table(statuses: tuple[CollectionStatus, ...]) -> str:
@@ -488,7 +490,10 @@ def _city_page(
           <div id="map" class="map" aria-label="{city_name} 식당 지도">
             <p class="loading">지도를 준비하고 있습니다.</p>
           </div>
+          <div class="map-overlay">
+{_map_notice(statuses)}
 {_map_legend()}
+          </div>
         </div>
         <aside class="list-panel" data-list-panel data-sheet="collapsed" aria-label="식당 목록">
           <button class="sheet-handle" type="button" data-sheet-handle
@@ -504,7 +509,6 @@ def _city_page(
               <strong data-total-count>0</strong>곳 전체 ·
               <strong data-viewport-count>—</strong>곳 현재 지도 영역
             </p>
-{_map_notice(statuses)}
           </form>
           <div class="list-view" data-list-view>
             <ol class="restaurant-list" data-restaurant-list></ol>
