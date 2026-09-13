@@ -249,7 +249,7 @@ def test_places_the_original_never_named_are_counted_as_places_and_records() -> 
 
 def test_a_tail_without_a_count_is_never_reported_as_a_known_number() -> None:
     """원본이 수를 적지 않았으면 몇 곳인지 모른다. 0곳으로도 1곳으로도 세지 않는다."""
-    counted = tally((), (), (record("r1", "낙지촌 외"), record("r2", "합성식당 외 1")), (), ())
+    counted = tally((), (), (record("r1", "합성낙지 외"), record("r2", "합성식당 외 1")), (), ())
 
     assert counted.unnamed_companions == UnnamedCompanions(records=2, places=1, uncounted_records=1)
 
@@ -263,3 +263,9 @@ def test_a_ledger_without_a_tail_reports_none_instead_of_guessing() -> None:
 def test_a_tally_cannot_report_more_uncounted_tails_than_records() -> None:
     with pytest.raises(ValidationError):
         UnnamedCompanions(records=1, uncounted_records=2)
+
+
+def test_a_tally_cannot_report_places_no_record_named() -> None:
+    """꼬리말을 쓴 레코드가 없으면 밝혀진 업소도 없다. 어긋난 집계는 계약이 받지 않는다."""
+    with pytest.raises(ValidationError):
+        UnnamedCompanions(places=5)

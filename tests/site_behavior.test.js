@@ -1249,9 +1249,9 @@ test("the ledger says how many places the original left unnamed", () => {
     spent_on: "2026-01-01",
   };
   const records = [
-    { ...base, merchant: "카페말바우 외 1", unnamed_companions: 1 },
+    { ...base, merchant: "합성카페 외 1", unnamed_companions: 1 },
     // 원본이 수를 적지 않았다. 0곳으로 적으면 없는 사실을 지어낸다.
-    { ...base, merchant: "낙지촌 외", unnamed_companions: null },
+    { ...base, merchant: "합성낙지 외", unnamed_companions: null },
     { ...base, merchant: "같은 식당", unnamed_companions: 0 },
   ];
 

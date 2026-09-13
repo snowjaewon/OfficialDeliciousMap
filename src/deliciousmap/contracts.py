@@ -1026,6 +1026,8 @@ class UnnamedCompanions(Contract):
     def counted_within_the_records(self) -> "UnnamedCompanions":
         if self.uncounted_records > self.records:
             raise ValueError("more tails without a count than records that carry one")
+        if not self.records and (self.places or self.uncounted_records):
+            raise ValueError("places cannot be reported without a record that names them")
         return self
 
 

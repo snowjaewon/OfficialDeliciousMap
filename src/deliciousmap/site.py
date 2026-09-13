@@ -532,21 +532,23 @@ def _unnamed_companion_line(counted: UnnamedCompanions) -> str:
     """원본이 이름 없이 수만 밝힌 업소. 밝히지 않으면 그 업소가 없었던 것으로 읽힌다(#127).
 
     이름이 적힌 첫 업소는 다른 레코드와 같게 조회·판정되므로 여기서 세지 않는다. 수를 적지 않은
-    표기는 몇 곳인지 모르므로 합계에 넣지 않고 그 레코드 수를 따로 낸다. 그런 표기를 쓴 원본이
-    없으면 낼 말이 없어 줄을 내지 않는다.
+    표기는 몇 곳인지 모르므로 합계에 넣지 않고 문장을 나눠 낸다 — 한 문장에 담으면 세지 않은
+    것이 0곳으로 읽힌다. 그런 표기를 쓴 원본이 없으면 낼 말이 없어 줄을 내지 않는다.
     """
-    if not counted.records:
-        return ""
-    said = (
-        f"상호 끝에 이름 없이 수만 적은 {counted.records:,}건이 밝힌"
-        f" 이름 없는 업소 {counted.places:,}곳은 조회할 이름이 없어 지도에 오르지 못합니다."
-    )
-    if counted.uncounted_records:
+    written = counted.records - counted.uncounted_records
+    said = ""
+    if written:
         said += (
-            f" 그 가운데 {counted.uncounted_records:,}건은 원본이 수도 적지 않아"
-            " 몇 곳인지 알 수 없습니다."
+            f"상호 끝에 이름 없이 수만 적은 {written:,}건이 밝힌"
+            f" 이름 없는 업소 {counted.places:,}곳은 조회할 이름이 없어 지도에 오르지 못합니다."
         )
-    return said
+    if counted.uncounted_records:
+        # 수를 적지 않은 건을 앞 문장에 넣으면 세지 않은 것이 0곳으로 읽힌다. 문장을 나눈다.
+        said += (
+            f" 상호 끝에 ‘외’만 적어 이름도 수도 없는 {counted.uncounted_records:,}건은"
+            " 그런 업소가 몇 곳인지조차 알 수 없습니다."
+        )
+    return said.strip()
 
 
 def _unresolved_source_line(tally: SubmissionTally) -> str:

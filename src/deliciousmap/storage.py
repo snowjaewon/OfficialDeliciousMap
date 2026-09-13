@@ -73,7 +73,7 @@ OUTPUT_MODELS: dict[str, type[Contract]] = {
 
 # fetch는 받지 않은 게시글 수를 담은 v4, headermap은 미해결 원본의 매핑을 담은 v2,
 # parse는 사람이 확정한 재게시 수를 담은 v4, geocode는 확인한 업소를 담은 v5,
-# closure는 조회 요청 기록을 포함하는 v4, build는 식당별 방문 요약을 담은 v7이다.
+# closure는 조회 요청 기록을 포함하는 v4, build는 이름 없는 동행 업소의 수까지 담은 v8이다.
 SCHEMA_VERSIONS = {"fetch": 4, "headermap": 2, "parse": 4, "geocode": 5, "closure": 4, "build": 8}
 
 # 제공자 조회 캐시. 확정 업소 판정 이력(geocode-history-v2.jsonl)과 분리해 둔다.

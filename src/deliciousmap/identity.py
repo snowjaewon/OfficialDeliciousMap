@@ -19,7 +19,8 @@ from deliciousmap.contracts import (
 POLICY_VERSION = "identity-3"
 
 # 판정 키가 레코드에서 담는 칸. `decide_identity`가 레코드에서 읽는 것이 이 둘뿐이다 —
-# `record_id`는 판정을 그 지출에 묶고, `merchant`는 확정 복원명이 없을 때 근거와 맞춰 볼 이름이다.
+# `record_id`는 판정을 그 지출에 묶고, `merchant`는 확정 복원명이 없을 때 근거와 맞춰 볼 이름의
+# 출처다 — 꼬리말을 뗀 이름도 이 칸 하나에서 나오므로 키에 담는 칸은 늘지 않는다.
 # 판정이 읽지 않는 칸을 담으면 판정이 하나도 바뀌지 않은 재실행이 이력을 통째로 다시 쌓는다.
 # 목록을 여기 두는 것은 레코드 계약이 늘 때 키가 조용히 바뀌지 않게 하기 위해서다([ADR-0005](
 # ../../docs/adr/0005-key-only-what-the-decision-reads.md)).

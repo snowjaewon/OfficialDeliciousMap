@@ -12,9 +12,8 @@ import re
 from dataclasses import dataclass
 
 # 이름 없이 수만 밝힌 꼬리말. 세는 낱말과 `외` 앞뒤의 공백은 원본마다 다르다.
-_COUNTED = re.compile(r"\s*외\s*(\d+)\s*(?:개소|곳|명|개)?\s*$")
-# 수도 적지 않은 맨끝 `외`. 앞의 공백을 요구해 낱말 안의 글자를 자르지 않는다.
-_UNCOUNTED = re.compile(r"\s+외\s*$")
+# 뒤 갈래는 수도 적지 않은 맨끝 `외`이며, 앞의 공백을 요구해 낱말 안의 글자를 자르지 않는다.
+_TAIL = re.compile(r"(?:\s*외\s*(?P<count>\d+)\s*(?:개소|곳|명|개)?|\s+외)\s*$")
 
 
 @dataclass(frozen=True)
@@ -29,11 +28,10 @@ class Companions:
 
 def read(merchant: str) -> Companions:
     """상호 끝의 꼬리말만 뗀다. 이름 가운데의 `외`와 이름이 남지 않는 표기는 그대로 둔다."""
-    counted = _COUNTED.search(merchant)
-    if counted is not None and merchant[: counted.start()].strip():
-        return Companions(merchant[: counted.start()].strip(), int(counted.group(1)))
-    uncounted = _UNCOUNTED.search(merchant)
-    if uncounted is not None and merchant[: uncounted.start()].strip():
-        return Companions(merchant[: uncounted.start()].strip(), None)
+    found = _TAIL.search(merchant)
+    named = merchant[: found.start()].strip() if found else ""
     # 꼬리말이 없거나, 떼면 이름이 하나도 남지 않는다. 조회할 이름을 지어내지 않는다.
-    return Companions(merchant, 0)
+    if found is None or not named:
+        return Companions(merchant, 0)
+    count = found.group("count")
+    return Companions(named, int(count) if count is not None else None)
