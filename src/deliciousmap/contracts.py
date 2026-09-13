@@ -1,12 +1,23 @@
 """Versioned, validated public contracts. No external service implementation."""
 
-from dataclasses import dataclass
+import re
+from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
+from functools import total_ordering
 from pathlib import Path
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, JsonValue, StringConstraints, model_validator
+from pydantic import (
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    Field,
+    JsonValue,
+    PlainSerializer,
+    StringConstraints,
+    model_validator,
+)
 
 from deliciousmap.registry import Target
 
@@ -47,6 +58,83 @@ def require_error_code(status: str, error: str | None) -> None:
         raise ValueError("lookup errors require an explicit error code")
 
 
+# 일까지 적은 집행일의 표기. 장부 CSV와 공개 파일이 쓰는 한 가지 모양이다.
+DATED = re.compile(r"(\d{4})-(\d{2})-(\d{2})")
+# 일을 적지 않은 집행일의 원본 표기. 2026-09-13 동구 실측의 `2026.03.`이 이 모양이고,
+# 연도 넷과 달 하나 사이의 구분자는 날짜 표기에서 이미 실측한 것만 받는다.
+MONTH_ONLY = re.compile(r"(\d{4})\s*[-./년]\s*(1[0-2]|0?[1-9])\s*[-./월]?\s*")
+
+
+@total_ordering
+@dataclass(frozen=True)
+class SpentOn:
+    """집행일 하나. 원본이 일을 적지 않았으면 `day`가 빈 값이다.
+
+    없는 일자를 그 달 1일·말일로 채우지 않는다 — 비어 있다는 사실이 값으로 남는다. 사람이 보는
+    자리에는 원본이 적은 표기(`notation`)를 그대로 쓰고, 일이 있는 집행일은 `YYYY-MM-DD`로 보인다.
+    순서는 일을 0으로 본 순서라 일이 빈 날짜가 같은 달의 어떤 날짜보다 앞에 온다.
+
+    표기는 사람이 읽는 값이지 지출을 가르는 값이 아니므로 동일성과 순서에서 뺀다([ADR-0005](
+    ../../docs/adr/0005-key-only-what-the-decision-reads.md)). 같은 달을 달리 적은 두 원본의
+    지출은 같은 집행일이다.
+    """
+
+    year: int
+    month: int
+    day: int | None = None
+    notation: str = field(default="", compare=False)
+
+    def __post_init__(self) -> None:
+        # 달력에 없는 날짜는 집행일이 아니다. 일이 빈 날짜는 달까지만 달력에 물어본다.
+        date(self.year, self.month, 1 if self.day is None else self.day)
+
+    def __str__(self) -> str:
+        if self.day is None:
+            return self.notation or f"{self.year:04d}-{self.month:02d}"
+        return f"{self.year:04d}-{self.month:02d}-{self.day:02d}"
+
+    def __lt__(self, other: "SpentOn") -> bool:
+        return self._order < other._order
+
+    @property
+    def _order(self) -> tuple[int, int, int]:
+        return (self.year, self.month, self.day or 0)
+
+    @classmethod
+    def of(cls, value: date) -> "SpentOn":
+        return cls(value.year, value.month, value.day)
+
+    @classmethod
+    def month_only(cls, raw: str) -> "SpentOn | None":
+        """일을 적지 않은 달 단위 표기. 실측한 모양이 아니면 읽지 않는다."""
+        found = MONTH_ONLY.fullmatch(raw)
+        return None if found is None else cls(int(found[1]), int(found[2]), notation=raw)
+
+    @classmethod
+    def parse(cls, raw: str) -> "SpentOn":
+        dated = DATED.fullmatch(raw)
+        if dated:
+            return cls(int(dated[1]), int(dated[2]), int(dated[3]))
+        undated = cls.month_only(raw)
+        if undated is None:
+            raise ValueError("a spending day is YYYY-MM-DD or the month as the original wrote it")
+        return undated
+
+
+def _spent_on(value: object) -> object:
+    """장부·공개 파일의 글자와 날짜 객체를 집행일 값으로 옮긴다."""
+    if isinstance(value, str):
+        return SpentOn.parse(value)
+    if isinstance(value, date):
+        return SpentOn.of(value)
+    return value
+
+
+# 레코드·재게시 범위·공개 레코드·마커가 함께 쓰는 집행일 칸. 글자 하나로 오가므로 장부 CSV의
+# 한 칸과 공개 JSON의 한 값이 그대로 원본 표기를 싣는다.
+SpendingDay = Annotated[SpentOn, BeforeValidator(_spent_on), PlainSerializer(str, return_type=str)]
+
+
 class RecordOrigin(Contract):
     """레코드 하나가 나온 원본과 그 안의 행 위치."""
 
@@ -56,7 +144,7 @@ class RecordOrigin(Contract):
 
 class Record(Contract):
     record_id: Text
-    spent_on: date
+    spent_on: SpendingDay
     organization: Text
     department: str
     merchant: Text
@@ -260,7 +348,7 @@ class ExpenseScope(Contract):
     city: Text
     organization: Text
     department: str
-    spent_on: date
+    spent_on: SpendingDay
     merchant: Text
     amount_krw: Decimal = Field(allow_inf_nan=False)
     # 이 지출을 실은 원본들. 재게시 관계는 원본 쌍의 관계이므로 둘 이상을 적는다.
@@ -470,7 +558,7 @@ class PublishedMarker(Contract):
     # 좌표를 준 근거의 주소. 업소 확인은 주소가 일치한 후보만 채택하므로 확정 마커에는 언제나 있다.
     address: Text
     # 아래 셋은 이 식당으로 묶인 레코드의 요약이다. 목록·상세가 장부를 받지 않고도 보여 준다.
-    last_visited_on: date
+    last_visited_on: SpendingDay
     total_amount_krw: Decimal = Field(allow_inf_nan=False)
     organizations: tuple[Text, ...] = Field(min_length=1)
 
@@ -479,7 +567,7 @@ class PublishedRecord(Contract):
     """records.json에 공개하는 장부 레코드와 지도 반영 상태. 원본 추적 값은 남기지 않는다."""
 
     record_id: Text
-    spent_on: date
+    spent_on: SpendingDay
     organization: Text
     department: str
     merchant: Text
@@ -505,14 +593,14 @@ class PublishedRecord(Contract):
 
 
 class MarkerFile(Contract):
-    schema_version: Literal[7] = 7
+    schema_version: Literal[8] = 8
     city: Text
     org: str | None = None
     markers: tuple[PublishedMarker, ...]
 
 
 class RecordFile(Contract):
-    schema_version: Literal[7] = 7
+    schema_version: Literal[8] = 8
     city: Text
     org: str | None = None
     records: tuple[PublishedRecord, ...]

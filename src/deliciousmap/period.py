@@ -11,6 +11,8 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Literal
 
+from deliciousmap.contracts import SpentOn
+
 START = date(2026, 1, 1)
 END = date(2026, 6, 30)
 LABEL = "2026년 상반기"
@@ -36,10 +38,6 @@ DECLARATION = re.compile(
 )
 
 
-def contains(day: date) -> bool:
-    return START <= day <= END
-
-
 def collects(posted: date | None) -> bool:
     """이번 수집이 받을 게시글인지. 게시일의 해가 대상 기간의 해와 같아야 한다.
 
@@ -56,7 +54,7 @@ def collects(posted: date | None) -> bool:
 
 @dataclass(frozen=True)
 class Span:
-    """게시글 제목이 밝힌 지출 기간. 하루가 아니라 달 단위의 구간이다."""
+    """지출이 걸쳐 있는 구간. 게시글 제목이 밝힌 기간과 집행일 하나가 같은 어휘를 쓴다."""
 
     start: date
     end: date
@@ -66,6 +64,28 @@ class Span:
 
 
 REPORTING = Span(START, END)
+
+
+def spent(spent_on: SpentOn) -> Span:
+    """집행일 하나가 가리키는 구간. 일이 있으면 그 하루이고, 일이 비었으면 그 달 전체다.
+
+    일이 빈 집행일을 그 달 1일·말일 어느 쪽으로도 좁히지 않는다. 아는 것은 달까지뿐이다.
+    """
+    if spent_on.day is not None:
+        day = date(spent_on.year, spent_on.month, spent_on.day)
+        return Span(day, day)
+    last = calendar.monthrange(spent_on.year, spent_on.month)[1]
+    return Span(date(spent_on.year, spent_on.month, 1), date(spent_on.year, spent_on.month, last))
+
+
+def contains(spent_on: SpentOn) -> bool:
+    """이번 제출이 다룰 집행일인가. 그 집행일의 구간이 대상 기간과 겹쳐야 한다.
+
+    일이 있는 집행일의 구간은 하루라 판정이 `START <= day <= END`와 같다 — 바뀌는 것은
+    달까지만 적힌 집행일뿐이다.
+    """
+    return spent(spent_on).overlaps(REPORTING)
+
 
 # 대상에서 빠진 사유. 게시일을 읽지 못한 게시글은 `posted_out_of_range`로 센다.
 ExclusionReason = Literal["posted_out_of_range", "declared_out_of_range", "undeclared_in_year"]

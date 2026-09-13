@@ -25,6 +25,7 @@ from deliciousmap.contracts import (
     RepeatedExpenses,
     SourceRef,
     SourceReport,
+    SpentOn,
     TotalCheck,
 )
 from deliciousmap.grid import Cell, Table, UnreadableOriginal, UnsupportedFormat, read_tables, text
@@ -67,7 +68,7 @@ class Extraction:
 @dataclass(frozen=True)
 class _Candidate:
     row: int
-    spent_on: date
+    spent_on: SpentOn
     merchant: str
     amount: Decimal
 
@@ -297,7 +298,7 @@ class ExpenseKey(NamedTuple):
 
     organization: str
     department: str
-    spent_on: date
+    spent_on: SpentOn
     merchant: str
     amount_krw: Decimal
 
@@ -523,7 +524,7 @@ def _candidate(table: Table, mapping: HeaderMap, row: int) -> _Candidate:
     """지출 1건의 값을 읽는다. 세로 병합이 덮은 칸은 병합이 담은 값이다(`Table.value`)."""
     columns = mapping.columns
     if "spent_on" in columns:
-        spent_on = parse_date(table.value(row, columns["spent_on"]), mapping.year_hint)
+        spent_on = parse_spent_on(table.value(row, columns["spent_on"]), mapping.year_hint)
     else:
         spent_on = _month_day(
             table.value(row, columns["month"]), table.value(row, columns["day"]), mapping.year_hint
@@ -624,31 +625,34 @@ def _record(table: Table, mapping: HeaderMap, source: SourceRef, candidate: _Can
     )
 
 
-def parse_date(value: Cell, year_hint: int | None = None) -> date | None:
-    """날짜 셀·일련번호·흔한 한국식 표기를 읽는다. 연도가 없으면 연도 근거가 있을 때만 읽는다."""
+def parse_spent_on(value: Cell, year_hint: int | None = None) -> SpentOn | None:
+    """날짜 셀·일련번호·흔한 한국식 표기를 읽는다. 연도가 없으면 연도 근거가 있을 때만 읽는다.
+
+    달까지만 적고 일을 비운 표기는 일이 빈 집행일로 읽는다. 없는 일자를 채우지 않는다.
+    """
     if isinstance(value, datetime):
-        return value.date()
+        return SpentOn.of(value.date())
     if isinstance(value, float):
         # 날짜 서식이 아닌 칸은 일련값 그대로 온다. 소수부는 그날의 시각이므로 날짜는 정수부다.
         if SERIAL_RANGE[0] <= value <= SERIAL_RANGE[1]:
-            return (EXCEL_EPOCH + timedelta(days=int(value))).date()
+            return SpentOn.of((EXCEL_EPOCH + timedelta(days=int(value))).date())
         if value.is_integer() and 20000101 <= value <= 20991231:
-            return _date(int(value) // 10000, int(value) // 100 % 100, int(value) % 100)
+            return _spent_on(int(value) // 10000, int(value) // 100 % 100, int(value) % 100)
         # 두 자리 연도를 붙여 쓴 표기는 숫자 칸으로도 온다. 판정은 글자와 같다.
         return _packed(text(value), year_hint) if value.is_integer() else None
     # 엑셀에서 문자로 적으려고 붙인 따옴표(`'25. 10. 17.`)는 값이 아니다.
     raw = text(value).lstrip("'‘’`")
     full = re.match(r"(\d{4})" + AFTER_YEAR, raw)
     if full:
-        return _date(*(int(part) for part in full.groups()))
+        return _spent_on(int(full[1]), int(full[2]), int(full[3]))
     compact = re.match(r"(20\d{2})(\d{2})(\d{2})(?!\d)", raw)
     if compact:
-        return _date(*(int(part) for part in compact.groups()))
+        return _spent_on(int(compact[1]), int(compact[2]), int(compact[3]))
     # 마지막 칸에 시각이 이어지면 두 자리 연도 표기가 아니다(`03.03. 12:25`는 3월 3일 12시다).
     short = re.match(r"(\d{2})\s*[-./]\s*(\d{1,2})\s*[-./]\s*(\d{1,2})(?![\d:])", raw)
     if short:
         year, month, day = (int(part) for part in short.groups())
-        return _date(2000 + year, month, day)
+        return _spent_on(2000 + year, month, day)
     if year_hint is not None:
         packed = _packed(raw, year_hint)
         if packed is not None:
@@ -656,14 +660,15 @@ def parse_date(value: Cell, year_hint: int | None = None) -> date | None:
         # 연도 한 자리가 빠져 어떤 연도로도 읽히지 않는 표기(`206/05/08` 서구 실측).
         odd = re.match(r"(\d{3})" + AFTER_YEAR, raw)
         if odd and _one_digit_short(odd.group(1), year_hint):
-            return _date(year_hint, int(odd.group(2)), int(odd.group(3)))
+            return _spent_on(year_hint, int(odd.group(2)), int(odd.group(3)))
         partial = re.match(r"(\d{1,2})\s*[-./월]\s*(\d{1,2})(?!\d)", raw)
         if partial:
-            return _date(year_hint, *(int(part) for part in partial.groups()))
-    return None
+            return _spent_on(year_hint, int(partial[1]), int(partial[2]))
+    # 일을 적지 않은 달 단위 표기(`2026.03.` 동구 실측). 일이 있는 갈래를 모두 본 뒤에 읽는다.
+    return SpentOn.month_only(raw)
 
 
-def _packed(raw: str, year_hint: int | None) -> date | None:
+def _packed(raw: str, year_hint: int | None) -> SpentOn | None:
     """두 자리 연도를 붙여 쓴 `YYMMDD`(광산구 실측).
 
     금액도 여섯 자리가 흔해(`104000`) 연도 근거가 있고 그 연도와 맞을 때만 날짜로 읽는다.
@@ -671,7 +676,7 @@ def _packed(raw: str, year_hint: int | None) -> date | None:
     found = re.fullmatch(r"(\d{2})(\d{2})(\d{2})", raw)
     if found is None or year_hint is None or 2000 + int(found.group(1)) != year_hint:
         return None
-    return _date(year_hint, int(found.group(2)), int(found.group(3)))
+    return _spent_on(year_hint, int(found.group(2)), int(found.group(3)))
 
 
 def _one_digit_short(digits: str, year_hint: int) -> bool:
@@ -684,16 +689,16 @@ def _one_digit_short(digits: str, year_hint: int) -> bool:
     return any(year[:index] + year[index + 1 :] == digits for index in range(len(year)))
 
 
-def _month_day(month: Cell, day: Cell, year_hint: int | None) -> date | None:
+def _month_day(month: Cell, day: Cell, year_hint: int | None) -> SpentOn | None:
     parts = [re.fullmatch(r"(\d{1,2})\s*[월일]?", text(value)) for value in (month, day)]
-    if year_hint is None or not all(parts):
+    if year_hint is None or parts[0] is None or parts[1] is None:
         return None
-    return _date(year_hint, *(int(part.group(1)) for part in parts if part))
+    return _spent_on(year_hint, int(parts[0][1]), int(parts[1][1]))
 
 
-def _date(year: int, month: int, day: int) -> date | None:
+def _spent_on(year: int, month: int, day: int) -> SpentOn | None:
     try:
-        return date(year, month, day)
+        return SpentOn(year, month, day)
     except ValueError:
         return None
 

@@ -15,8 +15,9 @@ from deliciousmap.contracts import (
     RepeatDecision,
     RepeatedExpenses,
     SourceRef,
+    SpentOn,
 )
-from deliciousmap.extract import ValidationFailed, extract, merge_repeats, parse_date
+from deliciousmap.extract import ValidationFailed, extract, merge_repeats, parse_spent_on
 from deliciousmap.grid import Cell, Span, Table
 
 SOURCE = SourceRef(
@@ -76,7 +77,7 @@ def test_merged_cells_are_read_from_the_row_that_holds_them() -> None:
         spans=(Span(4, 1, 3), Span(4, 3, 3)),
     )
     result = extract(sheet, MAPPING, SOURCE)
-    assert [record.spent_on for record in result.records] == [date(2026, 3, 17)] * 2
+    assert [record.spent_on for record in result.records] == [SpentOn(2026, 3, 17)] * 2
     assert [record.purpose for record in result.records] == ["간담회"] * 2
     assert [record.merchant for record in result.records] == ["합성 식당", "합성 찻집"]
 
@@ -259,15 +260,15 @@ def test_each_section_is_checked_against_its_own_total() -> None:
 @pytest.mark.parametrize(
     ("value", "expected"),
     [
-        ("'25. 10. 17. 12:15", date(2025, 10, 17)),
-        ("2026.3.4.(수)", date(2026, 3, 4)),
-        ("26. 2. 27.(화) 12:47", date(2026, 2, 27)),
-        ("2026/02/25 19:03", date(2026, 2, 25)),
-        ("2026-04-9\n12:04", date(2026, 4, 9)),
+        ("'25. 10. 17. 12:15", SpentOn(2025, 10, 17)),
+        ("2026.3.4.(수)", SpentOn(2026, 3, 4)),
+        ("26. 2. 27.(화) 12:47", SpentOn(2026, 2, 27)),
+        ("2026/02/25 19:03", SpentOn(2026, 2, 25)),
+        ("2026-04-9\n12:04", SpentOn(2026, 4, 9)),
     ],
 )
-def test_dates_seen_in_real_originals(value: str, expected: date) -> None:
-    assert parse_date(value) == expected
+def test_dates_seen_in_real_originals(value: str, expected: SpentOn) -> None:
+    assert parse_spent_on(value) == expected
 
 
 @pytest.mark.parametrize(
@@ -275,16 +276,16 @@ def test_dates_seen_in_real_originals(value: str, expected: date) -> None:
     [
         # 2026-09-13 광주 서구 실측: 날짜 서식이 아닌 칸에 든 엑셀 일련값. 정수부가 날짜이고
         # 소수부가 시각이다(46024.70763888889 = 2026-01-02 16:59).
-        (46024.70763888889, date(2026, 1, 2)),
-        (46114.0, date(2026, 4, 2)),
+        (46024.70763888889, SpentOn(2026, 1, 2)),
+        (46114.0, SpentOn(2026, 4, 2)),
         # 일련값의 범위 밖은 날짜로 읽지 않는다. 금액·인원이 날짜가 되지 않게 한다.
         (2026.5, None),
         (99999.25, None),
     ],
 )
-def test_excel_serial_dates_carry_a_time_of_day(value: float, expected: date | None) -> None:
+def test_excel_serial_dates_carry_a_time_of_day(value: float, expected: SpentOn | None) -> None:
     """날짜 칸이 시각을 함께 담은 일련값으로 온다. 정수가 아니라고 날짜가 아닌 것은 아니다."""
-    assert parse_date(value) == expected
+    assert parse_spent_on(value) == expected
 
 
 def test_month_and_day_with_a_time_are_not_read_as_a_two_digit_year() -> None:
@@ -292,11 +293,11 @@ def test_month_and_day_with_a_time_are_not_read_as_a_two_digit_year() -> None:
 
     뒤에 시각이 붙은 표기를 두 자리 연도로 읽으면 연도가 통째로 어긋난 레코드가 조용히 생긴다.
     """
-    assert parse_date("03.03. 12:25", 2026) == date(2026, 3, 3)
-    assert parse_date("03.03. 12:25") is None
+    assert parse_spent_on("03.03. 12:25", 2026) == SpentOn(2026, 3, 3)
+    assert parse_spent_on("03.03. 12:25") is None
     # 두 자리 연도 표기는 그대로 읽는다. 시각이 붙어도 마지막 칸이 날짜다.
-    assert parse_date("26.01.26. 12:25", 2026) == date(2026, 1, 26)
-    assert parse_date("'25. 10. 17. 12:15") == date(2025, 10, 17)
+    assert parse_spent_on("26.01.26. 12:25", 2026) == SpentOn(2026, 1, 26)
+    assert parse_spent_on("'25. 10. 17. 12:15") == SpentOn(2025, 10, 17)
 
 
 def test_repeated_separators_read_the_same_date() -> None:
@@ -304,9 +305,9 @@ def test_repeated_separators_read_the_same_date() -> None:
 
     같은 날짜를 같게 읽는 일이며 원본에 없는 값을 채우지 않는다.
     """
-    assert parse_date("2026..03.24.") == date(2026, 3, 24)
-    assert parse_date("2026. . 3. 24.") == date(2026, 3, 24)
-    assert parse_date("2026년 3월 24일") == date(2026, 3, 24)
+    assert parse_spent_on("2026..03.24.") == SpentOn(2026, 3, 24)
+    assert parse_spent_on("2026. . 3. 24.") == SpentOn(2026, 3, 24)
+    assert parse_spent_on("2026년 3월 24일") == SpentOn(2026, 3, 24)
 
 
 def test_six_digit_dates_are_read_only_with_a_year_hint_that_matches() -> None:
@@ -314,14 +315,14 @@ def test_six_digit_dates_are_read_only_with_a_year_hint_that_matches() -> None:
 
     금액도 여섯 자리가 흔해 연도 근거 없이는 여섯 자리를 날짜로 보지 않는다.
     """
-    assert parse_date("260117", 2026) == date(2026, 1, 17)
-    assert parse_date("260117") is None
-    assert parse_date("260117", 2025) is None
+    assert parse_spent_on("260117", 2026) == SpentOn(2026, 1, 17)
+    assert parse_spent_on("260117") is None
+    assert parse_spent_on("260117", 2025) is None
     # 같은 표의 금액 칸(`104000`). 연도 근거가 있어도 날짜가 되지 않는다.
-    assert parse_date("104000", 2026) is None
-    assert parse_date(104000.0, 2026) is None
+    assert parse_spent_on("104000", 2026) is None
+    assert parse_spent_on(104000.0, 2026) is None
     # 숫자 칸으로 온 같은 표기도 같게 읽는다.
-    assert parse_date(260117.0, 2026) == date(2026, 1, 17)
+    assert parse_spent_on(260117.0, 2026) == SpentOn(2026, 1, 17)
 
 
 def test_three_digit_year_is_read_only_when_one_digit_makes_the_hint() -> None:
@@ -329,11 +330,63 @@ def test_three_digit_year_is_read_only_when_one_digit_makes_the_hint() -> None:
 
     연도 근거에 한 자리를 끼워 넣어 정확히 같아질 때만 그 연도로 읽는다. 월·일은 고쳐 읽지 않는다.
     """
-    assert parse_date("206/05/08 20:41", 2026) == date(2026, 5, 8)
-    assert parse_date("206/05/08 20:41") is None
-    assert parse_date("205/05/08", 2026) is None
+    assert parse_spent_on("206/05/08 20:41", 2026) == SpentOn(2026, 5, 8)
+    assert parse_spent_on("206/05/08 20:41") is None
+    assert parse_spent_on("205/05/08", 2026) is None
     # 네 자리로 적힌 연도는 근거와 달라도 그대로 읽는다. 기간 밖의 유효한 날짜는 고치지 않는다.
-    assert parse_date("2060/05/08", 2026) == date(2060, 5, 8)
+    assert parse_spent_on("2060/05/08", 2026) == SpentOn(2060, 5, 8)
+
+
+def test_a_month_without_a_day_is_read_with_an_empty_day() -> None:
+    """2026-09-13 동구 실측: 현금 경조사 지출의 일자 칸이 `2026.03.`처럼 달까지만 적혀 있다.
+
+    오타가 아니라 원본이 일부러 비운 칸이다. 없는 일자를 그 달 1일·말일로 채우지 않고 빈 값으로
+    두며, 사람이 보는 자리에는 원본 표기를 그대로 쓴다.
+    """
+    read = parse_spent_on("2026.03.")
+    assert read == SpentOn(2026, 3)
+    assert read is not None and read.day is None
+    assert str(read) == "2026.03."
+    # 일이 있는 표기는 지금과 같이 읽고 같게 보인다.
+    assert parse_spent_on("2026.03.24.") == SpentOn(2026, 3, 24)
+    assert str(parse_spent_on("2026.03.24.")) == "2026-03-24"
+
+
+@pytest.mark.parametrize("value", ["2026. 3.", "2026년 3월", "2026-03", "2026/3"])
+def test_the_same_month_is_read_from_the_separators_seen_in_originals(value: str) -> None:
+    """구분자가 달라도 같은 달이다. 원본 표기만 저마다 다르게 남는다."""
+    assert parse_spent_on(value) == SpentOn(2026, 3)
+    assert str(parse_spent_on(value)) == value
+
+
+@pytest.mark.parametrize("value", ["2026.", "2026", "202603", "104000", "13.5"])
+def test_a_value_without_a_month_is_not_a_month_only_date(value: str) -> None:
+    """달을 적지 않은 값은 짐작하지 않는다. 여섯 자리 금액이 달 표기가 되지 않는다."""
+    assert parse_spent_on(value) is None
+
+
+def test_an_original_that_omits_one_day_still_yields_its_other_expenses() -> None:
+    """일자 하나가 비었다고 그 원본 전체가 레코드를 내지 못하던 자리다(2026-09-13 동구 실측).
+
+    현금으로 낸 부의금이라 장소 칸도 비어 있고 목적만 적혀 있다.
+    """
+    ceremony = ("과장", "2026.03.", "", "통합돌봄과 직원(부의금)지급", 50000.0)
+    result = extract(table(ceremony, spend(5, "합성 식당", 62000.0)), MAPPING, SOURCE)
+    assert [str(record.spent_on) for record in result.records] == ["2026.03.", "2026-01-05"]
+    assert [record.merchant for record in result.records] == ["개인(성명 비공개)", "합성 식당"]
+    assert result.candidates == 2
+
+
+def test_a_month_only_expense_outside_the_period_is_kept_out_of_range() -> None:
+    """달 단위 집행일도 대상 기간으로 가른다. 그 달의 구간이 겹쳐야 레코드가 된다."""
+    result = extract(
+        table(("과장", "2025.12.", "", "직원 부의금 지급", 50000.0),
+              ("과장", "2026.03.", "", "직원 축의금 지급", 50000.0)),
+        MAPPING,
+        SOURCE,
+    )  # fmt: skip
+    assert (result.candidates, result.out_of_range) == (2, 1)
+    assert [str(record.spent_on) for record in result.records] == ["2026.03."]
 
 
 def original(number: int, posted: str) -> SourceRef:
@@ -402,6 +455,30 @@ def test_rewritten_purposes_do_not_keep_the_same_expense_twice() -> None:
         month.source_hash,
         quarter.source_hash,
     ]
+    assert merged.tally == RepeatedExpenses(merged_expenses=2, merged_records=2)
+
+
+def test_reposted_month_only_expenses_merge_without_mixing_in_the_dated_ones() -> None:
+    """달 단위 집행일도 같은 지출로 가린다. 일이 빈 날짜와 일이 있는 날짜는 같은 집행일이 아니다."""
+    month, quarter = original(1, "2026-02-27"), original(2, "2026-04-15")
+    ceremony = SpentOn(2026, 1, notation="2026.01.")
+    records = (
+        spent(month, 4, 5, "합성 식당", 62000).model_copy(update={"spent_on": ceremony}),
+        spent(month, 5, 6, "합성 카페", 9000),
+        spent(quarter, 4, 5, "합성 식당", 62000).model_copy(update={"spent_on": ceremony}),
+        spent(quarter, 5, 6, "합성 카페", 9000),
+        # 같은 달·상호·금액이지만 일이 적혀 있다. 앞의 지출과 같은 집행일이 아니다.
+        spent(quarter, 6, 5, "합성 식당", 62000),
+    )
+    merged = merge_repeats(records, (month, quarter))
+    assert [record.record_id for record in merged.records] == [
+        records[0].record_id,
+        records[1].record_id,
+        records[4].record_id,
+    ]
+    assert merged.records[0].repeats == (
+        RecordOrigin(source_hash=quarter.source_hash, location="sheet1:R4"),
+    )
     assert merged.tally == RepeatedExpenses(merged_expenses=2, merged_records=2)
 
 

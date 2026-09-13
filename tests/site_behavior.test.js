@@ -818,6 +818,46 @@ test("the record view explains why an unmapped record missed the map", () => {
   assert.ok(second.includes("판단 보류"));
 });
 
+test("a record whose original omitted the day shows that original notation", () => {
+  const list = new FakeElement();
+  const status = new FakeElement();
+  const more = new FakeElement();
+  const documentObject = new FakeDocument({
+    "[data-records-list]": list,
+    "[data-records-more]": more,
+    "[data-records-status]": status,
+  });
+
+  renderRecords(documentObject, [
+    {
+      amount_krw: 50000,
+      classification: "pending",
+      geocode_reason: null,
+      map_status: "pending",
+      merchant: "개인(성명 비공개)",
+      organization: "합성 기관",
+      purpose: "직원 부의금 지급",
+      spent_on: "2026.03.",
+    },
+    {
+      amount_krw: 1000,
+      business_id: "b1",
+      classification: "restaurant",
+      geocode_reason: "matched",
+      map_status: "mapped",
+      merchant: "합성 식당",
+      organization: "합성 기관",
+      purpose: "간담회",
+      spent_on: "2026-01-05",
+    },
+  ]);
+
+  const summaries = list.children.map((card) => card.children[1].textContent);
+  // 일이 빈 집행일은 원본이 적은 그대로 보이고, 일이 있는 레코드의 표시는 그대로다.
+  assert.equal(summaries[0], "2026.03. · 합성 기관 · 50,000원");
+  assert.equal(summaries[1], "2026-01-05 · 합성 기관 · 1,000원");
+});
+
 test("the city view reports its area and fixes its zoom-out limit as soon as the map initializes", async () => {
   const sdk = fakeNaverMaps();
   const windowObject = { document: new FakeDocument({ "#map": new FakeElement() }) };
