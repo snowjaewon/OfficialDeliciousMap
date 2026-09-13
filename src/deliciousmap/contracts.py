@@ -227,7 +227,8 @@ class SourceReview(Contract):
     값을 채워 통과시키는 칸은 두지 않는다. 원본에 없는 상호·금액을 적어 넣는 것은 폴백 정책이
     막으므로, 이 입력이 남기는 것은 무엇을 왜 남겼는지와 어디까지 보았는지다. 폴백 정책이
     요구하는 사람의 최종 대조는 `confirmed_by`가 가른다 — 비어 있으면 아직 코드 훑기뿐이다.
-    기록한 원본이 나중에 통과하게 되면 `parse`가 낡은 기록으로 알린다.
+    기록한 원본이 나중에 통과하게 되면 `parse`가 낡은 기록으로 알린다. 코드도 후보를 센 원본이면
+    `candidates`가 그 수와 같아야 한다 — 두 수가 다르면 화면이 어느 쪽을 분모로 냈는지 알 수 없다.
     """
 
     schema_version: Literal[1] = 1
@@ -889,7 +890,7 @@ class ConfirmedDefect(Contract):
     candidates: int = Field(ge=0)
 
 
-class RemainingSource(Contract):
+class UnresolvedCount(Contract):
     """아직 확정에 이르지 못한 미해결 원본 한 사유의 수.
 
     후보 수를 모르는 원본이 하나라도 섞이면 `candidates`는 None이다. 나머지만 더한 수를 전체인
@@ -919,7 +920,7 @@ class SubmissionTally(Contract):
 
     # 사람 대조가 있는 원본 결함만 담는다. 대조가 없으면 같은 사유라도 미해결로 남는다.
     confirmed_defects: tuple[ConfirmedDefect, ...] = ()
-    remaining_sources: tuple[RemainingSource, ...] = ()
+    unresolved_sources: tuple[UnresolvedCount, ...] = ()
     # parse가 원본별 보고를 남겼는지. 위 두 값의 빈 튜플이 0개인지 세지 않은 것인지를 가른다.
     counted_sources: bool = False
     classified_records: int = Field(default=0, ge=0)
@@ -927,6 +928,12 @@ class SubmissionTally(Contract):
     # 지오코딩 판정 대상. 미확정 수의 분모이며 비식당·판단 보류는 대상이 아니다.
     restaurant_records: int = Field(default=0, ge=0)
     unconfirmed_places: tuple[UnconfirmedPlace, ...] = ()
+
+    @model_validator(mode="after")
+    def counted_before_reported(self) -> "SubmissionTally":
+        if not self.counted_sources and (self.confirmed_defects or self.unresolved_sources):
+            raise ValueError("originals cannot be reported without having been counted")
+        return self
 
 
 class ClassifyInput(Contract):

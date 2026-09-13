@@ -14,11 +14,11 @@ from deliciousmap.contracts import (
     Classification,
     ConfirmedDefect,
     GeocodeResult,
-    RemainingSource,
     SourceReport,
     SourceReview,
     SubmissionTally,
     UnconfirmedPlace,
+    UnresolvedCount,
 )
 
 
@@ -35,7 +35,7 @@ def tally(
         confirmed_defects=_confirmed_defects(
             [confirmed[item.source_hash] for item in unresolved if item.source_hash in confirmed]
         ),
-        remaining_sources=_remaining_sources(
+        unresolved_sources=_unresolved_sources(
             [item for item in unresolved if item.source_hash not in confirmed]
         ),
         counted_sources=bool(sources),
@@ -57,7 +57,7 @@ def _confirmed_defects(reviews: Sequence[SourceReview]) -> tuple[ConfirmedDefect
     )
 
 
-def _remaining_sources(reports: Sequence[SourceReport]) -> tuple[RemainingSource, ...]:
+def _unresolved_sources(reports: Sequence[SourceReport]) -> tuple[UnresolvedCount, ...]:
     sources = Counter(item.reason for item in reports if item.reason is not None)
     counted: dict[str, int | None] = {}
     for item in reports:
@@ -68,7 +68,7 @@ def _remaining_sources(reports: Sequence[SourceReport]) -> tuple[RemainingSource
             None if total is None or item.candidates is None else total + item.candidates
         )
     return tuple(
-        RemainingSource(reason=reason, sources=count, candidates=counted[reason])
+        UnresolvedCount(reason=reason, sources=count, candidates=counted[reason])
         for reason, count in _ordered(sources)
     )
 

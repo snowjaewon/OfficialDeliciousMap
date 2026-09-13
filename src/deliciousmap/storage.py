@@ -699,14 +699,24 @@ class ArtifactStore:
             raise ValueError("parse report record counts do not match the records")
 
     def _validate_source_reviews(self, output: ParseOutput) -> None:
-        """보류 기록은 이번 실행에서도 미해결인 원본만 가리켜야 한다.
+        """보류 기록은 이번 실행에서도 미해결인 원본을 가리키고 후보 수가 보고와 같아야 한다.
 
         코드가 읽게 된 원본에 낡은 기록이 남으면 장부와 어긋난다. 가리키는 원본이 이번 보고에
         아예 없는 것도 알린다 — 기관을 좁혔다면 그 기관의 기록만 읽으므로 잘못 적은 해시다.
+
+        후보 수도 맞춘다. 사람이 센 수와 코드가 센 수가 다르면 원본 결함 확정으로 갈리는 순간
+        화면의 분모가 조용히 바뀐다(#106). 코드가 후보를 세지 못한 원본(`candidates`가 None)은
+        대조할 것이 없으므로 사람이 센 수만 남는다.
         """
-        unresolved = {item.source_hash for item in output.sources if item.status == "unresolved"}
-        if any(item.source_hash not in unresolved for item in self.source_reviews()):
-            raise ValueError("source review for an original that is no longer unresolved")
+        unresolved = {
+            item.source_hash: item for item in output.sources if item.status == "unresolved"
+        }
+        for review in self.source_reviews():
+            report = unresolved.get(review.source_hash)
+            if report is None:
+                raise ValueError("source review for an original that is no longer unresolved")
+            if report.candidates is not None and report.candidates != review.candidates:
+                raise ValueError("source review candidate count disagrees with the parse report")
 
     def source_reviews(self) -> tuple[SourceReview, ...]:
         """전수 대조로 남긴 미해결 원본의 기록. 값을 채워 통과시키지는 않는다."""

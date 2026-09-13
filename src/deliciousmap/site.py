@@ -525,9 +525,11 @@ def _unresolved_source_line(tally: SubmissionTally) -> str:
     """원본 결함 확정과 그 밖의 미해결 원본. 원본을 세지 않은 산출물에는 낼 말이 없다.
 
     사람이 원본과 대조해 원본 자체의 결함으로 확정한 원본만 따로 센다. 대조가 없으면 사유가
-    같아도 미해결이므로, 하지 않은 검토의 0개는 적지 않는다. 미해결이 0개인 것은 센 뒤의
-    사실이므로 감추지 않는다. 이 공개가 [#9](
-    https://github.com/snowjaewon/OfficialDeliciousMap/issues/9)의 0개 기준을 대신하지는 않는다.
+    같아도 미해결이므로, 아직 확정한 원본이 없다는 것도 밝힌다 — 읽지 못한 원본이 남아 있는데
+    이 줄이 없으면 대조를 마친 것처럼 읽힌다. 미해결이 0개인 것도 센 뒤의 사실이므로 감추지
+    않는다. 확정할 원본도 미해결도 없으면 대조 자체가 할 일이 아니라 그 말을 내지 않는다.
+    이 공개가 [#9](https://github.com/snowjaewon/OfficialDeliciousMap/issues/9)의 0개 기준을
+    대신하지는 않는다.
     """
     if not tally.counted_sources:
         return ""
@@ -543,18 +545,20 @@ def _unresolved_source_line(tally: SubmissionTally) -> str:
             f"사람이 원본과 대조해 원본 자체의 결함으로 확정한 원본 {confirmed:,}개는"
             f" 레코드를 내지 않습니다: {detail}. "
         )
-    if not tally.remaining_sources:
+    elif tally.unresolved_sources:
+        said += "사람이 원본과 대조해 원본 자체의 결함으로 확정한 원본은 아직 없습니다. "
+    if not tally.unresolved_sources:
         return f"{said}아직 확정하지 못해 미해결로 남은 원본은 없습니다."
-    remaining = sum(item.sources for item in tally.remaining_sources)
+    remaining = sum(item.sources for item in tally.unresolved_sources)
     detail = " · ".join(
         f"{UNRESOLVED_REASON_LABELS[item.reason]} {item.sources:,}개"
-        f"({_candidates(item.candidates)})"
-        for item in tally.remaining_sources
+        f"({_candidate_text(item.candidates)})"
+        for item in tally.unresolved_sources
     )
     return f"{said}아직 확정하지 못해 미해결로 남은 원본 {remaining:,}개: {detail}."
 
 
-def _candidates(count: int | None) -> str:
+def _candidate_text(count: int | None) -> str:
     """후보 수를 모르는 원본이 섞이면 알 수 없음으로 적는다. 0건 손실로 보고하지 않는다."""
     return "지출 후보 수 알 수 없음" if count is None else f"지출 후보 {count:,}건"
 

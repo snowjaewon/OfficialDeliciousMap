@@ -697,13 +697,14 @@ def test_city_page_leaves_an_original_nobody_checked_among_the_unresolved(tmp_pa
     page = city_page(unresolved_build(tmp_path, defect_review("b" * 64, "merchant_blank", "")))
     assert "미해결로 남은 원본 1개" in page
     assert "검증 실패 1개(지출 후보 47건)" in page
-    assert "결함으로 확정한 원본" not in page
+    assert "결함으로 확정한 원본은 아직 없습니다" in page
 
 
 def test_city_page_counts_an_unresolved_original_that_no_review_mentions(tmp_path: Path) -> None:
+    """읽지 못한 원본이 남았는데 대조 얘기가 없으면 대조를 마친 것처럼 읽힌다."""
     page = city_page(unresolved_build(tmp_path))
     assert "미해결로 남은 원본 1개" in page
-    assert "결함으로 확정한 원본" not in page
+    assert "결함으로 확정한 원본은 아직 없습니다" in page
 
 
 def test_city_page_omits_the_unresolved_line_when_no_original_was_counted(tmp_path: Path) -> None:

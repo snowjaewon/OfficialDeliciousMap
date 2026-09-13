@@ -1,5 +1,8 @@
 """제출 시점 기준이 공개하는 남은 미해결의 집계. 사람 대조가 있는 것만 결함 확정으로 센다."""
 
+import pytest
+from pydantic import ValidationError
+
 from deliciousmap.contracts import (
     Classification,
     ClassificationStatus,
@@ -8,6 +11,8 @@ from deliciousmap.contracts import (
     SourceFinding,
     SourceReport,
     SourceReview,
+    SubmissionTally,
+    UnresolvedCount,
     UnresolvedReason,
 )
 from deliciousmap.submission import tally
@@ -87,7 +92,7 @@ def test_a_defect_a_person_confirmed_is_counted_apart_from_the_unresolved() -> N
 
     defects = [(item.finding, item.sources, item.candidates) for item in counted.confirmed_defects]
     assert defects == [("merchant_blank", 1, 47)]
-    assert counted.remaining_sources == ()
+    assert counted.unresolved_sources == ()
 
 
 def test_a_defect_without_a_person_check_stays_unresolved() -> None:
@@ -95,7 +100,7 @@ def test_a_defect_without_a_person_check_stays_unresolved() -> None:
     counted = tally((unresolved("a" * 64),), (review("a" * 64),), (), ())
 
     assert counted.confirmed_defects == ()
-    assert [(item.reason, item.sources) for item in counted.remaining_sources] == [
+    assert [(item.reason, item.sources) for item in counted.unresolved_sources] == [
         ("validation_failed", 1)
     ]
 
@@ -104,7 +109,7 @@ def test_an_unresolved_original_nobody_reviewed_stays_unresolved() -> None:
     counted = tally((unresolved("a" * 64, reason="unsupported_format"),), (), (), ())
 
     assert counted.confirmed_defects == ()
-    assert [(item.reason, item.sources) for item in counted.remaining_sources] == [
+    assert [(item.reason, item.sources) for item in counted.unresolved_sources] == [
         ("unsupported_format", 1)
     ]
 
@@ -117,7 +122,7 @@ def test_originals_that_were_read_are_not_counted_as_remaining() -> None:
         (),
     )
 
-    assert [item.sources for item in counted.remaining_sources] == [1]
+    assert [item.sources for item in counted.unresolved_sources] == [1]
     assert counted.counted_sources is True
 
 
@@ -133,10 +138,10 @@ def test_reasons_are_counted_together_and_ordered_by_how_many_originals_they_hol
         (),
     )
 
-    assert [(item.reason, item.sources, item.candidates) for item in counted.remaining_sources] == [
-        ("validation_failed", 2, 16),
-        ("unreadable", 1, 7),
+    unresolved_counts = [
+        (item.reason, item.sources, item.candidates) for item in counted.unresolved_sources
     ]
+    assert unresolved_counts == [("validation_failed", 2, 16), ("unreadable", 1, 7)]
 
 
 def test_candidates_stay_unknown_when_one_original_never_counted_them() -> None:
@@ -145,7 +150,7 @@ def test_candidates_stay_unknown_when_one_original_never_counted_them() -> None:
         (unresolved("a" * 64, candidates=5), unresolved("b" * 64, candidates=None)), (), (), ()
     )
 
-    assert [(item.sources, item.candidates) for item in counted.remaining_sources] == [(2, None)]
+    assert [(item.sources, item.candidates) for item in counted.unresolved_sources] == [(2, None)]
 
 
 def test_nothing_is_counted_when_the_parse_left_no_report() -> None:
@@ -154,7 +159,7 @@ def test_nothing_is_counted_when_the_parse_left_no_report() -> None:
 
     assert counted.counted_sources is False
     assert counted.confirmed_defects == ()
-    assert counted.remaining_sources == ()
+    assert counted.unresolved_sources == ()
 
 
 def test_records_left_off_the_map_are_counted_by_their_reason() -> None:
@@ -183,3 +188,9 @@ def test_a_submission_that_confirmed_every_place_leaves_nothing_unconfirmed() ->
 
     assert counted.unconfirmed_places == ()
     assert counted.restaurant_records == 1
+
+
+def test_a_tally_cannot_report_originals_it_did_not_count() -> None:
+    """세지 않았다면 사유별 수도 없다. 두 칸이 어긋난 집계는 계약이 받지 않는다."""
+    with pytest.raises(ValidationError):
+        SubmissionTally(unresolved_sources=(UnresolvedCount(reason="unreadable", sources=1),))

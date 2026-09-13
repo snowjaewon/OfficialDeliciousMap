@@ -628,7 +628,13 @@ def test_a_parse_artifact_from_the_previous_schema_asks_for_a_rerun(
     assert "cause=regeneration-required" in capsys.readouterr().err
 
 
-def review(root: Path, *sources: str, city: str = "gwangju", organization: str = ORG) -> None:
+def review(
+    root: Path,
+    *sources: str,
+    city: str = "gwangju",
+    organization: str = ORG,
+    candidates: int = 1,
+) -> None:
     """미해결 원본을 전수로 대조하고 남긴 기록. 원본마다 한 줄이다."""
     write_text(
         root / DATA / "manual" / city / "sources.jsonl",
@@ -639,7 +645,7 @@ def review(root: Path, *sources: str, city: str = "gwangju", organization: str =
                     "organization": organization,
                     "source_hash": source,
                     "finding": "merchant_blank",
-                    "candidates": 3,
+                    "candidates": candidates,
                     "rows": ["sheet1:R4"],
                     "evidence": "원본의 사용장소 칸이 비어 있다(합성)",
                     "confirmed_by": "합성 검토자",
@@ -678,6 +684,18 @@ def test_source_review_for_an_original_that_now_parses_is_rejected(
     (source,) = publish(tmp_path, ("1분기.xls", workbook(QUARTER)))
     assert run(tmp_path, "headermap", FakeModel(headers=[header_answer()])) == 0
     review(tmp_path, source)
+    assert run(tmp_path, "parse") == 1
+
+
+def test_a_review_that_counted_other_candidates_than_the_code_is_rejected(
+    tmp_path: Path, configured: None
+) -> None:
+    """사람이 센 후보 수와 코드가 센 수가 다르면 화면이 어느 쪽을 분모로 냈는지 알 수 없다(#106)."""
+    record_spending(tmp_path)
+    sheet = sheet_a(("2026-01-05", "", "협의", 4.0, 62000.0), total=False)
+    (source,) = publish(tmp_path, ("1분기.xls", workbook(sheet)))
+    assert run(tmp_path, "headermap", FakeModel(headers=[header_answer(), header_answer()])) == 0
+    review(tmp_path, source, candidates=2)
     assert run(tmp_path, "parse") == 1
 
 
