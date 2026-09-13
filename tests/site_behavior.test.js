@@ -1230,3 +1230,34 @@ test("the landing page shows the install guide and registers the service worker"
   assert.equal(page.guide.hidden, false);
   assert.deepEqual(registered, [["https://map.example/sw.js", "./"]]);
 });
+
+test("the ledger says how many places the original left unnamed", () => {
+  const list = new FakeElement();
+  const status = new FakeElement();
+  const more = new FakeElement();
+  const documentObject = new FakeDocument({
+    "[data-records-list]": list,
+    "[data-records-more]": more,
+    "[data-records-status]": status,
+  });
+  const base = {
+    amount_krw: 1000,
+    map_status: "geocode_failed",
+    geocode_reason: "no_candidates",
+    organization: "합성 기관",
+    purpose: "간담회",
+    spent_on: "2026-01-01",
+  };
+  const records = [
+    { ...base, merchant: "합성카페 외 1", unnamed_companions: 1 },
+    // 원본이 수를 적지 않았다. 0곳으로 적으면 없는 사실을 지어낸다.
+    { ...base, merchant: "합성낙지 외", unnamed_companions: null },
+    { ...base, merchant: "같은 식당", unnamed_companions: 0 },
+  ];
+
+  renderRecords(documentObject, records);
+  const notes = list.children.map((card) =>
+    card.children.map((child) => child.textContent).filter((text) => text.includes("동행 업소")),
+  );
+  assert.deepEqual(notes, [["이름 없는 동행 업소 1곳"], ["이름 없는 동행 업소 수 미상"], []]);
+});

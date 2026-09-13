@@ -582,6 +582,9 @@ class PublishedRecord(Contract):
     geocode_reason: GeocodeReason | None = None
     # 마커로 묶인 레코드만 업소 식별자를 가진다.
     business_id: Sha256 | None = None
+    # 상호 끝이 이름 없이 수만 밝힌 업소의 수(#127). 꼬리말이 없으면 0,
+    # 원본이 수를 적지 않았으면 알 수 없어 `null`이다.
+    unnamed_companions: int | None = Field(default=0, ge=0)
 
     @model_validator(mode="after")
     def consistent_map_status(self) -> "PublishedRecord":
@@ -596,14 +599,14 @@ class PublishedRecord(Contract):
 
 
 class MarkerFile(Contract):
-    schema_version: Literal[8] = 8
+    schema_version: Literal[9] = 9
     city: Text
     org: str | None = None
     markers: tuple[PublishedMarker, ...]
 
 
 class RecordFile(Contract):
-    schema_version: Literal[8] = 8
+    schema_version: Literal[9] = 9
     city: Text
     org: str | None = None
     records: tuple[PublishedRecord, ...]
@@ -1003,6 +1006,31 @@ class UnconfirmedPlace(Contract):
     records: int = Field(ge=1)
 
 
+class UnnamedCompanions(Contract):
+    """원본이 상호 끝에 이름 없이 수만 밝힌 업소([#127](
+    https://github.com/snowjaewon/OfficialDeliciousMap/issues/127)).
+
+    이름이 없어 조회할 수도 확정할 수도 없으므로 영영 마커가 되지 못한다. 원본이 수도 적지
+    않은 표기는 몇 곳인지 알 수 없으므로 `places`에 더하지 않고 따로 센다 — 0곳으로도 1곳으로도
+    적지 않는다. 이름이 적힌 첫 업소는 여기 담기지 않으며 다른 레코드와 같게 조회·판정된다.
+    """
+
+    # 꼬리말이 붙은 레코드 수. 레코드의 원본 표기는 바뀌지 않는다.
+    records: int = Field(default=0, ge=0)
+    # 원본이 수를 밝힌 이름 없는 업소의 합.
+    places: int = Field(default=0, ge=0)
+    # 원본이 수를 적지 않아 몇 곳인지 알 수 없는 레코드 수.
+    uncounted_records: int = Field(default=0, ge=0)
+
+    @model_validator(mode="after")
+    def counted_within_the_records(self) -> "UnnamedCompanions":
+        if self.uncounted_records > self.records:
+            raise ValueError("more tails without a count than records that carry one")
+        if not self.records and (self.places or self.uncounted_records):
+            raise ValueError("places cannot be reported without a record that names them")
+        return self
+
+
 class SubmissionTally(Contract):
     """제출 시점 기준이 공개하는 남은 미해결의 수([#106](
     https://github.com/snowjaewon/OfficialDeliciousMap/issues/106)).
@@ -1022,6 +1050,8 @@ class SubmissionTally(Contract):
     # 지오코딩 판정 대상. 미확정 수의 분모이며 비식당·판단 보류는 대상이 아니다.
     restaurant_records: int = Field(default=0, ge=0)
     unconfirmed_places: tuple[UnconfirmedPlace, ...] = ()
+    # 원본이 이름 없이 수만 밝혀 조회할 이름조차 없는 업소(#127). 미확정 사유와 별개다.
+    unnamed_companions: UnnamedCompanions = UnnamedCompanions()
 
     @model_validator(mode="after")
     def counted_before_reported(self) -> "SubmissionTally":

@@ -814,3 +814,80 @@ def test_the_dialog_and_the_ledger_call_a_geocoding_reason_the_same_thing() -> N
     assert dict(re.findall(r"^\s*(\w+): \"(.+)\",$", block.group(1), re.M)) == dict(
         site.GEOCODE_REASON_LABELS
     )
+
+
+def with_merchants(context: ExecutionContext, *merchants: str) -> None:
+    """레코드의 상호만 바꾼다. 꼬리말이 장부·자료 범위에 어떻게 남는지 관찰하려는 것이다."""
+    store = ArtifactStore(context.paths, context.target)
+    records = store.load("parse", ParseOutput).records
+    decisions = store.load("classify", ClassifyOutput).decisions
+    store.save(
+        "parse",
+        ParseOutput(
+            records=tuple(
+                record.model_copy(update={"merchant": merchant})
+                for record, merchant in zip(records, merchants, strict=True)
+            )
+        ),
+    )
+    # parse를 다시 쓰면 classify의 의존성이 낡는다. 판정은 그대로 두고 다시 저장한다.
+    store.save("classify", ClassifyOutput(decisions=decisions))
+
+
+def test_the_ledger_counts_the_places_the_original_never_named(tmp_path: Path) -> None:
+    """`외 1`은 둘째 업소의 이름을 적지 않았다. 그 수가 레코드마다 장부에 남는다(#127)."""
+    context = prepare(tmp_path)
+    add_record(context, "r2")
+    add_record(context, "r3")
+    with_merchants(context, "같은 식당 외 1", "합성낙지 외", "같은 식당")
+    second, third = lookup(), lookup()
+    second["scope"]["record_id"], third["scope"]["record_id"] = "r2", "r3"
+    save_input(context, lookup(), second, third)
+    for stage in ("geocode", "closure", "build"):
+        assert run_cli(context, stage) == 0
+
+    records = published(context, "records.json")["records"]
+    notations = [record["merchant"] for record in records]
+    assert notations == ["같은 식당 외 1", "합성낙지 외", "같은 식당"]
+    # 수를 적지 않은 꼬리말은 몇 곳인지 모른다. 0곳으로도 1곳으로도 적지 않는다.
+    assert [record["unnamed_companions"] for record in records] == [1, None, 0]
+
+
+def companion_page(tmp_path: Path, *merchants: str) -> str:
+    """상호만 다른 레코드로 도시 화면을 낸다. 자료 범위가 무엇을 적는지 보려는 것이다."""
+    context = prepare(tmp_path)
+    queries = [lookup()]
+    for index in range(2, len(merchants) + 1):
+        add_record(context, f"r{index}")
+        query = lookup()
+        query["scope"]["record_id"] = f"r{index}"
+        queries.append(query)
+    with_merchants(context, *merchants)
+    save_input(context, *queries)
+    for stage in ("geocode", "closure", "build"):
+        assert run_cli(context, stage) == 0
+    return city_page(context)
+
+
+def test_city_page_does_not_hide_the_places_the_original_never_named(tmp_path: Path) -> None:
+    page = companion_page(tmp_path, "같은 식당 외 2", "합성낙지 외")
+
+    assert "상호 끝에 이름 없이 수만 적은 1건이 밝힌 이름 없는 업소 2곳" in page
+    assert "이름도 수도 없는 1건은 그런 업소가 몇 곳인지조차 알 수 없습니다" in page
+
+
+def test_city_page_never_says_zero_places_when_no_original_wrote_a_count(tmp_path: Path) -> None:
+    """수를 적은 꼬리말이 하나도 없으면 0곳이라고 적을 수 없다. 세지 않은 값은 0이 아니다."""
+    page = companion_page(tmp_path, "합성낙지 외", "합성곰탕 합성이네 외")
+
+    assert "이름 없는 업소 0곳" not in page
+    assert "이름도 수도 없는 2건은 그런 업소가 몇 곳인지조차 알 수 없습니다" in page
+
+
+def test_city_page_says_nothing_about_tails_no_original_wrote(tmp_path: Path) -> None:
+    """꼬리말이 없으면 낼 말이 없다. 하지 않은 일의 0건은 군말이다."""
+    context = build_ready(tmp_path)
+    assert run_cli(context, "build") == 0
+    page = city_page(context)
+    assert "이름 없이 수만 적은" not in page
+    assert "이름도 수도 없는" not in page

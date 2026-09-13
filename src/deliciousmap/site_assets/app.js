@@ -74,6 +74,13 @@
     return record.map_status === "geocode_failed" && reason ? `${status} · ${reason}` : status;
   }
 
+  // 원본이 상호 끝에 이름 없이 수만 밝힌 업소. 이름이 없어 조회조차 하지 못한다(#127).
+  function unnamedCompanionNote(record) {
+    const unnamed = record.unnamed_companions;
+    if (unnamed === null) return "이름 없는 동행 업소 수 미상";
+    return unnamed > 0 ? `이름 없는 동행 업소 ${unnamed.toLocaleString("ko-KR")}곳` : "";
+  }
+
   function normalizeSearch(value) {
     return String(value).normalize("NFKC").trim().toLocaleLowerCase("ko-KR");
   }
@@ -296,6 +303,8 @@
         state.className = `record-state state-${record.map_status}`;
         state.textContent = recordState(record);
         article.append(heading, summary, purpose, state);
+        const unnamed = unnamedCompanionNote(record);
+        if (unnamed) article.append(textElement(documentObject, "p", "record-companions", unnamed));
         fragment.append(article);
       }
       shown = Math.min(shown + batchSize, records.length);
