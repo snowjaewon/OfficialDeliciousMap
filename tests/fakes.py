@@ -302,11 +302,12 @@ def license_item(
     }
 
 
-def license_body(*items: dict[str, str], result_code: str = "200") -> bytes:
+# 조회서비스가 실제로 주는 성공 봉투(#73 실측). HTTP 상태 코드가 아니다.
+def license_body(*items: dict[str, str], result_code: str = "0") -> bytes:
     return json.dumps(
         {
             "response": {
-                "header": {"resultCode": result_code, "resultMsg": "NORMAL SERVICE"},
+                "header": {"resultCode": result_code, "resultMsg": "정상"},
                 "body": {
                     "dataType": "json",
                     "numOfRows": 100,

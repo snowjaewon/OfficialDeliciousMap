@@ -228,7 +228,7 @@ def test_single_row_responses_are_read_without_hiding_them_as_zero(
     body = json.dumps(
         {
             "response": {
-                "header": {"resultCode": "200", "resultMsg": "NORMAL SERVICE"},
+                "header": {"resultCode": "0", "resultMsg": "정상"},
                 "body": {"numOfRows": 100, "pageNo": 1, "totalCount": 1, "items": items},
             }
         },
@@ -238,6 +238,33 @@ def test_single_row_responses_are_read_without_hiding_them_as_zero(
     result = geocoded(context)
     expected = ("success", "matched") if found else ("failed", "no_candidates")
     assert (result["status"], result["reason"]) == expected
+
+
+def test_the_services_own_success_envelope_is_read_as_success(
+    tmp_path: Path, licensed: None
+) -> None:
+    """조회서비스는 성공을 `resultCode` "0"·`resultMsg` "정상"으로 알린다(#73 실측)."""
+    context = prepare(tmp_path)
+    save_input(context, evidence_only())
+    body = json.dumps(
+        {
+            "response": {
+                "header": {"resultCode": "0", "resultMsg": "정상"},
+                "body": {
+                    "dataType": "json",
+                    "numOfRows": 100,
+                    "pageNo": 1,
+                    "totalCount": 1,
+                    "items": {"item": [licensed_place()]},
+                },
+            }
+        },
+        ensure_ascii=False,
+    ).encode("utf-8")
+    assert run_cli(context, "geocode", licenses=FakeLicenseTransport(body)) == 0
+    result = geocoded(context)
+    assert (result["status"], result["reason"]) == ("success", "matched")
+    assert sources(context) == ["license"]
 
 
 def test_indistinguishable_candidates_from_one_provider_stay_ambiguous(
@@ -358,7 +385,12 @@ def test_provider_caches_stay_separate_and_reused_until_an_explicit_retry(
     assert len(naver.requests) == 1
     assert [url.rstrip("/").split("/")[-2] for url in licenses.urls[1:]] == list(LICENSE_SERVICES)
     assert geocoded(context)["reason"] == "conflicting_evidence"
-    assert [entry["revision"] for entry in cache_lines(context)] == [1, 1, 2]
+    # 실패한 인허가 조회만 새 revision을 얻고 네이버는 처음 결과를 그대로 쓴다.
+    # 줄 순서는 키 해시를 따르므로 제공자별로 모아 본다.
+    revisions: dict[str, list[int]] = {}
+    for entry in cache_lines(context):
+        revisions.setdefault(entry["evidence"].split("/")[0], []).append(entry["revision"])
+    assert revisions == {"license": [1, 2], "naver": [1]}
 
 
 def test_without_a_license_key_the_existing_path_is_unchanged(
