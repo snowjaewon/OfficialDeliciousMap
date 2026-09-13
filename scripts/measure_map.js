@@ -694,6 +694,16 @@ async function readTrace(cdp, sessionId, stream) {
   }
 }
 
+// Windows에서는 Chrome이 쓰는 중인 파일을 열면 EBUSY가 난다(#77). 빈 값이면 다음 폴링에서 다시 읽는다.
+function readPortFile(portFile) {
+  try {
+    return fs.readFileSync(portFile, "utf8");
+  } catch (error) {
+    if (error.code === "EBUSY") return "";
+    throw error;
+  }
+}
+
 async function launchChrome(chromePath, headed) {
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), "deliciousmap-measure-"));
   // 정리 실패가 측정 실패를 가리지 않게 경고만 남긴다.
@@ -729,7 +739,7 @@ async function launchChrome(chromePath, headed) {
     for (let attempt = 0; attempt < 100; attempt += 1) {
       if (child.exitCode !== null) break;
       if (fs.existsSync(portFile)) {
-        const [port, browserPath] = fs.readFileSync(portFile, "utf8").split("\n");
+        const [port, browserPath] = readPortFile(portFile).split("\n");
         if (browserPath) {
           const cdp = await Cdp.connect(`ws://127.0.0.1:${port}${browserPath.trim()}`);
           const stop = async () => {
