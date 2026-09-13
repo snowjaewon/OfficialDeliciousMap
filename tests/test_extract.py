@@ -17,7 +17,7 @@ from deliciousmap.contracts import (
     SourceRef,
 )
 from deliciousmap.extract import ValidationFailed, extract, merge_repeats, parse_date
-from deliciousmap.grid import Cell, Table
+from deliciousmap.grid import Cell, Span, Table
 
 SOURCE = SourceRef(
     path=Path("gwangju/gwangju-city/expenses/1-1.xls"),
@@ -40,8 +40,8 @@ MAPPING = HeaderMap(
 )
 
 
-def table(*rows: tuple[Cell, ...]) -> Table:
-    return Table("sheet1", "시트", (("□ 합성과 업무추진비",), HEADER, *rows))
+def table(*rows: tuple[Cell, ...], spans: tuple[Span, ...] = ()) -> Table:
+    return Table("sheet1", "시트", (("□ 합성과 업무추진비",), HEADER, *rows), spans)
 
 
 def spend(day: int, merchant: str, amount: float) -> tuple[Cell, ...]:
@@ -62,6 +62,33 @@ def test_terminator_and_punctuation_rows_are_not_expenses(terminator: tuple[Cell
     assert result.candidates == 1
     # 분모에서 뺀 행은 위치와 종류를 남긴다.
     assert result.excluded == ("sheet1:R4 blank",)
+
+
+def test_merged_cells_are_read_from_the_row_that_holds_them() -> None:
+    """2026-09-13 남구 실측: 한 지출의 일자·목적이 다음 행과 세로로 병합되어 있다.
+
+    이어짐 행이 병합의 값을 읽는 것은 추측이 아니라 원본을 보이는 대로 읽는 일이다.
+    날짜 열에 한정하지 않는다 — 같은 병합이 덮은 집행목적도 함께 이어받는다.
+    """
+    sheet = table(
+        ("과장", "2026-03-17 12:30", "합성 식당", "간담회", 62000.0),
+        ("과장", "", "합성 찻집", "", 27000.0),
+        spans=(Span(4, 1, 3), Span(4, 3, 3)),
+    )
+    result = extract(sheet, MAPPING, SOURCE)
+    assert [record.spent_on for record in result.records] == [date(2026, 3, 17)] * 2
+    assert [record.purpose for record in result.records] == ["간담회"] * 2
+    assert [record.merchant for record in result.records] == ["합성 식당", "합성 찻집"]
+
+
+def test_a_blank_date_that_is_not_merged_is_still_unreadable() -> None:
+    """병합이 아닌 그냥 빈 칸은 읽지 않는다. 위 행의 날짜를 가져다 쓰면 추측이 된다."""
+    sheet = table(
+        ("과장", "2026-03-17 12:30", "합성 식당", "간담회", 62000.0),
+        ("과장", "", "합성 찻집", "", 27000.0),
+    )
+    with pytest.raises(ValidationFailed, match="R4 spent_on"):
+        extract(sheet, MAPPING, SOURCE)
 
 
 def test_zero_and_negative_amounts_are_kept_and_flagged_for_review() -> None:
@@ -270,6 +297,43 @@ def test_month_and_day_with_a_time_are_not_read_as_a_two_digit_year() -> None:
     # 두 자리 연도 표기는 그대로 읽는다. 시각이 붙어도 마지막 칸이 날짜다.
     assert parse_date("26.01.26. 12:25", 2026) == date(2026, 1, 26)
     assert parse_date("'25. 10. 17. 12:15") == date(2025, 10, 17)
+
+
+def test_repeated_separators_read_the_same_date() -> None:
+    """2026-09-13 동구 실측: `2026..03.24.`는 구분자가 두 번 찍힌 오타다.
+
+    같은 날짜를 같게 읽는 일이며 원본에 없는 값을 채우지 않는다.
+    """
+    assert parse_date("2026..03.24.") == date(2026, 3, 24)
+    assert parse_date("2026. . 3. 24.") == date(2026, 3, 24)
+    assert parse_date("2026년 3월 24일") == date(2026, 3, 24)
+
+
+def test_six_digit_dates_are_read_only_with_a_year_hint_that_matches() -> None:
+    """2026-09-13 광산구 실측: 헤더 없는 표의 `260117`.
+
+    금액도 여섯 자리가 흔해 연도 근거 없이는 여섯 자리를 날짜로 보지 않는다.
+    """
+    assert parse_date("260117", 2026) == date(2026, 1, 17)
+    assert parse_date("260117") is None
+    assert parse_date("260117", 2025) is None
+    # 같은 표의 금액 칸(`104000`). 연도 근거가 있어도 날짜가 되지 않는다.
+    assert parse_date("104000", 2026) is None
+    assert parse_date(104000.0, 2026) is None
+    # 숫자 칸으로 온 같은 표기도 같게 읽는다.
+    assert parse_date(260117.0, 2026) == date(2026, 1, 17)
+
+
+def test_three_digit_year_is_read_only_when_one_digit_makes_the_hint() -> None:
+    """2026-09-13 서구 실측: `206/05/08`은 연도 한 자리가 빠져 어떤 연도로도 읽히지 않는 표기다.
+
+    연도 근거에 한 자리를 끼워 넣어 정확히 같아질 때만 그 연도로 읽는다. 월·일은 고쳐 읽지 않는다.
+    """
+    assert parse_date("206/05/08 20:41", 2026) == date(2026, 5, 8)
+    assert parse_date("206/05/08 20:41") is None
+    assert parse_date("205/05/08", 2026) is None
+    # 네 자리로 적힌 연도는 근거와 달라도 그대로 읽는다. 기간 밖의 유효한 날짜는 고치지 않는다.
+    assert parse_date("2060/05/08", 2026) == date(2060, 5, 8)
 
 
 def original(number: int, posted: str) -> SourceRef:
