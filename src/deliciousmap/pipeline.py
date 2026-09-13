@@ -280,9 +280,9 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
                         tally=submission.tally(
                             parsed.sources,
                             store.source_reviews(),
+                            parsed.records,
                             classified.decisions,
                             geocoded.results,
-                            parsed.records,
                         ),
                     ),
                     context,

@@ -143,8 +143,9 @@ uv run python -m deliciousmap build --city seoul
 같은 실행 범위의 다른 업소 결과는 그대로 유지되며 `geocode-history-v2.jsonl`의 이전 이력은 남는다.
 
 geocode 산출물은 상호 범위 업소 확인을 담은 v5, closure는 조회 요청 기록까지 담은 v4,
-build는 식당별 방문 요약(주소·최근 방문일·합계 금액·방문 기관)을 담은 v7이다.
-`markers.json`에는 확정 상호·좌표·방문 횟수·폐업 표시·좌표 출처와 그 방문 요약만 싣는다. 이전 버전은
+build는 장부에 금액 미상 방문과 이름 없는 동행 업소의 수까지 담은 v9다.
+`markers.json`에는 확정 상호·좌표·방문 횟수·폐업 표시·좌표 출처와 식당별 방문 요약
+(주소·최근 방문일·합계 금액·방문 기관)만 싣는다. 이전 버전은
 `regeneration-required`로 거부하고
 `history/<stage>-v<version>-<content-hash>.json`에 보존한 뒤 재실행한다. 이 사본은 커밋하지
 않는다(`.gitignore`). 커밋한 판은 git 이력에 그대로 있다. 후보 비교 제안은

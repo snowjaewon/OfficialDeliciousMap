@@ -60,8 +60,10 @@ def resolve(
         if prepared.candidates or recorded_failure:
             resolved.append(prepared)
             continue
-        # 확정 복원명이 있으면 그 이름으로 조회한다. 도시·기관 맥락은 질의에 넣지 않는다.
-        query = restored.get(record.record_id, record.merchant)
+        # 확정 복원명이 있으면 그 이름을, 없으면 꼬리말을 뗀 첫 업소의 이름을 조회한다.
+        # 사람 확인이 규칙보다 앞선다. 도시·기관 맥락은 질의에 넣지 않는다.
+        confirmed = restored.get(record.record_id)
+        query = confirmed if confirmed is not None else merchants.read(record.merchant).named
         # 사람이 이미 업소별로 본 지출은 나누어 조회할 것이 없다. 확인이 없는 표기만 더 조회한다.
         resolved.append(
             _merge_provider_lookups(

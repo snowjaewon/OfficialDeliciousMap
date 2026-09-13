@@ -20,6 +20,7 @@ from deliciousmap.contracts import (
     SourceReview,
     SubmissionTally,
     UnconfirmedPlace,
+    UnnamedCompanions,
     UnresolvedCount,
 )
 
@@ -27,14 +28,15 @@ from deliciousmap.contracts import (
 def tally(
     sources: Sequence[SourceReport],
     reviews: Sequence[SourceReview],
+    records: Sequence[Record],
     decisions: Sequence[Classification],
     geocodes: Sequence[GeocodeResult],
-    records: Sequence[Record],
 ) -> SubmissionTally:
     """이번 제출이 남긴 미해결을 사유별로 센다. `reviews`는 대상 도시·기관의 것만 받는다.
 
-    `records`에 기본값을 두지 않는다. 빠뜨린 호출이 가르지 못한 지출을 0건으로 통과시키면
-    세지 않은 것과 0건인 것을 구별할 수 없다.
+    `records`는 장부에 실리는 레코드 전부다. 이름 없는 동행 업소도 가르지 못한 지출도 판정
+    사유가 아니라 상호 표기에서 세므로 여기서 함께 읽는다. 기본값을 두지 않는다 — 빠뜨린 호출이
+    그 둘을 0건으로 통과시키면 세지 않은 것과 0건인 것을 구별할 수 없다.
     """
     confirmed = {item.source_hash: item for item in reviews if item.confirmed_by.strip()}
     unresolved = [item for item in sources if item.status == "unresolved"]
@@ -51,6 +53,18 @@ def tally(
         restaurant_records=sum(item.status == "restaurant" for item in decisions),
         unconfirmed_places=_unconfirmed_places(geocodes),
         unsplit_expenses=merchants.unsplit_expenses(records),
+        unnamed_companions=_unnamed_companions(records),
+    )
+
+
+def _unnamed_companions(records: Sequence[Record]) -> UnnamedCompanions:
+    """이름 없이 수만 밝힌 업소. 수를 적지 않은 표기는 몇 곳인지 몰라 합계에 넣지 않는다."""
+    counted = [merchants.read(record.merchant) for record in records]
+    tails = [item for item in counted if item.unnamed != 0]
+    return UnnamedCompanions(
+        records=len(tails),
+        places=sum(item.unnamed for item in tails if item.unnamed is not None),
+        uncounted_records=sum(item.unnamed is None for item in tails),
     )
 
 

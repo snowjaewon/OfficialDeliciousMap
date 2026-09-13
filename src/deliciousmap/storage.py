@@ -77,9 +77,10 @@ OUTPUT_MODELS: dict[str, type[Contract]] = {
 }
 
 # fetch는 받지 않은 게시글 수를 담은 v4, headermap은 미해결 원본의 매핑을 담은 v2,
-# parse는 업소별로 가른 레코드를 담은 v5, geocode는 확인한 업소를 담은 v5,
-# closure는 조회 요청 기록을 포함하는 v4, build는 금액 미상 방문을 담은 v8이다.
-SCHEMA_VERSIONS = {"fetch": 4, "headermap": 2, "parse": 5, "geocode": 5, "closure": 4, "build": 8}
+# parse는 업소별로 가른 레코드를 담은 v5, geocode는 확인한 업소를 담은 v5, closure는 조회 요청
+# 기록을 포함하는 v4, build는 금액 미상 방문과 이름 없는 동행 업소의 수를 함께 담은 v9다 —
+# 두 변경이 각각 v8을 쓰고 합쳐졌으므로 어느 쪽 v8도 이 산출물을 설명하지 못한다.
+SCHEMA_VERSIONS = {"fetch": 4, "headermap": 2, "parse": 5, "geocode": 5, "closure": 4, "build": 9}
 
 # 제공자 조회 캐시. 확정 업소 판정 이력(geocode-history-v2.jsonl)과 분리해 둔다.
 LOOKUP_CACHE = "geocode-lookup-v1.jsonl"
