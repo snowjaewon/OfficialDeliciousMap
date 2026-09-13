@@ -104,9 +104,10 @@ uv run python -m deliciousmap parse --city gwangju --org gwangju-nam \
 실행에서는 `model_not_configured`로 남았다.
 
 그래서 #99와 같은 방식으로 Claude가 표를 읽어 판정하고 답변 이력에 넣었다
-(`claude-opus-5/claude-read-1`). **이 판정은 사본에만 있고 저장소에는 커밋하지 않았다** —
-이슈의 `남은 제한`대로 이 작업은 형식 지원까지이기 때문이다. 남구를 다시 돌릴 때 같은
-판정을 써야 하므로 그대로 옮겨 적는다.
+(`claude-opus-5/claude-read-1`). **이 판정은 사본에만 있고 저장소의 답변 이력에는 넣지
+않았다** — 이슈의 `남은 제한`대로 이 작업은 형식 지원까지이기 때문이다. 대신 남구를 다시
+돌릴 사람이 찾을 수 있도록 [`data/참고사항.md`](../../data/참고사항.md)에 넣을 줄과 넣는
+방법을 적어 두었다. 아래는 그 판정의 내용이다.
 
 ```json
 {"amount_unit": "won", "columns": [{"column": 1, "role": "spent_on"},
@@ -193,7 +194,7 @@ ZIP이다. 나머지 셋은 구현 뒤에 더했다.
 
 - **네 원본의 14건은 아직 도시 산출물에 없다.** 반영하려면 남구를 다시 돌려야 하고 그때
   `classify`·`geocode`·`build`가 함께 움직인다. 3절의 헤더 판정을 먼저 답변 이력에 넣어야
-  한다.
+  하며, 넣는 방법은 [`data/참고사항.md`](../../data/참고사항.md)에 있다.
 - `1112-1`의 9건 중 3건은 상호 칸에 쉼표로 두 업소가 적혀 있다. `parse`는 통과하지만 좌표를
   받지 못한다. 도시 전체의 기존 문제이며 [#117](https://github.com/snowjaewon/OfficialDeliciousMap/issues/117)이 다룬다.
 - 대상 기간 안 단독 `.hwp`가 나타나면 그때 OLE2 읽기를 다시 판단한다. 지금은 0개다.
