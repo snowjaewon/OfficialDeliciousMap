@@ -120,6 +120,7 @@ class LocalAdapters:
                     targets=value.target_sources,
                     excluded=value.excluded_sources,
                     repeated=value.repeated_expenses,
+                    tally=value.tally,
                 ),
             )
         return BuildOutput(

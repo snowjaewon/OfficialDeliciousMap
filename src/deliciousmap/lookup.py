@@ -11,7 +11,7 @@ from deliciousmap.contracts import (
     RestoredName,
 )
 from deliciousmap.identity import digest
-from deliciousmap.storage import ArtifactStore
+from deliciousmap.storage import ArtifactStore, LookupCache
 
 POLICY_VERSION = "lookup-1"
 
@@ -50,6 +50,8 @@ def resolve(
     """담당자가 후보를 주지 않은 레코드만 조회한다. 기록된 조회 실패는 덮지 않는다."""
     if not providers:
         return supplied
+    # 조회 캐시는 여기서 한 번만 읽는다. 레코드 루프가 파일을 다시 파싱하지 않는다.
+    cache = store.lookup_cache()
     restored = {item.record_id: item.restored_merchant for item in restorations}
     resolved = []
     for record, prepared in zip(records, supplied, strict=True):
@@ -60,13 +62,13 @@ def resolve(
         # 확정 복원명이 있으면 그 이름으로 조회한다. 도시·기관 맥락은 질의에 넣지 않는다.
         query = restored.get(record.record_id, record.merchant)
         resolved.append(
-            _merge_provider_lookups(store, prepared, query, providers, retry_failed=retry_failed)
+            _merge_provider_lookups(cache, prepared, query, providers, retry_failed=retry_failed)
         )
     return tuple(resolved)
 
 
 def _merge_provider_lookups(
-    store: ArtifactStore,
+    cache: LookupCache,
     prepared: CandidateLookup,
     query: str,
     providers: tuple[CandidateProvider, ...],
@@ -79,7 +81,7 @@ def _merge_provider_lookups(
     status: str = "ok"
     error: str | None = None
     for provider in providers:
-        found, cache = _reuse_or_search(store, provider, query, retry_failed=retry_failed)
+        found, cache_ref = _reuse_or_search(cache, provider, query, retry_failed=retry_failed)
         candidates.extend(found.candidates)
         queries.append(
             ProviderQuery.model_validate(
@@ -89,7 +91,7 @@ def _merge_provider_lookups(
                     "interpretation": provider.interpretation,
                     "status": found.status,
                     "error": found.error,
-                    "cache": cache,
+                    "cache": cache_ref,
                 }
             )
         )
@@ -108,16 +110,16 @@ def _merge_provider_lookups(
 
 
 def _reuse_or_search(
-    store: ArtifactStore, provider: CandidateProvider, query: str, *, retry_failed: bool
+    cache: LookupCache, provider: CandidateProvider, query: str, *, retry_failed: bool
 ) -> tuple[ProviderCandidates, CacheRef]:
     key = request_key(provider, query)
-    previous = store.cached_candidates(key)
+    previous = cache.cached_candidates(key)
     if previous is not None:
         found = ProviderCandidates.model_validate(previous.value)
         if not (retry_failed and found.status == "error"):
             return found, CacheRef(key=key, revision=previous.revision)
     found = provider.search(query)
-    revision = store.remember_candidates(key, found, _evidence(provider, found), previous)
+    revision = cache.remember_candidates(key, found, _evidence(provider, found))
     return found, CacheRef(key=key, revision=revision)
 
 

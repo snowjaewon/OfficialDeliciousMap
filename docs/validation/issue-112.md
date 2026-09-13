@@ -25,6 +25,11 @@ HWPX는 표준 ZIP이고 본문은 `Contents/section<번호>.xml`의 OWPML이다
 범위의 왼쪽 위에만 값을 두므로, `Table.cell(row, column)`을 읽는 쪽이 형식마다 다른 규칙을
 알 필요가 없다.
 
+`develop`의 [#113](https://github.com/snowjaewon/OfficialDeliciousMap/issues/113)을 합친
+뒤로는 세로 병합을 `Span`으로 함께 싣는다. 덮인 자리는 그대로 비어 있고(`Table.cell`)
+지출 후보의 값을 읽을 때만 병합이 담은 값이 된다(`Table.value`) — 통합문서·PDF와 같은
+규칙이다. 아래 2절의 수는 이 합치기 전에 잰 것이다.
+
 `.hwp`(HWP 5.0)는 이슈 본문의 제안과 [착수 전 실측](https://github.com/snowjaewon/OfficialDeliciousMap/issues/112#issuecomment-5653752069)
 4절대로 범위에서 뺐다. 5절에 실측이 있다.
 
@@ -78,6 +83,10 @@ uv run python -m deliciousmap parse --city gwangju --org gwangju-nam \
 `records.csv`가 1,022줄에서 1,036줄로 늘었다. 저장소 그대로 돌리면 `1112-1`의 9건이 빠져
 63개·1,092건·1,027줄이다. 범위 밖 지출·분모에서 뺀 행·재검토 대상은
 네 원본 모두 0건이다.
+
+이 수는 #113의 세로 병합을 합치기 전에 잰 것이다. 합친 뒤에는 이어짐 칸이 `Table.value`로
+읽히므로 네 원본에 세로 병합이 있으면 후보·레코드 수가 달라진다. 반영하려면 남구를 다시
+돌려 확인해야 하며, 그 재실행은 아래 9절의 남은 것에 함께 있다.
 
 `1112-1`의 `matched`가 병합 펼치기의 증거다. 이 원본의 합계 행은 `colSpan=5`로 합쳐져 있어
 `합 계`가 0열, `639,100`이 5열에 있다. 금액이 제 열에 놓이지 않으면 `_check_totals`가
@@ -194,7 +203,8 @@ ZIP이다. 나머지 셋은 구현 뒤에 더했다.
 
 - **네 원본의 14건은 아직 도시 산출물에 없다.** 반영하려면 남구를 다시 돌려야 하고 그때
   `classify`·`geocode`·`build`가 함께 움직인다. 3절의 헤더 판정을 먼저 답변 이력에 넣어야
-  하며, 넣는 방법은 [`data/참고사항.md`](../../data/참고사항.md)에 있다.
+  하며, 넣는 방법은 [`data/참고사항.md`](../../data/참고사항.md)에 있다. #113의 세로 병합을
+  합친 뒤의 수도 그때 확정된다.
 - `1112-1`의 9건 중 3건은 상호 칸에 쉼표로 두 업소가 적혀 있다. `parse`는 통과하지만 좌표를
   받지 못한다. 도시 전체의 기존 문제이며 [#117](https://github.com/snowjaewon/OfficialDeliciousMap/issues/117)이 다룬다.
 - 대상 기간 안 단독 `.hwp`가 나타나면 그때 OLE2 읽기를 다시 판단한다. 지금은 0개다.

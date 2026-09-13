@@ -1073,9 +1073,10 @@ async function measureColdRun(context, url, query, run, traceDirectory, environm
     run["selection-feedback"] = selection.feedback;
     await page.setQuery("");
 
-    const filter = await page.measureInteraction("filter-result", () =>
-      page.click('[data-visits="1"]'),
-    );
+    const filter = await page.measureInteraction("filter-result", async () => {
+      await page.click('[data-visits="1"]');
+      await page.click('[data-visits="5"]');
+    });
     run["filter-result"] = filter.result;
     run["filter-feedback"] = filter.feedback;
     await page.settle("filter-result", () => page.click('[data-visits="all"]'));
