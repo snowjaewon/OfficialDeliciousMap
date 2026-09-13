@@ -94,7 +94,7 @@ DEPENDENCIES = {
 
 # 상한을 넘으면 조각으로 나눌 수 있는 산출물과 그 목록 칸(ADR-0001). 여기 없는 단계는
 # 넘는 순간 거부한다. 나눌 칸이 없으면 무엇을 잘라야 할지 정해져 있지 않기 때문이다.
-PARTITIONED_PAYLOAD = {"geocode": "results"}
+SPLIT_PAYLOAD_FIELD = {"geocode": "results"}
 
 
 def schema_version(stage: str) -> int:
@@ -207,9 +207,14 @@ def _numbered_part(path: Path, number: int) -> Path:
     return path.with_name(f"{path.stem}.{number:03d}{path.suffix}")
 
 
+def _continuation_parts(path: Path) -> list[Path]:
+    """첫 조각에 이어지는 번호 붙은 파일. 이름 규칙은 여기 한 곳에만 적는다."""
+    return sorted(path.parent.glob(f"{path.stem}.[0-9][0-9][0-9]{path.suffix}"))
+
+
 def numbered_parts(path: Path) -> tuple[Path, ...]:
     """이력이나 산출물을 이루는 조각. 번호가 비면 잃어버린 조각을 조용히 넘기지 않고 알린다."""
-    found = sorted(path.parent.glob(f"{path.stem}.[0-9][0-9][0-9]{path.suffix}"))
+    found = _continuation_parts(path)
     if not path.exists():
         if found:
             raise ValueError("numbered parts without the first file")
@@ -384,16 +389,18 @@ def write_artifact(path: Path, contents: Sequence[str]) -> None:
     for number, text in enumerate(contents, start=1):
         write_text(_numbered_part(path, number), text)
     # 지난 실행이 더 많은 조각을 남겼으면 지운다. 남겨 두면 이어 읽기가 옛 항목을 섞는다.
-    for stale in sorted(path.parent.glob(f"{path.stem}.[0-9][0-9][0-9]{path.suffix}"))[
-        len(contents) - 1 :
-    ]:
+    for stale in _continuation_parts(path)[len(contents) - 1 :]:
         stale.unlink()
 
 
 def artifact_digest(path: Path) -> str:
     """조각으로 나뉜 산출물도 통째로 해시한다. 뒤 조각만 바뀐 낡음을 놓치지 않는다."""
+    parts = numbered_parts(path)
+    if not parts:
+        # 있어야 하는 선행 산출물이다. 없는 것을 빈 해시로 덮으면 낡음 검사가 그대로 통과한다.
+        raise FileNotFoundError(path)
     digest = hashlib.sha256()
-    for part in numbered_parts(path):
+    for part in parts:
         digest.update(part.read_bytes())
     return digest.hexdigest()
 
@@ -402,8 +409,7 @@ def read_artifact(path: Path, field: str | None) -> dict[str, Any]:
     """조각을 번호 순으로 이어 읽는다. 봉투 머리가 다른 조각은 섞인 것이므로 거부한다."""
     parts = numbered_parts(path)
     if not parts:
-        # 없는 산출물은 조각 규칙이 아니라 파일이 없다는 사실로 알린다.
-        path.read_text(encoding="utf-8")
+        raise FileNotFoundError(path)
     envelopes: list[dict[str, Any]] = [
         json.loads(part.read_text(encoding="utf-8")) for part in parts
     ]
@@ -411,7 +417,7 @@ def read_artifact(path: Path, field: str | None) -> dict[str, Any]:
     if len(envelopes) == 1:
         return first
     if field is None:
-        raise ValueError("this artifact is not split into parts")
+        raise ValueError("this artifact must not be split into parts")
     items = []
     for envelope in envelopes:
         if _artifact_header(envelope, field) != _artifact_header(first, field):
@@ -481,7 +487,7 @@ class ArtifactStore:
             "payload": payload,
         }
         # 이력은 산출물보다 먼저 쌓인다. 쓸 수 없는 산출물이면 여기서 먼저 거부한다.
-        contents = artifact_contents(envelope, PARTITIONED_PAYLOAD.get(stage))
+        contents = artifact_contents(envelope, SPLIT_PAYLOAD_FIELD.get(stage))
         if isinstance(output, ParseOutput):
             write_records(self.directory / "records.csv", output.records)
         if isinstance(output, GeocodeOutput):
@@ -524,7 +530,7 @@ class ArtifactStore:
         write_artifact(path, contents)
 
     def load[T: Contract](self, stage: str, model: type[T]) -> T:
-        envelope = read_artifact(self.directory / f"{stage}.json", PARTITIONED_PAYLOAD.get(stage))
+        envelope = read_artifact(self.directory / f"{stage}.json", SPLIT_PAYLOAD_FIELD.get(stage))
         if envelope["schema_version"] != schema_version(stage):
             raise RegenerationRequired("rerun the producing stage for the current contract")
         if (envelope["city"], envelope["org"]) != (

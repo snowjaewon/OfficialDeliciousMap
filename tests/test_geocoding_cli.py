@@ -276,7 +276,7 @@ def test_regenerating_legacy_artifact_preserves_it_and_ignores_name_only_history
     )
     write_text(directory / "geocode.json", legacy)
     write_text(directory / "geocode-history.jsonl", "legacy-name-only-history\n")
-    assert run_cli(context, "build") == 1
+    assert run_cli(context, "closure") == 1
     assert "cause=regeneration-required" in capsys.readouterr().err
     assert run_cli(context, "geocode") == 0
     assert payload(context, "geocode")["results"][0]["latitude"] == 35.1
@@ -902,7 +902,9 @@ def test_a_geocode_artifact_over_the_limit_is_split_into_numbered_parts(
     first = directory / "geocode.json"
     parts = storage.numbered_parts(first)
     assert len(parts) > 1, "상한을 넘은 산출물은 조각으로 나뉘어야 한다"
-    assert [part.name for part in parts] == ["geocode.json", *(p.name for p in parts[1:])]
+    assert [part.name for part in parts[1:]] == [
+        f"geocode.{number:03d}.json" for number in range(2, len(parts) + 1)
+    ]
     assert all(part.stat().st_size <= limit for part in parts)
 
     # 조각을 이어 읽으면 레코드가 하나도 빠지지 않는다.

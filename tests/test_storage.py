@@ -220,6 +220,7 @@ def test_artifact_chunks_stay_within_the_limit_when_many_small_items_split(
 
     monkeypatch.setattr(storage, "SIZE_LIMIT", 2_000)
     results = [{"record_id": f"r{index}", "merchant": "가나다라마"} for index in range(200)]
+    # 한 자만 세면 이 조각들이 항목 수만큼 넘쳐 artifact_contents가 거부한다.
     envelope = {
         "schema_version": 5,
         "city": "gwangju",
@@ -227,8 +228,25 @@ def test_artifact_chunks_stay_within_the_limit_when_many_small_items_split(
         "dependencies": {"policy": "identity-2"},
         "payload": {"results": results},
     }
-    chunks = tuple(storage._artifact_chunks(envelope, "results"))
+    chunks = storage.artifact_contents(envelope, "results")
     assert len(chunks) > 1
     assert all(len(chunk.encode("utf-8")) <= storage.SIZE_LIMIT for chunk in chunks)
     # 나눈 뒤에도 항목이 순서 그대로 하나도 빠지지 않는다.
     assert [item for chunk in chunks for item in json.loads(chunk)["payload"]["results"]] == results
+
+
+def test_artifact_digest_refuses_a_missing_file_instead_of_hashing_nothing(tmp_path: Path) -> None:
+    """없는 선행 산출물을 빈 해시로 덮으면 낡음 검사가 그대로 통과한다(#73)."""
+    import hashlib
+
+    from deliciousmap.storage import artifact_digest, write_text
+
+    path = tmp_path / "gwangju" / "geocode.json"
+    with pytest.raises(FileNotFoundError):
+        artifact_digest(path)
+    write_text(path, "{}")
+    assert artifact_digest(path) == hashlib.sha256(b"{}").hexdigest()
+    # 조각이 늘면 해시도 달라진다. 첫 조각만 보면 뒤 조각의 변경이 지나간다.
+    first = artifact_digest(path)
+    write_text(path.parent / "geocode.002.json", "{}")
+    assert artifact_digest(path) != first
