@@ -38,7 +38,7 @@ function isDataUrl(url) {
   return pathname.endsWith("/markers.json") || pathname.endsWith("/records.json");
 }
 
-function workerHarness({ entries = {}, fetchImpl }) {
+function workerHarness({ entries = {}, fetchImpl, windows = [] }) {
   const listeners = {};
   const deleted = [];
   const precached = [];
@@ -55,8 +55,12 @@ function workerHarness({ entries = {}, fetchImpl }) {
   }
   const key = (value) => (typeof value === "string" ? new URL(value, ORIGIN).href : value.url);
   const cacheFor = (name) => ({
+    // 실제 addAll처럼 모두 받아야 저장하고, 하나라도 실패하면 거부한다.
     addAll: async (urls) => {
       precached.push(...urls);
+      const responses = await Promise.all(urls.map((url) => fetchImpl(request(url))));
+      if (responses.some((response) => !response.ok)) throw new TypeError("bad response");
+      urls.forEach((url, index) => stored.get(name).set(key(url), responses[index]));
     },
     match: async (value) => stored.get(name).get(key(value)),
     put: async (value, response) => stored.get(name).set(key(value), response),
@@ -92,6 +96,9 @@ function workerHarness({ entries = {}, fetchImpl }) {
         claim: async () => {
           claimed = true;
         },
+        // 첫 방문 페이지는 워커가 설치될 때 아직 제어되지 않은 창이다.
+        matchAll: async ({ includeUncontrolled, type } = {}) =>
+          includeUncontrolled && type === "window" ? windows.map((url) => ({ url: new URL(url, ORIGIN).href })) : [],
       },
       location: { origin: ORIGIN },
     },
@@ -254,4 +261,30 @@ test("install precaches the current shell", async () => {
     "./assets/styles.css",
     "./manifest.webmanifest",
   ]);
+});
+
+test("install caches the city page that registered the worker so the first revisit opens from cache", async () => {
+  let installed = false;
+  const harness = workerHarness({
+    windows: ["/gwangju/"],
+    fetchImpl: async (value) => fakeResponse(installed ? "network shell" : `installed ${value.url}`),
+  });
+
+  await harness.dispatchLifecycle("install");
+  installed = true;
+  const response = await harness.dispatchFetch(request("/gwangju/", "navigate")).response;
+
+  assert.equal(response.body, `installed ${ORIGIN}/gwangju/`);
+});
+
+test("install still succeeds with the shell when the registering page cannot be fetched", async () => {
+  const harness = workerHarness({
+    windows: ["/gwangju/"],
+    fetchImpl: async (value) => fakeResponse("shell", { ok: !value.url.endsWith("/gwangju/") }),
+  });
+
+  await harness.dispatchLifecycle("install");
+
+  assert.equal(harness.stored.get("deliciousmap-shell-v2").get(`${ORIGIN}/assets/app.js`).body, "shell");
+  assert.equal(harness.stored.get("deliciousmap-shell-v2").has(`${ORIGIN}/gwangju/`), false);
 });

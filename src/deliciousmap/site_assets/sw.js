@@ -5,11 +5,19 @@ const SHELL_PATHS = new Set(SHELL.slice(1).map((asset) => new URL(asset, self.lo
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches
-      .open(SHELL_CACHE_NAME)
-      .then((cache) => cache.addAll(SHELL)),
+    caches.open(SHELL_CACHE_NAME).then(async (cache) => {
+      await cache.addAll(SHELL);
+      await cacheRegisteringPages(cache);
+    }),
   );
 });
+
+// 첫 방문 도시 화면은 워커가 제어하기 전에 받았으므로 설치 때 담아 첫 재방문도 캐시로 연다.
+// 담지 못해도 설치는 계속한다. 그 화면은 다음 탐색의 응답으로 캐시된다.
+async function cacheRegisteringPages(cache) {
+  const pages = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+  await cache.addAll(pages.map((page) => page.url)).catch(() => {});
+}
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
