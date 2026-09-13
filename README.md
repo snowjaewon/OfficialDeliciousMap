@@ -86,8 +86,10 @@ https://github.com/snowjaewon/OfficialDeliciousMap/issues/51)) 광주 5개 자�
   잘리거나 해석할 수 없는 응답과 카드형 표는 다시 묻지 않고 미해결로 남긴다. 표 하나가 실패해도
   남은 표는 끝까지 판정하고, 그 원본의 매핑을 `unresolved_mappings`로 `parse`에 넘긴다 — 원본의
   분모는 표 하나가 아니라 원본 전체다. 원본의 사유는 첫 실패의 것이다.
-- `parse`: xls·xlsx(ISO Strict 포함)를 읽는다. 모든 표가 통과한 원본만 레코드를 낸다. 원본마다
-  후보·범위 밖 건수, 분모에서 뺀 행의 위치·종류, 0원·음수 레코드의 위치, 미해결 사유를
+- `parse`: xls·xlsx(ISO Strict 포함)·PDF·HWPX를 읽는다. PDF는 괘선으로 나뉜 표마다, HWPX는
+  본문의 `<hp:tbl>`마다 표 하나이며 한 칸이 쪼개진 표기와 병합한 칸을 원본의 행·열 자리로
+  되돌린다. 모든 표가 통과한 원본만 레코드를 낸다.
+  원본마다 후보·범위 밖 건수, 분모에서 뺀 행의 위치·종류, 0원·음수 레코드의 위치, 미해결 사유를
   `parse.json`의 `sources`에 남긴다. 미해결 원본도 넘겨받은 매핑으로 후보 수와 뺀 행을 남기되
   레코드는 내지 않는다. 표 하나라도 매핑이 없거나 후보가 0건이면 후보 수는 `알 수 없음`이며,
   0건 손실로 바꾸지 않는다. 목적·상호의 개인정보를 지우고, 경조사 수령인처럼 상호 칸에
@@ -103,7 +105,7 @@ https://github.com/snowjaewon/OfficialDeliciousMap/issues/51)) 광주 5개 자�
   같은 집계에 싣는다.
 - `classify`: 사람 보정 → 도시 무관 LLM 캐시 → Gemini 순. 호출 실패는 판단 보류로 두고 캐시에 남기지 않는다.
 
-PDF·HWP·원본 묶음 ZIP과 전량 추출 폴백은 파일 단위 미해결로 남으며 후속 작업이다.
+HWP(HWP 5.0)·원본 묶음 ZIP과 전량 추출 폴백은 파일 단위 미해결로 남으며 후속 작업이다.
 다른 도시·기관, 인허가 전량 수집·폐업 대조, 실데이터 지도 성능 검증도 후속 작업이다.
 배포는 [CI·배포](#ci배포)에 있다.
 
@@ -209,12 +211,13 @@ docs/specs/header-mapping-fallback.md#제출-시점-기준)). 사람이 원본�
 
 | 파일 | 내용 |
 | --- | --- |
-| `markers.json` | `schema_version`(7), `city`, `org`, `markers` |
-| `records.json` | `schema_version`(7), `city`, `org`, `records` |
+| `markers.json` | `schema_version`(8), `city`, `org`, `markers` |
+| `records.json` | `schema_version`(8), `city`, `org`, `records` |
 
 마커 하나는 `business_id`, 확정 상호 `merchant`, `visit_count`(묶인 레코드 수), `latitude`,
 `longitude`, `closed`, `coordinate_source`, `address`와 묶인 레코드의 요약인
-`last_visited_on`(가장 늦은 `spent_on`), `total_amount_krw`(금액 합계), `organizations`(기관 slug)를
+`last_visited_on`(가장 늦은 `spent_on`. 일이 빈 집행일은 일을 0으로 본 순서라 같은 달의
+어떤 집행일보다 앞이다), `total_amount_krw`(금액 합계), `organizations`(기관 slug)를
 가진다. `coordinate_source`는 좌표를 준 제공자
 (`local`·`naver`·`license`)다. 마커에 묶인 레코드는 좌표가 같으므로 첫 레코드의 판정에서 고르며,
 그 판정이 사람 확인이면 확인한 후보의 제공자, 아니면 결과 좌표와 일치하는 후보의 제공자다.
@@ -225,7 +228,8 @@ docs/specs/header-mapping-fallback.md#제출-시점-기준)). 사람이 원본�
 장부 레코드 하나는 `record_id`, `spent_on`, `organization`, `department`, `merchant`, `purpose`,
 `amount_krw`와 `classification`(식당·비식당·판단 보류), `map_status`(`mapped`·`geocode_failed`·
 `non_restaurant`·`pending`), 판정한 레코드의 `geocode_reason`, 마커로 묶인 레코드의
-`business_id`를 가진다. 마커 수와 장부 레코드 수는 다를 수 있으며 `BuildOutput`에 그대로 남는다.
+`business_id`를 가진다. `spent_on`은 장부 CSV와 같은 표현이라 원본이 일을 적지 않았으면
+`2026.03.`처럼 그 원본 표기를 그대로 싣는다. 화면은 이 값을 그대로 보인다. 마커 수와 장부 레코드 수는 다를 수 있으며 `BuildOutput`에 그대로 남는다.
 공개 파일에는 화면에 필요한 값만 넣는다. `source_hash`·`source_location`·`lookup_key`·
 `dependency_key`·조회 원문·근거 발췌·사람 확인 파일은 넣지 않는다.
 
@@ -386,7 +390,7 @@ record_id,spent_on,organization,department,merchant,purpose,amount_krw,source_ha
 | 필드 | 표현 |
 | --- | --- |
 | `record_id` | 실행 범위 안에서 유일한 비어 있지 않은 안정적 레코드 식별자. 생성은 파서 책임 |
-| `spent_on` | 실제 날짜 `YYYY-MM-DD` |
+| `spent_on` | 실제 날짜 `YYYY-MM-DD`. 원본이 일을 적지 않았으면 일이 빈 집행일이고 그 원본 표기를 그대로 싣는다(`2026.03.`) |
 | `organization` | 레지스트리의 기관 slug, 항상 보존 |
 | `department`, `purpose` | 문자열, 빈 값 허용. 개인정보는 실제 파서가 제거해야 함 |
 | `merchant` | 정규화된 비어 있지 않은 상호 |

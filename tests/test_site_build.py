@@ -24,6 +24,7 @@ from deliciousmap.contracts import (
     RepeatedExpenses,
     SourceFinding,
     SourceReport,
+    SpentOn,
     UnresolvedReason,
 )
 from deliciousmap.pipeline import ExecutionContext
@@ -232,6 +233,42 @@ def test_markers_summarize_the_visits_bundled_into_each_restaurant(tmp_path: Pat
     assert marker["last_visited_on"] == "2026-03-15"
     assert Decimal(marker["total_amount_krw"]) == Decimal("26000")
     assert marker["organizations"] == ["other-org", "test-org"]
+
+
+def test_a_day_less_visit_keeps_its_notation_and_sorts_before_the_dated_days(
+    tmp_path: Path,
+) -> None:
+    """일이 빈 집행일은 장부에 원본 표기로 남는다.
+
+    마커의 최근 방문일은 일을 0으로 본 순서를 따른다.
+    """
+    context = prepare(tmp_path)
+    store = ArtifactStore(context.paths, context.target)
+    first = store.load("parse", ParseOutput).records[0]
+    decisions = store.load("classify", ClassifyOutput).decisions
+    later = first.model_copy(
+        update={
+            "record_id": "r2",
+            "spent_on": SpentOn(2026, 1, notation="2026.01."),
+            "source_location": "sheet1:r2",
+        }
+    )
+    store.save("parse", ParseOutput(records=(first, later)))
+    store.save(
+        "classify",
+        ClassifyOutput(decisions=(*decisions, decisions[0].model_copy(update={"record_id": "r2"}))),
+    )
+    second = lookup()
+    second["scope"]["record_id"] = "r2"
+    save_input(context, lookup(), second)
+    for stage in ("geocode", "closure", "build"):
+        assert run_cli(context, stage) == 0
+
+    records = published(context, "records.json")["records"]
+    assert [record["spent_on"] for record in records] == ["2026-01-02", "2026.01."]
+    # 같은 달에서 일이 빈 날짜는 일이 있는 어떤 날짜보다 앞이다. 그 달 말일로 보지 않는다.
+    [marker] = published(context, "markers.json")["markers"]
+    assert (marker["visit_count"], marker["last_visited_on"]) == (2, "2026-01-02")
 
 
 def test_ledger_keeps_unmapped_records_with_the_reason_they_missed_the_map(

@@ -11,8 +11,8 @@ import pytest
 import xlwt
 
 from deliciousmap.grid import UnreadableOriginal, UnsupportedFormat, read_tables
-from tests import pdf
-from tests.gwangju import workbook
+from tests import hwpx, pdf
+from tests.gwangju import bundle, workbook
 
 
 def test_legacy_workbook_keeps_date_cells_and_skips_empty_sheets(tmp_path: Path) -> None:
@@ -137,12 +137,191 @@ def test_workbook_without_readable_sheets_is_not_reported_as_empty(tmp_path: Pat
 
 @pytest.mark.parametrize(
     "content",
-    [b"HWP Document File", b"PK\x03\x04not-a-workbook"],
+    [
+        b"HWP Document File",
+        b"PK\x03\x04not-a-workbook",
+        # 게시판의 첨부 묶음처럼 통합문서도 HWPX 본문도 없는 ZIP.
+        bundle(("첨부/집행내역.txt", "붙임과 같이 게시합니다.".encode())),
+    ],
 )
 def test_other_formats_are_unsupported(tmp_path: Path, content: bytes) -> None:
     path = tmp_path / "원본.xls"
     path.write_bytes(content)
     with pytest.raises(UnsupportedFormat):
+        read_tables(path)
+
+
+def hwp(stream: str) -> bytes:
+    """통합문서가 없는 OLE2 컨테이너. HWP 5.0이 `.hwpx`와 달리 걸리는 자리를 그대로 짚는다."""
+    book = xlwt.Workbook()
+    book.add_sheet("시트1").write(0, 0, "합성")
+    saved = io.BytesIO()
+    book.save(saved)
+    return saved.getvalue().replace("Workbook".encode("utf-16-le"), stream.encode("utf-16-le"))
+
+
+def test_hwp_stays_an_unsupported_format(tmp_path: Path) -> None:
+    """HWP 5.0은 ZIP이 아니라 OLE2다. 이번 구현은 `.hwpx`만 읽고 `.hwp`는 그대로 미해결이다."""
+    path = tmp_path / "집행내역.hwp"
+    path.write_bytes(hwp("BodyText"))
+    with pytest.raises(UnsupportedFormat):
+        read_tables(path)
+
+
+def test_hwpx_table_is_read_with_the_heading_before_it_as_the_label(tmp_path: Path) -> None:
+    path = tmp_path / "집행내역.hwpx"
+    path.write_bytes(
+        hwpx.document(
+            "2026. 1분기 업무추진비 집행내역(합성과)",
+            [
+                ("사용자", "일시", "장소", "금액"),
+                ("합성과장", "2026.01.02.12:30", "합성식당", "50,400"),
+            ],
+        )
+    )
+    (table,) = read_tables(path)
+    assert (table.name, table.label) == ("table1", "2026. 1분기 업무추진비 집행내역(합성과)")
+    assert table.rows == (
+        ("사용자", "일시", "장소", "금액"),
+        ("합성과장", "2026.01.02.12:30", "합성식당", "50,400"),
+    )
+
+
+def test_hwpx_joins_the_paragraphs_one_cell_is_split_into(tmp_path: Path) -> None:
+    """실제 원본은 칸 안에서 줄을 나눠 `결제`·`방법`을 따로 적는다. 한 칸은 한 값이다."""
+    path = tmp_path / "집행내역.hwpx"
+    path.write_bytes(
+        hwpx.document(
+            [
+                ("일시", hwpx.cell("결제", "방법")),
+                (hwpx.cell("2026. 4. 8.", "12:00"), hwpx.cell("신용", "카드")),
+            ]
+        )
+    )
+    (table,) = read_tables(path)
+    assert table.rows == (("일시", "결제방법"), ("2026. 4. 8.12:00", "신용카드"))
+
+
+def test_hwpx_merged_cells_keep_the_original_row_and_column_numbers(tmp_path: Path) -> None:
+    """합계 행이 `colSpan`으로 합쳐져 있어도 금액은 제 열에 남고, 덮인 자리는 비운다."""
+    path = tmp_path / "집행내역.hwpx"
+    path.write_bytes(
+        hwpx.document(
+            [
+                ("사용자", "일시", "장소", "금액"),
+                (hwpx.cell("합 계", columns=3), "639,100"),
+                (hwpx.cell("합성과장", rows=2), "2026.01.02.12:30", "합성식당", "50,400"),
+                ("2026.01.14.12:00", "합성찻집", "588,700"),
+            ]
+        )
+    )
+    (table,) = read_tables(path)
+    assert table.cell(2, 0) == "합 계"
+    assert table.cell(2, 3) == "639,100"
+    assert table.rows[1] == ("합 계", "", "", "639,100")
+    assert table.rows[3] == ("", "2026.01.14.12:00", "합성찻집", "588,700")
+
+
+def test_hwpx_marks_cells_that_are_merged_into_the_one_above(tmp_path: Path) -> None:
+    """세로 병합은 `<hp:cellSpan>`이 밝힌다. 통합문서·PDF와 같이 격자는 그대로 두고 따로 싣는다."""
+    path = tmp_path / "집행내역.hwpx"
+    path.write_bytes(
+        hwpx.document(
+            [
+                ("일자", "사용장소", "사용금액"),
+                (hwpx.cell("2026-03-17", rows=2), "합성 식당", "62,000"),
+                ("합성 찻집", "27,000"),
+                ("", "합성 국밥", "15,000"),
+            ]
+        )
+    )
+    (table,) = read_tables(path)
+    assert table.rows[2] == ("", "합성 찻집", "27,000")
+    assert table.value(3, 0) == "2026-03-17"
+    # 병합이 아닌 빈 칸은 그대로 빈 값이다.
+    assert table.value(4, 0) == ""
+
+
+def test_hwpx_numbers_the_tables_and_labels_each_with_its_own_heading(tmp_path: Path) -> None:
+    path = tmp_path / "집행내역.hwpx"
+    path.write_bytes(
+        hwpx.document(
+            "□ 1분기",
+            [("일시", "장소"), ("2026.01.02.12:30", "합성식당")],
+            "□ 2분기",
+            [("일시", "장소"), ("2026.04.08.12:00", "합성찻집")],
+        )
+    )
+    first, second = read_tables(path)
+    assert [(table.name, table.label) for table in (first, second)] == [
+        ("table1", "□ 1분기"),
+        ("table2", "□ 2분기"),
+    ]
+    assert second.rows[1] == ("2026.04.08.12:00", "합성찻집")
+
+
+def test_hwpx_numbers_the_tables_of_every_body_in_document_order(tmp_path: Path) -> None:
+    """본문이 여럿인 원본. 구역 번호는 글자가 아니라 수로 이어지므로 10은 2보다 뒤다."""
+    path = tmp_path / "집행내역.hwpx"
+    later = hwpx.section("□ 뒤 구역", [("일시",), ("2026.05.11.12:00",)])
+    earlier = hwpx.section("□ 앞 구역", [("일시",), ("2026.03.02.12:00",)])
+    path.write_bytes(
+        hwpx.archive(("Contents/section10.xml", later), ("Contents/section2.xml", earlier))
+    )
+    first, second = read_tables(path)
+    assert [(table.name, table.label) for table in (first, second)] == [
+        ("table1", "□ 앞 구역"),
+        ("table2", "□ 뒤 구역"),
+    ]
+
+
+def test_hwpx_without_a_table_is_not_reported_as_empty(tmp_path: Path) -> None:
+    """표 밖 문단은 표로 만들지 않는다. 표 0개를 집행 없음으로 바꾸지 않는다."""
+    path = tmp_path / "안내문.hwpx"
+    path.write_bytes(hwpx.document("붙임과 같이 게시합니다.", "끝."))
+    assert read_tables(path) == ()
+
+
+def test_broken_hwpx_body_is_unreadable_rather_than_an_unsupported_format(tmp_path: Path) -> None:
+    path = tmp_path / "깨진.hwpx"
+    path.write_bytes(hwpx.document(body="<hs:sec><hp:p>"))
+    with pytest.raises(UnreadableOriginal):
+        read_tables(path)
+
+
+def test_hwpx_cells_pointing_at_one_position_are_unreadable(tmp_path: Path) -> None:
+    """자리 표기가 어긋나 두 칸이 한 자리를 가리킨다. 나중 칸으로 덮어써 앞 칸을 버리지 않는다."""
+    path = tmp_path / "겹친 자리.hwpx"
+    cell = (
+        "<hp:tc><hp:subList><hp:p><hp:run><hp:t>합성식당</hp:t></hp:run></hp:p></hp:subList>"
+        '<hp:cellAddr colAddr="0" rowAddr="0"/><hp:cellSpan colSpan="1" rowSpan="1"/></hp:tc>'
+    )
+    path.write_bytes(
+        hwpx.document(
+            body='<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>'
+            f"<hs:sec {hwpx.NAMESPACES}><hp:p><hp:run>"
+            f'<hp:tbl rowCnt="1" colCnt="2"><hp:tr>{cell}{cell}</hp:tr></hp:tbl>'
+            "</hp:run></hp:p></hs:sec>"
+        )
+    )
+    with pytest.raises(UnreadableOriginal):
+        read_tables(path)
+
+
+def test_hwpx_table_too_wide_to_lay_out_is_unreadable(tmp_path: Path) -> None:
+    """병합 표기가 깨져 격자를 감당할 수 없는 표. 자리를 짐작해 줄이지 않고 미해결로 남긴다."""
+    path = tmp_path / "깨진 병합.hwpx"
+    path.write_bytes(
+        hwpx.document(
+            body='<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>'
+            f"<hs:sec {hwpx.NAMESPACES}><hp:p><hp:run>"
+            '<hp:tbl rowCnt="1" colCnt="1"><hp:tr><hp:tc><hp:subList><hp:p><hp:run>'
+            "<hp:t>합 계</hp:t></hp:run></hp:p></hp:subList>"
+            '<hp:cellAddr colAddr="0" rowAddr="0"/><hp:cellSpan colSpan="9999999" rowSpan="1"/>'
+            "</hp:tc></hp:tr></hp:tbl></hp:run></hp:p></hs:sec>"
+        )
+    )
+    with pytest.raises(UnreadableOriginal):
         read_tables(path)
 
 

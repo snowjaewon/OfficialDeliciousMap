@@ -5,7 +5,6 @@ import hashlib
 import io
 import json
 import os
-import re
 import tempfile
 from collections import Counter
 from collections.abc import Iterable, Iterator, Mapping, Sequence
@@ -192,14 +191,11 @@ def read_records(path: Path) -> tuple[Record, ...]:
         reader = csv.DictReader(stream)
         if reader.fieldnames != list(RECORD_FIELDS):
             raise ValueError("invalid record CSV columns")
-        records = []
-        for row in reader:
-            if not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", row["spent_on"] or ""):
-                raise ValueError("record date must use YYYY-MM-DD")
-            records.append(
-                Record.model_validate({**row, "repeats": load_repeats(row["repeats"] or "")})
-            )
-        return tuple(records)
+        # 집행일 칸이 받는 두 모양(`YYYY-MM-DD`와 일을 비운 원본 표기)은 계약이 가른다.
+        return tuple(
+            Record.model_validate({**row, "repeats": load_repeats(row["repeats"] or "")})
+            for row in reader
+        )
 
 
 def _numbered_part(path: Path, number: int) -> Path:
