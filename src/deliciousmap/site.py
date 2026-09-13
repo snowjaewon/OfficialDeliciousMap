@@ -5,6 +5,7 @@ import os
 from collections import Counter
 from collections.abc import Iterable, Mapping
 from dataclasses import asdict, dataclass
+from decimal import Decimal
 from html import escape
 from importlib.resources import files
 from pathlib import Path
@@ -144,10 +145,13 @@ def _write_json(path: Path, content: Contract) -> None:
 def _marker_file(target: Target, value: BuildInput) -> MarkerFile:
     closures = {item.business_id: item for item in value.closures}
     geocodes = {item.record_id: item for item in value.geocodes}
-    return MarkerFile(
-        city=target.city.slug,
-        org=target.org,
-        markers=tuple(
+    records = {item.record_id: item for item in value.records}
+    markers = []
+    for candidate in value.candidates:
+        # 묶인 레코드는 같은 좌표를 공유하므로 첫 레코드의 근거로 출처와 주소를 밝힌다.
+        source, address = _coordinate_origin(geocodes[candidate.record_ids[0]])
+        visits = [records[record_id] for record_id in candidate.record_ids]
+        markers.append(
             PublishedMarker(
                 business_id=candidate.business_id,
                 merchant=candidate.merchant,
@@ -155,12 +159,14 @@ def _marker_file(target: Target, value: BuildInput) -> MarkerFile:
                 latitude=candidate.latitude,
                 longitude=candidate.longitude,
                 closed=closures[candidate.business_id].status == "closed",
-                # 묶인 레코드는 같은 좌표를 공유하므로 첫 레코드의 근거로 출처를 밝힌다.
-                coordinate_source=_coordinate_source(geocodes[candidate.record_ids[0]]),
+                coordinate_source=source,
+                address=address,
+                last_visited_on=max(visit.spent_on for visit in visits),
+                total_amount_krw=sum((visit.amount_krw for visit in visits), Decimal(0)),
+                organizations=tuple(sorted({visit.organization for visit in visits})),
             )
-            for candidate in value.candidates
-        ),
-    )
+        )
+    return MarkerFile(city=target.city.slug, org=target.org, markers=tuple(markers))
 
 
 def _record_file(target: Target, value: BuildInput) -> RecordFile:
@@ -180,21 +186,22 @@ def _record_file(target: Target, value: BuildInput) -> RecordFile:
     )
 
 
-def _coordinate_source(result: GeocodeResult) -> Provider:
-    """좌표를 준 제공자. 사람이 확인한 건은 확인한 후보의 제공자가 정본이다."""
+def _coordinate_origin(result: GeocodeResult) -> tuple[Provider, str | None]:
+    """좌표를 준 제공자와 그 근거의 주소. 사람이 확인한 건은 확인한 후보와 주소가 정본이다."""
     if result.reason == "human_confirmed" and result.confirmation is not None:
-        return result.confirmation.candidate_source.provider
-    providers = sorted(
-        {
-            candidate.source.provider
+        return result.confirmation.candidate_source.provider, result.confirmation.address
+    # 여러 제공자의 근거가 같은 좌표로 겹치면 제공자 이름 순으로 하나를 밝힌다.
+    origins = sorted(
+        (
+            candidate
             for candidate in result.lookup.candidates
             if (candidate.latitude, candidate.longitude) == (result.latitude, result.longitude)
-        }
+        ),
+        key=lambda candidate: candidate.source.provider,
     )
-    if not providers:
+    if not origins:
         raise ValueError("a confirmed coordinate must come from one of its candidates")
-    # 여러 제공자의 근거가 같은 좌표로 겹치면 이름 순으로 하나를 밝힌다.
-    return providers[0]
+    return origins[0].source.provider, origins[0].address
 
 
 def _published_record(

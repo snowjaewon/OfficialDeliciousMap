@@ -177,12 +177,16 @@ def test_build_separates_map_data_from_complete_record_list(tmp_path: Path) -> N
     assert "records" not in markers
     assert markers["markers"] == [
         {
+            "address": "부산 합성로 10",
             "business_id": markers["markers"][0]["business_id"],
             "closed": False,
             "coordinate_source": "local",
+            "last_visited_on": "2026-01-02",
             "latitude": 35.1,
             "longitude": 129.1,
             "merchant": "같은 식당",
+            "organizations": ["test-org"],
+            "total_amount_krw": "1000",
             "visit_count": 1,
         }
     ]

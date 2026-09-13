@@ -2,6 +2,8 @@ import json
 import re
 from copy import deepcopy
 from dataclasses import replace
+from datetime import date
+from decimal import Decimal
 from importlib.resources import files
 from pathlib import Path
 from typing import get_args
@@ -168,6 +170,44 @@ def test_markers_name_the_provider_that_supplied_the_coordinates(tmp_path: Path)
         assert run_cli(context, stage) == 0
     assert payload(context, "geocode")["results"][0]["reason"] == "human_confirmed"
     assert published(context, "markers.json")["markers"][0]["coordinate_source"] == "naver"
+
+
+def test_markers_summarize_the_visits_bundled_into_each_restaurant(tmp_path: Path) -> None:
+    context = prepare(tmp_path)
+    city = replace(
+        context.target.city,
+        organizations=(*context.target.city.organizations, Organization("other-org", "다른 기관")),
+    )
+    context = replace(context, target=Target(city, context.target.org))
+    store = ArtifactStore(context.paths, context.target)
+    first = store.load("parse", ParseOutput).records[0]
+    decisions = store.load("classify", ClassifyOutput).decisions
+    later = first.model_copy(
+        update={
+            "record_id": "r2",
+            "organization": "other-org",
+            "spent_on": date(2026, 3, 15),
+            "amount_krw": Decimal("25000"),
+            "source_location": "sheet1:r2",
+        }
+    )
+    store.save("parse", ParseOutput(records=(first, later)))
+    store.save(
+        "classify",
+        ClassifyOutput(decisions=(*decisions, decisions[0].model_copy(update={"record_id": "r2"}))),
+    )
+    second = lookup()
+    second["scope"].update(record_id="r2", organization="other-org")
+    save_input(context, lookup(), second)
+    for stage in ("geocode", "closure", "build"):
+        assert run_cli(context, stage) == 0
+
+    [marker] = published(context, "markers.json")["markers"]
+    assert marker["visit_count"] == 2
+    assert marker["address"] == "부산 합성로 10"
+    assert marker["last_visited_on"] == "2026-03-15"
+    assert Decimal(marker["total_amount_krw"]) == Decimal("26000")
+    assert marker["organizations"] == ["other-org", "test-org"]
 
 
 def test_ledger_keeps_unmapped_records_with_the_reason_they_missed_the_map(
