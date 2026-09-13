@@ -152,6 +152,27 @@ PowerShell: Get-Content .env | ForEach-Object { if ($_ -match '^(\w+)=(.*)$') { 
 `--org` 실행은 `dist/<city>/orgs/<org>/`에 두 데이터 파일만 낸다. 도시 셸·랜딩·PWA 파일은
 도시 전체 실행에서만 만들며 기관 실행이 이를 덮어쓰지 않는다.
 
+#### 홈 화면 설치
+
+`manifest.webmanifest`는 시작 주소를 랜딩으로 두고 192·512 아이콘과 maskable 512 아이콘을 싣는다.
+Android Chrome은 192·512 아이콘이 없으면 설치를 제안하지 않는다. 랜딩과 도시 화면은
+`apple-touch-icon`(180)도 연결한다. iPhone Safari는 manifest 아이콘 대신 이것을 홈 화면 아이콘으로
+쓴다. 아이콘은 `scripts/make_icons.py`(표준 라이브러리만 사용)로 만든 PNG를
+`site_assets/`에 커밋해 두고 build가 `dist/assets/`로 복사한다. 모양을 바꿀 때만 다시 만든다.
+
+```text
+양쪽 공통: uv run python scripts/make_icons.py
+```
+
+두 화면 아래에 설치 안내가 뜬다. Android Chrome에서는 설치 제안(`beforeinstallprompt`)을 받으면
+`설치` 버튼을 보이고, 누르면 브라우저의 설치 창을 연다. 설치 제안 이벤트가 없는 iOS Safari에는
+공유 메뉴의 `홈 화면에 추가`를 한 번 알린다(본 화면에서는 닫을 때까지 남는다). 메뉴가 다른 iOS
+Chrome·앱 안 브라우저(카카오톡·네이버 등)에는 이 안내를 띄우지 않는다. 홈 화면 앱으로
+열렸거나(standalone), 안내를 닫았거나, 설치 창에서 거절했으면 다시 띄우지 않는다. 이 기억은 브라우저
+저장소(`localStorage`)에만 두며, 저장소를 쓸 수 없는 브라우저에서는 그 화면에서만 닫힌다. 안내를 닫은
+사람에게 Chrome의 기본 설치 막대도 띄우지 않도록 설치 제안은 늘 이 화면이 받는다. 설치한 앱을 처음 열
+때도 오프라인 셸이 있도록 랜딩도 service worker를 등록한다.
+
 자료 범위 대화상자에 대상 기간(`site.REPORTING_PERIOD`, 현재 2026년 상반기)과 레지스트리에
 선언한 기관별 수집 상태를 적는다. 상태는 `수집 완료`(이번 빌드에 레코드 있음), `레코드 없음`,
 `수집 보류`(`Organization.hold_reason`: 봇 차단·DRM·게시판 유실·공개 기준 미달)이며 어느 쪽도
@@ -254,7 +275,7 @@ Chrome을 띄우기 전 10초 동안 호스트의 CPU 사용률을 재어 `idle_
 양쪽 공통: node scripts/measure_map.js --merge --out <합친 결과.json> <블록1.json> <블록2.json> ...
 ```
 
-재방문 서비스 워커는 셸(도시 HTML·공유 JavaScript·CSS·manifest)을 캐시에서 먼저 내주고
+재방문 서비스 워커는 셸(도시 HTML·공유 JavaScript·CSS·manifest·앱 아이콘)을 캐시에서 먼저 내주고
 동시에 네트워크에서 갱신하는 stale-while-revalidate 전략을 쓴다. 설치할 때 워커를 등록한
 도시 화면도 캐시하므로 첫 재방문부터 셸은 네트워크 재검증을 기다리지 않는다. 다른 출처(네이버
 SDK·지도 타일) 요청은 가로채지 않는다. `markers.json`과
@@ -421,7 +442,7 @@ build하지 않는다. 판정은 모두 `python -m deliciousmap.ci`가 하고 �
 | 명령 | 판정 |
 | --- | --- |
 | `check-data` | 정제 산출물 파일당 20,000,000바이트 초과, 등록되지 않은 도시 디렉터리, build할 도시 0곳을 실패로 본다. 통과하면 `data/<city>/`가 있는 도시를 레지스트리 순서로 낸다 |
-| `check-dist` | Pages 한도(파일당 25MiB, 20,000개), `site.public_paths`의 화면용 파일 외 파일, 빠진 화면 파일, HTML·`sw.js`·`manifest.webmanifest`의 끊긴 참조를 실패로 본다. 통과하면 `dist/deploy-manifest.json`(상대 경로·SHA256·바이트·commit)을 쓴다 |
+| `check-dist` | Pages 한도(파일당 25MiB, 20,000개), `site.public_paths`의 화면용 파일 외 파일, 빠진 화면 파일, HTML·`sw.js`·`manifest.webmanifest`(시작 주소·아이콘)의 끊긴 참조를 실패로 본다. 통과하면 `dist/deploy-manifest.json`(상대 경로·SHA256·바이트·commit)을 쓴다 |
 | `preview` | 올린 뒤 배포 고유 URL과 PR alias를 검증하고 결과를 Actions summary에 쓴다. build한 커밋은 PR의 임시 merge commit이므로 PR head SHA도 함께 적는다. 롤백하지 않는다 |
 | `production` | 아래 운영 절차 |
 | `wait-check` | 같은 커밋의 다른 workflow 체크(`gitleaks`)가 `success`로 끝날 때까지 기다린다. 실패·취소·건너뜀·15분 초과는 실패다 |
