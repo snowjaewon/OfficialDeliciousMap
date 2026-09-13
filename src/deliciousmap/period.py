@@ -66,7 +66,7 @@ class Span:
 REPORTING = Span(START, END)
 
 
-def spent(spent_on: SpentOn) -> Span:
+def span(spent_on: SpentOn) -> Span:
     """집행일 하나가 가리키는 구간. 일이 있으면 그 하루이고, 일이 비었으면 그 달 전체다.
 
     일이 빈 집행일을 그 달 1일·말일 어느 쪽으로도 좁히지 않는다. 아는 것은 달까지뿐이다.
@@ -84,7 +84,7 @@ def contains(spent_on: SpentOn) -> bool:
     일이 있는 집행일의 구간은 하루라 판정이 `START <= day <= END`와 같다 — 바뀌는 것은
     달까지만 적힌 집행일뿐이다.
     """
-    return spent(spent_on).overlaps(REPORTING)
+    return span(spent_on).overlaps(REPORTING)
 
 
 # 대상에서 빠진 사유. 게시일을 읽지 못한 게시글은 `posted_out_of_range`로 센다.

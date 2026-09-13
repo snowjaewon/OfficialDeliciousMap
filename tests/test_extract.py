@@ -352,16 +352,18 @@ def test_a_month_without_a_day_is_read_with_an_empty_day() -> None:
     assert str(parse_spent_on("2026.03.24.")) == "2026-03-24"
 
 
-@pytest.mark.parametrize("value", ["2026. 3.", "2026년 3월", "2026-03", "2026/3"])
-def test_the_same_month_is_read_from_the_separators_seen_in_originals(value: str) -> None:
-    """구분자가 달라도 같은 달이다. 원본 표기만 저마다 다르게 남는다."""
+@pytest.mark.parametrize("value", ["2026.03.", "2026. 3.", "2026.03", "2026-03"])
+def test_a_month_notation_comes_back_as_the_original_wrote_it(value: str) -> None:
+    """마침표는 실측한 표기이고, 붙임표는 표기가 없을 때 집행일이 스스로 쓰는 모양이다."""
     assert parse_spent_on(value) == SpentOn(2026, 3)
     assert str(parse_spent_on(value)) == value
 
 
-@pytest.mark.parametrize("value", ["2026.", "2026", "202603", "104000", "13.5"])
-def test_a_value_without_a_month_is_not_a_month_only_date(value: str) -> None:
-    """달을 적지 않은 값은 짐작하지 않는다. 여섯 자리 금액이 달 표기가 되지 않는다."""
+@pytest.mark.parametrize(
+    "value", ["2026년 3월", "2026/3", "2026.", "2026", "202603", "104000", "13.5"]
+)
+def test_a_month_notation_that_was_not_measured_is_not_guessed(value: str) -> None:
+    """실측하지 않은 구분자와 달을 적지 않은 값은 읽지 않는다. 여섯 자리 금액도 달이 아니다."""
     assert parse_spent_on(value) is None
 
 

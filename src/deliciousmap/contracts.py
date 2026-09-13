@@ -60,9 +60,10 @@ def require_error_code(status: str, error: str | None) -> None:
 
 # 일까지 적은 집행일의 표기. 장부 CSV와 공개 파일이 쓰는 한 가지 모양이다.
 DATED = re.compile(r"(\d{4})-(\d{2})-(\d{2})")
-# 일을 적지 않은 집행일의 원본 표기. 2026-09-13 동구 실측의 `2026.03.`이 이 모양이고,
-# 연도 넷과 달 하나 사이의 구분자는 날짜 표기에서 이미 실측한 것만 받는다.
-MONTH_ONLY = re.compile(r"(\d{4})\s*[-./년]\s*(1[0-2]|0?[1-9])\s*[-./월]?\s*")
+# 일을 적지 않은 집행일의 표기. 마침표는 2026-09-13 동구 실측의 `2026.03.`이고, 붙임표는
+# 원본 표기가 없을 때 이 값이 스스로 쓰는 `2026-03`이다. 실측하지 않은 구분자는 받지 않는다 —
+# 읽지 못한 원본은 사유를 달고 미해결로 남지, 짐작한 표기로 통과하지 않는다.
+MONTH_ONLY = re.compile(r"(\d{4})\s*[-.]\s*(1[0-2]|0?[1-9])\s*[-.]?\s*")
 
 
 @total_ordering
@@ -72,7 +73,7 @@ class SpentOn:
 
     없는 일자를 그 달 1일·말일로 채우지 않는다 — 비어 있다는 사실이 값으로 남는다. 사람이 보는
     자리에는 원본이 적은 표기(`notation`)를 그대로 쓰고, 일이 있는 집행일은 `YYYY-MM-DD`로 보인다.
-    순서는 일을 0으로 본 순서라 일이 빈 날짜가 같은 달의 어떤 날짜보다 앞에 온다.
+    순서는 일을 0으로 본 순서라 일이 빈 집행일이 같은 달의 어떤 집행일보다 앞에 온다.
 
     표기는 사람이 읽는 값이지 지출을 가르는 값이 아니므로 동일성과 순서에서 뺀다([ADR-0005](
     ../../docs/adr/0005-key-only-what-the-decision-reads.md)). 같은 달을 달리 적은 두 원본의
@@ -85,7 +86,7 @@ class SpentOn:
     notation: str = field(default="", compare=False)
 
     def __post_init__(self) -> None:
-        # 달력에 없는 날짜는 집행일이 아니다. 일이 빈 날짜는 달까지만 달력에 물어본다.
+        # 달력에 없는 날은 집행일이 아니다. 일이 빈 집행일은 달까지만 달력에 물어본다.
         date(self.year, self.month, 1 if self.day is None else self.day)
 
     def __str__(self) -> str:
@@ -121,8 +122,8 @@ class SpentOn:
         return undated
 
 
-def _spent_on(value: object) -> object:
-    """장부·공개 파일의 글자와 날짜 객체를 집행일 값으로 옮긴다."""
+def _as_spent_on(value: object) -> object:
+    """장부·공개 파일의 글자와 달력 날짜를 집행일 값으로 옮긴다."""
     if isinstance(value, str):
         return SpentOn.parse(value)
     if isinstance(value, date):
@@ -132,7 +133,9 @@ def _spent_on(value: object) -> object:
 
 # 레코드·재게시 범위·공개 레코드·마커가 함께 쓰는 집행일 칸. 글자 하나로 오가므로 장부 CSV의
 # 한 칸과 공개 JSON의 한 값이 그대로 원본 표기를 싣는다.
-SpendingDay = Annotated[SpentOn, BeforeValidator(_spent_on), PlainSerializer(str, return_type=str)]
+SpendingDay = Annotated[
+    SpentOn, BeforeValidator(_as_spent_on), PlainSerializer(str, return_type=str)
+]
 
 
 class RecordOrigin(Contract):

@@ -15,7 +15,7 @@ from deliciousmap.period import (
     contains,
     declared,
     exclusion,
-    spent,
+    span,
     targets,
 )
 
@@ -169,7 +169,7 @@ def test_target_is_the_absence_of_an_exclusion_reason(
     ],
 )
 def test_spending_day_points_at_a_span(spent_on: SpentOn, expected: Span) -> None:
-    assert spent(spent_on) == expected
+    assert span(spent_on) == expected
 
 
 @pytest.mark.parametrize(

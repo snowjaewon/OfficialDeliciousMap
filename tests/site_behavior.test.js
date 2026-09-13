@@ -858,6 +858,22 @@ test("a record whose original omitted the day shows that original notation", () 
   assert.equal(summaries[1], "2026-01-05 · 합성 기관 · 1,000원");
 });
 
+test("a marker whose latest visit has no day shows that original notation", async () => {
+  const sheet = new FakeElement();
+  const documentObject = new FakeDocument({ "[data-restaurant-detail]": sheet });
+  const windowObject = fakeWindow();
+  const config = { map_bounds: { south: 34, west: 126, north: 38, east: 130 } };
+  const marker = { ...markers[1], business_id: "inside", last_visited_on: "2026.03." };
+
+  const selection = selectMarker(windowObject, documentObject, config, undefined, marker, {});
+  windowObject.frames.shift()();
+  windowObject.frames.shift()();
+  await selection;
+
+  const lines = sheet.children.map((child) => child.textContent);
+  assert.ok(lines.includes("최근 방문 2026.03."));
+});
+
 test("the city view reports its area and fixes its zoom-out limit as soon as the map initializes", async () => {
   const sdk = fakeNaverMaps();
   const windowObject = { document: new FakeDocument({ "#map": new FakeElement() }) };

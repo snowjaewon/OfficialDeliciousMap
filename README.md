@@ -215,7 +215,7 @@ docs/specs/header-mapping-fallback.md#제출-시점-기준)). 사람이 원본�
 마커 하나는 `business_id`, 확정 상호 `merchant`, `visit_count`(묶인 레코드 수), `latitude`,
 `longitude`, `closed`, `coordinate_source`, `address`와 묶인 레코드의 요약인
 `last_visited_on`(가장 늦은 `spent_on`. 일이 빈 집행일은 일을 0으로 본 순서라 같은 달의
-어떤 날짜보다 앞이다), `total_amount_krw`(금액 합계), `organizations`(기관 slug)를
+어떤 집행일보다 앞이다), `total_amount_krw`(금액 합계), `organizations`(기관 slug)를
 가진다. `coordinate_source`는 좌표를 준 제공자
 (`local`·`naver`·`license`)다. 마커에 묶인 레코드는 좌표가 같으므로 첫 레코드의 판정에서 고르며,
 그 판정이 사람 확인이면 확인한 후보의 제공자, 아니면 결과 좌표와 일치하는 후보의 제공자다.
@@ -226,7 +226,8 @@ docs/specs/header-mapping-fallback.md#제출-시점-기준)). 사람이 원본�
 장부 레코드 하나는 `record_id`, `spent_on`, `organization`, `department`, `merchant`, `purpose`,
 `amount_krw`와 `classification`(식당·비식당·판단 보류), `map_status`(`mapped`·`geocode_failed`·
 `non_restaurant`·`pending`), 판정한 레코드의 `geocode_reason`, 마커로 묶인 레코드의
-`business_id`를 가진다. 마커 수와 장부 레코드 수는 다를 수 있으며 `BuildOutput`에 그대로 남는다.
+`business_id`를 가진다. `spent_on`은 장부 CSV와 같은 표현이라 원본이 일을 적지 않았으면
+`2026.03.`처럼 그 원본 표기를 그대로 싣는다. 화면은 이 값을 그대로 보인다. 마커 수와 장부 레코드 수는 다를 수 있으며 `BuildOutput`에 그대로 남는다.
 공개 파일에는 화면에 필요한 값만 넣는다. `source_hash`·`source_location`·`lookup_key`·
 `dependency_key`·조회 원문·근거 발췌·사람 확인 파일은 넣지 않는다.
 

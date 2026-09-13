@@ -691,9 +691,9 @@ def _one_digit_short(digits: str, year_hint: int) -> bool:
 
 def _month_day(month: Cell, day: Cell, year_hint: int | None) -> SpentOn | None:
     parts = [re.fullmatch(r"(\d{1,2})\s*[월일]?", text(value)) for value in (month, day)]
-    if year_hint is None or parts[0] is None or parts[1] is None:
+    if year_hint is None or not all(parts):
         return None
-    return _spent_on(year_hint, int(parts[0][1]), int(parts[1][1]))
+    return _spent_on(year_hint, *(int(part.group(1)) for part in parts if part))
 
 
 def _spent_on(year: int, month: int, day: int) -> SpentOn | None:
