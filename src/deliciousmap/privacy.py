@@ -20,8 +20,9 @@ PERSONAL_EVENT = re.compile(
     r"(축의|부의|조의|축부의|경조사|애경사|별세|빙모|빙부|모친상|부친상|장인상|장모상|장례|근조|순직)"
     r"|故"
 )
-# 일부를 가린 이름: 김ㅇㅇ, 한*지, 허 * *, 박○수.
-MASKED = re.compile(r"[가-힣](\s*[*＊○◯ㅇ]){1,2}(?:\s*[가-힣](?![가-힣]))?")
+# 일부를 가린 이름: 김ㅇㅇ, 한*지, 허 * *, 박○수, 채OO, 서0혜.
+# 가림 글자는 기관마다 다르다. 로마자 O와 숫자 0도 실측했다(2026-09-13 광주 남구·동구).
+MASKED = re.compile(r"[가-힣](\s*[*＊○◯ㅇOo0]){1,2}(?:\s*[가-힣](?![가-힣]))?")
 PERSON = re.compile(r"[가-힣]{2,4}")
 # 경조사 행의 상호 칸에 흔한 일반 명칭. 사람 이름이 아니다.
 GENERIC_PAYEES = frozenset(
@@ -44,10 +45,12 @@ def scrub_merchant(merchant: str, purpose: str) -> str:
     compact = "".join(merchant.split())
     if MASKED.fullmatch(merchant.strip()) or MASKED.fullmatch(compact):
         return REDACTED
-    if (
-        PERSONAL_EVENT.search(purpose)
-        and PERSON.fullmatch(compact)
-        and compact not in GENERIC_PAYEES
-    ):
+    if not PERSONAL_EVENT.search(purpose):
+        return merchant
+    # 부서명과 가린 이름을 한 칸에 적은 표기가 있다(`으뜸효정책과 조O아`, 남구 실측).
+    # 어디까지가 이름인지 가를 수 없으므로 칸 전체를 가린다.
+    if MASKED.search(merchant):
+        return REDACTED
+    if PERSON.fullmatch(compact) and compact not in GENERIC_PAYEES:
         return REDACTED
     return merchant
