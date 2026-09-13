@@ -8,8 +8,9 @@ import os
 import re
 import tempfile
 from collections import Counter
-from collections.abc import Iterable, Iterator, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from pathlib import Path
+from typing import Any
 
 from deliciousmap import identity, period, restoration
 from deliciousmap.contracts import (
@@ -89,6 +90,11 @@ DEPENDENCIES = {
     "closure": ("records.csv", "parse.json", "classify.json", "geocode.json"),
     "build": ("records.csv", "parse.json", "classify.json", "geocode.json", "closure.json"),
 }
+
+
+# 상한을 넘으면 조각으로 나눌 수 있는 산출물과 그 목록 칸(ADR-0001). 여기 없는 단계는
+# 넘는 순간 거부한다. 나눌 칸이 없으면 무엇을 잘라야 할지 정해져 있지 않기 때문이다.
+PARTITIONED_PAYLOAD = {"geocode": "results"}
 
 
 def schema_version(stage: str) -> int:
@@ -197,27 +203,27 @@ def _numbered_part(path: Path, number: int) -> Path:
     if number == 1:
         return path
     if number > 999:
-        raise ValueError("cache parts exhausted; split the scope of this cache")
+        raise ValueError("parts exhausted; split the scope of this file")
     return path.with_name(f"{path.stem}.{number:03d}{path.suffix}")
 
 
-def cache_parts(path: Path) -> tuple[Path, ...]:
-    """이력을 이루는 조각. 번호가 비면 잃어버린 조각을 조용히 넘기지 않고 알린다."""
+def numbered_parts(path: Path) -> tuple[Path, ...]:
+    """이력이나 산출물을 이루는 조각. 번호가 비면 잃어버린 조각을 조용히 넘기지 않고 알린다."""
     found = sorted(path.parent.glob(f"{path.stem}.[0-9][0-9][0-9]{path.suffix}"))
     if not path.exists():
         if found:
-            raise ValueError("cache parts without the first file of the history")
+            raise ValueError("numbered parts without the first file")
         return ()
     parts = (path, *found)
     if list(parts) != [_numbered_part(path, number) for number in range(1, len(parts) + 1)]:
-        raise ValueError("cache parts must be numbered without gaps")
+        raise ValueError("parts must be numbered without gaps")
     return parts
 
 
 def read_cache(path: Path) -> tuple[CacheEntry, ...]:
     entries: tuple[CacheEntry, ...] = ()
     seen: set[tuple[str, int]] = set()
-    for part in cache_parts(path):
+    for part in numbered_parts(path):
         found = _read_cache_part(part)
         identities = {_cache_order(entry) for entry in found}
         if identities & seen:
@@ -279,7 +285,7 @@ def append_cache_entries(path: Path, additions: tuple[CacheEntry, ...]) -> None:
         fresh[pair] = entry
     if not fresh:
         return
-    parts = cache_parts(path)
+    parts = numbered_parts(path)
     added = sorted(fresh.values(), key=_cache_order)
     if parts:
         carried = sorted((*_read_cache_part(parts[-1]), *added), key=_cache_order)
@@ -322,6 +328,97 @@ def _jsonl(entries: Iterable[Contract]) -> str:
         json.dumps(item.model_dump(mode="json"), ensure_ascii=False, sort_keys=True) + "\n"
         for item in entries
     )
+
+
+def artifact_text(envelope: Mapping[str, Any]) -> str:
+    return json.dumps(envelope, ensure_ascii=False, sort_keys=True) + "\n"
+
+
+def _artifact_chunks(envelope: Mapping[str, Any], field: str) -> Iterator[str]:
+    """한 조각에 담을 만큼씩 나눈다. 항목 하나가 혼자 넘으면 쓰는 쪽이 거부한다."""
+    payload = dict(envelope["payload"])
+    items = list(payload[field])
+    # 목록을 비운 봉투가 조각마다 되풀이되는 자리다. 남는 만큼만 항목에 쓴다.
+    budget = SIZE_LIMIT - len(
+        artifact_text({**envelope, "payload": {**payload, field: []}}).encode("utf-8")
+    )
+    chunk: list[object] = []
+    size = 0
+    for item in items:
+        # 항목 하나가 차지하는 자리. 항목을 가르는 쉼표 한 자를 함께 센다.
+        length = len(json.dumps(item, ensure_ascii=False, sort_keys=True).encode("utf-8")) + 1
+        if chunk and size + length > budget:
+            yield artifact_text({**envelope, "payload": {**payload, field: chunk}})
+            chunk, size = [], 0
+        chunk.append(item)
+        size += length
+    yield artifact_text({**envelope, "payload": {**payload, field: chunk}})
+
+
+def artifact_contents(envelope: Mapping[str, Any], field: str | None) -> tuple[str, ...]:
+    """쓸 조각을 모두 만들고 크기를 확인한다. 아무것도 쓰기 전에 거부할 수 있게 나눠 둔다.
+
+    쓰는 일과 가른 이유: 이력은 산출물보다 먼저 쌓이므로, 쓸 수 없는 산출물이면
+    이력에 손대기 전에 알아야 한다. 결과 하나가 혼자 상한을 넘으면 나눌 수 없으므로 거부한다.
+    """
+    content = artifact_text(envelope)
+    contents = (
+        (content,)
+        if _within_limit(content) or field is None
+        else tuple(_artifact_chunks(envelope, field))
+    )
+    for text in contents:
+        require_size(text)
+    return contents
+
+
+def write_artifact(path: Path, contents: Sequence[str]) -> None:
+    """만들어 둔 조각을 번호 순으로 쓴다."""
+    for number, text in enumerate(contents, start=1):
+        write_text(_numbered_part(path, number), text)
+    # 지난 실행이 더 많은 조각을 남겼으면 지운다. 남겨 두면 이어 읽기가 옛 항목을 섞는다.
+    for stale in sorted(path.parent.glob(f"{path.stem}.[0-9][0-9][0-9]{path.suffix}"))[
+        len(contents) - 1 :
+    ]:
+        stale.unlink()
+
+
+def artifact_digest(path: Path) -> str:
+    """조각으로 나뉜 산출물도 통째로 해시한다. 뒤 조각만 바뀐 낡음을 놓치지 않는다."""
+    digest = hashlib.sha256()
+    for part in numbered_parts(path):
+        digest.update(part.read_bytes())
+    return digest.hexdigest()
+
+
+def read_artifact(path: Path, field: str | None) -> dict[str, Any]:
+    """조각을 번호 순으로 이어 읽는다. 봉투 머리가 다른 조각은 섞인 것이므로 거부한다."""
+    parts = numbered_parts(path)
+    if not parts:
+        # 없는 산출물은 조각 규칙이 아니라 파일이 없다는 사실로 알린다.
+        path.read_text(encoding="utf-8")
+    envelopes: list[dict[str, Any]] = [
+        json.loads(part.read_text(encoding="utf-8")) for part in parts
+    ]
+    first = envelopes[0]
+    if len(envelopes) == 1:
+        return first
+    if field is None:
+        raise ValueError("this artifact is not split into parts")
+    items = []
+    for envelope in envelopes:
+        if _artifact_header(envelope, field) != _artifact_header(first, field):
+            raise ValueError("artifact parts must share one envelope")
+        items.extend(envelope["payload"][field])
+    return {**first, "payload": {**first["payload"], field: items}}
+
+
+def _artifact_header(envelope: dict[str, Any], field: str) -> dict[str, Any]:
+    """조각마다 같아야 하는 부분. 나뉘는 목록 칸만 뺀다."""
+    return {
+        **{key: value for key, value in envelope.items() if key != "payload"},
+        "payload": {key: value for key, value in envelope["payload"].items() if key != field},
+    }
 
 
 def read_ledger(path: Path) -> tuple[LedgerEntry, ...]:
@@ -376,8 +473,8 @@ class ArtifactStore:
             "dependencies": self._dependencies(stage),
             "payload": payload,
         }
-        content = json.dumps(envelope, ensure_ascii=False, sort_keys=True) + "\n"
-        require_size(content)
+        # 이력은 산출물보다 먼저 쌓인다. 쓸 수 없는 산출물이면 여기서 먼저 거부한다.
+        contents = artifact_contents(envelope, PARTITIONED_PAYLOAD.get(stage))
         if isinstance(output, ParseOutput):
             write_records(self.directory / "records.csv", output.records)
         if isinstance(output, GeocodeOutput):
@@ -417,10 +514,10 @@ class ArtifactStore:
                     )
                 )
                 write_text(archive, old)
-        write_text(path, content)
+        write_artifact(path, contents)
 
     def load[T: Contract](self, stage: str, model: type[T]) -> T:
-        envelope = json.loads((self.directory / f"{stage}.json").read_text(encoding="utf-8"))
+        envelope = read_artifact(self.directory / f"{stage}.json", PARTITIONED_PAYLOAD.get(stage))
         if envelope["schema_version"] != schema_version(stage):
             raise RegenerationRequired("rerun the producing stage for the current contract")
         if (envelope["city"], envelope["org"]) != (
@@ -463,10 +560,7 @@ class ArtifactStore:
         )
 
     def _dependencies(self, stage: str) -> dict[str, str]:
-        result = {
-            name: hashlib.sha256((self.directory / name).read_bytes()).hexdigest()
-            for name in DEPENDENCIES[stage]
-        }
+        result = {name: artifact_digest(self.directory / name) for name in DEPENDENCIES[stage]}
         if stage == "classify":
             result["manual"] = file_digest(self.paths.manual(self.target, "classify"))
         if stage == "geocode":
