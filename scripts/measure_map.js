@@ -91,6 +91,31 @@ function judge(attempts, targetMs, requiredRuns) {
   };
 }
 
+// 측정 직전 호스트가 조용했는지 남긴다(#77). 인자는 두 시점의 os.cpus() 값이다.
+function cpuBusyPercent(before, after) {
+  let total = 0;
+  let idle = 0;
+  after.forEach((core, index) => {
+    for (const [kind, time] of Object.entries(core.times)) {
+      const spent = time - before[index].times[kind];
+      total += spent;
+      if (kind === "idle") idle += spent;
+    }
+  });
+  return Number(((100 * (total - idle)) / total).toFixed(1));
+}
+
+// 개선 전후를 같은 커밋의 하네스로 재므로, 어느 셸을 내줬는지는 파일 해시로 남긴다(#77).
+function describeShell(site, city) {
+  const files = ["sw.js", "manifest.webmanifest", "assets/app.js", "assets/styles.css", `${city}/index.html`];
+  return Object.fromEntries(
+    files.map((file) => [
+      file,
+      crypto.createHash("sha256").update(fs.readFileSync(path.join(site, file))).digest("hex"),
+    ]),
+  );
+}
+
 // rAF 간격은 프레임 부드러움의 진단 값이다. 판정은 결정대로 브라우저 성능 기록으로 한다.
 const FRAME_MS = 1000 / 60;
 const STUTTER_FRAME_MS = FRAME_MS * 2;
@@ -376,6 +401,86 @@ function judgeTrace(attempts, requiredRuns) {
   };
 }
 
+function judgeScenarios(attempts, requiredRuns) {
+  return Object.fromEntries(
+    Object.entries(SCENARIOS).map(([scenario, { target_ms }]) => [
+      scenario,
+      judge(attempts[scenario] ?? [], target_ms, requiredRuns),
+    ]),
+  );
+}
+
+function judgeGestures(traces, requiredRuns) {
+  return Object.fromEntries(
+    Object.entries(traces).map(([gesture, attempts]) => [
+      gesture,
+      { attempts, summary: judgeTrace(attempts, requiredRuns) },
+    ]),
+  );
+}
+
+// [{a: [1]}, {a: [2], b: [3]}] → {a: [1, 2], b: [3]}
+function concatenateLists(objects) {
+  const merged = {};
+  for (const object of objects) {
+    for (const [key, values] of Object.entries(object)) (merged[key] ??= []).push(...values);
+  }
+  return merged;
+}
+
+// 호스트 변동을 상쇄하려고 번갈아 잰 블록들을 한 변형의 결과로 합쳐 다시 판정한다(#77).
+function mergeResults(blocks) {
+  const [first] = blocks;
+  const sameAs = (key, value) => JSON.stringify(value) === JSON.stringify(first[key]);
+  for (const key of ["code_commit", "worktree_clean", "city", "files", "shell", "host"]) {
+    if (!blocks.every((result) => sameAs(key, result[key]))) {
+      throw new Error(`cannot merge measurement blocks: ${key} differs`);
+    }
+  }
+  // 회차 수는 블록마다 달라도 되지만 그 밖의 측정 조건은 같아야 한다.
+  const conditionsWithoutRuns = ({ runs, ...rest }) => JSON.stringify(rest);
+  if (!blocks.every((result) => conditionsWithoutRuns(result.conditions) === conditionsWithoutRuns(first.conditions))) {
+    throw new Error("cannot merge measurement blocks: conditions differs");
+  }
+  const requiredRuns = first.conditions.required_runs;
+  const environments = {};
+  for (const name of Object.keys(first.environments)) {
+    const parts = blocks.map((result) => result.environments[name]);
+    const attempts = concatenateLists(parts.map((part) => part.attempts));
+    const traces = concatenateLists(
+      parts.map((part) =>
+        Object.fromEntries(
+          Object.entries(part.tracing.gestures).map(([gesture, { attempts: values }]) => [gesture, values]),
+        ),
+      ),
+    );
+    environments[name] = {
+      attempts,
+      failures: parts.flatMap((part, index) =>
+        part.failures.map((failure) => ({ block: index + 1, ...failure })),
+      ),
+      summaries: judgeScenarios(attempts, requiredRuns),
+      frames: concatenateLists(parts.map((part) => part.frames)),
+      tracing: { ...parts[0].tracing, gestures: judgeGestures(traces, requiredRuns) },
+      diagnostics: concatenateLists(parts.map((part) => part.diagnostics)),
+    };
+  }
+  const { idle_cpu_percent, ...common } = first;
+  return {
+    ...common,
+    blocks: blocks.map((result) => ({
+      measured_at: result.measured_at,
+      runs: result.conditions.runs,
+      idle_cpu_percent: result.idle_cpu_percent,
+    })),
+    conditions: {
+      ...first.conditions,
+      runs: blocks.reduce((sum, result) => sum + result.conditions.runs, 0),
+    },
+    environments,
+  };
+}
+
 function frameStats(timestamps) {
   const intervals = frameIntervals(timestamps);
   const longest = Math.max(0, ...intervals);
@@ -453,6 +558,7 @@ const REQUIRED_RUNS = 20;
 // 페이지 조건 대기와 CDP 응답 대기 모두 이 시간을 넘기면 그 회차를 실패로 적는다.
 const RUN_TIMEOUT_MS = 60000;
 const SETTLE_MS = 1000;
+const IDLE_SAMPLE_MS = 10000;
 // 지도 클라이언트 키의 허용 주소가 이 포트다(#50).
 const SITE_PORT = 8765;
 const DEFAULT_CHROME = {
@@ -592,6 +698,16 @@ async function readTrace(cdp, sessionId, stream) {
   }
 }
 
+// Windows에서는 Chrome이 쓰는 중인 파일을 열면 EBUSY가 난다(#77). 빈 값이면 다음 폴링에서 다시 읽는다.
+function readPortFile(portFile) {
+  try {
+    return fs.readFileSync(portFile, "utf8");
+  } catch (error) {
+    if (error.code === "EBUSY") return "";
+    throw error;
+  }
+}
+
 async function launchChrome(chromePath, headed) {
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), "deliciousmap-measure-"));
   // 정리 실패가 측정 실패를 가리지 않게 경고만 남긴다.
@@ -627,7 +743,7 @@ async function launchChrome(chromePath, headed) {
     for (let attempt = 0; attempt < 100; attempt += 1) {
       if (child.exitCode !== null) break;
       if (fs.existsSync(portFile)) {
-        const [port, browserPath] = fs.readFileSync(portFile, "utf8").split("\n");
+        const [port, browserPath] = readPortFile(portFile).split("\n");
         if (browserPath) {
           const cdp = await Cdp.connect(`ws://127.0.0.1:${port}${browserPath.trim()}`);
           const stop = async () => {
@@ -1077,10 +1193,7 @@ async function measureEnvironment(browser, environment, target, log, traceDirect
     }
   });
 
-  const summaries = {};
-  for (const [name, scenario] of Object.entries(SCENARIOS)) {
-    summaries[name] = judge(attempts[name] ?? [], scenario.target_ms, REQUIRED_RUNS);
-  }
+  const summaries = judgeScenarios(attempts, REQUIRED_RUNS);
   const tracing = {
     source: "CDP Tracing",
     criteria: {
@@ -1090,12 +1203,7 @@ async function measureEnvironment(browser, environment, target, log, traceDirect
       long_task_ms: LONG_TASK_MS,
       verdict: "pass only when all measured attempts have no stutter or freeze; fewer than 20 is unmeasured",
     },
-    gestures: Object.fromEntries(
-      Object.entries(traces).map(([gesture, attemptsForGesture]) => [
-        gesture,
-        { attempts: attemptsForGesture, summary: judgeTrace(attemptsForGesture, REQUIRED_RUNS) },
-      ]),
-    ),
+    gestures: judgeGestures(traces, REQUIRED_RUNS),
   };
   return { attempts, failures, summaries, frames, tracing, diagnostics };
 }
@@ -1135,10 +1243,28 @@ function traceDirectory(requested) {
   return directory;
 }
 
+function printMerged(files, out) {
+  const result = mergeResults(files.map((file) => JSON.parse(fs.readFileSync(file, "utf8"))));
+  if (out) fs.writeFileSync(out, `${JSON.stringify(result, null, 2)}\n`);
+  process.stdout.write(`${markdownTable(summaryRows(result))}\n`);
+}
+
+function summaryRows(result) {
+  return Object.keys(result.environments).flatMap((environment) =>
+    Object.keys(SCENARIOS).map((scenario) => ({
+      environment,
+      scenario,
+      summary: result.environments[environment].summaries[scenario],
+    })),
+  );
+}
+
 async function main(argv) {
-  const { values } = util.parseArgs({
+  const { values, positionals } = util.parseArgs({
     args: argv,
+    allowPositionals: true,
     options: {
+      merge: { type: "boolean", default: false },
       city: { type: "string" },
       site: { type: "string", default: "dist" },
       runs: { type: "string", default: String(REQUIRED_RUNS) },
@@ -1149,6 +1275,11 @@ async function main(argv) {
       headed: { type: "boolean", default: false },
     },
   });
+  if (values.merge) {
+    if (positionals.length < 2) throw new Error("--merge needs at least two result files");
+    return printMerged(positionals, values.out);
+  }
+  if (positionals.length > 0) throw new Error(`unexpected arguments: ${positionals.join(" ")}`);
   if (!values.city) throw new Error("--city is required");
   const environmentNames = values.environments.split(",");
   for (const name of environmentNames) {
@@ -1164,13 +1295,20 @@ async function main(argv) {
   const query = chooseQuery(markers);
   const chromePath = values.chrome ?? process.env.CHROME_PATH ?? DEFAULT_CHROME[process.platform];
   const tracesPath = traceDirectory(values["trace-dir"]);
+  const shell = describeShell(site, values.city);
+  const log = (line) => process.stderr.write(`${line}\n`);
+
+  // Chrome을 띄우기 전 호스트가 쉬는 동안의 CPU 사용률이다. 높으면 판정을 잠정으로 읽는다.
+  const idleStart = os.cpus();
+  await sleep(IDLE_SAMPLE_MS);
+  const idleCpuPercent = cpuBusyPercent(idleStart, os.cpus());
+  log(`idle cpu: ${idleCpuPercent}%`);
 
   const server = createStaticServer(site);
   await new Promise((resolve, reject) => {
     server.once("error", reject);
     server.listen(SITE_PORT, "127.0.0.1", resolve);
   });
-  const log = (line) => process.stderr.write(`${line}\n`);
   log(`trace files: ${tracesPath}`);
   let stop;
   try {
@@ -1192,6 +1330,8 @@ async function main(argv) {
         "markers.json": describeFile(markersFile),
         "records.json": describeFile(path.join(cityDirectory, "records.json")),
       },
+      shell,
+      idle_cpu_percent: idleCpuPercent,
       host: {
         platform: `${os.type()} ${os.release()}`,
         cpu: os.cpus()[0]?.model,
@@ -1236,16 +1376,9 @@ async function main(argv) {
         name,
       );
     }
-    const rows = environmentNames.flatMap((environment) =>
-      Object.keys(SCENARIOS).map((scenario) => ({
-        environment,
-        scenario,
-        summary: result.environments[environment].summaries[scenario],
-      })),
-    );
     const json = `${JSON.stringify(result, null, 2)}\n`;
     if (values.out) fs.writeFileSync(values.out, json);
-    process.stdout.write(`${markdownTable(rows)}\n`);
+    process.stdout.write(`${markdownTable(summaryRows(result))}\n`);
   } finally {
     await stop?.();
     server.closeAllConnections();
@@ -1263,10 +1396,13 @@ if (require.main === module) {
 module.exports = {
   ENVIRONMENTS,
   SCENARIOS,
+  cpuBusyPercent,
   createStaticServer,
+  describeShell,
   frameStats,
   judge,
   judgeTrace,
   markdownTable,
+  mergeResults,
   summarizeTrace,
 };

@@ -208,7 +208,7 @@ PowerShell: Get-Content .env | ForEach-Object { if ($_ -match '^(\w+)=(.*)$') { 
 브라우저 로직 테스트에는 Node.js 20 이상이 필요하며 아래 명령은 외부 패키지를 설치하지 않는다.
 
 ```text
-node --test tests/site_behavior.test.js tests/measure_map.test.js
+node --test tests/site_behavior.test.js tests/measure_map.test.js tests/service_worker.test.js
 ```
 
 #### 지도 성능 측정
@@ -236,6 +236,24 @@ node --test tests/site_behavior.test.js tests/measure_map.test.js
 URL이 `naver.com`이면 네이버 SDK, 로컬 주소이면 애플리케이션, 나머지는 미분류로 긴 작업
 원인을 요약한다. trace 디렉터리는 기본적으로 임시 폴더에 만들며 `--trace-dir`로 저장 위치를
 지정할 수 있지만 저장소 안은 거부한다. Chrome 경로는 `--chrome` 또는 `CHROME_PATH`로 바꾼다.
+
+Chrome을 띄우기 전 10초 동안 호스트의 CPU 사용률을 재어 `idle_cpu_percent`로 남기고, 실제로 내준
+셸(`sw.js`·manifest·공유 JavaScript·CSS·도시 HTML)의 SHA-256을 `shell`에 남긴다. 개선 전후처럼
+셸만 다른 사이트를 비교할 때는 각 사이트를 `--site`로 바꿔 `--runs 5`씩 번갈아 잰 뒤, 같은 셸의
+블록끼리 합쳐 20회로 다시 판정한다. 셸·데이터·측정 조건·호스트·코드 커밋이 다른 블록은 합치지 않는다.
+
+```text
+양쪽 공통: node scripts/measure_map.js --merge --out <합친 결과.json> <블록1.json> <블록2.json> ...
+```
+
+재방문 서비스 워커는 셸(도시 HTML·공유 JavaScript·CSS·manifest)을 캐시에서 먼저 내주고
+동시에 네트워크에서 갱신하는 stale-while-revalidate 전략을 쓴다. 설치할 때 워커를 등록한
+도시 화면도 캐시하므로 첫 재방문부터 셸은 네트워크 재검증을 기다리지 않는다. 다른 출처(네이버
+SDK·지도 타일) 요청은 가로채지 않는다. `markers.json`과
+`records.json`은 매번 네트워크 응답을 우선하고 성공한 응답만 캐시에 저장해 오프라인 때
+마지막 산출물을 대신 보여준다. 서비스 워커 캐시 이름(`deliciousmap-shell-v2`)은 셸 계약이
+바뀔 때 올리며, 새 버전이 활성화되면 이전 셸 캐시만 지우고 열린 페이지를 제어한다.
+데이터 폴백용 `deliciousmap-data-v1` 캐시는 셸 버전 변경에도 보존한다.
 
 ## 단계 계약과 후속 구현 접점
 
