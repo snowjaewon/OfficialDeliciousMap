@@ -144,6 +144,7 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "금산민속칼국수", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "칼국수 전문 음식점", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "금수복국", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "복어 요리 전문점", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "금수산방", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식 전문 음식점", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "금수산한우마을", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한우 전문 음식점", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "금순이푸드직화쭈꾸미,파스쿠찌", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "쭈꾸미 음식점 및 카페", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "금태산 빛고을흑염소", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "흑염소 요리 전문점", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "금태산빛고을흑염소", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "흑염소 요리 전문점", "status": "restaurant"}}
@@ -204,6 +205,7 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "내고향청보리한우", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한우 고깃집 식당", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "내고향청보리한우,엔제리너스", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한우 식당 및 카페", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "너섬", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 판단 불가", "status": "pending"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "넙순이식당", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "식당 상호의 음식점", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "넝쿨째", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 판단 불가", "status": "pending"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "넝쿨채", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식당 상호", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "네슬레코리아", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "식품 제조 및 유통 기업", "status": "non_restaurant"}}
