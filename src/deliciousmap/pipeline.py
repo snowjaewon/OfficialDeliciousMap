@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Protocol
 
-from deliciousmap import classify, comparison, headermap, lookup, restoration, site
+from deliciousmap import classify, comparison, headermap, lookup, restoration, site, submission
 from deliciousmap.budget import Budget
 from deliciousmap.contracts import (
     BuildInput,
@@ -276,6 +276,12 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
                         target_sources=len(parsed.sources),
                         excluded_sources=parsed.excluded_sources,
                         repeated_expenses=parsed.repeated_expenses,
+                        tally=submission.tally(
+                            parsed.sources,
+                            store.source_reviews(),
+                            classified.decisions,
+                            geocoded.results,
+                        ),
                     ),
                     context,
                 )

@@ -458,6 +458,27 @@ def test_mapping_that_cannot_be_requested_leaves_the_original_unresolved(
     assert records(tmp_path) == []
 
 
+def test_recorded_answer_that_fails_validation_leaves_why_in_the_ledger(
+    tmp_path: Path, configured: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """모델 없이 남은 미해결도 코드가 무엇 때문에 물리쳤는지 남긴다. 표 이름만으로는 모른다."""
+    record_spending(tmp_path)
+    broken = sheet_a(("2026-01-05", "합성 식당", "협의", 4.0, 62000.0), total=False)
+    broken.append(("", "", "계", "", "", "1건", 99999.0, "", ""))
+    (source,) = publish(tmp_path, ("합계 불일치.xls", workbook(broken)))
+    assert run(tmp_path, "headermap", FakeModel(headers=[header_answer()] * 2)) == 0
+    # 이력에 남은 판정을 모델 없이 다시 검증한다. 사유는 그때도 코드가 낸 것이어야 한다.
+    monkeypatch.delenv("GEMINI_API_KEY")
+    assert run(tmp_path, "headermap") == 0
+    assert payload(tmp_path, "headermap")["unresolved"] == [
+        {
+            "source_hash": source,
+            "reason": "validation_failed",
+            "detail": "sheet1:R5 total amount mismatch",
+        }
+    ]
+
+
 def test_unsupported_original_is_not_sent_to_the_model(tmp_path: Path, configured: None) -> None:
     """엑셀 통합문서가 없는 ZIP 묶음. 안의 원본을 풀지 않고 사유와 함께 미해결로 남긴다."""
     record_spending(tmp_path)
@@ -594,20 +615,22 @@ def test_parse_counts_why_each_original_was_left_out_of_the_submission(
         ),
     )
     assert run(tmp_path, "fetch", board=FakeBoardTransport(posts)) == 0
-    assert len(payload(tmp_path, "fetch")["sources"]) == 5
+    # 게시일이 대상 연도 밖인 둘(2024·2023)은 받지 않고 수로만 남는다.
+    assert len(payload(tmp_path, "fetch")["sources"]) == 3
+    assert payload(tmp_path, "fetch")["uncollected_postings"] == 2
 
     assert run(tmp_path, "headermap", FakeModel(headers=[header_answer()])) == 0
     assert run(tmp_path, "parse") == 0
 
     parsed = payload(tmp_path, "parse")
     assert parsed["excluded_sources"] == {
-        "posted_out_of_range": 2,
+        "posted_out_of_range": 0,
         "declared_out_of_range": 1,
         "undeclared_in_year": 1,
     }
-    # 대상 하나만 읽었고 수집 장부는 줄지 않았다.
+    # 대상 하나만 읽었고 받아 둔 셋은 장부에 그대로 남는다.
     assert len(parsed["sources"]) == 1
-    assert len(payload(tmp_path, "fetch")["sources"]) == 5
+    assert len(payload(tmp_path, "fetch")["sources"]) == 3
 
 
 def test_a_parse_artifact_from_the_previous_schema_asks_for_a_rerun(
@@ -628,7 +651,13 @@ def test_a_parse_artifact_from_the_previous_schema_asks_for_a_rerun(
     assert "cause=regeneration-required" in capsys.readouterr().err
 
 
-def review(root: Path, *sources: str, city: str = "gwangju", organization: str = ORG) -> None:
+def review(
+    root: Path,
+    *sources: str,
+    city: str = "gwangju",
+    organization: str = ORG,
+    candidates: int = 1,
+) -> None:
     """미해결 원본을 전수로 대조하고 남긴 기록. 원본마다 한 줄이다."""
     write_text(
         root / DATA / "manual" / city / "sources.jsonl",
@@ -639,7 +668,7 @@ def review(root: Path, *sources: str, city: str = "gwangju", organization: str =
                     "organization": organization,
                     "source_hash": source,
                     "finding": "merchant_blank",
-                    "candidates": 3,
+                    "candidates": candidates,
                     "rows": ["sheet1:R4"],
                     "evidence": "원본의 사용장소 칸이 비어 있다(합성)",
                     "confirmed_by": "합성 검토자",
@@ -678,6 +707,18 @@ def test_source_review_for_an_original_that_now_parses_is_rejected(
     (source,) = publish(tmp_path, ("1분기.xls", workbook(QUARTER)))
     assert run(tmp_path, "headermap", FakeModel(headers=[header_answer()])) == 0
     review(tmp_path, source)
+    assert run(tmp_path, "parse") == 1
+
+
+def test_a_review_that_counted_other_candidates_than_the_code_is_rejected(
+    tmp_path: Path, configured: None
+) -> None:
+    """사람이 센 후보 수와 코드가 센 수가 다르면 화면이 어느 쪽을 분모로 냈는지 알 수 없다(#106)."""
+    record_spending(tmp_path)
+    sheet = sheet_a(("2026-01-05", "", "협의", 4.0, 62000.0), total=False)
+    (source,) = publish(tmp_path, ("1분기.xls", workbook(sheet)))
+    assert run(tmp_path, "headermap", FakeModel(headers=[header_answer(), header_answer()])) == 0
+    review(tmp_path, source, candidates=2)
     assert run(tmp_path, "parse") == 1
 
 

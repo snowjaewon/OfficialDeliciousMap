@@ -47,14 +47,14 @@ class SeoguExpenseBoard:
                 raise ValueError("board url must declare mid and oi_seq")
         self.transport = transport
 
-    def postings(self, collected: boards.Collected) -> Iterator[boards.Posting]:
+    def postings(self, skipped: boards.Skipped) -> Iterator[boards.Posting]:
         # 쪽 넘김이 없다. 한 번 받은 목록이 그 게시판 전부이고 첨부 주소까지 담고 있다.
         page_url = boards.address(self.list_url, self.params)
         body = boards.request(self.transport, self.list_url, self.params)
         listing = boards.parse(body, ENCODING, _Listing())
         for row in _rows(listing):
-            if collected(row.post_id):
-                # 이미 끝낸 게시글도 목록에서 읽은 값은 낸다. 여기에는 더 열 본문이 없다.
+            if skipped(row.post_id, row.posted):
+                # 넘기기로 한 게시글도 목록에서 읽은 값은 낸다. 여기에는 더 열 본문이 없다.
                 yield row.posting(())
                 continue
             attachments = tuple(

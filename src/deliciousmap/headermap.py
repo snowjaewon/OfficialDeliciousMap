@@ -174,8 +174,11 @@ def _map_table(
             return _accept(stores, table, checked.accepted, previous)
         unused, failure = checked.unused(unused), checked.failure
     if mapper is None:
+        # 이력의 판정이 검증에 걸린 것이라면 표 이름이 아니라 코드가 낸 사유를 남긴다.
         raise Unresolved(
-            "validation_failed" if recorded else "model_not_configured", table.name, unused
+            "validation_failed" if recorded else "model_not_configured",
+            failure or table.name,
+            unused,
         )
     # 캐시 미적중이면 최초 호출과 재호출 한 번, 캐시 검증 실패면 재호출 한 번뿐이다.
     # 한도는 모델·지시문이 바뀌어도 이 표에 받은 답 전체로 센다.

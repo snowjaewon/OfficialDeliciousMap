@@ -11,8 +11,10 @@ from typing import get_args
 
 import pytest
 
+from deliciousmap import site
 from deliciousmap.contracts import (
     CONFIRMED_REASONS,
+    Classification,
     ClassifyOutput,
     ExcludedSources,
     GeocodeReason,
@@ -20,18 +22,22 @@ from deliciousmap.contracts import (
     ParseOutput,
     Provider,
     RepeatedExpenses,
+    SourceFinding,
     SourceReport,
+    UnresolvedReason,
 )
 from deliciousmap.pipeline import ExecutionContext
 from deliciousmap.registry import CITIES, HoldReason, Organization, Target
 from deliciousmap.storage import ArtifactStore, write_text
 from tests.test_geocoding_cli import (
     add_record,
+    context_at,
     lookup,
     payload,
     prepare,
     run_cli,
     save_input,
+    synthetic_record,
 )
 
 
@@ -482,7 +488,7 @@ def save_ledger(context: ExecutionContext) -> None:
         context.paths.data_root / context.target.city.slug / "fetch.json",
         json.dumps(
             {
-                "schema_version": 3,
+                "schema_version": 4,
                 "city": context.target.city.slug,
                 "org": context.target.org,
                 "dependencies": {},
@@ -622,3 +628,152 @@ def test_city_page_omits_the_repeat_line_when_nothing_was_merged_or_left(tmp_pat
     context = build_ready(tmp_path)
     assert run_cli(context, "build") == 0
     assert "묶음" not in city_page(context)
+
+
+def defect_review(source_hash: str, finding: SourceFinding, confirmed_by: str) -> dict:
+    """`data/manual/<city>/sources.jsonl` 한 줄. 원본 값은 적지 않는다."""
+    return {
+        "schema_version": 1,
+        "city": "seoul",
+        "organization": "test-org",
+        "source_hash": source_hash,
+        "finding": finding,
+        "candidates": 47,
+        "rows": ["sheet1:R14"],
+        "evidence": "사용장소 칸이 빈 현금 축의금 1건.",
+        "confirmed_by": confirmed_by,
+    }
+
+
+def unresolved_build(tmp_path: Path, *reviews: dict) -> ExecutionContext:
+    """대상 원본 하나를 끝내 읽지 못한 제출. 사람 대조 기록은 받은 것만 둔다."""
+    context = prepare(tmp_path)
+    save_ledger(context)
+    store = ArtifactStore(context.paths, context.target)
+    classified = store.load("classify", ClassifyOutput)
+    parsed = store.load("parse", ParseOutput)
+    if reviews:
+        write_text(
+            context.paths.manual(context.target, "sources"),
+            "".join(json.dumps(item, ensure_ascii=False) + "\n" for item in reviews),
+        )
+    store.save(
+        "parse",
+        parsed.model_copy(
+            update={
+                "sources": (
+                    SourceReport(source_hash="a" * 64, status="parsed", records=1),
+                    SourceReport(
+                        source_hash="b" * 64,
+                        status="unresolved",
+                        reason="validation_failed",
+                        candidates=47,
+                    ),
+                )
+            }
+        ),
+    )
+    store.save("classify", classified)
+    save_input(context, lookup())
+    for stage in ("geocode", "closure", "build"):
+        assert run_cli(context, stage) == 0
+    return context
+
+
+def test_city_page_counts_a_defect_a_person_confirmed_apart_from_the_unresolved(
+    tmp_path: Path,
+) -> None:
+    """원본 자체의 결함으로 확정한 원본은 미해결과 나누어 밝힌다(#106 선택지 C)."""
+    page = city_page(
+        unresolved_build(tmp_path, defect_review("b" * 64, "merchant_blank", "합성 검토자"))
+    )
+    assert "원본 자체의 결함으로 확정한 원본 1개" in page
+    assert "상호 빈칸 1개(지출 후보 47건)" in page
+    assert "미해결로 남은 원본은 없습니다" in page
+
+
+def test_city_page_leaves_an_original_nobody_checked_among_the_unresolved(tmp_path: Path) -> None:
+    """사람 대조를 거치지 않은 원본은 사유가 같아도 미해결이다(#93 전의 광주 16개)."""
+    page = city_page(unresolved_build(tmp_path, defect_review("b" * 64, "merchant_blank", "")))
+    assert "미해결로 남은 원본 1개" in page
+    assert "검증 실패 1개(지출 후보 47건)" in page
+    assert "결함으로 확정한 원본은 아직 없습니다" in page
+
+
+def test_city_page_counts_an_unresolved_original_that_no_review_mentions(tmp_path: Path) -> None:
+    """읽지 못한 원본이 남았는데 대조 얘기가 없으면 대조를 마친 것처럼 읽힌다."""
+    page = city_page(unresolved_build(tmp_path))
+    assert "미해결로 남은 원본 1개" in page
+    assert "결함으로 확정한 원본은 아직 없습니다" in page
+
+
+def test_city_page_omits_the_unresolved_line_when_no_original_was_counted(tmp_path: Path) -> None:
+    """원본을 세지 않은 산출물에 미해결 0개라고 적으면 없는 사실을 지어내는 것이다."""
+    context = build_ready(tmp_path)
+    assert run_cli(context, "build") == 0
+    assert "미해결로 남은 원본" not in city_page(context)
+
+
+def pending_build(tmp_path: Path) -> ExecutionContext:
+    """식당 한 건과 판단 보류 한 건을 담은 제출. 좌표는 식당 한 건만 판정한다."""
+    context = context_at(tmp_path)
+    store = ArtifactStore(context.paths, context.target)
+    records = (synthetic_record(), synthetic_record(record_id="r2", merchant="합성 사무기기"))
+    store.save("parse", ParseOutput(records=records))
+    store.save(
+        "classify",
+        ClassifyOutput(
+            decisions=(
+                Classification(record_id="r1", status="restaurant", evidence="합성 분류"),
+                Classification(record_id="r2", status="pending", evidence="합성 보류"),
+            )
+        ),
+    )
+    save_input(context, lookup())
+    for stage in ("geocode", "closure", "build"):
+        assert run_cli(context, stage) == 0
+    return context
+
+
+def test_city_page_publishes_the_records_that_could_not_reach_the_map(tmp_path: Path) -> None:
+    """판단 보류와 좌표 미확정을 밝히지 않으면 장부가 지도와 같아 보인다(#106)."""
+    page = city_page(pending_build(tmp_path))
+    assert "판단 보류 1건" in page
+    assert "지도에 오르지 못하고 장부에만 남습니다" in page
+
+
+def test_city_page_does_not_hide_the_places_it_could_not_confirm(tmp_path: Path) -> None:
+    """좌표를 확정하지 못한 식당 레코드는 사유별로 밝힌다."""
+    context = context_at(tmp_path)
+    store = ArtifactStore(context.paths, context.target)
+    store.save("parse", ParseOutput(records=(synthetic_record(),)))
+    store.save(
+        "classify",
+        ClassifyOutput(
+            decisions=(Classification(record_id="r1", status="restaurant", evidence="합성 분류"),)
+        ),
+    )
+    # 후보를 하나도 얻지 못한 조회. 좌표 판정은 미확정으로 남는다.
+    save_input(context, {**lookup(), "facts": [], "candidates": []})
+    for stage in ("geocode", "closure", "build"):
+        assert run_cli(context, stage) == 0
+    page = city_page(context)
+    assert "식당 1건 가운데 좌표를 확정하지 못한 1건" in page
+    assert "후보 없음 1건" in page
+
+
+def test_screen_reason_labels_cover_every_value_the_tally_can_carry() -> None:
+    """사유가 늘면 표기도 함께 늘린다. 빈 표기로 조용히 지나가지 않게 한다."""
+    assert set(site.SOURCE_FINDING_LABELS) == set(get_args(SourceFinding))
+    assert set(site.UNRESOLVED_REASON_LABELS) == set(get_args(UnresolvedReason))
+    assert set(site.GEOCODE_REASON_LABELS) == set(get_args(GeocodeReason)) - set(CONFIRMED_REASONS)
+
+
+def test_the_dialog_and_the_ledger_call_a_geocoding_reason_the_same_thing() -> None:
+    """같은 사유를 화면 두 곳이 다르게 부르면 읽는 사람이 다른 사실로 읽는다."""
+    source = files("deliciousmap.site_assets").joinpath("app.js").read_text(encoding="utf-8")
+    block = re.search(r"const GEOCODE_REASONS = \{(.*?)\n  \};", source, re.S)
+    assert block is not None
+    assert dict(re.findall(r"^\s*(\w+): \"(.+)\",$", block.group(1), re.M)) == dict(
+        site.GEOCODE_REASON_LABELS
+    )

@@ -40,6 +40,20 @@ def contains(day: date) -> bool:
     return START <= day <= END
 
 
+def collects(posted: date | None) -> bool:
+    """이번 수집이 받을 게시글인지. 게시일의 해가 대상 기간의 해와 같아야 한다.
+
+    게시판은 20년치를 한 곳에 쌓아 두고, 이번 제출이 다루는 것은 그중 대상 기간뿐이다.
+    대상 기간의 지출을 실은 게시글은 같은 해에 올라오므로 해 단위로 자른다. 달로 자르지
+    않는 것은 분기 정산이 분기가 끝난 뒤에 올라오기 때문이다. 게시일을 밝히지 않는 게시판은
+    가를 근거가 없어 받는다 — 근거 없음을 0건으로 바꾸지 않는다.
+
+    받지 않은 게시글은 수집 장부에 수로 남는다(`FetchOutput.uncollected_postings`).
+    이미 받아 둔 원본은 이 규칙과 무관하게 장부에 그대로 남는다.
+    """
+    return posted is None or START.year <= posted.year <= END.year
+
+
 @dataclass(frozen=True)
 class Span:
     """게시글 제목이 밝힌 지출 기간. 하루가 아니라 달 단위의 구간이다."""
@@ -80,7 +94,7 @@ def exclusion(posted: date | None, title: str | None) -> ExclusionReason | None:
     """
     if posted is None and title is None:
         return None
-    if posted is None or not (START.year <= posted.year <= END.year):
+    if posted is None or not collects(posted):
         return "posted_out_of_range"
     span = declared(title)
     if span is None:

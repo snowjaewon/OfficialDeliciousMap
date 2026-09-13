@@ -29,3 +29,25 @@ targetRules = ["generic-api-key"]
 condition = "AND"
 paths = ['''(^|[\\/])data[\\/]''']
 regexes = ['''^[0-9a-f]{20,64}$''']
+
+# 오탐·성능: `geocode.json`과 그 조각은 줄바꿈 없는 한 줄 JSON이다(조각 하나가 1,700만 자).
+# 내용은 판정 키의 SHA-256, 상호·주소·좌표, 인허가 관리번호뿐이고 비밀값이 없다. 기본
+# 고엔트로피 규칙이 이 한 줄에서 사실상 끝나지 않아 커밋이 막혔다(#73, 36분 경과 후 중단).
+# 이 경로에서 기본 `generic-api-key`만 끄고, 위의 `project-secret-env-assignment`(키 이름 + 값)은
+# 그대로 둔다. 산출물에 키가 들어가지 않는 것은 계약이며 테스트가 지킨다
+# (tests/test_license_lookup_cli.py::test_license_key_and_response_never_reach_artifacts_or_output).
+[[allowlists]]
+description = "한 줄 JSON 정제 산출물의 고엔트로피 오탐 (성능)"
+targetRules = ["generic-api-key"]
+paths = ['''(^|[\/])data[\/].*geocode(\.[0-9]{3})?\.json$''']
+
+# 오탐: 지역검색이 후보의 홈페이지로 준 제3자 공개 링크에 UUID가 질의 조건으로 실린다
+# (`web.coupangeats.com/share?storeId=…&key=<UUID>`, 2026-09-13 광산구 조회 실측).
+# 우리 키가 아니라 제공자가 돌려준 공개 주소이며 근거로 그대로 남겨야 한다.
+# data/ 아래의 generic-api-key 규칙에서, 값이 UUID 모양인 경우에만 허용한다.
+[[allowlists]]
+description = "data/ 조회 후보가 실은 제3자 링크의 UUID"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = ['''(^|[\/])data[\/]''']
+regexes = ['''^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$''']

@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
-from deliciousmap import boards
+from deliciousmap import boards, period
 from deliciousmap.contracts import FetchOutput, MissingOriginal, SourceRef
 from deliciousmap.paths import Paths
 from deliciousmap.pipeline import AdapterFailure, FailureCause
@@ -34,6 +34,7 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
     unmeasured: list[dict[str, str]] = []
     visited: list[str] = []
     held: list[str] = []
+    uncollected = 0
     for organization in target.organizations:
         if organization.hold_reason is not None:
             held.append(f"{organization.slug}={organization.hold_reason}")
@@ -41,7 +42,9 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
         for board in organization.boards:
             visited.append(f"{organization.slug}/{board.slug}")
             directory = paths.board_dir(target, organization.slug, board.slug)
-            unmeasured.extend(_walk(board, directory, transport))
+            walked = _walk(board, directory, transport)
+            unmeasured.extend(walked.unmeasured)
+            uncollected += walked.uncollected
             collected, gone = _ledger(directory)
             listed = _listed(directory)
             sources.extend(_sources(directory, collected, listed, organization.slug, board.slug))
@@ -50,32 +53,58 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
         # 게시판을 끝까지 훑은 뒤에 한 번에 알린다. 형식을 하나 만날 때마다 멈추지 않는다.
         raise AdapterFailure(FailureCause.UNSUPPORTED_FORMAT)
     if sources:
-        return FetchOutput(sources=tuple(sources), missing=tuple(missing))
+        return FetchOutput(
+            sources=tuple(sources), missing=tuple(missing), uncollected_postings=uncollected
+        )
     if not visited and not held:
         # 아직 게시판을 선언하지 않은 도시를 수집 완료로 표시하지 않는다.
         raise AdapterFailure(FailureCause.NOT_IMPLEMENTED)
     return FetchOutput(
-        sources=(), missing=tuple(missing), empty_reason=_empty_reason(visited, held)
+        sources=(),
+        missing=tuple(missing),
+        empty_reason=_empty_reason(visited, held),
+        uncollected_postings=uncollected,
     )
 
 
-def _walk(board: Board, directory: Path, transport: Transport) -> list[dict[str, str]]:
-    """게시판을 훑어 새 게시글의 원본을 내려받고 게시글 단위로 기록한다.
+@dataclass(frozen=True)
+class _Walked:
+    """게시판 하나를 훑은 결과. 사람이 봐야 하는 첨부와 기간 밖이라 받지 않은 게시글 수다."""
+
+    unmeasured: list[dict[str, str]]
+    uncollected: int
+
+
+def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
+    """게시판을 훑어 대상 기간 게시글의 원본을 내려받고 게시글 단위로 기록한다.
 
     실측하지 않은 형식은 그 자리에서 멈추지 않고 모아 두었다가 끝에 한 번에 알린다.
     22년치 게시판은 드문 형식이 뒤늦게 나오므로, 하나 만날 때마다 멈추면 그만큼 다시 훑어야 한다.
+
+    목록은 끝까지 훑되 게시일이 대상 연도 밖인 게시글은 본문도 열지 않는다(`period.collects`).
+    이미 받아 둔 원본은 그 규칙과 무관하게 장부에 남으며, 받지 않은 게시글은 수로 돌려준다.
     """
     collected, gone = _ledger(directory)
     done = set(collected) | set(gone)
     listed = _listed(directory)
     scraper: boards.BoardScraper = board.scraper(board, transport)
     unmeasured: list[dict[str, str]] = []
+    uncollected = 0
+
+    def skip(post_id: str, posted: date | None) -> bool:
+        """본문을 열지 않고 넘길 게시글. 아래 루프가 같은 판정을 다시 쓰므로 여기 한 곳에 둔다."""
+        return post_id in done or not period.collects(posted)
+
     try:
-        for posting in scraper.postings(lambda post_id: post_id in done):
+        for posting in scraper.postings(skip):
             if posting.posted is not None or posting.title:
                 # 이미 끝낸 게시글도 목록에서 읽은 값은 이번 훑기의 것으로 갱신한다.
                 listed[posting.post_id] = Listed(posting.posted, posting.title, posting.department)
             if posting.post_id in done:
+                continue
+            if skip(posting.post_id, posting.posted):
+                # 이번 수집이 받지 않는 게시글. 장부에 남기지 않으므로 기간을 넓히면 다시 받는다.
+                uncollected += 1
                 continue
             stored, lost, empty = [], [], []
             published = scraper.published_suffixes
@@ -113,7 +142,7 @@ def _walk(board: Board, directory: Path, transport: Transport) -> list[dict[str,
         raise AdapterFailure(FailureCause.ADAPTER_FAILED) from None
     _remember_listing(directory, listed)
     _report_unmeasured(directory, unmeasured)
-    return unmeasured
+    return _Walked(unmeasured, uncollected)
 
 
 def _note(attachment: boards.Attachment, reason: str) -> dict[str, str]:

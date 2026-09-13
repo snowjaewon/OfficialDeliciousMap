@@ -52,3 +52,26 @@ def test_personal_details_are_removed_from_purposes(purpose: str, expected: str)
 )
 def test_person_named_as_the_payee_is_redacted(merchant: str, purpose: str, expected: str) -> None:
     assert scrub_merchant(merchant, purpose) == expected
+
+
+@pytest.mark.parametrize(
+    ("merchant", "purpose", "expected"),
+    [
+        # 2026-09-13 남구·동구 실측: 기관이 이름을 가릴 때 로마자 O와 숫자 0도 쓴다.
+        ("채OO", "보건소 직원 경조사", REDACTED),
+        ("서0혜", "직원 경조사 축·부의금 지급", REDACTED),
+        # 부서명과 가린 이름을 한 칸에 함께 적은 표기. 칸 전체를 가린다.
+        ("으뜸효정책과 조O아", "소속 직원 본인 결혼(5.16.) 축의금 지급", REDACTED),
+        ("아동청소년과 김O희", "직원 애경사 축의금", REDACTED),
+        # 경조사가 아닌 지출의 상호는 그대로 둔다.
+        ("09바다", "현안업무 추진 직원 격려 간담회", "09바다"),
+        ("ACC회참치", "간담회", "ACC회참치"),
+        # 경조사 지출이어도 가린 이름 표기가 없으면 업소 상호로 본다.
+        ("합성플라워", "직원 경조사 화환 구입", "합성플라워"),
+    ],
+)
+def test_masked_name_mixed_with_other_text_is_redacted(
+    merchant: str, purpose: str, expected: str
+) -> None:
+    """받는 사람이 개인인 지출은 칸에 무엇이 섞여 있든 이름이 남지 않아야 한다(SECURITY.md)."""
+    assert scrub_merchant(merchant, purpose) == expected

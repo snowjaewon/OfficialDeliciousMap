@@ -265,10 +265,13 @@ def test_fetch_fills_the_listing_of_postings_already_collected(tmp_path: Path) -
 
 
 def test_fetch_declares_the_contract_that_carries_the_posting_date(tmp_path: Path) -> None:
-    """게시일·제목이 붙은 출처는 이전 산출물과 다른 계약이다. 낡은 산출물을 섞어 쓰지 않는다."""
+    """게시일·제목이 붙고 받지 않은 게시글 수를 실은 출처는 이전 산출물과 다른 계약이다.
+
+    낡은 산출물을 섞어 쓰지 않는다.
+    """
     paths = paths_at(tmp_path)
     assert run_fetch(paths, BoardTransport(board_responses())) == 0
-    assert fetch_envelope(paths)["schema_version"] == 3
+    assert fetch_envelope(paths)["schema_version"] == 4
 
 
 def test_fetch_reports_a_listing_whose_rows_it_can_no_longer_read(
@@ -741,3 +744,57 @@ def test_fetch_accepts_a_macro_enabled_workbook(tmp_path: Path) -> None:
     sources = fetch_artifact(paths)["sources"]
     assert Path(sources[0]["path"]).name == "11024-1.xlsm"
     assert sources[0]["container"] == "ooxml"
+
+
+def older_list_page() -> bytes:
+    """게시일이 대상 연도 밖인 게시글만 실린 쪽. 같은 구조에서 번호와 게시일만 바꾼다."""
+    body = fixture("board-list-2.html").decode("utf-8")
+    return body.replace("11022", "10999").replace("2026-03-30", "2025-12-30").encode("utf-8")
+
+
+def older_responses() -> dict[str, bytes]:
+    """둘째 쪽이 대상 연도 밖인 게시판. 그 게시글의 본문·첨부는 아예 두지 않는다."""
+    responses = board_responses()
+    del responses[view_page(11022)]
+    del responses[download(11022, 1)]
+    responses[list_page(2)] = older_list_page()
+    return responses
+
+
+def test_fetch_does_not_open_a_posting_published_outside_the_reporting_years(
+    tmp_path: Path,
+) -> None:
+    """대상 연도 밖 게시글은 본문도 열지 않는다. 22년치 게시판을 통째로 받지 않기 위해서다."""
+    paths = paths_at(tmp_path)
+    transport = BoardTransport(older_responses())
+    assert run_fetch(paths, transport) == 0
+    assert [key for key in transport.requests if "10999" in key] == []
+    assert [Path(item["path"]).name for item in fetch_artifact(paths)["sources"]] == [
+        "11024-1.xls",
+        "11024-2.xlsx",
+    ]
+
+
+def test_fetch_counts_the_postings_it_left_outside_the_reporting_years(tmp_path: Path) -> None:
+    """받지 않은 게시글은 0건으로 숨기지 않고 수집 장부에 수로 남긴다."""
+    paths = paths_at(tmp_path)
+    assert run_fetch(paths, BoardTransport(older_responses())) == 0
+    assert fetch_artifact(paths)["uncollected_postings"] == 1
+    # 대상 연도 안의 게시글만 받은 실행은 남긴 게시글이 없다.
+    inside = paths_at(tmp_path / "inside")
+    assert run_fetch(inside, BoardTransport(board_responses())) == 0
+    assert fetch_artifact(inside)["uncollected_postings"] == 0
+
+
+def test_fetch_keeps_originals_collected_before_the_reporting_years(tmp_path: Path) -> None:
+    """이미 받아 둔 원본은 대상 연도 밖이어도 장부에서 그대로 낸다. 받은 것을 지우지 않는다."""
+    paths = paths_at(tmp_path)
+    assert run_fetch(paths, BoardTransport(board_responses())) == 0
+    aged = BoardTransport(
+        {**older_responses(), list_page(2): older_list_page().replace(b"10999", b"11022")}
+    )
+    assert run_fetch(paths, aged) == 0
+    artifact = fetch_artifact(paths)
+    assert len(artifact["sources"]) == 3
+    # 이미 끝낸 게시글은 받지 않은 게시글로 세지 않는다.
+    assert artifact["uncollected_postings"] == 0
