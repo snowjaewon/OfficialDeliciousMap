@@ -314,9 +314,22 @@ def _landing_page(output_root: Path) -> str:
 {cards}
       </nav>
     </main>
+{_install_guide()}
+    <script id="site-config" type="application/json">{json.dumps({"site_root": "./"})}</script>
+    <script src="./assets/app.js" defer></script>
   </body>
 </html>
 """
+
+
+def _install_guide() -> str:
+    """홈 화면 설치 안내의 자리. 문구와 표시 여부는 브라우저에 따라 app.js가 정한다."""
+    return """    <aside class="install-guide" data-install-guide aria-label="앱 설치 안내" hidden>
+      <p data-install-message></p>
+      <button class="install-accept" type="button" data-install-accept hidden>설치</button>
+      <button class="install-dismiss" type="button" data-install-dismiss
+              aria-label="설치 안내 닫기">×</button>
+    </aside>"""
 
 
 def _map_notice(statuses: tuple[CollectionStatus, ...]) -> str:
@@ -549,6 +562,7 @@ def _city_page(
         레코드 없음과 수집 보류는 집행이 없었다는 뜻이 아닙니다.
       </p>
     </dialog>
+{_install_guide()}
     <script id="site-config" type="application/json">{config}</script>
     <script src="{SITE_ROOT}assets/app.js" defer></script>
   </body>

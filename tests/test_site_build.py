@@ -422,6 +422,30 @@ def test_every_page_links_the_home_screen_icon(tmp_path: Path) -> None:
         assert png_size((page.parent / match.group(1)).resolve()) == (180, 180)
 
 
+def test_landing_and_city_pages_both_carry_the_install_guide(tmp_path: Path) -> None:
+    """설치 시작 주소는 랜딩이고, 도시 링크로 바로 들어온 사람도 있다. 두 화면 모두 안내한다."""
+    context = build_ready(tmp_path)
+    assert run_cli(context, "build") == 0
+    output = context.paths.output_root
+
+    for page, root in ((output / "index.html", "./"), (output / "seoul" / "index.html", "../")):
+        html = page.read_text(encoding="utf-8")
+        for hook in (
+            "data-install-guide",
+            "data-install-message",
+            "data-install-accept",
+            "data-install-dismiss",
+        ):
+            assert hook in html, (page, hook)
+        # 안내는 app.js가 필요할 때만 보인다. 스크립트가 못 돌면 빈 안내가 남지 않는다.
+        assert re.search(r"<aside [^>]*data-install-guide[^>]*hidden", html), page
+        assert f'<script src="{root}assets/app.js" defer></script>' in html, page
+        match = re.search(r'<script id="site-config" type="application/json">(.*?)</script>', html)
+        assert match is not None, page
+        # 랜딩에서 설치해 처음 연 앱도 service worker를 등록한다.
+        assert json.loads(match.group(1))["site_root"] == root
+
+
 def fetched(posted: str, title: str | None, digest: str) -> dict:
     """수집 장부 한 줄. 대상 선별은 게시일과 제목만 보므로 나머지는 합성값이다."""
     return {

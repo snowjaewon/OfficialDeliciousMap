@@ -54,6 +54,13 @@
     insufficient_evidence: "근거 부족",
   };
 
+  const INSTALL_GUIDE_KEY = "deliciousmap:install-guide";
+  const INSTALL_MESSAGES = {
+    offer: "앱으로 설치하면 홈 화면에서 바로 열 수 있습니다.",
+    safari: "Safari의 공유 메뉴에서 ‘홈 화면에 추가’를 누르면 앱처럼 열 수 있습니다.",
+  };
+  const OTHER_IOS_BROWSERS = /CriOS|FxiOS|EdgiOS|OPiOS|KAKAOTALK|NAVER|DaumApps|Instagram|FBAN|FBAV|Line\//;
+
   const MAP_STATUSES = {
     mapped: "지도 표시",
     geocode_failed: "지오코딩 실패",
@@ -632,6 +639,94 @@
     };
   }
 
+  // 끝난 설치 안내(닫았거나, 설치 창에서 거절했거나, Safari 안내를 한 번 보였음)는 이 브라우저의
+  // 저장소에만 기억한다. 저장소를 못 쓰면 다음 화면에서 다시 보일 수 있지만 지금 화면은 닫힌다.
+  function installGuideDone(windowObject) {
+    try {
+      return windowObject.localStorage.getItem(INSTALL_GUIDE_KEY) === "done";
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function rememberInstallGuideDone(windowObject) {
+    try {
+      windowObject.localStorage.setItem(INSTALL_GUIDE_KEY, "done");
+    } catch (error) {
+      // 기억하지 못해도 지금 화면의 안내는 그대로 다룬다.
+    }
+  }
+
+  // 홈 화면 앱으로 열렸는지. iPhone Safari는 navigator.standalone으로, 나머지는 표시 방식으로 안다.
+  function openedAsApp(windowObject) {
+    return (
+      windowObject.navigator.standalone === true ||
+      Boolean(windowObject.matchMedia?.("(display-mode: standalone)").matches)
+    );
+  }
+
+  // 공유 메뉴의 "홈 화면에 추가"를 쓰는 iOS Safari. 데스크톱 사이트를 요청한 iPad는 Mac처럼 보이지만
+  // 터치가 있다. 다른 iOS 브라우저와 앱 안 브라우저는 메뉴가 달라 Safari 안내가 맞지 않는다.
+  function isIosSafari(navigatorObject) {
+    const agent = navigatorObject.userAgent || "";
+    const ios =
+      /iPhone|iPad|iPod/.test(agent) ||
+      (/Macintosh/.test(agent) && navigatorObject.maxTouchPoints > 1);
+    return ios && /Version\/[\d.]+.*Safari\//.test(agent) && !OTHER_IOS_BROWSERS.test(agent);
+  }
+
+  // 홈 화면 설치 안내. Android Chrome은 설치 제안 이벤트를 받아 버튼으로 설치 창을 열고,
+  // 그 이벤트가 없는 iOS Safari에는 공유 메뉴에서 추가하는 방법을 알린다.
+  function setupInstallGuide(windowObject) {
+    const documentObject = windowObject.document;
+    const guide = documentObject.querySelector("[data-install-guide]");
+    const message = documentObject.querySelector("[data-install-message]");
+    const accept = documentObject.querySelector("[data-install-accept]");
+    const dismiss = documentObject.querySelector("[data-install-dismiss]");
+    if (!guide || !message || !accept || !dismiss || openedAsApp(windowObject)) return;
+    let offer;
+
+    function show(text) {
+      message.textContent = text;
+      guide.hidden = false;
+    }
+
+    function hide() {
+      offer = undefined;
+      guide.hidden = true;
+    }
+
+    windowObject.addEventListener("beforeinstallprompt", (event) => {
+      // 닫은 사람에게도 브라우저의 기본 설치 안내를 띄우지 않도록 늘 막는다.
+      event.preventDefault();
+      if (installGuideDone(windowObject)) return;
+      offer = event;
+      accept.hidden = false;
+      show(INSTALL_MESSAGES.offer);
+    });
+    // 브라우저 메뉴로 설치해도 이 화면의 버튼은 쓸모가 없어진다. 설치한 동안은 Chrome이 설치 제안을
+    // 다시 보내지 않으므로 기억하지 않는다. 기억하면 앱을 지운 뒤에도 안내가 돌아오지 않는다.
+    windowObject.addEventListener("appinstalled", hide);
+    accept.addEventListener("click", async () => {
+      if (!offer) return;
+      // 설치 제안은 한 번만 쓸 수 있다.
+      const pending = offer;
+      hide();
+      await pending.prompt();
+      const choice = await pending.userChoice;
+      if (choice.outcome === "dismissed") rememberInstallGuideDone(windowObject);
+    });
+    dismiss.addEventListener("click", () => {
+      rememberInstallGuideDone(windowObject);
+      hide();
+    });
+    // Safari 안내는 한 번만 보인다. 본 화면에서는 닫을 때까지 남는다.
+    if (isIosSafari(windowObject.navigator) && !installGuideDone(windowObject)) {
+      show(INSTALL_MESSAGES.safari);
+      rememberInstallGuideDone(windowObject);
+    }
+  }
+
   function registerServiceWorker(windowObject) {
     if (!("serviceWorker" in windowObject.navigator)) return;
     const config = readConfig(windowObject.document);
@@ -644,13 +739,15 @@
   async function start(windowObject) {
     const documentObject = windowObject.document;
     const root = documentObject.documentElement;
+    // 설치 안내와 service worker는 랜딩에도 둔다. 설치한 앱의 시작 주소가 랜딩이다.
+    setupInstallGuide(windowObject);
+    registerServiceWorker(windowObject);
     if (!root.dataset.city) return;
 
     const config = readConfig(documentObject);
     windowObject.deliciousmapMetricsSummary = (name) =>
       summarizeMetrics(windowObject.deliciousmapMetrics || [], name);
     setupSourceDialog(documentObject);
-    registerServiceWorker(windowObject);
 
     const mapApiRequest = loadNaverMaps(windowObject, config).then(
       (naverMaps) => ({ naverMaps }),
@@ -819,6 +916,7 @@
     renderRecords,
     renderRestaurantList,
     selectMarker,
+    setupInstallGuide,
     setupListSheet,
     start,
     summarizeMetrics,
