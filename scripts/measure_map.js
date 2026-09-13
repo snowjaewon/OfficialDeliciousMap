@@ -401,6 +401,24 @@ function judgeTrace(attempts, requiredRuns) {
   };
 }
 
+function judgeScenarios(attempts, requiredRuns) {
+  return Object.fromEntries(
+    Object.entries(SCENARIOS).map(([scenario, { target_ms }]) => [
+      scenario,
+      judge(attempts[scenario] ?? [], target_ms, requiredRuns),
+    ]),
+  );
+}
+
+function judgeGestures(traces, requiredRuns) {
+  return Object.fromEntries(
+    Object.entries(traces).map(([gesture, attempts]) => [
+      gesture,
+      { attempts, summary: judgeTrace(attempts, requiredRuns) },
+    ]),
+  );
+}
+
 // [{a: [1]}, {a: [2], b: [3]}] → {a: [1, 2], b: [3]}
 function concatenateLists(objects) {
   const merged = {};
@@ -429,12 +447,6 @@ function mergeResults(blocks) {
   for (const name of Object.keys(first.environments)) {
     const parts = blocks.map((result) => result.environments[name]);
     const attempts = concatenateLists(parts.map((part) => part.attempts));
-    const summaries = Object.fromEntries(
-      Object.entries(SCENARIOS).map(([scenario, { target_ms }]) => [
-        scenario,
-        judge(attempts[scenario] ?? [], target_ms, requiredRuns),
-      ]),
-    );
     const traces = concatenateLists(
       parts.map((part) =>
         Object.fromEntries(
@@ -447,17 +459,9 @@ function mergeResults(blocks) {
       failures: parts.flatMap((part, index) =>
         part.failures.map((failure) => ({ block: index + 1, ...failure })),
       ),
-      summaries,
+      summaries: judgeScenarios(attempts, requiredRuns),
       frames: concatenateLists(parts.map((part) => part.frames)),
-      tracing: {
-        ...parts[0].tracing,
-        gestures: Object.fromEntries(
-          Object.entries(traces).map(([gesture, values]) => [
-            gesture,
-            { attempts: values, summary: judgeTrace(values, requiredRuns) },
-          ]),
-        ),
-      },
+      tracing: { ...parts[0].tracing, gestures: judgeGestures(traces, requiredRuns) },
       diagnostics: concatenateLists(parts.map((part) => part.diagnostics)),
     };
   }
@@ -1189,10 +1193,7 @@ async function measureEnvironment(browser, environment, target, log, traceDirect
     }
   });
 
-  const summaries = {};
-  for (const [name, scenario] of Object.entries(SCENARIOS)) {
-    summaries[name] = judge(attempts[name] ?? [], scenario.target_ms, REQUIRED_RUNS);
-  }
+  const summaries = judgeScenarios(attempts, REQUIRED_RUNS);
   const tracing = {
     source: "CDP Tracing",
     criteria: {
@@ -1202,12 +1203,7 @@ async function measureEnvironment(browser, environment, target, log, traceDirect
       long_task_ms: LONG_TASK_MS,
       verdict: "pass only when all measured attempts have no stutter or freeze; fewer than 20 is unmeasured",
     },
-    gestures: Object.fromEntries(
-      Object.entries(traces).map(([gesture, attemptsForGesture]) => [
-        gesture,
-        { attempts: attemptsForGesture, summary: judgeTrace(attemptsForGesture, REQUIRED_RUNS) },
-      ]),
-    ),
+    gestures: judgeGestures(traces, REQUIRED_RUNS),
   };
   return { attempts, failures, summaries, frames, tracing, diagnostics };
 }

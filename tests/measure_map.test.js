@@ -526,13 +526,18 @@ test("번갈아 잰 블록을 합치면 모인 회차로 20회 판정을 다시 
   ]);
 });
 
-test("다른 셸·데이터·조건·호스트에서 잰 블록은 한 결과로 합치지 않는다", () => {
-  const before = block({ sw: SHA256_EMPTY, revisit: [100] });
+test("다른 셸·데이터·조건·호스트·커밋에서 잰 블록은 한 결과로 합치지 않는다", () => {
   const after = block({ revisit: [100] });
-  const otherHost = { ...block({ revisit: [100] }), host: { cpu: "other cpu" } };
+  const differing = (change) => ({ ...block({ revisit: [100] }), ...change });
 
-  assert.throws(() => mergeResults([before, after]), /shell/);
-  assert.throws(() => mergeResults([after, otherHost]), /host/);
+  assert.throws(() => mergeResults([after, block({ sw: SHA256_EMPTY, revisit: [100] })]), /shell/);
+  assert.throws(() => mergeResults([after, differing({ files: { "markers.json": { sha256: SHA256_ABC } } })]), /files/);
+  assert.throws(
+    () => mergeResults([after, differing({ conditions: { ...after.conditions, query: "나" } })]),
+    /conditions/,
+  );
+  assert.throws(() => mergeResults([after, differing({ host: { cpu: "other cpu" } })]), /host/);
+  assert.throws(() => mergeResults([after, differing({ code_commit: "decade" })]), /code_commit/);
 });
 
 test("합친 결과는 성능 기록을 다시 판정하고 실패 회차가 어느 블록인지 남긴다", () => {
