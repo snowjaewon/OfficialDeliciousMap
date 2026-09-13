@@ -2,10 +2,12 @@
 
 import re
 import urllib.parse
+import zipfile
 from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass
 from datetime import date
 from html.parser import HTMLParser
+from io import BytesIO
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING, Protocol
 
@@ -83,6 +85,7 @@ CONTAINERS: tuple[Container, ...] = (
         frozenset({".xls", ".xlsx"}),
         b"urn:schemas-microsoft-com:office:spreadsheet",
     ),
+    Container("zip", bytes.fromhex("504b0304"), frozenset({".zip"})),
 )
 # 저장 이름에 쓸 수 있는 확장자의 모양. 게시판이 준 이름을 경로로 그대로 쓰지 않는다.
 SUFFIX = re.compile(r"\.[a-z0-9]{1,8}")
@@ -249,6 +252,20 @@ def container_of(body: bytes) -> str:
     """
     if not body:
         raise EmptyOriginal("board served an empty attachment")
+    # A ZIP archive shares the OOXML magic bytes.  Distinguish Office archives
+    # by their package entries while retaining the historical fallback for
+    # short synthetic OOXML signatures used by older adapters.
+    if body.startswith(bytes.fromhex("504b0304")):
+        try:
+            with zipfile.ZipFile(BytesIO(body)) as archive:
+                names = set(archive.namelist())
+        except (OSError, zipfile.BadZipFile):
+            names = set()
+        if names and (
+            "[Content_Types].xml" not in names
+            and not any(name.startswith(("word/", "xl/", "ppt/")) for name in names)
+        ):
+            return "zip"
     for container in CONTAINERS:
         if container.matches(body):
             return container.name
