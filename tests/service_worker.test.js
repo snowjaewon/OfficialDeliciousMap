@@ -38,7 +38,7 @@ function isDataUrl(url) {
   return pathname.endsWith("/markers.json") || pathname.endsWith("/records.json");
 }
 
-function workerHarness({ entries = {}, fetchImpl, windows = [] }) {
+function workerHarness({ entries = {}, fetchImpl, windows = [], scriptUrl = `${ORIGIN}/sw.js` }) {
   const listeners = {};
   const deleted = [];
   const precached = [];
@@ -100,7 +100,7 @@ function workerHarness({ entries = {}, fetchImpl, windows = [] }) {
         matchAll: async ({ includeUncontrolled, type } = {}) =>
           includeUncontrolled && type === "window" ? windows.map((url) => ({ url: new URL(url, ORIGIN).href })) : [],
       },
-      location: { origin: ORIGIN },
+      location: new URL(scriptUrl),
     },
   });
   vm.runInContext(fs.readFileSync(WORKER_FILE, "utf8"), context, { filename: WORKER_FILE });
@@ -162,6 +162,18 @@ test("cached city shell responds before its background refresh finishes", async 
   network.resolve(freshShell);
   await event.complete;
   assert.equal(harness.stored.get("deliciousmap-shell-v2").get(`${ORIGIN}/gwangju/`).body, "fresh shell");
+});
+
+test("a site deployed under a subpath still serves its shared assets from the shell cache", async () => {
+  const harness = workerHarness({
+    scriptUrl: `${ORIGIN}/map/sw.js`,
+    entries: { "/map/assets/app.js": fakeResponse("cached app") },
+    fetchImpl: async () => fakeResponse("network app"),
+  });
+
+  const response = await harness.dispatchFetch(request("/map/assets/app.js")).response;
+
+  assert.equal(response?.body, "cached app");
 });
 
 test("markers stay network-first while a successful response refreshes the offline fallback", async () => {

@@ -1,7 +1,8 @@
 const SHELL_CACHE_NAME = "deliciousmap-shell-v2";
 const DATA_CACHE_NAME = "deliciousmap-data-v1";
 const SHELL = ["./", "./assets/app.js", "./assets/styles.css", "./manifest.webmanifest"];
-const SHELL_PATHS = new Set(SHELL.slice(1).map((asset) => new URL(asset, self.location.origin).pathname));
+// 사이트를 하위 경로에 배포해도 맞도록 워커 스크립트 위치를 기준으로 푼다.
+const SHELL_PATHS = new Set(SHELL.slice(1).map((asset) => new URL(asset, self.location.href).pathname));
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
