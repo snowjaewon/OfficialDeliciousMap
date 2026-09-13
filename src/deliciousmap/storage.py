@@ -46,6 +46,7 @@ from deliciousmap.registry import Target
 
 # 정제 산출물의 파일당 상한(ADR-0001). 이력도 이 상한 안에서 조각으로 나눈다.
 SIZE_LIMIT = 20_000_000
+TOO_LARGE = "artifact exceeds 20MB; partition before writing"
 
 RECORD_FIELDS = (
     "record_id",
@@ -129,13 +130,16 @@ def require_exact_keys(actual: list[str], expected: set[str]) -> None:
 
 
 def write_text(path: Path, content: str) -> None:
-    require_size(content)
+    write_bytes(path, content.encode("utf-8"))
+
+
+def write_bytes(path: Path, content: bytes) -> None:
+    if len(content) > SIZE_LIMIT:
+        raise ValueError(TOO_LARGE)
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary: Path | None = None
     try:
-        with tempfile.NamedTemporaryFile(
-            mode="w", encoding="utf-8", newline="", dir=path.parent, delete=False
-        ) as stream:
+        with tempfile.NamedTemporaryFile(dir=path.parent, delete=False) as stream:
             temporary = Path(stream.name)
             stream.write(content)
         os.replace(temporary, path)
@@ -150,7 +154,7 @@ def _within_limit(content: str) -> bool:
 
 def require_size(content: str) -> None:
     if not _within_limit(content):
-        raise ValueError("artifact exceeds 20MB; partition before writing")
+        raise ValueError(TOO_LARGE)
 
 
 def dump_repeats(origins: tuple[RecordOrigin, ...]) -> str:

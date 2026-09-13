@@ -1,6 +1,17 @@
 const SHELL_CACHE_NAME = "deliciousmap-shell-v2";
 const DATA_CACHE_NAME = "deliciousmap-data-v1";
-const SHELL = ["./", "./assets/app.js", "./assets/styles.css", "./manifest.webmanifest"];
+// 설치한 앱의 아이콘도 셸이다. 오프라인에서도 홈 화면·작업 표시줄 아이콘이 깨지지 않는다.
+// 배포 검사(publish.py)가 이 배열을 JSON으로 읽으므로 안에 주석·끝 쉼표를 두지 않는다.
+const SHELL = [
+  "./",
+  "./assets/app.js",
+  "./assets/styles.css",
+  "./manifest.webmanifest",
+  "./assets/icon-192.png",
+  "./assets/icon-512.png",
+  "./assets/icon-maskable-512.png",
+  "./assets/apple-touch-icon.png"
+];
 // 사이트를 하위 경로에 배포해도 맞도록 워커 스크립트 위치를 기준으로 푼다.
 const SHELL_PATHS = new Set(SHELL.slice(1).map((asset) => new URL(asset, self.location.href).pathname));
 

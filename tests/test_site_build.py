@@ -1,5 +1,6 @@
 import json
 import re
+import struct
 from copy import deepcopy
 from dataclasses import replace
 from datetime import date
@@ -269,12 +270,13 @@ def test_public_files_carry_no_original_or_lookup_provenance(tmp_path: Path) -> 
 
     written = [path for path in context.paths.output_root.rglob("*") if path.is_file()]
     assert written
+    # 아이콘 같은 바이너리 파일도 함께 보도록 바이트로 찾는다.
     for path in written:
-        content = path.read_text(encoding="utf-8")
+        content = path.read_bytes()
         for secret in ("source_hash", "source_location", "lookup_key", "dependency_key"):
-            assert secret not in content, path
+            assert secret.encode() not in content, path
         for value in ("a" * 64, "example.invalid", "합성 분류"):
-            assert value not in content, path
+            assert value.encode() not in content, path
 
 
 def with_held_organization(
@@ -380,6 +382,44 @@ def test_city_page_pairs_the_map_with_a_restaurant_list_and_its_detail(tmp_path:
     # 검색·필터는 목록 위에 있다. 따로 뜨던 검색 결과 상자는 목록으로 대신한다.
     assert page.index("data-search-form") < page.index("data-restaurant-list")
     assert "data-search-results" not in page
+
+
+def png_size(path: Path) -> tuple[int, int]:
+    """PNG 서명과 IHDR에서 읽은 가로·세로."""
+    data = path.read_bytes()
+    assert data[:8] == b"\x89PNG\r\n\x1a\n" and data[12:16] == b"IHDR", path
+    width, height = struct.unpack(">II", data[16:24])
+    return width, height
+
+
+def test_manifest_icons_are_published_at_the_sizes_it_declares(tmp_path: Path) -> None:
+    """Android Chrome은 192·512 아이콘이 없으면 설치를 제안하지 않는다. maskable도 따로 싣는다."""
+    context = build_ready(tmp_path)
+    assert run_cli(context, "build") == 0
+    output = context.paths.output_root
+    manifest = json.loads((output / "manifest.webmanifest").read_text(encoding="utf-8"))
+
+    declared = set()
+    for icon in manifest["icons"]:
+        assert icon["type"] == "image/png"
+        width, height = png_size(output / icon["src"])
+        assert icon["sizes"] == f"{width}x{height}", icon
+        declared.add((icon["sizes"], icon.get("purpose", "any")))
+    assert {("192x192", "any"), ("512x512", "any")} <= declared
+    assert any(purpose == "maskable" for _, purpose in declared)
+
+
+def test_every_page_links_the_home_screen_icon(tmp_path: Path) -> None:
+    """iPhone Safari는 manifest 아이콘 대신 apple-touch-icon을 홈 화면 아이콘으로 쓴다."""
+    context = build_ready(tmp_path)
+    assert run_cli(context, "build") == 0
+    output = context.paths.output_root
+
+    for page in (output / "index.html", output / "seoul" / "index.html"):
+        html = page.read_text(encoding="utf-8")
+        match = re.search(r'<link rel="apple-touch-icon" href="([^"]+)">', html)
+        assert match is not None, page
+        assert png_size((page.parent / match.group(1)).resolve()) == (180, 180)
 
 
 def fetched(posted: str, title: str | None, digest: str) -> dict:
