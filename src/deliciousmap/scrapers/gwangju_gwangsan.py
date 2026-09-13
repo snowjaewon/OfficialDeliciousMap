@@ -62,14 +62,14 @@ class GwangsanInfoOpenBoard:
         self.transport = transport
         self._token = ""
 
-    def postings(self, collected: boards.Collected) -> Iterator[boards.Posting]:
+    def postings(self, skipped: boards.Skipped) -> Iterator[boards.Posting]:
         page = 1
         while True:
             answer = self._call(self.list_url, self._listing_form(page))
             data = _mapping(answer, "dataMap")
             for row in _rows(data):
-                # 이미 끝낸 게시글은 본문을 열지 않고 목록에서 읽은 값만 낸다.
-                yield row.posting(()) if collected(row.post_id) else self._posting(row)
+                # 넘기기로 한 게시글은 본문을 열지 않고 목록에서 읽은 값만 낸다.
+                yield (row.posting(()) if skipped(row.post_id, row.posted) else self._posting(row))
             if page >= _total_pages(data):
                 return
             page += 1

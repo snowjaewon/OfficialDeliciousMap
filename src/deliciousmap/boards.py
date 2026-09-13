@@ -134,8 +134,9 @@ class Posting:
     department: str = ""
 
 
-# 이미 수집을 마친 게시글인지 묻는다. 참이면 스크래퍼는 본문을 열지 않는다.
-Collected = Callable[[str], bool]
+# 본문을 열지 않고 넘길 게시글인지 묻는다. 이미 수집을 마쳤거나 이번 수집의 기간 밖이면 참이다.
+# 게시일을 함께 묻는 것은 기간 밖 게시글의 본문까지 여는 일을 막기 위해서다.
+Skipped = Callable[[str, date | None], bool]
 
 
 class BoardScraper(Protocol):
@@ -146,7 +147,7 @@ class BoardScraper(Protocol):
 
     def __init__(self, board: "Board", transport: Transport) -> None: ...
 
-    def postings(self, collected: Collected) -> Iterator[Posting]: ...
+    def postings(self, skipped: Skipped) -> Iterator[Posting]: ...
 
 
 class Document(HTMLParser):

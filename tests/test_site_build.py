@@ -323,7 +323,7 @@ def save_ledger(context: ExecutionContext) -> None:
         context.paths.data_root / context.target.city.slug / "fetch.json",
         json.dumps(
             {
-                "schema_version": 3,
+                "schema_version": 4,
                 "city": context.target.city.slug,
                 "org": context.target.org,
                 "dependencies": {},
