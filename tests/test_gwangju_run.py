@@ -8,6 +8,9 @@ import pytest
 
 from deliciousmap.cli import main
 from deliciousmap.registry import CITIES
+from deliciousmap.scrapers.gwangju_district import GwangjuDistrictBoard
+from deliciousmap.scrapers.gwangju_gwangsan import GwangsanInfoOpenBoard
+from deliciousmap.scrapers.gwangju_seogu import SeoguExpenseBoard
 from tests.fakes import FakeTransport, naver_body, naver_item
 from tests.gwangju import (
     FakeBoardTransport,
@@ -23,13 +26,49 @@ from tests.test_parse_cli import DATA, payload, record_spending, records, run
 
 def test_declared_gwangju_board_is_the_verified_city_hall_board() -> None:
     (gwangju,) = [item for item in CITIES if item.slug == "gwangju"]
-    (organization,) = gwangju.organizations
-    assert organization.slug == "gwangju-city"
+    (organization,) = [item for item in gwangju.organizations if item.slug == "gwangju-city"]
     assert organization.hold_reason is None
     (board,) = organization.boards
     assert board.url == (
         "https://www.gwangju.go.kr/boardList.do?boardId=BD_0000000252&recordCnt=100"
     )
+
+
+def test_declared_gwangju_districts_are_the_verified_five_boroughs() -> None:
+    """2026-09-13 실측한 자치구 다섯. 게시판 계열이 셋이라 기관마다 맞는 스크래퍼를 단다."""
+    (gwangju,) = [item for item in CITIES if item.slug == "gwangju"]
+    declared = {item.slug: item for item in gwangju.organizations}
+    assert set(declared) == {
+        "gwangju-city",
+        "gwangju-gwangsan",
+        "gwangju-seo",
+        "gwangju-buk",
+        "gwangju-nam",
+        "gwangju-dong",
+    }
+    scrapers = {
+        "gwangju-gwangsan": GwangsanInfoOpenBoard,
+        "gwangju-seo": SeoguExpenseBoard,
+        "gwangju-buk": GwangjuDistrictBoard,
+        "gwangju-nam": GwangjuDistrictBoard,
+        "gwangju-dong": GwangjuDistrictBoard,
+    }
+    for slug, scraper in scrapers.items():
+        organization = declared[slug]
+        assert organization.hold_reason is None
+        assert organization.boards, slug
+        assert all(board.scraper is scraper for board in organization.boards), slug
+        # 게시판이 여럿인 구는 직급별로 나뉜다. 같은 이름을 두 번 선언하면 원본이 겹친다.
+        assert len({board.slug for board in organization.boards}) == len(organization.boards)
+
+
+def test_declared_district_boards_accept_their_own_urls() -> None:
+    """레지스트리가 적은 주소가 그 스크래퍼의 계약을 실제로 만족하는지 선언만으로 확인한다."""
+    (gwangju,) = [item for item in CITIES if item.slug == "gwangju"]
+    for organization in gwangju.organizations:
+        for board in organization.boards:
+            # 주소가 필수 조건을 빠뜨렸으면 여기서 걸린다. 요청은 보내지 않는다.
+            board.scraper(board, object())
 
 
 def test_only_originals_whose_posting_declares_the_reporting_period_are_mapped(

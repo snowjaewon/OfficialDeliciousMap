@@ -177,14 +177,19 @@ class Document(HTMLParser):
             parts.append(data)
 
 
-def default_transport() -> Transport:
-    """게시판 요청 경계. 원본 첨부의 상한과 기관에 두는 요청 간격을 여기서만 정한다."""
+def default_transport() -> HttpTransport:
+    """게시판 요청 경계. 원본 첨부의 상한과 기관에 두는 요청 간격을 여기서만 정한다.
+
+    쿠키를 이어 든다. 진입 화면이 세션을 내준 뒤에야 목록을 주는 게시판이 있어(광산구 실측)
+    그 게시판이 쿠키 없이는 훑히지 않는다. 다른 게시판은 쿠키를 요구하지 않으므로 영향이 없다.
+    """
     return HttpTransport(
         timeout=REQUEST_TIMEOUT,
         limit=MAX_RESPONSE_BYTES,
         interval=REQUEST_INTERVAL,
         attempts=REQUEST_ATTEMPTS,
         backoff=REQUEST_BACKOFF,
+        session=True,
     )
 
 
