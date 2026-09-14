@@ -205,6 +205,11 @@ intruder being a recurring `보건소 수의계약내역, 신용카드 사용내
 downloaded: `공개공지 관리실태 점검결과(2025년)`, `2026년 8월 이륜자동차 등록현황`,
 `2026년 상반기 외국인 현황`, `석면해체․제거작업 공개`.
 
+The filter lives on the scraper class and the registry picks the class, the same way
+울산's `NamguBoard` carries its measured page size.  That keeps the per-organization
+choice in the registry (AGENTS.md: 기관별 차이는 레지스트리 값) while the pattern that
+implements it stays next to the board it was measured on.
+
 The filter is `추진비`, not `업무추진비`: 중구 has two postings spelled
 `…과장급이상무추진비사용내역(2026.8.)` with the `업` dropped, and a whole-word
 filter loses them.  None of the measured non-expense titles contains `추진비`.
@@ -374,7 +379,7 @@ number of originals actually stored; `받지 못한 원본` is `FetchOutput.miss
 `받지 않은 게시글` is postings whose 게시일 falls outside the target year, which
 `period.collects` skips without opening (`FetchOutput.uncollected_postings`).
 
-| 기관 | 원본 | 컨테이너별 | 받지 못한 원본 | 받지 않은 게시글 | 실패한 게시판 |
+| 기관 | 원본 | 컨테이너별 | 받지 못한 원본 | 받지 않은 게시글 | 장부 경고 |
 | --- | --- | --- | --- | --- | --- |
 | 부산광역시 (`busan-city`) | 409 | hwpx 3 · ooxml 406 | drm 105 | 10,198 | 없음 |
 | 부산광역시 중구 (`busan-jung`) | 405 | ole2 170 · ooxml 226 · pdf 9 | 0 | 10,406 | 없음 |
@@ -392,12 +397,22 @@ number of originals actually stored; `받지 못한 원본` is `FetchOutput.miss
 | 부산광역시 연제구 (`busan-yeonje`) | 280 | hwpx 39 · ooxml 241 | 0 | 3,645 | 없음 |
 | 부산광역시 수영구 (`busan-suyeong`) | 326 | ole2 30 · ooxml 296 | 0 | 8,593 | 없음 |
 | 부산광역시 사상구 (`busan-sasang`) | 265 | hwpx 15 · ole2 215 · ooxml 9 · pdf 26 | drm 17 | 407 | busan-sasang/expenses=service-unavailable |
-| 부산광역시 기장군 (`busan-gijang`) | 0 | — | 0 | 2,690 | no attachment published on busan-gijang/expenses |
+| 부산광역시 기장군 (`busan-gijang`) | 0 | — | 0 | 2,690 | `no attachment published …` (실패가 아니라 첨부 없는 게시판) |
 | **합계 (수집 13개 기관)** | **3,519** | | **235** | **57,488** | |
 
-Collection covers the whole of 2026, not only the first half: `period.collects` cuts
-by year because a quarter is published after the quarter ends.  Narrowing to the
-first half happens downstream, on the title-declared period.
+The last column is `FetchOutput.empty_reason`, which is a ledger warning and not
+always a failure: 기장군's entry records that the board publishes no attachment at
+all (its table *is* the data), while 사상구's is a genuine interrupted walk.
+
+**These are 2026 counts, not 상반기 counts.**  `period.collects` cuts by year, because
+a quarter is published after the quarter ends, so a 상반기 원본 can be posted in July.
+Narrowing to the first half happens downstream on the title-declared period, and this
+issue's `fetch` stage deliberately does not do it.  Read against the whole-2026 set,
+the first-half split is 2,373 of 3,519 originals (see *Title period notation*); it is
+reported project-wide rather than per organization because `FetchOutput` carries no
+per-organization posting count — only `sources`, `missing`, and
+`uncollected_postings`.  Per-organization 상반기 counts belong to the `parse` stage,
+which is outside #140's 구현 범위.
 
 ### 사상구 is the one board that did not finish its walk
 
@@ -429,13 +444,19 @@ rate is the locked count over everything the board linked for 2026:
 | 부산광역시 | 105 | 514 | 20.4% |
 | 해운대구 | 51 | 340 | 15.0% |
 | 북구 | 31 | 329 | 9.4% |
-| 사상구 | 17 | 282 | 6.0% |
+| 사상구 | 17 | 282 † | 6.0% † |
 | 금정구 | 15 | 417 | 3.6% |
 | 부산진구 | 15 | 495 | 3.0% |
 | **합계** | **234** | **3,753** | **6.2%** |
 
+† 사상구's denominator counts only what its interrupted walk reached.  Its 2026
+postings are complete (see above), so the rate is sound for 2026, but it is a floor
+for the board as a whole.
+
 No organization was entirely DRM, so none is held for `drm`; every unlocked
-attachment on the same posting was taken.
+attachment on the same posting was taken.  강서구, which the issue names alongside
+부산시청 as a DRM risk, has no measurement at all: its `robots.txt` forbids the board
+outright, so the question never arises — the hold is `bot_blocked`, not `drm`.
 
 Two DRM products are in use, and the reconnaissance only knew about one:
 
@@ -479,6 +500,14 @@ from `gone`/`empty` because the organization can fix it by uploading the right f
 
 Reading HWPML and HWPX tables is out of scope for #140; the run records what was
 received.
+
+**This changes what a container name means across cities.**  `hwpml`, `hwpx`, and
+`not_an_original` widen `contracts.Container` and `MissingOriginal.reason`, which every
+city shares.  Widening a set leaves the committed 광주·울산 artifacts valid — no
+existing value changed — but those artifacts were written before the split, so their
+`.hwpx` sources are still labelled `ooxml`/`zip`.  Regenerating them needs their
+원본, which live on the other developer's PC, so it is left to whoever re-runs those
+cities.  The mismatch is in the label only; the stored bytes are untouched.
 
 ## Title period notation
 
