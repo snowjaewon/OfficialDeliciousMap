@@ -62,6 +62,10 @@ class ProtectedOriginal(Exception):
     """기관이 DRM으로 잠근 첨부다. 200으로 오지만 읽을 수 있는 원본이 들어 있지 않다."""
 
 
+class NotAnOriginal(Exception):
+    """게시판이 원본 대신 편집 도구가 만든 부속 파일을 올렸다. 다시 받아도 같다."""
+
+
 @dataclass(frozen=True)
 class Container:
     """원본으로 받아들이는 형식 하나. 게시판이 밝힌 확장자는 근거가 아니라 대조 대상이다."""
@@ -262,6 +266,17 @@ def suffix_of(filename: str) -> str:
 DRM_SIGNATURES = (b"\x9b DRMONE", b"SCDSA")
 
 
+# 편집 도구가 문서 옆에 만드는 부속 파일. 실측(2026-09-14 부산진구 3966536): 668바이트이고
+# UTF-16LE로 `HCellShareFileInfo`로 시작한다. 한셀이 공동 편집에 쓰는 잠금 정보이며 집행 표가
+# 아니다. 형식을 선언해도 표가 생기지 않으므로 실측하지 않은 형식과 같은 자리에 두지 않는다.
+SHARE_INFO = "ShareFileInfo"
+
+
+def is_placeholder(body: bytes) -> bool:
+    """원본 대신 올라온 편집 도구의 부속 파일인지. 이름이 아니라 내용으로 가른다."""
+    return SHARE_INFO in body[:64].decode("utf-16-le", errors="ignore")
+
+
 def is_protected(body: bytes) -> bool:
     """기관이 DRM으로 잠근 첨부인지. 이름이 아니라 내용으로 가른다."""
     return body.startswith(DRM_SIGNATURES)
@@ -277,6 +292,8 @@ def container_of(body: bytes) -> str:
         raise EmptyOriginal("board served an empty attachment")
     if is_protected(body):
         raise ProtectedOriginal("organization serves this original under DRM")
+    if is_placeholder(body):
+        raise NotAnOriginal("board published an editor side file instead of an original")
     # BOM은 형식이 아니라 인코딩 표시다. XML 계열 원본이 그것 때문에 안 걸리지 않게 뗀다.
     body = body.removeprefix(BOM)
     # A ZIP archive shares the OOXML magic bytes.  Distinguish Office archives

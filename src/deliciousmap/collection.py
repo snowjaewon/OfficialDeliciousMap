@@ -135,7 +135,7 @@ def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
                 # 이번 수집이 받지 않는 게시글. 장부에 남기지 않으므로 기간을 넓히면 다시 받는다.
                 uncollected += 1
                 continue
-            stored, lost, empty, locked = [], [], [], []
+            stored, lost, empty, locked, stray = [], [], [], [], []
             published = scraper.published_suffixes
             unknown = [item for item in posting.attachments if item.suffix not in published]
             unmeasured.extend(_note(item, "format not measured for this board") for item in unknown)
@@ -156,6 +156,10 @@ def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
                     # 기관이 DRM으로 잠갔다. 형식을 선언해도 읽히지 않으므로 사람이 볼
                     # 목록이 아니라 장부에 남긴다. 잠기지 않은 첨부는 그대로 받는다.
                     locked.append(attachment)
+                except boards.NotAnOriginal:
+                    # 편집 도구가 만든 부속 파일이다. 형식을 선언해도 표가 생기지 않으므로
+                    # 사람이 볼 목록이 아니라 장부에 남기고 다음 첨부로 간다.
+                    stray.append(attachment)
                 except boards.UnsupportedOriginal as reason:
                     # 내용이 실측한 컨테이너와 다르다. 사람이 봐야 하므로 모아서 알린다.
                     rejected.append(_note(attachment, str(reason)))
@@ -166,7 +170,7 @@ def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
                 unmeasured.extend(rejected)
                 continue
             # 게시글을 끝낸 뒤에만 기록한다. 중간에 멈추면 그 게시글은 다시 수집한다.
-            _remember(directory, posting, stored, lost, empty, locked)
+            _remember(directory, posting, stored, lost, empty, locked, stray)
     except boards.UnsupportedOriginal:
         raise AdapterFailure(FailureCause.UNSUPPORTED_FORMAT) from None
     except boards.BoardUnavailable:
@@ -326,6 +330,9 @@ def _ledger(directory: Path) -> tuple[dict[str, Collected], dict[str, Gone]]:
             lost = tuple((str(name), "gone") for name in entry.get("gone", ()))
             lost += tuple((str(name), "empty") for name in entry.get("empty", ()))
             lost += tuple((str(name), "drm") for name in entry.get("drm", ()))
+            lost += tuple(
+                (str(name), "not_an_original") for name in entry.get("not_an_original", ())
+            )
         except (ValueError, KeyError, TypeError):
             continue
         if files:
@@ -363,6 +370,7 @@ def _remember(
     lost: list[boards.Attachment],
     empty: list[boards.Attachment],
     locked: list[boards.Attachment],
+    stray: list[boards.Attachment],
 ) -> None:
     if not posting.attachments:
         return
@@ -373,6 +381,7 @@ def _remember(
         "gone": [item.name for item in lost],
         "empty": [item.name for item in empty],
         "drm": [item.name for item in locked],
+        "not_an_original": [item.name for item in stray],
     }
     directory.mkdir(parents=True, exist_ok=True)
     with (directory / LEDGER).open("a", encoding="utf-8", newline="\n") as stream:

@@ -478,7 +478,7 @@ def test_collection_counts_drm_and_keeps_the_unlocked_attachments(tmp_path: Path
         None,
         "2026년 1분기 업무추진비 집행내역(시장, 부시장)",
     )
-    _remember(directory, posting, [posting.attachments[0]], [], [], [posting.attachments[1]])
+    _remember(directory, posting, [posting.attachments[0]], [], [], [posting.attachments[1]], [])
     collected, gone = _ledger(directory)
     assert collected["21481"].files == ("21481-2.xlsx",)
     assert gone["21481"].files == (("21481-3.xlsx", "drm"),)
@@ -979,3 +979,22 @@ def test_rfc3_takes_the_filename_from_whichever_anchor_declares_it() -> None:
     postings = list(Rfc3Board(board(BOARD_URL), transport).postings(lambda *_: False))
     assert [item.file_id for item in postings[0].attachments] == ["3135888"]
     assert postings[0].attachments[0].suffix == ".xlsx"
+
+
+SHARE_STUB = "HCellShareFileInfo".encode("utf-16-le") + b"\x00" * 32
+
+
+def test_an_editor_side_file_is_recorded_rather_than_stopping_the_board() -> None:
+    """실측(부산진구 3966536): 668바이트짜리 한셀 공유 정보 파일이 표 대신 올라와 있다.
+
+    집행 표가 아니고 형식을 선언해도 표가 생기지 않는다. 실측하지 않은 형식으로 두면 이
+    한 건이 같은 게시판의 나머지 원본까지 수집 실패로 만든다.
+    """
+    assert boards.is_placeholder(SHARE_STUB)
+    with pytest.raises(boards.NotAnOriginal):
+        boards.container_of(SHARE_STUB)
+
+
+def test_a_real_original_is_not_taken_for_an_editor_side_file() -> None:
+    assert not boards.is_placeholder(XLSX_BODY)
+    assert not boards.is_placeholder(HWPML_BODY)
