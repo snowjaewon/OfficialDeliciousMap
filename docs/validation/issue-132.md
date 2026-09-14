@@ -26,9 +26,9 @@ collection and data-quality gates that could not be completed.
 | --- | --- | --- | --- |
 | `ulsan-city` | `fetch.json`: 1 source, 0 missing, 6,409 uncollected postings; the market PDF is the only received 원본, while transfer-board rows have no published 원본 | `headermap`/`parse`: 0 sources and 0 records for the in-period input; `classify`/`geocode`/`closure`: 0 results | organization build completed with 0 records and 0 markers; transfer-board rows remain represented by the uncollected count |
 | `ulsan-junggu` | `fetch.json`: 126 sources, 0 missing, 9,443 uncollected postings; source hashes are unique (126). Boards: deputy 3, director 3, department 120. Containers: PDF 94, OLE2 18, ZIP 14. Fetch warning: `expenses-director=service-unavailable`. Fetch manifest SHA-256: `945f20fa964eef6aa87492f6a099c642fc31b277f548e67d463e4b29d4b2bfc1` | header mappings 0; unresolved 86 (`model_not_configured` 63, `no_table` 12, `unsupported_format` 11). Parse sources 86; excluded `declared_out_of_range=40`, `posted_out_of_range=0`, `undeclared_in_year=0`; repeated expenses 8. Classify/geocode/closure results 0; parse reports no records in the 2026-01-01..2026-06-30 period | organization build completed and wrote `dist/ulsan/orgs/ulsan-junggu/{records,markers}.json`; no city shell was touched |
-| `ulsan-namgu` | `fetch.json`: 392 sources, 0 missing, 2,798 uncollected postings; source hashes are unique. Boards: deputy 8, director 49, department 227, dong 99, health 9. All source containers are PDF. Warning: `unmeasured-attachments=10` | `headermap`: 17 mappings, 254 unresolved sources, 1 unresolved mapping. `parse`: 271 sources, 17 parsed sources, 66 records, 254 unresolved sources. `classify`: 66 decisions — 1 restaurant, 1 non-restaurant, 64 pending (`model_not_configured`) | The organization `geocode` ran without a configured provider, so `경복궁` is recorded as `lookup_error` (`not_supplied`); the Naver/licence lookups and the human confirmation were applied only to the city run (below). `closure` completed with 0 results and `build` wrote `dist/ulsan/orgs/ulsan-namgu/{records,markers}.json` with 66 records and 0 markers. The organization artifacts were not regenerated |
+| `ulsan-namgu` | `fetch.json`: 392 sources, 0 missing, 2,798 uncollected postings; source hashes are unique. Boards: deputy 8, director 49, department 227, dong 99, health 9. All source containers are PDF. Warning: `unmeasured-attachments=10` | `headermap`: 17 mappings, 254 unresolved sources, 1 unresolved mapping. `parse`: 271 sources, 17 parsed sources, 66 records, 254 unresolved sources. `classify`: 66 decisions — 1 restaurant, 1 non-restaurant, 64 pending (`model_not_configured`) | The organization `geocode` ran without a configured provider, so `경복궁` is recorded as `lookup_error` (`not_supplied`) and the stage saved its artifact and then exited 1 (`lookup-failed`); the Naver/licence lookups and the human confirmation were applied only to the city run (below). `closure` completed with 0 results and `build` wrote `dist/ulsan/orgs/ulsan-namgu/{records,markers}.json` with 66 records and 0 markers. The organization artifacts were not regenerated, so they still show 0 markers while the city output confirms `경복궁` |
 | `ulsan-donggu` | `fetch.json`: 146 sources, 0 missing, 1,152 uncollected postings; all source containers are PDF. Warning: `unmeasured-attachments=28` | `headermap`/`parse`: 0 sources and 0 records for the in-period input; `classify`/`geocode`/`closure`: 0 results | organization build completed with 0 records and 0 markers. The mayor board was collected through measured `searchWrd=2026MM` queries; no coordinate is claimed |
-| `ulsan-bukgu` | `fetch.json`: 200 sources, 0 missing, 1,995 uncollected postings; all 200 source containers are PDF. Warning: `unmeasured-attachments=18` | `headermap`: 13 mappings, 126 unresolved sources. `parse`: 135 sources, 9 parsed sources, 58 records, 126 unresolved sources. `classify`: 58 decisions — 1 restaurant, 57 pending (`model_not_configured` 46; a cached shared-classification decision `상호명 정보 없음` 11) | The organization `geocode` ran without a configured provider, so `파리바게트` is recorded as `lookup_error` (`not_supplied`); the Naver/licence lookups were applied only to the city run (below). `closure` completed with 0 results and `build` wrote `dist/ulsan/orgs/ulsan-bukgu/{records,markers}.json` with 58 records and 0 markers. No coordinate is claimed |
+| `ulsan-bukgu` | `fetch.json`: 200 sources, 0 missing, 1,995 uncollected postings; all 200 source containers are PDF. Warning: `unmeasured-attachments=18` | `headermap`: 13 mappings, 126 unresolved sources. `parse`: 135 sources, 9 parsed sources, 58 records, 126 unresolved sources. `classify`: 58 decisions — 1 restaurant, 57 pending (`model_not_configured` 46; a cached shared-classification decision `상호명 정보 없음` 11) | The organization `geocode` ran without a configured provider, so `파리바게트` is recorded as `lookup_error` (`not_supplied`) and the stage saved its artifact and then exited 1 (`lookup-failed`); the Naver/licence lookups were applied only to the city run (below). `closure` completed with 0 results and `build` wrote `dist/ulsan/orgs/ulsan-bukgu/{records,markers}.json` with 58 records and 0 markers. No coordinate is claimed |
 | `ulsan-ulju` | `fetch.json`: 8 sources, 0 missing, 66 uncollected postings; all 8 source hashes are unique and all are PDF. Fetch warning: `expenses-director=adapter-failed, expenses-department=adapter-failed`. Fetch manifest SHA-256: `7715c05e07a9217f879ee84d3a413d2623048d26136e7c17479cc1bf915f31e4` | header mappings 0; unresolved 6 (`model_not_configured` 6). Parse sources 6; excluded `declared_out_of_range=2`, `posted_out_of_range=0`, `undeclared_in_year=0`; repeated expenses 8. Classify/geocode/closure results 0; parse reports no records in the 2026-01-01..2026-06-30 period | organization `run` and the individual stages completed; build wrote `dist/ulsan/orgs/ulsan-ulju/{records,markers}.json` |
 
 The completed manifests' paths were re-read outside the repository.  Their
@@ -76,7 +76,33 @@ licence was a separate, uncached verification read.  The confirmed candidate
 itself is on the cached first page, which is what the confirmation line refers
 to.  The coordinate (35.5347509, 129.3503733) is the licence TM coordinate
 converted to WGS84; no Naver candidate for the Ulsan branch was available to
-cross-check it.
+cross-check it.  The four closed Ulsan licence rows and the 영업/정상 status are
+provider-only fields that the candidate contract does not carry
+([지오코딩](../geocoding.md#인허가-조회)); they exist in the repository only as the
+confirmation's `references` text, not as re-checkable cached data.
+
+The confirmation uses `branch: ""` because it must match the licence candidate
+exactly, and the licence registers the business as `경복궁` with no branch
+name.  The chain branch name seen elsewhere (`경복궁 울산점`, and the closed
+licence `경복궁울산점(주)엔타스`) is not a separate branch fact; the business is
+identified by the registered name plus the address.
+
+This confirmation does **not** follow the confirmation criteria that
+[#64](issue-64.md) set and the user adopted for Gwangju's districts on
+2026-09-13 ([issue-99.md](issue-99.md), "마커는 사람 확인으로만 생긴다"): at least
+11 visits at the organization, exactly one exact-name search candidate, and
+that candidate inside the office's 구.  `경복궁` has one visit, and its Naver
+search candidates contain no Ulsan store.  Those criteria exist because
+filtering by a boundary can promote a same-name business to the answer
+([지오코딩](../geocoding.md): "기관 도시 밖 후보를 거르거나 기관 도시 안 동명이 업소로
+바꾸지 않는다").  This record was instead reviewed individually at the user's
+request with licence evidence: the full licence read shows that on the
+expense date no other `경복궁` in Ulsan was operating, and the remaining
+same-name businesses are outside Ulsan.  That still does not rule out payment at
+a store outside Ulsan, and no receipt ties the expense to this store.  The user
+approved it knowing this, as a one-record exception scoped to
+`116b614e978728d0-table1-R3`.  It is not a new general criterion and does not
+extend to other `경복궁` records.
 
 The city `geocode --retry-failed` was re-run with the Naver and licence
 providers configured (`GEMINI_*` removed from the environment and the model
@@ -85,8 +111,11 @@ lookup per record (`경복궁` 145 candidates, `파리바게트` 210 candidates)
 Result: `경복궁` `success`/`human_confirmed`, `파리바게트` `failed`/`missing_address`.
 City `closure` wrote one result, `unknown` (`license-evidence-not-supplied`:
 no Ulsan licence file is under the 원본 루트), and the city `build` succeeded
-with 124 records and **1 marker** (`경복궁`, `coordinate_source: license`,
-`closed: false`).  The organization artifacts were not regenerated.
+with 124 records and **1 marker** (`경복궁`, `coordinate_source: license`).
+The marker's `closed: false` only means closure did not report `closed`
+(`site.py` sets `closed` from closure status `closed` alone); the closure
+status is `unknown`, so no closure check was made for this marker.  The
+organization artifacts were not regenerated.
 
 ## LLM budget, privacy, and output boundary
 
@@ -127,15 +156,20 @@ city-level `경복궁` confirmation described above.
 
 ## Commands and results
 
+The checks below were re-run on 2026-09-14 after the geocode review data commit
+(`018f263`) and the merge of `origin/develop` (`7b8502a`), on that tree plus
+this report.  `check-dist` ran on a clean Ulsan-only output root built from
+the same data.
+
 ```text
 .\.tools\uv\bin\uv.exe run pytest
-# 648 passed (latest local run)
+# 648 passed
 
 .\.tools\uv\bin\uv.exe run ruff check .
 # All checks passed
 
 .\.tools\uv\bin\uv.exe run ruff format --check .
-# 139 files already formatted
+# 140 files already formatted
 
 .\.tools\uv\bin\uv.exe run mypy src
 # Success: no issues found in 50 source files
