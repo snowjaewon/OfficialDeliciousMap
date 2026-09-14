@@ -163,8 +163,17 @@ def seal(dist: Path, commit: str) -> Manifest:
 
 
 def buildable_cities(data_root: Path, cities: tuple[City, ...]) -> tuple[City, ...]:
-    """커밋된 `data/<city>/`가 있는 도시. 레지스트리 순서를 따른다."""
-    return tuple(city for city in cities if (data_root / city.slug).is_dir())
+    """사이트를 지을 수 있는 도시. 레지스트리 순서를 따른다.
+
+    디렉터리가 있는 것만으로는 모자란다 — 수집만 끝난 도시는 기관별 `fetch.json`만
+    있고 `build`가 읽을 입력이 없어 io-error로 멈춘다(서울 실측, 이슈 #141).
+    `build` 직전 단계의 산출물이 있어야 빌드 대상으로 센다.
+    """
+    return tuple(city for city in cities if (data_root / city.slug / BUILD_INPUT).is_file())
+
+
+# `build`가 읽는 직전 단계의 산출물. 이 파일이 있어야 그 도시의 사이트를 지을 수 있다.
+BUILD_INPUT = "closure.json"
 
 
 def unknown_directories(data_root: Path, cities: tuple[City, ...]) -> tuple[str, ...]:

@@ -15,6 +15,7 @@ from deliciousmap.period import (
     contains,
     declared,
     exclusion,
+    months,
     span,
     targets,
 )
@@ -213,3 +214,10 @@ def test_target_period_holds_a_month_whose_span_overlaps_it(
     spent_on: SpentOn, expected: bool
 ) -> None:
     assert contains(spent_on) is expected
+
+
+def test_months_are_the_reporting_period_not_the_whole_year() -> None:
+    # 사용월로 거르는 게시판은 대상 기간의 달만 받는다. 해 단위인 `collects`와 다른 자리다.
+    assert months() == tuple((2026, month) for month in range(1, 7))
+    assert months()[0] == (START.year, START.month)
+    assert months()[-1] == (END.year, END.month)

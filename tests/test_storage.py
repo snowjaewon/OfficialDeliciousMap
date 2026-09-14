@@ -273,3 +273,16 @@ def test_artifact_digest_refuses_a_missing_file_instead_of_hashing_nothing(tmp_p
     first = artifact_digest(path)
     write_text(path.parent / "geocode.002.json", "{}")
     assert artifact_digest(path) != first
+
+
+def test_a_slow_host_gets_its_own_request_interval() -> None:
+    """간격에 민감한 호스트는 호스트별 간격을 둔다(이슈 #141).
+
+    중랑 실측(2026-09-14): 목록 한 쪽에 3.3초가 걸리고 공통 간격 0.2초로는 853쪽
+    순회가 열두 번 모두 끊겼다. 호스트마다 다른 간격을 요청 경계 한 자리에서 정한다.
+    """
+    from deliciousmap.transport import HttpTransport
+
+    transport = HttpTransport(interval=0.2, host_intervals={"www.jungnang.go.kr": 1.5})
+    assert transport.interval_for("https://www.jungnang.go.kr/portal/bbs/list.do") == 1.5
+    assert transport.interval_for("https://www.songpa.go.kr/www/list.do") == 0.2
