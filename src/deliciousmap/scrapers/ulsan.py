@@ -42,17 +42,19 @@ def _department(row: _Row) -> str:
         if "problem_name" in cell.classes:
             return cell.text
     texts = [cell.text for cell in row.cells]
+    linked = [
+        index
+        for index, cell in enumerate(row.cells)
+        if any(
+            parameter in link.href
+            for link in cell.links
+            for parameter in ("nttId=", "dataSid=", "article_seq=")
+        )
+    ]
+    # 번호 칸도 게시글로 링크하는 목록(동구)이 있다. 부서는 번호가 아니라 제목 칸 다음이다.
     title_index = next(
-        (
-            index
-            for index, cell in enumerate(row.cells)
-            if any(
-                parameter in link.href
-                for link in cell.links
-                for parameter in ("nttId=", "dataSid=", "article_seq=")
-            )
-        ),
-        0,
+        (index for index in linked if not listing.is_row_number(row.cells[index].text)),
+        linked[0] if linked else 0,
     )
     if title_index + 1 < len(texts):
         candidate = texts[title_index + 1]

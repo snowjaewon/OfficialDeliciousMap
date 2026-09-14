@@ -9,7 +9,7 @@ from datetime import date
 from html.parser import HTMLParser
 from io import BytesIO
 from pathlib import PurePosixPath
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from deliciousmap.transport import HttpTransport, ResourceGone, Transport, query
 
@@ -31,6 +31,11 @@ REQUEST_TIMEOUT = 30.0
 # 0.5초일 때 건당 1.78초로 대기가 56%를 차지해 0.2초로 낮췄다. 합산 약 2.1 req/s이고 여전히
 # 순차 요청이다. 기관이 어디까지 견디는지는 측정하지 않았으므로 더 줄이지 않는다.
 REQUEST_INTERVAL = 0.2
+# 공통 간격으로는 견디지 못한다고 실측한 호스트만 둔다. 지금은 비어 있다.
+# 2026-09-14 실측: 강동은 목업 기록("간격 0.3초에 400")과 달리 0.2초로 열두 쪽을 연달아
+# 받아 모두 200이었다. 중랑은 간격을 1.0초로 넓혀도 853쪽 순회가 끝나지 않아(≈190쪽에서
+# 끊김) 느리게 하는 것이 답이 아니었다. 재지 않은 값을 효과가 있는 것처럼 두지 않는다.
+HOST_INTERVALS: dict[str, float] = {}
 # 서명만으로 갈리지 않는 형식이 있어 앞부분에서 표식을 함께 찾는다. 이만큼만 본다.
 MARKER_WINDOW = 4096
 # 수집 주체를 밝힌다. 브라우저를 가장하지 않는다.
@@ -82,6 +87,13 @@ class Container:
         return not self.marker or self.marker in body[:MARKER_WINDOW]
 
 
+# 화면 자체가 원본인 게시판의 표식. HTML에는 고정된 매직 바이트가 없어 서명 대신
+# 앞부분의 표식으로 가른다. 2026-09-14 실측: 서울시청 상세는 `<!DOCTYPE html>`로,
+# 관악 월별 내려받기는 빈 줄 여덟 개 뒤의 `<meta>`로 시작한다.
+HTML_MARKERS = (b"<!doctype html", b"<html", b"<table", b"<meta", b"<body")
+# 표식을 찾기 전에 걷어낼 앞머리. BOM과 공백만 걷어내고 그 밖의 바이트는 건드리지 않는다.
+BOMS = (b"\xef\xbb\xbf", b"\xff\xfe", b"\xfe\xff")
+
 # 실측으로 확인한 컨테이너만 둔다. `.xls`는 OLE2와 SpreadsheetML 둘 다로 올라온다.
 CONTAINERS: tuple[Container, ...] = (
     Container("ole2", bytes.fromhex("d0cf11e0a1b11ae1"), frozenset({".xls", ".hwp"})),
@@ -97,6 +109,11 @@ CONTAINERS: tuple[Container, ...] = (
     # BOM 뒤에 `<HWPML`로 시작하는 XML이다. 이름이 밝힌 확장자와 다르다고 버리지 않는다.
     Container("hwpml", b"<?xml", frozenset({".hwp", ".hwpx"}), b"<HWPML"),
     Container("zip", bytes.fromhex("504b0304"), frozenset({".zip"})),
+    # 집행내역을 표가 아니라 스캔본으로 공개하는 게시판이 있다. 용산 실측(2026-09-14):
+    # 2026년 게시글 10건이 `…집행내역001.jpg` 모양의 이미지였다(JPEG 7·PNG 3).
+    # 표를 읽는 일은 이 이슈의 범위 밖이고, 여기서는 받은 형식을 그대로 센다.
+    Container("jpeg", bytes.fromhex("ffd8ff"), frozenset({".jpg", ".jpeg"})),
+    Container("png", bytes.fromhex("89504e470d0a1a0a"), frozenset({".png"})),
 )
 # UTF-8 바이트 순서 표시. 내용의 일부가 아니라 인코딩 표시다.
 BOM = b"\xef\xbb\xbf"
@@ -122,6 +139,10 @@ class Attachment:
     url: str
     # 원본의 출처로 남길 게시글 주소.
     page_url: str
+    # 이 첨부를 받을 때 함께 보낼 Referer. 비어 있으면 보내지 않는다.
+    # 중랑 실측(2026-09-14): Referer 없이 부르면 200과 함께 1,052바이트 오류 화면이 온다.
+    # 일반 브라우저가 보내는 헤더를 그대로 붙이는 것이므로 차단 우회가 아니다.
+    referer: str = ""
 
     def __post_init__(self) -> None:
         if not (is_identifier(self.post_id) and is_identifier(self.file_id)):
@@ -168,6 +189,28 @@ class BoardScraper(Protocol):
     def postings(self, skipped: Skipped) -> Iterator[Posting]: ...
 
 
+@runtime_checkable
+class VerifiesOriginal(Protocol):
+    """받은 것이 원본이 맞는지 내용으로 가리는 게시판.
+
+    화면 자체가 원본인 게시판은 매직 바이트가 없어 `container_of`만으로는 제공자
+    오류 화면과 집행 표를 가르지 못한다. 그런 게시판이 실측한 표식을 여기서 대조한다.
+    """
+
+    def verify(self, body: bytes) -> None: ...
+
+
+@runtime_checkable
+class FiltersRows(Protocol):
+    """업무추진비 집행기관이 아닌 줄을 섞어 싣는 게시판.
+
+    그런 게시판만 이 칸을 가진다(서울 시청·중구·강남 실측). 무엇을 뺐는지 수집이
+    장부에 싣도록 스크래퍼가 스스로 센다.
+    """
+
+    filtered: int
+
+
 class Document(HTMLParser):
     """앵커의 주소·표시 문자열과 본문 텍스트만 남긴다. 요소 구조에는 기대지 않는다."""
 
@@ -209,6 +252,7 @@ def default_transport() -> HttpTransport:
         attempts=REQUEST_ATTEMPTS,
         backoff=REQUEST_BACKOFF,
         session=True,
+        host_intervals=HOST_INTERVALS,
     )
 
 
@@ -241,10 +285,11 @@ def address(url: str, params: Mapping[str, str]) -> str:
     return f"{url}?{query(params)}"
 
 
-def request(transport: Transport, url: str, params: Mapping[str, str]) -> bytes:
+def request(transport: Transport, url: str, params: Mapping[str, str], referer: str = "") -> bytes:
     """게시판 응답 하나를 받는다. 제공자 오류는 안전한 예외로만 알린다."""
+    headers = {**HEADERS, "Referer": referer} if referer else HEADERS
     try:
-        body = transport.fetch(url, params, HEADERS)
+        body = transport.fetch(url, params, headers)
     except ResourceGone:
         raise OriginalGone("board links a file the organization no longer serves") from None
     except Exception:
@@ -264,12 +309,15 @@ def suffix_of(filename: str) -> str:
 # 부산 북구는 Softcamp(`SCDSA004`)를 쓴다.
 # 잠긴 파일과 실측하지 않은 형식은 다르다. 형식은 선언하면 읽히고, 이것은 풀어야 읽힌다.
 DRM_SIGNATURES = (b"\x9b DRMONE", b"SCDSA")
-
-
 # 편집 도구가 문서 옆에 만드는 부속 파일. 실측(2026-09-14 부산진구 3966536): 668바이트이고
 # UTF-16LE로 `HCellShareFileInfo`로 시작한다. 한셀이 공동 편집에 쓰는 잠금 정보이며 집행 표가
 # 아니다. 형식을 선언해도 표가 생기지 않으므로 실측하지 않은 형식과 같은 자리에 두지 않는다.
 SHARE_INFO = "ShareFileInfo"
+# 문서 묶음임을 알리는 항목. OOXML은 `[Content_Types].xml`이나 부문 폴더로, HWPX는
+# `Contents/`의 본문으로 자신을 밝힌다(양천 `.hwpx` 실측: mimetype·version.xml·
+# Contents/header.xml·META-INF/container.xml). 이것이 없는 묶음만 일반 ZIP이다.
+PACKAGE_FOLDERS = ("word/", "xl/", "ppt/", "Contents/")
+PACKAGE_ENTRY = "[Content_Types].xml"
 
 
 def is_placeholder(body: bytes) -> bool:
@@ -282,11 +330,28 @@ def is_protected(body: bytes) -> bool:
     return body.startswith(DRM_SIGNATURES)
 
 
-def container_of(body: bytes) -> str:
+def _is_document_package(names: set[str]) -> bool:
+    return PACKAGE_ENTRY in names or any(name.startswith(PACKAGE_FOLDERS) for name in names)
+
+
+def is_html(body: bytes) -> bool:
+    """화면 자체가 원본인 게시판이 준 HTML인지. 표식이 없으면 원본으로 받아들이지 않는다."""
+    head = body[:MARKER_WINDOW]
+    for bom in BOMS:
+        head = head.removeprefix(bom)
+    head = head.lstrip().lower()
+    return head.startswith(b"<") and any(marker in head for marker in HTML_MARKERS)
+
+
+def container_of(body: bytes, *, html: bool = False) -> str:
     """매직 바이트로 컨테이너를 판정한다. 게시판이 밝힌 확장자는 믿지 않는다.
 
     실측(2026-09-11): 이 게시판은 OOXML 파일에 `.xls` 이름을 붙여 올리기도 한다(seq 963·857).
     이름이 어긋난다고 버리면 실제 원본을 잃으므로, 판정한 컨테이너를 출처에 기록해 넘긴다.
+
+    `html`은 화면 자체가 원본인 게시판에서만 켠다(`.html`을 실측 확장자로 선언한 게시판).
+    첨부를 내려받는 게시판에서 켜면 Referer 없는 중랑 첨부처럼 200으로 오는 오류 화면을
+    원본으로 받아들이게 되므로, 기본값은 끈 상태다.
     """
     if not body:
         raise EmptyOriginal("board served an empty attachment")
@@ -303,19 +368,19 @@ def container_of(body: bytes) -> str:
         try:
             with zipfile.ZipFile(BytesIO(body)) as archive:
                 names = set(archive.namelist())
-                # 한글 문서(HWPX)는 ODF·EPUB과 같이 `mimetype`을 맨 앞에 둔다. 압축이라는
-                # 사실보다 무엇이 들어 있는지가 값이라 일반 압축과 가른다(북구 실측).
+                # 한글 문서(HWPX)는 ODF·EPUB과 같이 `mimetype`을 맨 앞에 둔다. 묶음인 것은
+                # OOXML과 같지만 안을 여는 방법이 달라, 묶음이 스스로 밝힌 매체 유형으로
+                # 가른다(부산 북구 실측). 밝히지 않는 묶음은 아래의 부문 폴더로 갈린다.
                 declared = archive.read("mimetype") if "mimetype" in names else b""
         except (OSError, zipfile.BadZipFile, KeyError):
             names, declared = set(), b""
         if declared.strip() == HWPX_MEDIA_TYPE:
             return "hwpx"
-        if names and (
-            "[Content_Types].xml" not in names
-            and not any(name.startswith(("word/", "xl/", "ppt/")) for name in names)
-        ):
+        if names and not _is_document_package(names):
             return "zip"
     for container in CONTAINERS:
         if container.matches(body):
             return container.name
+    if html and is_html(body):
+        return "html"
     raise UnsupportedOriginal("response is not an original container")

@@ -260,8 +260,19 @@ def article_link(row: Row, needle: str, parameter: str) -> tuple[str, str] | Non
     return None
 
 
+def is_row_number(text: str) -> bool:
+    """번호 칸의 글자인지. 번호 칸까지 게시글로 링크하는 목록이 있어 제목과 가른다."""
+    return text.strip().isdigit()
+
+
 def title_of(row: Row, href: str) -> str:
-    for link in row.links:
-        if link.href == href:
-            return link.text
-    return ""
+    """행이 가리키는 게시글의 제목.
+
+    같은 게시글 주소를 가진 링크가 여럿이면 행 번호가 아닌 쪽이 제목이다(울산 동구 목록,
+    2026-09-14 실측). 번호 칸까지 같은 주소로 걸어 두는 게시판이 있어서다.
+    """
+    texts = [link.text for link in row.links if link.href == href]
+    return next(
+        (text for text in texts if not is_row_number(text)),
+        texts[0] if texts else "",
+    )

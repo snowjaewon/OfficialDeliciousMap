@@ -53,7 +53,7 @@ def resolve(
     budget: Budget,
     model: Classifier | None,
 ) -> ClassifyOutput:
-    names = _names(value)
+    names = value.names()
     corrections = {
         record.record_id: _correction(record, names[record.record_id], value.manual, city)
         for record in value.records
@@ -106,15 +106,6 @@ def resolve(
             Classification(record_id=record.record_id, status=status, evidence=evidence)
         )
     return ClassifyOutput(decisions=tuple(decisions))
-
-
-def _names(value: ClassifyInput) -> dict[str, str]:
-    """확정 복원명이 있으면 그 이름을 판별한다. 원본 표기는 레코드에 그대로 남는다."""
-    restored = {item.record_id: item.restored_merchant for item in value.restorations}
-    return {
-        record.record_id: restored.get(record.record_id, record.merchant)
-        for record in value.records
-    }
 
 
 def _correction(

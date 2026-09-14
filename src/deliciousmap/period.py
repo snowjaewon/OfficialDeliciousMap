@@ -39,6 +39,14 @@ DECLARATION = re.compile(
 )
 
 
+# 연도 없이 달 하나로 시작하고 띄어 쓴 제목. 울산시청 시장 게시판의 `6월 업무추진비 사용 내역`
+# (2026-09-14)이고, 광주 게시판에도 같은 모양 38건(`6월 업무추진비 집행내역(의정담당관실)`)이
+# 있으나 모두 2026년 이전 게시라 판정이 바뀌지 않는다. `DECLARATION`은 연도에 붙은 표기만 읽으므로
+# 따로 두고, `DECLARATION`이 기간을 못 읽은 제목에만 쓴다. 실측하지 않은 모양 —
+# 범위(`6~7월`), 제목 가운데의 달, 달 뒤에 붙은 글자(`5월분`·`8월중`) — 은 읽지 않는다.
+YEARLESS_MONTH = re.compile(r"^\s*(?P<month>1[0-2]|[1-9])\s*월\s")
+
+
 def collects(posted: date | None) -> bool:
     """이번 수집이 받을 게시글인지. 게시일의 해가 대상 기간의 해와 같아야 한다.
 
@@ -65,6 +73,18 @@ class Span:
 
 
 REPORTING = Span(START, END)
+
+
+def months() -> tuple[tuple[int, int], ...]:
+    """대상 기간이 걸친 달. 사용월로 거르는 게시판이 무엇을 받을지 여기서만 정한다.
+
+    게시일로만 가를 수 있는 게시판은 해 단위인 `collects`를 따른다. 사용월을 직접
+    고를 수 있는 게시판(서울 은평·관악·서대문 실측)은 그 달을 기관에 물어보므로
+    대상 기간 밖의 달까지 받을 이유가 없다.
+    """
+    first = 12 * START.year + START.month - 1
+    last = 12 * END.year + END.month - 1
+    return tuple((value // 12, value % 12 + 1) for value in range(first, last + 1))
 
 
 def span(spent_on: SpentOn) -> Span:
@@ -110,17 +130,32 @@ def exclusion(posted: date | None, title: str | None) -> ExclusionReason | None:
     """대상이 아니면 그 사유. 대상이면 `None`.
 
     `undeclared_in_year`는 감시 지점이다. 게시일이 대상 연도인데 제목이 기간을 밝히지 않으면
-    그 게시글은 조용히 빠진다. 실측(2026-09-12 광주)에서는 0건이며, 0이 아니게 되면 그 표기를
-    실측해 `DECLARATION`에 더해야 한다.
+    그 게시글은 조용히 빠진다. 0이 아니게 되면 그 표기를 실측해 규칙에 더해야 한다. 광주
+    (2026-09-12)는 0건이었고, 울산(2026-09-14)의 147건은 동구 제목 칸 오류와 연도 없는 달
+    표기(`YEARLESS_MONTH`)였다(#146).
     """
     if posted is None and title is None:
         return None
     if posted is None or not collects(posted):
         return "posted_out_of_range"
-    span = declared(title)
+    span = declared(title) or _yearless_month(title, posted)
     if span is None:
         return "undeclared_in_year"
     return None if span.overlaps(REPORTING) else "declared_out_of_range"
+
+
+def _yearless_month(title: str | None, posted: date) -> Span | None:
+    """연도 없이 달만 적은 제목의 기간. 게시월을 포함해 게시일까지의 가장 가까운 그 달이다.
+
+    지출은 게시보다 먼저 있으므로 게시월보다 뒤인 달은 지난해다. 게시월과 같은 달은 올해다.
+    연도 없는 분기·반기·범위는 실측하지 않아 읽지 않는다.
+    """
+    found = YEARLESS_MONTH.search(title or "")
+    if found is None:
+        return None
+    month = int(found["month"])
+    year = posted.year if month <= posted.month else posted.year - 1
+    return Span(date(year, month, 1), date(year, month, calendar.monthrange(year, month)[1]))
 
 
 def targets(posted: date | None, title: str | None) -> bool:

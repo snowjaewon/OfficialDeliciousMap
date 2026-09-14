@@ -503,11 +503,24 @@ received.
 
 **This changes what a container name means across cities.**  `hwpml`, `hwpx`, and
 `not_an_original` widen `contracts.Container` and `MissingOriginal.reason`, which every
-city shares.  Widening a set leaves the committed 광주·울산 artifacts valid — no
-existing value changed — but those artifacts were written before the split, so their
-`.hwpx` sources are still labelled `ooxml`/`zip`.  Regenerating them needs their
-원본, which live on the other developer's PC, so it is left to whoever re-runs those
-cities.  The mismatch is in the label only; the stored bytes are untouched.
+city shares.  Widening a set leaves already-committed artifacts valid — no existing
+value changed — but artifacts written before the split still carry the older label.
+Counted over the committed `data/*/orgs/*/fetch.json` at merge time, the sources whose
+stored file ends in `.hwpx` are labelled:
+
+| city | `hwpx` | `ooxml` | other |
+| --- | --- | --- | --- |
+| 부산 | 478 | 0 | `hwpml` 6 · `ole2` 13 (name and content disagree — content wins) |
+| 서울 | 0 | 144 | `ole2` 1 |
+| 광주 | 0 | 6 | — |
+
+서울's 144 come from #152, which landed while this branch was open and solved the same
+"HWPX must not be a plain zip" problem one step coarser, by treating any package with a
+`Contents/` folder as a document.  The merge keeps that rule and puts the `mimetype`
+check ahead of it, so a HWPX now names itself.  Re-running 서울 or 광주 relabels theirs
+without downloading anything — the ledgers already hold the 원본 and `_sources`
+re-derives the container from the stored bytes on every run.  The mismatch is in the
+label only.
 
 ## Title period notation
 

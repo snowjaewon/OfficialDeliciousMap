@@ -25,6 +25,15 @@ UNMEASURED = "unmeasured.jsonl"
 # 목록에서 읽은 게시일·제목의 색인. 원본과 함께 저장소 밖에 두며, 이미 받아 둔 원본에도
 # 목록만 다시 읽어 이 값을 채운다. 지우면 다음 실행이 목록에서 다시 만든다.
 LISTING = "listing.jsonl"
+# 실측하지 않은 형식을 경고로만 남기고 통과시키는 도시. 울산 하나뿐이다 — 그 완화는
+# 조용히 빠지는 첨부를 만들므로(울산 장부 실측: 북구 18·동구 28·남구 10건) 서울에는
+# 켜지 않는다. 서울은 스캔본을 만나면 멈췄고, 그래서 `jpeg`·`png`를 실측 컨테이너로
+# 선언해 풀었다.
+#
+# 이 도시 목록을 없애려면 울산 장부의 그 56건이 무슨 형식인지 판정해야 하는데 그 원본은
+# 울산을 수집한 PC에 있다. 확인하지 않은 채로 다른 도시의 파이프라인 결과를 바꾸지 않는다.
+# 게시판 장애를 이어 가는 규칙과는 다른 규칙이라 #140에서 함께 없애지 않았다.
+UNMEASURED_TOLERANT = frozenset({"ulsan"})
 
 
 def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
@@ -38,6 +47,7 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
     visited: list[str] = []
     held: list[str] = []
     uncollected = 0
+    filtered = 0
     for organization in target.organizations:
         if organization.hold_reason is not None:
             held.append(f"{organization.slug}={organization.hold_reason}")
@@ -45,37 +55,42 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
         for board in organization.boards:
             visited.append(f"{organization.slug}/{board.slug}")
             directory = paths.board_dir(target, organization.slug, board.slug)
-            # 도시 하나가 기관 열일곱·호스트 열여섯으로 늘면 공개 서버 하나가 끊기는 일이
-            # 상례가 된다(부산 실측). 끊긴 게시판 하나가 나머지 기관의 원본까지 0건으로
-            # 만들지 않도록, 다시 요청하면 달라질 수 있는 장애는 사유로 남기고 다음 게시판으로
-            # 간다. 이어 가기는 도시를 가리지 않는다 — 도시 이름은 게시판이 끊겼는지와 무관하다.
+            # #140의 결정: 끊긴 게시판을 이어 가는 규칙에서 도시 이름을 뺀다. 부산은 기관
+            # 열일곱이 호스트 열여섯에 흩어져 있어 공개 서버 하나가 끊기는 일이 상례이고,
+            # 서울·울산도 같은 이유로 예외 목록에 올라 있었다. 도시 이름은 게시판이 끊겼는지와
+            # 무관하므로, 끊긴 게시판 하나가 나머지 기관의 원본까지 0건으로 만들지 않도록
+            # 사유만 장부 경고에 남기고 다음 게시판으로 간다.
             #
-            # 이어 가는 것은 장애뿐이다. 목록을 읽지 못했거나 실측하지 않은 형식을 만난 것은
-            # 그 게시판이 아니라 우리 스크래퍼가 틀렸다는 뜻이고, 그대로 두면 다음 실행도 같은
-            # 자리에서 같은 만큼만 거둔다. 그런 사유는 `_walk`가 그 자리에서 알린다.
+            # 이어 가는 것은 다시 요청하면 달라질 수 있는 장애뿐이다. 목록을 읽지 못했거나
+            # 실측하지 않은 형식을 만난 것은 그 게시판이 아니라 우리 스크래퍼가 틀렸다는 뜻이고,
+            # 그대로 두면 다음 실행도 같은 자리에서 같은 만큼만 거둔다. 그런 사유는 `_walk`가
+            # 그 자리에서 알린다.
             walked = _walk(board, directory, transport)
             if walked.failure is not None:
                 causes.append(walked.failure)
                 failures.append(f"{organization.slug}/{board.slug}={walked.failure.value}")
             unmeasured.extend(walked.unmeasured)
             uncollected += walked.uncollected
+            filtered += walked.filtered
             collected, gone = _ledger(directory)
             listed = _listed(directory)
-            sources.extend(_sources(directory, collected, listed, organization.slug, board.slug))
+            sources.extend(
+                _sources(
+                    directory,
+                    collected,
+                    listed,
+                    organization.slug,
+                    board.slug,
+                    _html(board.scraper.published_suffixes),
+                )
+            )
             missing.extend(_missing(gone, listed, organization.slug, board.slug))
     if not sources and causes:
         # 게시판을 모두 훑었는데 한 건도 거두지 못했고 그 원인이 장애다. 이것까지 경고로
         # 남기면 장애가 "첨부가 없는 기관"과 같은 모양이 된다. 실패는 실패로 알린다.
         raise AdapterFailure(causes[0])
-    if unmeasured and target.city.slug != "ulsan":
+    if unmeasured and target.city.slug not in UNMEASURED_TOLERANT:
         # 게시판을 끝까지 훑은 뒤에 한 번에 알린다. 형식을 하나 만날 때마다 멈추지 않는다.
-        #
-        # 울산만 빠져 있는 것은 #132가 남긴 것이고 #140이 넓힌 "게시판 실패 뒤 계속"과는 다른
-        # 규칙이다. 여기를 도시 공통으로 바꾸면 울산 산출물에 경고로 적힌 첨부 18건
-        # (`ulsan-bukgu` 장부의 `unmeasured-attachments=18`)이 다음 실행부터 수집 실패가 되는데,
-        # 그 원본은 이 PC에 없어 무슨 형식인지 확인할 수가 없다. 확인하지 않은 채로 다른 도시의
-        # 파이프라인 결과를 바꾸지 않는다. 이 예외를 없애는 일은 울산 원본을 가진 쪽에서 그
-        # 18건을 판정한 뒤에 한다.
         raise AdapterFailure(FailureCause.UNSUPPORTED_FORMAT)
     if unmeasured:
         failures.append(f"unmeasured-attachments={len(unmeasured)}")
@@ -86,6 +101,7 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
             missing=tuple(missing),
             empty_reason=warning,
             uncollected_postings=uncollected,
+            filtered_postings=filtered,
         )
     if not visited and not held:
         # 아직 게시판을 선언하지 않은 도시를 수집 완료로 표시하지 않는다.
@@ -95,7 +111,17 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
         missing=tuple(missing),
         empty_reason=_join_reasons(_empty_reason(visited, held), warning),
         uncollected_postings=uncollected,
+        filtered_postings=filtered,
     )
+
+
+def _html(published: frozenset[str]) -> bool:
+    """화면 자체가 원본인 게시판인지. 스크래퍼가 `.html`을 실측 확장자로 선언하면 참이다.
+
+    선언은 게시판마다 다르므로 컨테이너 판정도 게시판 단위로 갈린다. 첨부를 내려받는
+    게시판에서 200으로 오는 오류 화면을 원본으로 삼지 않기 위해서다.
+    """
+    return ".html" in published
 
 
 @dataclass(frozen=True)
@@ -105,6 +131,8 @@ class _Walked:
     unmeasured: list[dict[str, str]]
     # 게시일이 대상 연도 밖이라 원본을 받지 않은 게시글 수.
     uncollected: int
+    # 업무추진비 집행기관이 아니라 스크래퍼가 걸러 낸 줄 수. 스크래퍼가 세지 않으면 0이다.
+    filtered: int
     # 훑기를 끊은 장애. 없으면 게시판을 끝까지 봤다는 뜻이다. 끊긴 뒤에도 위의 수는 남는다 —
     # 버리면 "기간 밖 게시글이 없는 게시판"과 "끊겨서 세지 못한 게시판"이 같은 모양이 된다.
     failure: FailureCause | None = None
@@ -152,7 +180,7 @@ def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
             rejected = []
             for attachment in posting.attachments:
                 try:
-                    _store(directory / attachment.name, attachment, transport)
+                    _store(directory / attachment.name, attachment, transport, scraper)
                 except boards.OriginalGone:
                     # 기관이 더는 내주지 않는 원본이다. 다시 요청해도 같으므로 장부에 남긴다.
                     lost.append(attachment)
@@ -188,7 +216,12 @@ def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
         failure = FailureCause.SERVICE_UNAVAILABLE
     _remember_listing(directory, listed)
     _report_unmeasured(directory, unmeasured)
-    return _Walked(unmeasured, uncollected, failure)
+    return _Walked(unmeasured, uncollected, _filtered(scraper), failure)
+
+
+def _filtered(scraper: boards.BoardScraper) -> int:
+    """스크래퍼가 걸러 낸 게시글 수. 섞인 게시판이 아니면 0이다."""
+    return scraper.filtered if isinstance(scraper, boards.FiltersRows) else 0
 
 
 def _note(attachment: boards.Attachment, reason: str) -> dict[str, str]:
@@ -277,6 +310,7 @@ def _sources(
     listed: dict[str, Listed],
     organization: str,
     board: str,
+    html: bool = False,
 ) -> list[SourceRef]:
     """수집 기록 전체를 출처로 옮긴다. 이번 실행에서 새로 받은 것만 세지 않는다.
 
@@ -297,7 +331,7 @@ def _sources(
                     organization=organization,
                     board=board,
                     url=entry.url,
-                    container=boards.container_of(body),
+                    container=boards.container_of(body, html=html),
                     department=department,
                     posted=posted,
                     title=title,
@@ -414,13 +448,21 @@ def _join_reasons(primary: str, warning: str | None) -> str:
     return f"{primary}; {warning}" if warning else primary
 
 
-def _store(destination: Path, attachment: boards.Attachment, transport: Transport) -> None:
+def _store(
+    destination: Path,
+    attachment: boards.Attachment,
+    transport: Transport,
+    scraper: boards.BoardScraper,
+) -> None:
     """원본은 저장소 밖에만 둔다. 이미 받은 원본은 다시 내려받지 않는다."""
     if destination.exists():
         return
-    body = boards.request(transport, *boards.endpoint(attachment.url))
+    body = boards.request(transport, *boards.endpoint(attachment.url), attachment.referer)
     # 원본으로 받아들일 수 있는지만 확인한다. 무슨 컨테이너였는지는 출처를 만들 때 다시 읽는다.
-    boards.container_of(body)
+    boards.container_of(body, html=_html(scraper.published_suffixes))
+    if isinstance(scraper, boards.VerifiesOriginal):
+        # 매직 바이트가 없는 원본은 게시판이 실측한 표식으로 한 번 더 가른다.
+        scraper.verify(body)
     _write(destination, body)
 
 

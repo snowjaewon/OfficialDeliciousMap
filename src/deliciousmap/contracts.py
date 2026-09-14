@@ -19,6 +19,7 @@ from pydantic import (
     model_validator,
 )
 
+from deliciousmap import merchants
 from deliciousmap.registry import Target
 
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
@@ -210,7 +211,23 @@ class CacheRef(Contract):
 
 
 # 원본의 실제 컨테이너. 게시판이 붙인 확장자가 아니라 매직 바이트로 판정한 값이다.
-Container = Literal["ole2", "ooxml", "pdf", "spreadsheetml", "hwpml", "hwpx", "zip"]
+# `html`만 예외로 매직 바이트가 없다. 첨부를 내려받지 않고 화면 자체가 집행 표인 게시판
+# (서울시청·은평·관악·서대문 실측)의 원본이며, 그 게시판에서만 이 값이 나온다.
+# `jpeg`·`png`는 집행내역을 스캔본으로 공개한 게시판의 원본이다(용산 실측).
+# `hwpml`·`hwpx`는 한글 문서다. 둘 다 `.hwp`·`.hwpx` 이름으로 오지만 하나는 XML이고
+# 하나는 묶음이라 안을 여는 방법이 다르다(부산 동구·북구 실측).
+Container = Literal[
+    "html",
+    "hwpml",
+    "hwpx",
+    "jpeg",
+    "ole2",
+    "ooxml",
+    "pdf",
+    "png",
+    "spreadsheetml",
+    "zip",
+]
 
 
 class SourceRef(Contract):
@@ -890,6 +907,9 @@ class FetchOutput(Contract):
     # 게시일이 이번 수집의 대상 연도 밖이라 받지 않은 게시글 수(`period.collects`). 게시판에
     # 남아 있다는 사실을 0건으로 숨기지 않으려고 싣는다. 이미 받아 둔 원본은 여기에 세지 않는다.
     uncollected_postings: int = Field(default=0, ge=0)
+    # 업무추진비 집행기관이 아닌 줄이 섞인 게시판에서 걸러 낸 게시글 수. 섞인 게시판
+    # (서울 시청·중구·강남 실측)이 무엇을 뺐는지 0건으로 숨기지 않으려고 싣는다.
+    filtered_postings: int = Field(default=0, ge=0)
 
 
 class HeaderMapInput(Contract):
@@ -1130,15 +1150,21 @@ class ClassifyInput(Contract):
     manual: tuple[ManualCorrection, ...] = ()
     restorations: tuple[RestoredName, ...] = ()
 
+    def names(self) -> dict[str, str]:
+        """레코드마다 판별할 이름. 규칙은 조회·좌표 판정과 같은 `merchants.chosen_name`이다.
+
+        레코드의 원본 표기는 어느 단계에서도 바뀌지 않는다(#137).
+        """
+        restored = {item.record_id: item.restored_merchant for item in self.restorations}
+        return {
+            record.record_id: merchants.chosen_name(record.merchant, restored.get(record.record_id))
+            for record in self.records
+        }
+
     @property
     def merchants(self) -> tuple[str, ...]:
-        """확정 복원명이 있으면 그 이름을 판별한다. 원본 표기는 레코드에 그대로 남는다."""
-        restored = {item.record_id: item.restored_merchant for item in self.restorations}
-        return tuple(
-            dict.fromkeys(
-                restored.get(record.record_id, record.merchant) for record in self.records
-            )
-        )
+        """판별 대상 고유 이름. 무엇을 묻게 되는지 보는 자리이며 `names`와 같은 규칙을 쓴다."""
+        return tuple(dict.fromkeys(self.names().values()))
 
 
 class ClassifyOutput(Contract):
