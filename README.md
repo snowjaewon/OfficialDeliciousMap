@@ -366,7 +366,9 @@ Node 기반 빌드 도구를 쓰지 않는다. 폐업으로 확인된 후보도 
 ## 저장 형식
 
 정제 산출물은 `data/<city>/`에 두며, `--org` 실행은 도시 전체 출력을 덮어쓰지 않도록
-`data/<city>/orgs/<org>/`에 분리한다. 기관별 산출물을 도시 전체로 합치는 기능은 후속 작업이다.
+`data/<city>/orgs/<org>/`에 분리한다. 도시와 기관은 같은 레코드의 `classify` 판정을 공유하므로,
+판정 코드나 그 입력을 바꾸면 도시와 해당 기관 산출물을 한 재생성 범위로 함께 다시 낸다.
+`check-data`가 기관 판정의 `record_id`·결과를 도시 산출물과 대조해 범위 누락과 어긋남을 실패로 낸다.
 공통 캐시는 `data/_shared/`에 둔다. 사람 검토 입력은 의미별로 나누어
 `data/manual/<city>/`의 `classify.jsonl`(사람 보정), `restore.jsonl`(상호 복원),
 `geocode.jsonl`(업소 확인), `merchants.jsonl`(상호 가르기),
@@ -489,7 +491,7 @@ build하지 않는다. 판정은 모두 `python -m deliciousmap.ci`가 하고 �
 
 | 명령 | 판정 |
 | --- | --- |
-| `check-data` | 정제 산출물 파일당 20,000,000바이트 초과, 등록되지 않은 도시 디렉터리, build할 도시 0곳을 실패로 본다. 통과하면 `data/<city>/`가 있는 도시를 레지스트리 순서로 낸다 |
+| `check-data` | 정제 산출물 파일당 20,000,000바이트 초과, 등록되지 않은 도시 디렉터리, build할 도시 0곳, 도시·기관 `classify` 판정의 `record_id` 누락·어긋남을 실패로 본다. 통과하면 `data/<city>/`가 있는 도시를 레지스트리 순서로 낸다 |
 | `check-dist` | Pages 한도(파일당 25MiB, 20,000개), `site.public_paths`의 화면용 파일 외 파일, 빠진 화면 파일, HTML·`sw.js`·`manifest.webmanifest`(시작 주소·아이콘)의 끊긴 참조를 실패로 본다. 통과하면 `dist/deploy-manifest.json`(상대 경로·SHA256·바이트·commit)을 쓴다 |
 | `preview` | 올린 뒤 배포 고유 URL과 PR alias를 검증하고 결과를 Actions summary에 쓴다. build한 커밋은 PR의 임시 merge commit이므로 PR head SHA도 함께 적는다. 롤백하지 않는다 |
 | `production` | 아래 운영 절차 |

@@ -8,6 +8,7 @@ import pytest
 
 from deliciousmap import publish
 from deliciousmap.ci import main
+from deliciousmap.registry import gwangju
 from tests.test_geocoding_cli import run_cli
 from tests.test_site_build import build_ready
 
@@ -76,6 +77,84 @@ def test_check_data_rejects_a_directory_that_is_not_a_registered_city(
     assert main(["check-data", "--data-root", str(data_root)]) == 1
 
     assert "gwanju" in capsys.readouterr().err
+
+
+def write_classify_artifact(
+    path: Path, city: str, org: str | None, decisions: list[dict[str, str]]
+) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "schema_version": 5,
+                "city": city,
+                "org": org,
+                "dependencies": {},
+                "payload": {"decisions": decisions},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
+def test_check_data_accepts_matching_city_and_organization_classification(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    decision = {"record_id": "record-1", "status": "restaurant", "evidence": "model"}
+    write_classify_artifact(tmp_path / "gwangju" / "classify.json", "gwangju", None, [decision])
+    write_classify_artifact(
+        tmp_path / "gwangju" / "orgs" / "gwangju-buk" / "classify.json",
+        "gwangju",
+        "gwangju-buk",
+        [decision],
+    )
+    refined(tmp_path, "gwangju/closure.json")
+
+    assert main(["check-data", "--data-root", str(tmp_path)], cities=(gwangju.CITY,)) == 0
+    assert capsys.readouterr().out.split() == ["gwangju"]
+
+
+def test_check_data_rejects_city_and_organization_classification_mismatch(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    city_decision = {"record_id": "record-1", "status": "restaurant", "evidence": "model"}
+    org_decision = {"record_id": "record-1", "status": "pending", "evidence": "not-configured"}
+    write_classify_artifact(
+        tmp_path / "gwangju" / "classify.json", "gwangju", None, [city_decision]
+    )
+    write_classify_artifact(
+        tmp_path / "gwangju" / "orgs" / "gwangju-buk" / "classify.json",
+        "gwangju",
+        "gwangju-buk",
+        [org_decision],
+    )
+    refined(tmp_path, "gwangju/closure.json")
+
+    assert main(["check-data", "--data-root", str(tmp_path)], cities=(gwangju.CITY,)) == 1
+    error = capsys.readouterr().err
+    assert "city/organization classify mismatch" in error
+    assert "gwangju/gwangju-buk/record-1" in error
+
+
+def test_check_data_rejects_an_organization_record_missing_from_city_classification(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    write_classify_artifact(
+        tmp_path / "gwangju" / "classify.json",
+        "gwangju",
+        None,
+        [{"record_id": "city-record", "status": "restaurant", "evidence": "model"}],
+    )
+    write_classify_artifact(
+        tmp_path / "gwangju" / "orgs" / "gwangju-buk" / "classify.json",
+        "gwangju",
+        "gwangju-buk",
+        [{"record_id": "org-record", "status": "restaurant", "evidence": "model"}],
+    )
+    refined(tmp_path, "gwangju/closure.json")
+
+    assert main(["check-data", "--data-root", str(tmp_path)], cities=(gwangju.CITY,)) == 1
+    assert "organization classify record not in city" in capsys.readouterr().err
 
 
 COMMIT = "c0ffee" + "0" * 34
