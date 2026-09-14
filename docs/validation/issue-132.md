@@ -24,10 +24,10 @@ collection and data-quality gates that could not be completed.
 
 | organization | 원본 / fetch evidence | parse and decision evidence | build / remaining status |
 | --- | --- | --- | --- |
-| `ulsan-city` | `fetch.json`: 1 source, 0 missing, 6,409 uncollected postings; the market PDF is the only received 원본, while transfer-board rows have no published 원본 | `headermap`/`parse`: 0 sources and 0 records for the in-period input; `classify`/`geocode`/`closure`: 0 results | organization build completed with 0 records and 0 markers; transfer-board rows remain represented by the uncollected count |
+| `ulsan-city` | `fetch.json`: 1 source, 0 missing, 6,409 uncollected postings; the market PDF is the only received 원본, while transfer-board rows have no published 원본 | `headermap`/`parse`: 0 sources and 0 records for the in-period input; `classify`/`geocode`/`closure`: 0 results | organization build completed with 0 records and 0 markers; transfer-board rows remain represented by the uncollected count. **Superseded by the [#146 update](#issue-146-update--dong-gu-titles-and-a-month-only-title-2026-09-14)**: the market PDF is now a target source |
 | `ulsan-junggu` | `fetch.json`: 126 sources, 0 missing, 9,443 uncollected postings; source hashes are unique (126). Boards: deputy 3, director 3, department 120. Containers: PDF 94, OLE2 18, ZIP 14. Fetch warning: `expenses-director=service-unavailable`. Fetch manifest SHA-256: `945f20fa964eef6aa87492f6a099c642fc31b277f548e67d463e4b29d4b2bfc1` | header mappings 0; unresolved 86 (`model_not_configured` 63, `no_table` 12, `unsupported_format` 11). Parse sources 86; excluded `declared_out_of_range=40`, `posted_out_of_range=0`, `undeclared_in_year=0`; repeated expenses 8. Classify/geocode/closure results 0; parse reports no records in the 2026-01-01..2026-06-30 period | organization build completed and wrote `dist/ulsan/orgs/ulsan-junggu/{records,markers}.json`; no city shell was touched |
 | `ulsan-namgu` | `fetch.json`: 392 sources, 0 missing, 2,798 uncollected postings; source hashes are unique. Boards: deputy 8, director 49, department 227, dong 99, health 9. All source containers are PDF. Warning: `unmeasured-attachments=10` | `headermap`: 17 mappings, 254 unresolved sources, 1 unresolved mapping. `parse`: 271 sources, 17 parsed sources, 66 records, 254 unresolved sources. `classify`: 66 decisions — 1 restaurant, 1 non-restaurant, 64 pending (`model_not_configured`) | The organization `geocode` ran without a configured provider, so `경복궁` is recorded as `lookup_error` (`not_supplied`) and the stage saved its artifact and then exited 1 (`lookup-failed`); the Naver/licence lookups and the human confirmation were applied only to the city run (below). `closure` completed with 0 results and `build` wrote `dist/ulsan/orgs/ulsan-namgu/{records,markers}.json` with 66 records and 0 markers. The organization artifacts were not regenerated, so they still show 0 markers while the city output confirms `경복궁` |
-| `ulsan-donggu` | `fetch.json`: 146 sources, 0 missing, 1,152 uncollected postings; all source containers are PDF. Warning: `unmeasured-attachments=28` | `headermap`/`parse`: 0 sources and 0 records for the in-period input; `classify`/`geocode`/`closure`: 0 results | organization build completed with 0 records and 0 markers. The mayor board was collected through measured `searchWrd=2026MM` queries; no coordinate is claimed |
+| `ulsan-donggu` | `fetch.json`: 146 sources, 0 missing, 1,152 uncollected postings; all source containers are PDF. Warning: `unmeasured-attachments=28` | `headermap`/`parse`: 0 sources and 0 records for the in-period input; `classify`/`geocode`/`closure`: 0 results | organization build completed with 0 records and 0 markers. The mayor board was collected through measured `searchWrd=2026MM` queries; no coordinate is claimed. **Superseded by the [#146 update](#issue-146-update--dong-gu-titles-and-a-month-only-title-2026-09-14)**: all 146 sources had been dropped as `undeclared_in_year` because the scraper stored the row number as the title |
 | `ulsan-bukgu` | `fetch.json`: 200 sources, 0 missing, 1,995 uncollected postings; all 200 source containers are PDF. Warning: `unmeasured-attachments=18` | `headermap`: 13 mappings, 126 unresolved sources. `parse`: 135 sources, 9 parsed sources, 58 records, 126 unresolved sources. `classify`: 58 decisions — 1 restaurant, 57 pending (`model_not_configured` 46; a cached shared-classification decision `상호명 정보 없음` 11) | The organization `geocode` ran without a configured provider, so `파리바게트` is recorded as `lookup_error` (`not_supplied`) and the stage saved its artifact and then exited 1 (`lookup-failed`); the Naver/licence lookups were applied only to the city run (below). `closure` completed with 0 results and `build` wrote `dist/ulsan/orgs/ulsan-bukgu/{records,markers}.json` with 58 records and 0 markers. No coordinate is claimed |
 | `ulsan-ulju` | `fetch.json`: 8 sources, 0 missing, 66 uncollected postings; all 8 source hashes are unique and all are PDF. Fetch warning: `expenses-director=adapter-failed, expenses-department=adapter-failed`. Fetch manifest SHA-256: `7715c05e07a9217f879ee84d3a413d2623048d26136e7c17479cc1bf915f31e4` | header mappings 0; unresolved 6 (`model_not_configured` 6). Parse sources 6; excluded `declared_out_of_range=2`, `posted_out_of_range=0`, `undeclared_in_year=0`; repeated expenses 8. Classify/geocode/closure results 0; parse reports no records in the 2026-01-01..2026-06-30 period | organization `run` and the individual stages completed; build wrote `dist/ulsan/orgs/ulsan-ulju/{records,markers}.json` |
 
@@ -45,6 +45,8 @@ artifact without changing any source or inventing records.  The merged warning
 text in `data/ulsan/fetch.json` preserves the per-board service, adapter, and
 unmeasured-attachment conditions.
 
+The figures in this section and the next are from before the
+[#146 update](#issue-146-update--dong-gu-titles-and-a-month-only-title-2026-09-14).
 The resulting city artifact contains 873 source hashes and 21,863 uncollected
 postings.  `headermap` has 30 mappings, 472 unresolved sources, and 1
 unresolved mapping.  `parse` examined 498 sources and produced 124 records;
@@ -116,6 +118,73 @@ The marker's `closed: false` only means closure did not report `closed`
 (`site.py` sets `closed` from closure status `closed` alone); the closure
 status is `unknown`, so no closure check was made for this marker.  The
 organization artifacts were not regenerated.
+
+## Issue #146 update — Dong-gu titles and a month-only title (2026-09-14)
+
+The period watch point `undeclared_in_year` was 147 in the city artifact
+(Dong-gu 146, Ulsan city 1).  [#146](https://github.com/snowjaewon/OfficialDeliciousMap/issues/146)
+fixed both causes.
+
+- Dong-gu's eGov listings also link the row-number cell to the article, so
+  the scraper stored the number (`46`) as the title and the real title as the
+  department.  The scraper now reads the linked cell that is not a bare row
+  number as the title and the cell after it as the department.
+- The Ulsan city mayor board titles its posting `6월 업무추진비 사용 내역`
+  with no year.  A title that starts with a single month is now read as the
+  latest such month not after the posting date (here June 2026).
+
+`fetch --city ulsan --org ulsan-donggu` re-walked the Dong-gu boards (6 min 28
+s, exit 0).  No attachment was downloaded again: the 146 source hashes, paths,
+URLs, posting dates, and containers are identical, and only `title` and
+`department` changed (for example `2026년 2분기 업무추진비 집행내역(부구청장)` /
+`총무과`).  Missing originals 0, uncollected postings 1,152, and the warning
+`unmeasured-attachments=28` are unchanged.  The Ulsan city market 원본 was not
+re-collected; its stored title is read by the new rule.
+
+The city fetch artifact was regenerated by concatenating the six organization
+fetch artifacts in registry order, the method that produced the earlier city
+artifact.  Merging the pre-#146 organization artifacts this way reproduced the
+committed `data/ulsan/fetch.json` byte for byte before the new Dong-gu artifact
+was merged.  After a merge of `origin/develop` (which brought #137's
+companion-tail classification), the city stages and the `ulsan-donggu` and
+`ulsan-city` organization stages were re-run without a model (`GEMINI_*`
+removed, model transport refused).
+
+| city artifact | before #146 | after #146 |
+| --- | ---: | ---: |
+| sources / uncollected postings | 873 / 21,863 | 873 / 21,863 |
+| target sources (`parse`) | 498 | **594** (Dong-gu +95, city +1) |
+| `undeclared_in_year` / `declared_out_of_range` | 147 / 228 | **0** / 279 |
+| header mappings / unresolved | 30 / 472 (`model_not_configured` 402, `no_table` 59, `unsupported_format` 11) | 30 / 568 (`model_not_configured` 494, `no_table` 63, `unsupported_format` 11) |
+| records | 124 | 124 |
+| classify | 2 restaurant, 1 non-restaurant, 121 pending | 3 restaurant, 1 non-restaurant, 120 pending (`model_not_configured` 109, cached `상호명 정보 없음` 11) |
+| geocode | `경복궁` human_confirmed; `파리바게트` missing_address | same, plus `스타벅스 코리아 외1` (Buk-gu, 2026-02-04, 82,100원) missing_address |
+| build | 124 records, 1 marker | 124 records, 1 marker |
+
+- `ulsan-donggu`: 95 target sources, 51 `declared_out_of_range`, 0
+  `undeclared_in_year`.  `headermap` 0 mappings, 95 unresolved
+  (`model_not_configured` 91, `no_table` 4), so `parse` produced 0 records and
+  `build` 0 records / 0 markers.
+- `ulsan-city`: the market PDF is a target source; `headermap` leaves it
+  `model_not_configured`, so 0 records.
+- `스타벅스 코리아 외1` became a restaurant through the shared classification of
+  `스타벅스 코리아` after #137.  Its Naver lookup (5 candidates, none in Ulsan)
+  and licence lookup ran; no branch or address ties the record to a store, so
+  it is held.
+
+The 96 newly targeted sources add no records until their header mappings are
+resolved; that needs the model run, which this issue does not include.  No
+attachment-board `undeclared_in_year` remains.  The HTML-table boards (city
+transfer boards, Jung-gu and Dong-gu mayor) still produce no sources and are
+handled in [#145](https://github.com/snowjaewon/OfficialDeliciousMap/issues/145).
+The `ulsan-junggu`, `ulsan-namgu`, `ulsan-bukgu`, and `ulsan-ulju`
+organization artifacts were not regenerated; the Nam-gu and Buk-gu
+organization classifications do not reflect #137.
+
+Checks on the tree after the #146 commits and the develop merge (`1890d2f`) plus
+these artifacts: `uv run pytest` 657 passed; `ruff check`, `ruff format
+--check` (141 files), `mypy src`, `git diff --check`, and `check-data` passed;
+`check-dist --city ulsan` on a clean Ulsan-only output root sealed 12 files.
 
 ## LLM budget, privacy, and output boundary
 
