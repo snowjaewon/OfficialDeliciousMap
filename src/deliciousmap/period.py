@@ -38,9 +38,12 @@ DECLARATION = re.compile(
 )
 
 
-# 연도 없이 달 하나로 시작하는 제목(울산시청 시장 게시판 실측). 실측한 것이 첫머리의 달뿐이라
-# 제목 가운데의 달과 범위(`6~7월`)는 읽지 않는다.
-MONTH_ONLY = re.compile(r"^\s*(?P<month>1[0-2]|[1-9])\s*월(?!\s*[~\-–∼,])")
+# 연도 없이 달 하나로 시작하고 띄어 쓴 제목. 울산시청 시장 게시판의 `6월 업무추진비 사용 내역`
+# (2026-09-14)이고, 광주 게시판에도 같은 모양 38건(`6월 업무추진비 집행내역(의정담당관실)`)이
+# 있으나 모두 2026년 이전 게시라 판정이 바뀌지 않는다. `DECLARATION`은 연도에 붙은 표기만 읽으므로
+# 따로 두고, `DECLARATION`이 기간을 못 읽은 제목에만 쓴다. 실측하지 않은 모양 —
+# 범위(`6~7월`), 제목 가운데의 달, 달 뒤에 붙은 글자(`5월분`·`8월중`) — 은 읽지 않는다.
+YEARLESS_MONTH = re.compile(r"^\s*(?P<month>1[0-2]|[1-9])\s*월\s")
 
 
 def collects(posted: date | None) -> bool:
@@ -114,27 +117,27 @@ def exclusion(posted: date | None, title: str | None) -> ExclusionReason | None:
     """대상이 아니면 그 사유. 대상이면 `None`.
 
     `undeclared_in_year`는 감시 지점이다. 게시일이 대상 연도인데 제목이 기간을 밝히지 않으면
-    그 게시글은 조용히 빠진다. 실측(2026-09-12 광주)에서는 0건이며, 0이 아니게 되면 그 표기를
-    실측해 `DECLARATION`에 더해야 한다.
+    그 게시글은 조용히 빠진다. 0이 아니게 되면 그 표기를 실측해 규칙에 더해야 한다. 광주
+    (2026-09-12)는 0건이었고, 울산(2026-09-14)의 147건은 동구 제목 칸 오류와 연도 없는 달
+    표기(`YEARLESS_MONTH`)였다(#146).
     """
     if posted is None and title is None:
         return None
     if posted is None or not collects(posted):
         return "posted_out_of_range"
-    span = declared(title) or _month_before(title, posted)
+    span = declared(title) or _yearless_month(title, posted)
     if span is None:
         return "undeclared_in_year"
     return None if span.overlaps(REPORTING) else "declared_out_of_range"
 
 
-def _month_before(title: str | None, posted: date) -> Span | None:
-    """연도 없이 달만 적은 제목의 기간. 게시일 이전의 가장 가까운 그 달이다.
+def _yearless_month(title: str | None, posted: date) -> Span | None:
+    """연도 없이 달만 적은 제목의 기간. 게시월을 포함해 게시일까지의 가장 가까운 그 달이다.
 
-    울산시청 시장 게시판이 `6월 업무추진비 사용 내역`처럼 적는다(2026-09-14 실측). 지출은
-    게시보다 먼저 있으므로 게시일의 달보다 뒤인 달은 지난해다. 연도 없는 분기·반기·범위는
-    실측하지 않아 읽지 않는다.
+    지출은 게시보다 먼저 있으므로 게시월보다 뒤인 달은 지난해다. 게시월과 같은 달은 올해다.
+    연도 없는 분기·반기·범위는 실측하지 않아 읽지 않는다.
     """
-    found = MONTH_ONLY.search(title or "")
+    found = YEARLESS_MONTH.search(title or "")
     if found is None:
         return None
     month = int(found["month"])

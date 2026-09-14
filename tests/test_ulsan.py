@@ -144,6 +144,23 @@ def test_egov_board_reads_the_title_past_a_row_number_that_links_to_the_article(
     assert postings[0].attachments[0].url.endswith("atchFileId=FILE_1&fileSn=0")
 
 
+def test_egov_board_keeps_the_title_when_only_the_title_cell_links() -> None:
+    # 번호 칸에 링크가 없는 목록은 전과 같이 읽는다. 부서는 제목 칸 다음의 일반 칸이다.
+    url = "https://example.invalid/cop/bbs/selectBoardList.do?bbsId=PrmtFee"
+    list_url = "https://example.invalid/cop/bbs/selectBoardList.do"
+    row = (
+        '<tr><td>7</td><td><a href="/cop/bbs/selectBoardArticle.do?bbsId=PrmtFee&nttId=530915">'
+        "2026년 3월 부구청장 업무추진비 사용내역</a></td><td>총무과</td>"
+        "<td class=date>2026-04-13</td></tr>"
+    )
+    transport = FakeTransport(
+        dict([response(list_url, {"bbsId": "PrmtFee", "pageIndex": "1"}, all_rows(row))])
+    )
+    postings = list(EgovBoard(board(url, EgovBoard), transport).postings(lambda *_: False))
+    assert postings[0].title == "2026년 3월 부구청장 업무추진비 사용내역"
+    assert postings[0].department == "총무과"
+
+
 def test_namgu_board_uses_the_measured_page_size() -> None:
     url = "https://example.invalid/cop/bbs/selectBoardList.do?bbsId=PrmtFee"
     list_url = "https://example.invalid/cop/bbs/selectBoardList.do"

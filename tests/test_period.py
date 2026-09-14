@@ -149,8 +149,14 @@ def test_exclusion_names_why_a_posting_is_not_a_target(
         (date(2026, 7, 23), "6월 업무추진비 사용 내역", None),
         (date(2026, 6, 30), "6월 업무추진비 사용 내역", None),
         (date(2026, 8, 10), "7월 업무추진비 사용 내역", "declared_out_of_range"),
-        # 연초에 올린 `12월`은 지난해 12월이다.
-        (date(2026, 1, 5), "12월 업무추진비 사용 내역", "declared_out_of_range"),
+        # 게시월보다 뒤인 달은 지난해다. 올해로 읽으면 대상이 되므로 이 줄이 해를 가른다.
+        (date(2026, 1, 5), "6월 업무추진비 사용 내역", "declared_out_of_range"),
+        # 게시월과 같은 달은 올해다.
+        (date(2026, 1, 5), "1월 업무추진비 사용 내역", None),
+        # 실측하지 않은 표기는 짐작하지 않는다: 범위, 제목 가운데의 달, 달 뒤에 붙은 글자.
+        (date(2026, 7, 23), "6~7월 업무추진비 사용 내역", "undeclared_in_year"),
+        (date(2026, 7, 23), "시장 6월 업무추진비 사용 내역", "undeclared_in_year"),
+        (date(2026, 7, 23), "5월분 업무추진비 사용 내역", "undeclared_in_year"),
     ],
 )
 def test_a_month_without_a_year_is_the_latest_such_month_by_the_posting_date(
