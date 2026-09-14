@@ -551,6 +551,27 @@ recurring `보건소 수의계약내역, 신용카드 사용내역 알림` — �
 업무추진비.  `period.exclusion`'s `undeclared_in_year` is the watch point for the next
 issue; it is now 3, and each one is a typo rather than an unmeasured notation.
 
+## Left for a follow-up
+
+**There is no `data/busan/fetch.json`.**  광주 and 울산 each have a whole-city artifact
+next to their per-organization ones; 부산 has only the 13 per-organization files.
+
+That is a shape difference, not a missing measurement: the per-organization artifacts
+are what the 완료 기준 asks for ("기관마다 `data/busan/orgs/<slug>/fetch.json`이 남거나
+수집 보류 사유가 레지스트리에 있다"), and every number in this document comes from them.
+The whole-city file would carry the same 3,519 sources under one envelope.
+
+Producing it means `fetch --city busan` with no `--org`, and that walks every board's
+listing again in **one** process.  Measured: 6,211 listing pages left to walk at
+1.5–2.7 s per page (북구 1.52, 기장군 1.82, 연제구 1.79, 해운대구 2.65), so ≈3.5 hours.
+The per-organization collection was much faster only because the 16 hosts were walked
+four at a time; a whole-city run cannot be split that way and still produce one
+artifact.  The run was started, reached 시청's 1,060-page board, and was stopped
+deliberately rather than left to finish.
+
+Nothing about the collected 원본 changes when it is produced — the ledgers already hold
+everything, so the eventual run re-reads listings and downloads nothing.
+
 ## Commands
 
 Both shells, from the repository root:
