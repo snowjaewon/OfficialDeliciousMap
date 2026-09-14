@@ -67,6 +67,24 @@ organization and city builds above are structural partial-output checks only;
 they do not prove real-data quality, geocode success, device rendering, or
 measured performance.
 
+## Partial city HTTP check
+
+The partial city output was served from a clean local static server with
+`python -m http.server 8765 --directory dist --bind 127.0.0.1`. These routes
+returned HTTP 200: `/`, `/ulsan/`, `/ulsan/index.html`,
+`/ulsan/records.json` (68 bytes, `application/json`),
+`/ulsan/markers.json` (68 bytes, `application/json`), and
+`/manifest.webmanifest` (642 bytes, `application/manifest+json`). This is a
+route and artifact-integrity check for the partial build only; it is not a
+map-tile or real-device check, and the JSON intentionally contains zero
+records and zero markers.
+
+The 2026-09-14 retries for `ulsan-city` and `ulsan-bukgu` again stalled while
+the live listing server was being read. No new fetch manifest was promoted,
+and the existing external originals and ledgers were left unchanged. Both
+organizations therefore remain `collection-held` rather than being reported
+as successfully fetched.
+
 ## Commands and results
 
 ```text
@@ -94,8 +112,14 @@ gitleaks detect --no-banner --redact --log-opts 'origin/develop..HEAD'
 
 .\.tools\uv\bin\uv.exe run python -m deliciousmap.ci check-dist --dist <clean-output-root> --commit <validated-commit> --city ulsan
 # check-dist: sealed 12 files for <validated-commit>
+
+python -m http.server 8765 --directory dist --bind 127.0.0.1
+# HTTP 200: /, /ulsan/, /ulsan/index.html, /ulsan/records.json,
+# /ulsan/markers.json, /manifest.webmanifest
 ```
 
 The remaining acceptance gates are the six-organization live fetch, a local
-HTTP page check, and independent geocode evidence.  They are left as explicit
-incomplete work rather than being marked as passed from the partial build.
+HTTP page check against the complete city output and map-tile behavior, and
+independent geocode evidence. The partial-output HTTP route check above is not
+substituted for those gates; they remain explicitly incomplete rather than
+being marked as passed from the partial build.
