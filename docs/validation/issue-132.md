@@ -24,33 +24,31 @@ collection and data-quality gates that could not be completed.
 
 | organization | 원본 / fetch evidence | parse and decision evidence | build / remaining status |
 | --- | --- | --- | --- |
-| `ulsan-city` | 4 원본 files and 1 수집 장부 row were left by an interrupted city fetch; no fetch artifact or complete source-hash manifest | not run; collection remains incomplete | not built; **collection held** after a server read stalled |
+| `ulsan-city` | `fetch.json`: 1 source, 0 missing, 6,409 uncollected postings; the market PDF is the only received 원본, while transfer-board rows have no published 원본 | `headermap`/`parse`: 0 sources and 0 records for the in-period input; `classify`/`geocode`/`closure`: 0 results | organization build completed with 0 records and 0 markers; transfer-board rows remain represented by the uncollected count |
 | `ulsan-junggu` | `fetch.json`: 126 sources, 0 missing, 9,443 uncollected postings; source hashes are unique (126). Boards: deputy 3, director 3, department 120. Containers: PDF 94, OLE2 18, ZIP 14. Fetch warning: `expenses-director=service-unavailable`. Fetch manifest SHA-256: `945f20fa964eef6aa87492f6a099c642fc31b277f548e67d463e4b29d4b2bfc1` | header mappings 0; unresolved 86 (`model_not_configured` 63, `no_table` 12, `unsupported_format` 11). Parse sources 86; excluded `declared_out_of_range=40`, `posted_out_of_range=0`, `undeclared_in_year=0`; repeated expenses 8. Classify/geocode/closure results 0; parse reports no records in the 2026-01-01..2026-06-30 period | organization build completed and wrote `dist/ulsan/orgs/ulsan-junggu/{records,markers}.json`; no city shell was touched |
 | `ulsan-namgu` | `fetch.json`: 392 sources, 0 missing, 2,798 uncollected postings; source hashes are unique. Boards: deputy 8, director 49, department 227, dong 99, health 9. All source containers are PDF. Warning: `unmeasured-attachments=10` | `headermap`: 17 mappings, 254 unresolved sources, 1 unresolved mapping. `parse`: 271 sources, 17 parsed sources, 66 records, 254 unresolved sources. `classify`: 66 decisions, 1 pending | `geocode` wrote one explicit `lookup_error` result then stopped with `lookup-failed` because Naver credentials were not supplied; `closure` completed with 0 results and `build` wrote `dist/ulsan/orgs/ulsan-namgu/{records,markers}.json` with 66 records and 0 markers. No coordinate is claimed |
 | `ulsan-donggu` | no 원본 files or fetch artifact; live fetch stalled before the first 첨부 | not run | **collection held**; no output claimed |
-| `ulsan-bukgu` | 200 원본 files and 193 수집 장부 rows remain outside the repository. The fetch process stalled before saving `fetch.json`; 수집 장부 SHA-256: `488e4e6164134fb20f14f88093b54c5a2dc9d8158df0ecb5294274d835836986` | not run because there is no completed fetch manifest | **collection held**; no partial files were promoted to refined output |
+| `ulsan-bukgu` | `fetch.json`: 200 sources, 0 missing, 1,995 uncollected postings; all 200 source containers are PDF. Warning: `unmeasured-attachments=18` | `headermap`: 13 mappings, 126 unresolved sources. `parse`: 135 sources, 9 parsed sources, 58 records, 126 unresolved sources. `classify`: 58 decisions, 1 pending | `geocode` wrote one explicit `lookup_error` and stopped with `lookup-failed` because Naver credentials were not supplied; `closure` completed with 0 results and `build` wrote `dist/ulsan/orgs/ulsan-bukgu/{records,markers}.json` with 58 records and 0 markers. No coordinate is claimed |
 | `ulsan-ulju` | `fetch.json`: 8 sources, 0 missing, 66 uncollected postings; all 8 source hashes are unique and all are PDF. Fetch warning: `expenses-director=adapter-failed, expenses-department=adapter-failed`. Fetch manifest SHA-256: `7715c05e07a9217f879ee84d3a413d2623048d26136e7c17479cc1bf915f31e4` | header mappings 0; unresolved 6 (`model_not_configured` 6). Parse sources 6; excluded `declared_out_of_range=2`, `posted_out_of_range=0`, `undeclared_in_year=0`; repeated expenses 8. Classify/geocode/closure results 0; parse reports no records in the 2026-01-01..2026-06-30 period | organization `run` and the individual stages completed; build wrote `dist/ulsan/orgs/ulsan-ulju/{records,markers}.json` |
 
 The completed manifests' paths were re-read outside the repository.  Their
-leading signatures matched the recorded container for every source: Jung-gu
-PDF 94, OLE2 18, ZIP 14; Nam-gu PDF 392; Ulju-gun PDF 8.  No unsupported or
-missing 원본 was silently converted to a successful source.  For the
-incomplete city, Dong-gu, and Buk-gu collections, no hash claims beyond the
-external 수집 장부 are made.
+leading signatures matched the recorded container for every source: Ulsan city
+PDF 1; Jung-gu PDF 94, OLE2 18, ZIP 14; Nam-gu PDF 392; Buk-gu PDF 200;
+Ulju-gun PDF 8.  No unsupported or missing 원본 was silently converted to a
+successful source.  Dong-gu remains incomplete, so no hash claim is made for
+that organization beyond its absent external 수집 장부.
 
 ## City-level partial merge and build
 
-The three completed organization fetch artifacts (Jung-gu, Nam-gu, and
-Ulju-gun) were merged into the city fetch artifact without changing any source
-or inventing records.  The missing organizations remain in
-`data/ulsan/fetch.json`'s `empty_reason`: `ulsan-city=uncollected`,
-`ulsan-donggu=collection-held`, and `ulsan-bukgu=collection-held`.
+The five completed organization fetch artifacts (Ulsan city, Jung-gu, Nam-gu,
+Buk-gu, and Ulju-gun) were merged into the city fetch artifact without changing
+any source or inventing records.  Dong-gu remains in
+`data/ulsan/fetch.json`'s `empty_reason` as `collection-held`.
 
-The resulting city artifact contains 526 source hashes and 12,307 uncollected
-postings.  `headermap` has 17 mappings, 346 unresolved sources, and 1
-unresolved mapping.  `parse` examined 363 sources and produced 66 records;
-163 rows were excluded as `declared_out_of_range`.  `classify` wrote 66
-decisions with 1 pending decision.  The city geocode retry stopped with
+The resulting city artifact contains 727 source hashes and 20,711 uncollected
+postings.  `headermap` has 30 mappings, 472 unresolved sources, and 1
+unresolved mapping.  `parse` examined 498 sources and produced 124 records;
+`classify` wrote 124 decisions with 1 pending decision.  The city geocode retry stopped with
 `geocode city=ulsan org=* cause=lookup-failed` because no Naver lookup
 credentials were supplied.  City `closure` still completed with 0 results,
 preserving the failed lookup state; the subsequent city `build` stopped with
@@ -87,20 +85,19 @@ route and 정제 산출물 integrity check for the partial build only; it is not
 map-tile or real-device check, and the JSON intentionally contains zero
 records and zero markers.
 
-The 2026-09-14 retries for `ulsan-city` and `ulsan-bukgu` again stalled while
-the live listing server was being read. For Buk-gu, the measured list form's
-published `rows=30` option was added to the scraper and its request contract
-was regression-tested; the live retry still did not reach a completed fetch
-manifest. Nam-gu completed after the measured `recordCountPerPage=30` option
-was isolated to its adapter. Its subsequent geocode retry failed explicitly
-with `lookup-failed` because credentials were absent. No coordinate or
-real-data map success is claimed for that partial organization output.
+The 2026-09-14 retries completed for Ulsan city and Buk-gu after long listing
+reads. Buk-gu's measured `rows=30` option and Nam-gu's measured
+`recordCountPerPage=30` option are isolated to their adapters. Dong-gu again
+stalled before creating an external directory or fetch manifest and remains
+`collection-held`. Geocode retries for the organizations with records failed
+explicitly with `lookup-failed` because credentials were absent. No coordinate
+or real-data map success is claimed for these partial organization outputs.
 
 ## Commands and results
 
 ```text
 .\.tools\uv\bin\uv.exe run pytest
-# 646 passed in 116.16s
+# 647 passed in 49.46s
 
 .\.tools\uv\bin\uv.exe run ruff check .
 # All checks passed
