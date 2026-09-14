@@ -1,5 +1,7 @@
 """부산 게시판 스크래퍼. 실측한 목록·본문·첨부 모양을 합성 fixture로 고정한다."""
 
+from collections.abc import Iterator
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -7,6 +9,7 @@ import pytest
 from deliciousmap import boards
 from deliciousmap.collection import collect
 from deliciousmap.paths import Paths
+from deliciousmap.pipeline import FailureCause
 from deliciousmap.registry import CITIES, Board, select_target
 from deliciousmap.scrapers.busan import (
     CityBoard,
@@ -1048,3 +1051,32 @@ def test_city_board_counts_one_attachment_per_file_number() -> None:
     postings = list(CityBoard(board(CITY_URL, CityBoard), transport).postings(lambda *_: False))
     assert [item.file_id for item in postings[0].attachments] == ["1"]
     assert postings[0].attachments[0].suffix == ".hwpx"
+
+
+def test_a_failed_walk_still_reports_what_it_already_read(tmp_path: Path) -> None:
+    """끊긴 게시판도 끊기기 전까지 읽은 것은 돌려준다.
+
+    실측(사상구): 목록 70쪽에서 연결이 끊겼다. 그때까지 세어 둔 "받지 않은 게시글"을 버리면
+    그 수가 0으로 남아, 기간 밖 게시글이 하나도 없는 게시판과 구별되지 않는다.
+    """
+    from deliciousmap.collection import _walk
+    from deliciousmap.registry.models import Board as BoardDecl
+
+    class Flaky:
+        published_suffixes: frozenset[str] = frozenset()
+
+        def __init__(self, board_: BoardDecl, transport: object) -> None:
+            pass
+
+        def postings(self, skipped: boards.Skipped) -> Iterator[boards.Posting]:
+            for index in range(3):
+                posting = boards.Posting(f"old{index}", (), date(2019, 1, 1), "2019년 1월")
+                skipped(posting.post_id, posting.posted)
+                yield posting
+            raise boards.BoardUnavailable("board request failed")
+
+    walked = _walk(BoardDecl("expenses", BOARD_URL, Flaky), tmp_path / "raw", object())
+    assert walked.uncollected == 3
+    assert walked.failure is FailureCause.SERVICE_UNAVAILABLE
+    # 끊기기 전까지 읽은 목록도 남는다. 다음 실행이 목록을 다시 만들지 않아도 된다.
+    assert (tmp_path / "raw" / "listing.jsonl").exists()

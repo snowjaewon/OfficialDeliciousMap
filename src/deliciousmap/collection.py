@@ -45,23 +45,18 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
         for board in organization.boards:
             visited.append(f"{organization.slug}/{board.slug}")
             directory = paths.board_dir(target, organization.slug, board.slug)
-            try:
-                walked = _walk(board, directory, transport)
-            except AdapterFailure as exc:
-                # 도시 하나가 기관 열일곱·호스트 열여섯으로 늘면 공개 서버 하나가 끊기는 일이
-                # 상례가 된다(부산 실측). 끊긴 게시판 하나가 나머지 기관의 원본까지 0건으로
-                # 만들지 않도록, 다시 요청하면 달라질 수 있는 장애만 사유로 남기고 다음
-                # 게시판으로 간다. 이어 가기는 도시를 가리지 않는다 — 도시 이름은 게시판이
-                # 끊겼는지와 무관하다.
-                #
-                # 이어 가는 것은 장애뿐이다. 목록을 읽지 못했거나 실측하지 않은 형식을 만난
-                # 것은 그 게시판이 아니라 우리 스크래퍼가 틀렸다는 뜻이고, 그대로 두면 다음
-                # 실행도 같은 자리에서 같은 만큼만 거둔다. 그런 사유는 그 자리에서 알린다.
-                if exc.cause is not FailureCause.SERVICE_UNAVAILABLE:
-                    raise
-                causes.append(exc.cause)
-                failures.append(f"{organization.slug}/{board.slug}={exc.cause.value}")
-                walked = _Walked([], 0)
+            # 도시 하나가 기관 열일곱·호스트 열여섯으로 늘면 공개 서버 하나가 끊기는 일이
+            # 상례가 된다(부산 실측). 끊긴 게시판 하나가 나머지 기관의 원본까지 0건으로
+            # 만들지 않도록, 다시 요청하면 달라질 수 있는 장애는 사유로 남기고 다음 게시판으로
+            # 간다. 이어 가기는 도시를 가리지 않는다 — 도시 이름은 게시판이 끊겼는지와 무관하다.
+            #
+            # 이어 가는 것은 장애뿐이다. 목록을 읽지 못했거나 실측하지 않은 형식을 만난 것은
+            # 그 게시판이 아니라 우리 스크래퍼가 틀렸다는 뜻이고, 그대로 두면 다음 실행도 같은
+            # 자리에서 같은 만큼만 거둔다. 그런 사유는 `_walk`가 그 자리에서 알린다.
+            walked = _walk(board, directory, transport)
+            if walked.failure is not None:
+                causes.append(walked.failure)
+                failures.append(f"{organization.slug}/{board.slug}={walked.failure.value}")
             unmeasured.extend(walked.unmeasured)
             uncollected += walked.uncollected
             collected, gone = _ledger(directory)
@@ -98,10 +93,14 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
 
 @dataclass(frozen=True)
 class _Walked:
-    """게시판 하나를 훑은 결과. 사람이 봐야 하는 첨부와 기간 밖이라 받지 않은 게시글 수다."""
+    """게시판 하나를 훑은 결과. 끝까지 못 갔더라도 그때까지 읽은 것을 그대로 담는다."""
 
     unmeasured: list[dict[str, str]]
+    # 게시일이 대상 연도 밖이라 원본을 받지 않은 게시글 수.
     uncollected: int
+    # 훑기를 끊은 장애. 없으면 게시판을 끝까지 봤다는 뜻이다. 끊긴 뒤에도 위의 수는 남는다 —
+    # 버리면 "기간 밖 게시글이 없는 게시판"과 "끊겨서 세지 못한 게시판"이 같은 모양이 된다.
+    failure: FailureCause | None = None
 
 
 def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
@@ -119,6 +118,7 @@ def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
     scraper: boards.BoardScraper = board.scraper(board, transport)
     unmeasured: list[dict[str, str]] = []
     uncollected = 0
+    failure: FailureCause | None = None
 
     def skip(post_id: str, posted: date | None) -> bool:
         """본문을 열지 않고 넘길 게시글. 아래 루프가 같은 판정을 다시 쓰므로 여기 한 곳에 둔다."""
@@ -173,13 +173,15 @@ def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
             _remember(directory, posting, stored, lost, empty, locked, stray)
     except boards.UnsupportedOriginal:
         raise AdapterFailure(FailureCause.UNSUPPORTED_FORMAT) from None
-    except boards.BoardUnavailable:
-        raise AdapterFailure(FailureCause.SERVICE_UNAVAILABLE) from None
     except boards.UnreadableBoard:
         raise AdapterFailure(FailureCause.ADAPTER_FAILED) from None
+    except boards.BoardUnavailable:
+        # 다시 요청하면 달라질 수 있는 장애다. 여기서 끊더라도 그때까지 읽은 목록과 수는
+        # 그대로 남긴다. 이어서 다시 실행할 때 같은 자리를 다시 읽지 않게 하기 위해서다.
+        failure = FailureCause.SERVICE_UNAVAILABLE
     _remember_listing(directory, listed)
     _report_unmeasured(directory, unmeasured)
-    return _Walked(unmeasured, uncollected)
+    return _Walked(unmeasured, uncollected, failure)
 
 
 def _note(attachment: boards.Attachment, reason: str) -> dict[str, str]:
