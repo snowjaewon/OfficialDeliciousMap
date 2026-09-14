@@ -8,6 +8,7 @@
 
 import pytest
 
+from deliciousmap import identity, merchants
 from deliciousmap.merchants import Companions, read
 
 # 실측한 다섯 꼬리말 형태와 맨끝 `외`. 공백이 있는 표기와 없는 표기가 섞여 있다.
@@ -38,6 +39,29 @@ KEPT = (
     "합성곰탕, 합성브라운외",
     "합성밥집, 합성데이지",
 )
+# 꼬리말 규칙이 낸 답을 그 규칙과 좌표 판정의 버전에 묶어 얼린다(#147). 위 표에서 만들지 않고
+# 따로 적는 것은, 규칙을 바꾸며 위 표를 고쳐도 이 줄은 옛 답으로 남게 하려는 것이다. 답이
+# 달라지면 이 줄을 고치지 말고 `merchants.TAIL_VERSION`과 `identity.POLICY_VERSION`을 함께 올려
+# 새 줄을 더한다. 꼬리말 버전이 그대로면 옛 이름으로 판별한 classify 산출물이, 좌표 판정 버전이
+# 그대로면 옛 이름과 대조한 좌표 판정 이력이 신선한 것으로 통과한다.
+FROZEN = {
+    ("tail-1", "identity-3"): {
+        "합성식당 외 1": Companions("합성식당", 1),
+        "합성카페외 1": Companions("합성카페", 1),
+        "합성보쌈외 1개소": Companions("합성보쌈", 1),
+        "합성매운탕외1개소": Companions("합성매운탕", 1),
+        "합성어장 외 1곳": Companions("합성어장", 1),
+        "합성한정식 외 1명": Companions("합성한정식", 1),
+        "합성감자탕 외 1개": Companions("합성감자탕", 1),
+        "합성회식당 외 2": Companions("합성회식당", 2),
+        "합성낙지 외": Companions("합성낙지", None),
+        "합성해외 2": Companions("합성해", 2),
+        "외갓집 순두부 본점": Companions("외갓집 순두부 본점", 0),
+        "합성로컬푸드직외": Companions("합성로컬푸드직외", 0),
+        "합성곰탕, 합성브라운외": Companions("합성곰탕, 합성브라운외", 0),
+        "외 1": Companions("외 1", 0),
+    },
+}
 
 
 @pytest.mark.parametrize("merchant", sorted(TAILS))
@@ -70,3 +94,19 @@ def test_a_counted_tail_is_cut_even_when_a_word_happens_to_end_in_the_same_lette
     않는다(`identity.decide_identity`가 상호·지점·주소의 독립 근거를 요구한다).
     """
     assert read("합성해외 2") == Companions("합성해", 2)
+
+
+def test_the_tail_rule_answers_as_its_versions_froze_it() -> None:
+    """버전을 올리지 않고 규칙만 바꾸면 여기서 실패한다. 두 단계의 낡음 판정이 그 버전을 본다."""
+    frozen = FROZEN[(merchants.TAIL_VERSION, identity.POLICY_VERSION)]
+    assert {merchant: read(merchant) for merchant in frozen} == frozen
+
+
+def test_a_new_tail_rule_comes_with_both_versions_raised() -> None:
+    """한쪽 버전만 올린 규칙 변경을 막는다. 좌표 판정 버전은 다른 사유로만 따로 오를 수 있다."""
+    policies = [policy for _, policy in FROZEN]
+    # 꼬리말 버전만 올리면 좌표 판정 이력이 옛 이름과 대조한 판정을 그대로 다시 쓴다.
+    assert len(set(policies)) == len(policies)
+    # 좌표 판정 버전만 올리면 같은 꼬리말 버전이 다른 답을 낸다.
+    for (tail, _), answers in FROZEN.items():
+        assert all(other == answers for (same, _), other in FROZEN.items() if same == tail)

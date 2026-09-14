@@ -14,8 +14,12 @@
 
 `POLICY_VERSION`은 구분자 표기 규칙과 그것을 읽는 가르기 정책의 버전이다. 확인을 레코드에
 적용하는 일은 다른 사람 검토 입력과 규칙이 같아 `restoration.divide`가 한다. 규칙이 바뀌면 나뉜
-이름도 보류 사유도 달라지므로 parse와 geocode의 의존성이 이 값을 함께 읽는다. 꼬리말 규칙이
-바꾸는 것은 근거와 대조할 이름이라 그 판정의 버전은 `identity.POLICY_VERSION`이 맡는다.
+이름도 보류 사유도 달라지므로 parse와 geocode의 의존성이 이 값을 함께 읽는다.
+
+`TAIL_VERSION`은 꼬리말 규칙의 버전이다. 비식당 판별이 꼬리말을 뗀 이름을 읽으므로 classify의
+의존성이 이 값을 읽고, classify 산출물을 선행으로 읽는 단계가 함께 낡는다(#147). 좌표 판정도 그
+이름을 근거와 대조하지만 이력 키는 `identity.POLICY_VERSION`이 맡으므로, 꼬리말 규칙을 바꾸면
+두 값을 함께 올린다.
 """
 
 import re
@@ -28,6 +32,7 @@ if TYPE_CHECKING:  # 판별할 이름을 고르는 계약이 이 규칙을 부�
     from deliciousmap.contracts import Record
 
 POLICY_VERSION = "merchants-1"
+TAIL_VERSION = "tail-1"
 
 # 이름 없이 수만 밝힌 꼬리말. 세는 낱말과 `외` 앞뒤의 공백은 원본마다 다르다.
 # 뒤 갈래는 수도 적지 않은 맨끝 `외`이며, 앞의 공백을 요구해 낱말 안의 글자를 자르지 않는다.
