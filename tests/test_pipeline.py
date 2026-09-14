@@ -174,6 +174,21 @@ def test_changed_tail_rule_cannot_reuse_stale_classification(
     assert adapters.calls == []
 
 
+def test_changed_tail_rule_marks_the_classification_itself_stale(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """뒤 단계를 거치지 않아도 classify 산출물 자체가 낡은 것으로 걸린다(#147)."""
+    from deliciousmap import merchants
+    from deliciousmap.contracts import ClassifyOutput
+    from deliciousmap.storage import ArtifactStore
+
+    context = context_at(tmp_path)
+    execute("run", context, SyntheticAdapters())
+    monkeypatch.setattr(merchants, "TAIL_VERSION", "tail-changed")
+    with pytest.raises(ValueError, match="stale artifact"):
+        ArtifactStore(context.paths, context.target).load("classify", ClassifyOutput)
+
+
 def test_headermap_must_refer_to_fetched_originals(tmp_path: Path) -> None:
     from deliciousmap.contracts import HeaderMapOutput
     from deliciousmap.pipeline import PipelineFailure
