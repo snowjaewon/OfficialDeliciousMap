@@ -36,6 +36,7 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
     visited: list[str] = []
     held: list[str] = []
     uncollected = 0
+    filtered = 0
     for organization in target.organizations:
         if organization.hold_reason is not None:
             held.append(f"{organization.slug}={organization.hold_reason}")
@@ -52,9 +53,10 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
                 if target.city.slug != "ulsan":
                     raise
                 failures.append(f"{organization.slug}/{board.slug}={exc.cause.value}")
-                walked = _Walked([], 0)
+                walked = _Walked([], 0, 0)
             unmeasured.extend(walked.unmeasured)
             uncollected += walked.uncollected
+            filtered += walked.filtered
             collected, gone = _ledger(directory)
             listed = _listed(directory)
             sources.extend(
@@ -73,6 +75,7 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
             missing=tuple(missing),
             empty_reason=warning,
             uncollected_postings=uncollected,
+            filtered_postings=filtered,
         )
     if not visited and not held:
         # 아직 게시판을 선언하지 않은 도시를 수집 완료로 표시하지 않는다.
@@ -82,6 +85,7 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
         missing=tuple(missing),
         empty_reason=_join_reasons(_empty_reason(visited, held), warning),
         uncollected_postings=uncollected,
+        filtered_postings=filtered,
     )
 
 
@@ -96,10 +100,12 @@ def _html(board: Board) -> bool:
 
 @dataclass(frozen=True)
 class _Walked:
-    """게시판 하나를 훑은 결과. 사람이 봐야 하는 첨부와 기간 밖이라 받지 않은 게시글 수다."""
+    """게시판 하나를 훑은 결과. 사람이 봐야 하는 첨부와 받지 않은·걸러 낸 게시글 수다."""
 
     unmeasured: list[dict[str, str]]
     uncollected: int
+    # 업무추진비 집행기관이 아니라 스크래퍼가 걸러 낸 줄 수. 스크래퍼가 세지 않으면 0이다.
+    filtered: int
 
 
 def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
@@ -170,7 +176,7 @@ def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
         raise AdapterFailure(FailureCause.ADAPTER_FAILED) from None
     _remember_listing(directory, listed)
     _report_unmeasured(directory, unmeasured)
-    return _Walked(unmeasured, uncollected)
+    return _Walked(unmeasured, uncollected, int(getattr(scraper, "excluded", 0)))
 
 
 def _note(attachment: boards.Attachment, reason: str) -> dict[str, str]:

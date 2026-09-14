@@ -111,3 +111,18 @@ def test_attachment_referer_reaches_the_request(tmp_path: Path) -> None:
     output = collect(_target(_RefererScraper), _paths(tmp_path), transport)
     assert transport.referers == ["https://example.invalid/list"]
     assert [item.container for item in output.sources] == ["pdf"]
+
+
+class _MixedScraper(_Scraper):
+    """업무추진비 집행기관이 아닌 줄을 섞어 싣는 게시판. 거른 수를 스스로 센다."""
+
+    published_suffixes = frozenset({".html"})
+    excluded = 2
+
+    def postings(self, skipped: boards.Skipped) -> Iterator[boards.Posting]:
+        yield from super().postings(skipped)
+
+
+def test_filtered_rows_are_counted_in_the_ledger(tmp_path: Path) -> None:
+    output = collect(_target(_MixedScraper), _paths(tmp_path), _Transport())
+    assert output.filtered_postings == 2
