@@ -465,7 +465,7 @@ def test_jongno_reads_the_spending_month_and_leaves_the_officer_name_out() -> No
     body = (
         "<html><body>"
         + jongno_row("257188", "2026", "09", "자치행정과", "김민진")
-        + '<a href="?pageIndex=1">1</a></body></html>'
+        + '<a href="javascript:pageMove(1);">1</a></body></html>'
     )
     transport = FakeTransport(
         dict(
@@ -529,3 +529,27 @@ def test_seoul_registry_declares_twenty_six_organizations() -> None:
     assert len({item.slug for item in target.organizations}) == 26
     assert all(item.boards or item.hold_reason for item in target.organizations)
     assert select_target(CITIES, "seoul", "seoul-songpa").organizations[0].slug == "seoul-songpa"
+
+
+def test_jongno_reads_its_page_count_from_the_last_page_button() -> None:
+    body = (
+        "<html><body>"
+        + jongno_row("257188", "2026", "09", "자치행정과", "김민진")
+        + "<div class=\"paging\"><a href='javascript:pageMove(2);'>2</a>"
+        + "<a href='javascript:pageMove(603);' class='last'>맨끝</a></div></body></html>"
+    )
+    transport = FakeTransport(
+        dict(
+            [
+                at(
+                    "https://www.jongno.go.kr/portal/bbs/selectBoardList.do",
+                    {"bbsId": "BBSMSTR_000000001167", "menuId": "110210", "pageIndex": str(number)},
+                    body,
+                )
+                for number in range(1, 604)
+            ]
+        )
+    )
+    found = list(JongnoBoard(board(JONGNO, JongnoBoard), transport).postings(never))
+    assert len(found) == 603
+    assert len(transport.calls) == 603

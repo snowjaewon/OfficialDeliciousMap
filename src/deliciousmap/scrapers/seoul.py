@@ -596,6 +596,8 @@ class JongnoBoard(ListingBoard):
     download_path = "/cmm/fms/FileDown.do"
     # `viewMove`가 넘겨보내는 본문 주소(2026-09-14 실측).
     view_path = "/portal/bbs/selectBoardArticle.do"
+    # 쪽 넘김을 주소가 아니라 `pageMove(n)`으로 그린다. 맨끝 단추가 전체 쪽 수를 담는다.
+    page_call = re.compile(r"pageMove\((\d+)\)")
     # 칸 이름표. 칸 차례가 아니라 이름표로 찾는다. 담당자 칸은 일부러 읽지 않는다.
     labels = {"year": "년도", "month": "해당 월", "department": "작성부서", "posted": "작성일"}
 
@@ -625,6 +627,12 @@ class JongnoBoard(ListingBoard):
             values["department"],
             page_url,
         )
+
+    def page_count(self, listing: Listing, text: str) -> int:
+        pages = [int(value) for value in self.page_call.findall(text)]
+        if not pages:
+            raise boards.UnreadableBoard("board listing does not declare its page count")
+        return max(pages)
 
     def is_download(self, link: Link) -> bool:
         return self.download_path in urllib.parse.urlsplit(link.href).path
