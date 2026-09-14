@@ -11,6 +11,7 @@ from io import BytesIO
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING, Protocol
 
+from deliciousmap.grid import is_html
 from deliciousmap.transport import HttpTransport, ResourceGone, Transport, query
 
 if TYPE_CHECKING:  # 레지스트리가 스크래퍼를 선언하므로 실행 시점에 되짚어 부르지 않는다.
@@ -283,9 +284,3 @@ def container_of(body: bytes, suffix: str = "") -> str:
         if container.matches(body):
             return container.name
     raise UnsupportedOriginal("response is not an original container")
-
-
-def is_html(body: bytes) -> bool:
-    """HTML 문서인지. 앞의 BOM·공백 뒤에 문서형 선언이나 `<html`이 와야 한다."""
-    head = body[:MARKER_WINDOW].lstrip(b"\xef\xbb\xbf \t\r\n").lower()
-    return head.startswith((b"<!doctype html", b"<html"))

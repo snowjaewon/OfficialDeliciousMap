@@ -41,9 +41,11 @@ SUBTOTAL = re.compile(r".{0,6}소계")
 TERMINATOR = re.compile(r"(이하)?(빈칸|여백|없음)\.?")
 # 연도 뒤에 오는 월·일. 구분자는 거듭 찍히기도 한다(`2026..03.24.` 동구 실측).
 AFTER_YEAR = r"(?:\s*[-./년])+\s*(\d{1,2})(?:\s*[-./월])+\s*(\d{1,2})(?!\d)"
-# 천원 단위 표의 값으로 볼 수 없는 크기(천원). 울산 시청 표는 헤더가 `금액(천원)`인데 몇 행을
+# 선언한 천원 표의 값으로 볼 수 없는 크기(천원). 울산 시청 표는 헤더가 `금액(천원)`인데 몇 행을
 # 원으로 적었다(`187,000`). 그 값을 곱하면 한 끼가 1억 8,700만 원이 된다. 원본 결함을 고쳐
-# 읽지 않고 그 원본을 미해결로 남긴다(#145, 기준값 근거는 docs/validation/issue-145.md).
+# 읽지 않고 그 원본을 미해결로 남긴다(ADR-0008). 2026년 상반기 시청 3,688행은 3,500 이하와
+# 48,000 이상으로 갈리고 그 사이 값이 없어 기준을 그 틈에 둔다(docs/validation/issue-145.md).
+# 모델이 천원으로 판정한 표에는 걸지 않는다 — 그 판정 자체가 틀렸을 수 있다.
 THOUSAND = Decimal(1000)
 THOUSAND_WON_CEILING = Decimal(10_000)
 # 엑셀 1900 체계의 날짜 일련번호가 2000~2099년에 해당하는 범위.
@@ -569,8 +571,12 @@ def _candidate(table: Table, mapping: HeaderMap, source: SourceRef, row: int) ->
     amount = _amount(table.value(row, columns["amount_krw"]))
     if amount is None:
         raise ValidationFailed(f"{table.name}:R{row} amount_krw")
-    if mapping.amount_multiplier == THOUSAND and abs(amount) >= THOUSAND_WON_CEILING:
-        # 천원 표에 원으로 적은 값이다. 헤더대로 곱하지도, 원으로 고쳐 읽지도 않는다.
+    if (
+        mapping.declared
+        and mapping.amount_multiplier == THOUSAND
+        and abs(amount) >= THOUSAND_WON_CEILING
+    ):
+        # 선언한 천원 표에 원으로 적은 값이다. 헤더대로 곱하지도, 원으로 고쳐 읽지도 않는다.
         raise ValidationFailed(f"{table.name}:R{row} amount_unit")
     merchant = text(table.value(row, columns["merchant"])) or _payee(table, mapping, row)
     if not merchant:

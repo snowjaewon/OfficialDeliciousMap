@@ -416,6 +416,9 @@ class JungguMayorBoard:
     대상 연도의 행을 한 쪽에 받고, 그 쪽 응답 전체를 원본으로 둔다(2026-09-14 실측: 2025년
     482행, 2026년 198행이 한 쪽). 해 목록은 새 행이 위에 쌓여 둘째 쪽부터 내용이 밀리므로, 한 쪽에
     담기지 않으면 쪽을 짐작해 나누지 않고 읽지 못한 게시판으로 알린다.
+
+    게시글 번호가 연도라 한 번 받은 해 목록은 다시 받지 않는다. 그 뒤에 붙은 행은 그 원본을 치우고
+    다시 수집해야 들어온다(ADR-0008).
     """
 
     published_suffixes = frozenset({boards.HTML_SUFFIX})
@@ -442,12 +445,7 @@ class JungguMayorBoard:
                 raise boards.UnreadableBoard("fiscal-year listing no longer fits one page")
             post_id = str(year)
             url = boards.address(self.list_url, params)
-            yield boards.Posting(
-                post_id,
-                ()
-                if skipped(post_id, None)
-                else (boards.Attachment(post_id, "1", boards.HTML_SUFFIX, url, url),),
-            )
+            yield boards.Posting(post_id, _html_original(post_id, url, skipped(post_id, None)))
 
 
 class DongguMayorBoard:
@@ -495,9 +493,7 @@ class DongguMayorBoard:
                 url = boards.address(self.view_url, {"ymd2": post_id})
                 yield boards.Posting(
                     post_id,
-                    ()
-                    if skipped(post_id, posted)
-                    else (boards.Attachment(post_id, "1", boards.HTML_SUFFIX, url, url),),
+                    _html_original(post_id, url, skipped(post_id, posted)),
                     posted,
                     link.text,
                     "",
@@ -603,11 +599,20 @@ class CityTransferBoard:
                 )
                 if detail is None:
                     continue
-                posted = _posted(row.text)
+                found = re.search(r"f_detail\(\s*'([^']+)'", detail.onclick)
+                if found is None:
+                    raise boards.UnreadableBoard(
+                        "board listing row does not declare its detail key"
+                    )
+                key = found.group(1)
+                # 받는 쪽은 이 키로 연 쪽이다. 목록 칸이 아니라 키에서 날을 읽어 둘이 어긋나지
+                # 않게 한다.
+                posted = _posted(key)
                 post_id = f"{posted:%Y%m%d}"
+                url = boards.address(self.list_url, {**self.params, "useDe": key})
                 yield boards.Posting(
                     post_id,
-                    () if skipped(post_id, posted) else self._detail(post_id, detail),
+                    _html_original(post_id, url, skipped(post_id, posted)),
                     posted,
                     detail.text,
                     "",
@@ -617,12 +622,10 @@ class CityTransferBoard:
                 return
             page += 1
 
-    def _detail(self, post_id: str, link: _Link) -> tuple[boards.Attachment, ...]:
-        found = re.search(r"f_detail\(\s*'([^']+)'", link.onclick)
-        if found is None:
-            raise boards.UnreadableBoard("board listing row does not declare its detail key")
-        url = boards.address(self.list_url, {**self.params, "useDe": found.group(1)})
-        return (boards.Attachment(post_id, "1", boards.HTML_SUFFIX, url, url),)
+
+def _html_original(post_id: str, url: str, skipped: bool) -> tuple[boards.Attachment, ...]:
+    """HTML 표 게시글의 원본 참조 하나. 받은 쪽 주소가 곧 출처다. 넘길 게시글이면 없다."""
+    return () if skipped else (boards.Attachment(post_id, "1", boards.HTML_SUFFIX, url, url),)
 
 
 class BukguBoard:

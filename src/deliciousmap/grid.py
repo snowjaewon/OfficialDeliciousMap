@@ -16,8 +16,6 @@ import pdfplumber
 import xlrd
 from pdfplumber.table import Table as RuledTable
 
-from deliciousmap.boards import is_html
-
 # 셀 값. 엑셀의 날짜 셀만 datetime이고 숫자는 float, 나머지는 앞뒤 공백을 둔 문자열이다.
 Cell = str | float | datetime
 # 형식별 읽기가 내는 표 하나. `Table.label`이 될 이름표, 자르기 전의 행들, 세로 병합이다.
@@ -66,13 +64,17 @@ PARAGRAPH = f"{{{OWPML}}}p"
 TEXT_TAG = f"{{{OWPML}}}t"
 # HTML 표 쪽의 인코딩. 울산 시청·중구·동구 게시판이 모두 UTF-8이다(2026-09-14 실측).
 HTML_ENCODING = "utf-8"
+# HTML 문서형 선언을 찾을 앞부분의 길이. 앞의 공백 줄이 길어도 이 안에 온다.
+HTML_WINDOW = 4096
 # 좁은 화면에서만 보이도록 칸마다 되풀이한 열 이름. 값이 아니다(동구 구청장 상세 실측
 # `<span class="add-head">금액(원)</span><span class="tds">140,000</span>`).
 HTML_REPEATED_LABELS = frozenset({"add-head"})
 # 글자가 표의 값이 아닌 요소. 스크립트·스타일 본문은 칸 글자로 옮기지 않는다.
 HTML_SKIPPED = frozenset({"script", "style"})
+# 닫는 태그가 없는 요소(HTML 표준의 void 요소 가운데 게시판 쪽에 나오는 것).
+HTML_VOID = frozenset({"br", "img", "input", "hr", "meta", "link", "col", "wbr", "area", "source"})
 # 표 앞에서 이름표로 삼을 문단. 시청 상세의 `<h2>`, 동구 상세의 `<p>`가 그 날의 제목이다.
-HTML_HEADINGS = frozenset({"h1", "h2", "h3", "h4", "h5", "h6", "p"})
+HTML_LABEL_TAGS = frozenset({"h1", "h2", "h3", "h4", "h5", "h6", "p"})
 
 
 class UnsupportedFormat(Exception):
@@ -130,6 +132,15 @@ def text(value: Cell) -> str:
     if isinstance(value, float):
         return str(int(value)) if value.is_integer() else repr(value)
     return " ".join(value.split())
+
+
+def is_html(content: bytes) -> bool:
+    """HTML 문서인지. 앞의 BOM·공백 뒤에 문서형 선언이나 `<html`이 와야 한다.
+
+    수집도 이 판정으로 HTML 표 원본을 가른다(`boards.container_of`). 앞부분만 본다.
+    """
+    head = content[:HTML_WINDOW].lstrip(b"\xef\xbb\xbf \t\r\n").lower()
+    return head.startswith((b"<!doctype html", b"<html"))
 
 
 def read_tables(path: Path) -> tuple[Table, ...]:
@@ -498,12 +509,12 @@ def _html(content: bytes) -> list[Block]:
     통합문서·HWPX의 병합과 같은 규칙이다. 칸 안에 든 표는 제 표로 따로 낸다.
     """
     try:
-        text = content.decode(HTML_ENCODING)
+        page = content.decode(HTML_ENCODING)
     except UnicodeDecodeError:
         raise UnreadableOriginal("HTML page is not in the measured encoding") from None
     document = _HtmlTables()
     try:
-        document.feed(text)
+        document.feed(page)
         document.close()
     except UnreadableOriginal:
         raise
@@ -576,6 +587,10 @@ class _HtmlTables(HTMLParser):
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         values = dict(attrs)
+        if tag in HTML_VOID:
+            # 닫는 태그가 없는 요소는 숨길 글자도 없다. 숨긴 요소 목록에 넣으면 영영 닫히지 않는다.
+            self.handle_startendtag(tag, attrs)
+            return
         if self._hidden:
             self._hidden.append(tag)
             return
@@ -590,7 +605,7 @@ class _HtmlTables(HTMLParser):
             self._label = ""
             return
         if not self._open:
-            if tag in HTML_HEADINGS:
+            if tag in HTML_LABEL_TAGS:
                 self._heading = []
             return
         table = self._open[-1]
@@ -604,11 +619,10 @@ class _HtmlTables(HTMLParser):
             cell = _HtmlCell([], _span(values.get("rowspan")), _span(values.get("colspan")))
             table.rows[-1].append(cell)
             self._cell[-1] = cell
-        elif tag == "br" and self._cell[-1] is not None:
-            self._cell[-1].parts.append(" ")
 
     def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         # `<br/>`처럼 닫는 태그가 없는 요소는 여는 태그만 본다. 숨긴 깊이를 늘리지 않는다.
+        # 열 이름 표시가 붙은 `<br>`도 칸의 줄바꿈일 뿐 숨길 글자가 없다.
         if tag == "br" and not self._hidden and self._open and self._cell[-1] is not None:
             self._cell[-1].parts.append(" ")
 
@@ -623,7 +637,7 @@ class _HtmlTables(HTMLParser):
             self._cell.pop()
             return
         if not self._open:
-            if tag in HTML_HEADINGS and self._heading is not None:
+            if tag in HTML_LABEL_TAGS and self._heading is not None:
                 found = " ".join(" ".join(self._heading).split())
                 if found:
                     self._label = found

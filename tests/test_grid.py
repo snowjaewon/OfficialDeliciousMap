@@ -429,3 +429,19 @@ def test_an_html_page_outside_the_measured_encoding_is_unreadable(tmp_path: Path
     path.write_bytes("<html><table><tr><td>합성</td></tr></table></html>".encode("euc-kr"))
     with pytest.raises(UnreadableOriginal):
         read_tables(path)
+
+
+def test_a_repeated_label_on_an_empty_element_does_not_hide_the_rest_of_the_table(
+    tmp_path: Path,
+) -> None:
+    # 닫는 태그가 없는 요소(`<br>`·`<img>`)에 열 이름 표시가 붙어도 뒤의 칸을 숨기지 않는다.
+    page = (
+        "<html><body><table><tr><th>장소</th><th>금액(원)</th></tr>"
+        '<tr><td><img class="add-head" alt="장소">합성 식당</td>'
+        '<td><br class="add-head"><span class="add-head">금액(원)</span>62,000</td></tr>'
+        "</table></body></html>"
+    )
+    path = tmp_path / "1-1.html"
+    path.write_text(page, encoding="utf-8")
+    (table,) = read_tables(path)
+    assert table.rows == (("장소", "금액(원)"), ("합성 식당", "62,000"))

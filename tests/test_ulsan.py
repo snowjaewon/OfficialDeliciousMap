@@ -331,6 +331,24 @@ def test_transfer_board_offers_each_day_as_an_html_original_keyed_by_the_day() -
     assert postings[1].attachments == ()
 
 
+def test_transfer_board_dates_a_day_by_the_detail_key_it_opens() -> None:
+    # 받는 원본은 `useDe=<키>`로 연 쪽이다. 목록 칸이 다른 날을 적어도 집행일은 그 키의 날이다.
+    url = "https://example.invalid/u/rep/transfer/director/list.ulsan?mId=M1"
+    list_url = "https://example.invalid/u/rep/transfer/director/list.ulsan"
+    row = (
+        "<tr><td>2026-03-04 이관</td><td>2026-03-05</td><td>"
+        '<a href="#" onclick="f_detail(\'2026-03-05\');">국장 내역(1건)</a></td></tr>'
+    )
+    transport = FakeTransport(
+        dict([response(list_url, {"mId": "M1", "curPage": "1"}, all_rows(row))])
+    )
+    posting = next(
+        CityTransferBoard(board(url, CityTransferBoard), transport).postings(lambda *_: False)
+    )
+    assert (posting.post_id, posting.spent_on) == ("20260305", date(2026, 3, 5))
+    assert posting.attachments[0].url == f"{list_url}?mId=M1&useDe=2026-03-05"
+
+
 def test_transfer_board_reads_two_digit_legacy_dates() -> None:
     url = "https://example.invalid/u/rep/transfer/director/list.ulsan?mId=M1"
     list_url = "https://example.invalid/u/rep/transfer/director/list.ulsan"

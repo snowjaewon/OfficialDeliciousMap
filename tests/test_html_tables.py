@@ -474,3 +474,26 @@ def test_a_board_that_fails_later_keeps_the_days_it_already_listed(tmp_path: Pat
     assert [(row["spent_on"], row["merchant"]) for row in records(tmp_path)] == [
         ("2026-03-05", "합성국밥")
     ]
+
+
+def test_a_page_with_the_declared_header_twice_is_not_guessed(tmp_path: Path) -> None:
+    # 선언한 헤더의 표가 둘이면 어느 쪽이 그날의 집행내역인지 가를 근거가 없다.
+    cities = (city(Board("expenses-deputy", BOARD_URL, CityTransferBoard, CITY_TABLE)),)
+    once = detail("2026-03-05", ("1", "합성", "카드", "4", "88", "직원", "합성탕"))
+    twice = once.replace(
+        "<table><caption>목록</caption>", _first_table(once) + "<table><caption>목록</caption>"
+    )
+    board = transfer_board(("2026-03-05", twice))
+
+    assert run(tmp_path, "fetch", cities, board) == 0
+    assert run(tmp_path, "headermap", cities, None) == 0
+    assert run(tmp_path, "parse", cities, None) == 0
+
+    (report,) = payload(tmp_path, "parse")["sources"]
+    assert (report["status"], report["detail"]) == ("unresolved", "declared header repeated")
+    assert records(tmp_path) == []
+
+
+def _first_table(page: str) -> str:
+    start = page.index("<table>")
+    return page[start : page.index("</table>", start) + len("</table>")]

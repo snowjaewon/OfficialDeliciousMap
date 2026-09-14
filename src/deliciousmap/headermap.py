@@ -110,11 +110,11 @@ def resolve(
         if not tables:
             unresolved.append(UnresolvedSource(source_hash=source.source_hash, reason="no_table"))
             continue
-        layout = declared.get((source.organization, source.board))
+        declaration = declared.get((source.organization, source.board))
         found = (
             _map_tables(source, tables, stores, mapper)
-            if layout is None
-            else _declared_table(source, tables, layout)
+            if declaration is None
+            else _declared_table(source, tables, declaration)
         )
         if found.failure is None:
             mappings.extend(found.mappings)
@@ -160,14 +160,14 @@ def _map_tables(
 
 
 def _declared_table(
-    source: SourceRef, tables: tuple[grid.Table, ...], layout: DeclaredTable
+    source: SourceRef, tables: tuple[grid.Table, ...], declaration: DeclaredTable
 ) -> _Mapped:
     """선언한 헤더와 첫 행이 같은 표 하나에 선언을 적용한다. 쪽의 다른 표는 집행내역이 아니다.
 
     HTML 쪽에는 본문 표 말고도 목록·안내 표가 함께 들어 있다(시청 상세 실측). 선언과 같은
     헤더의 표가 없거나 둘 이상이면 틀이 바뀐 것이므로 짐작하지 않고 미해결로 남긴다.
     """
-    header = tuple(compact(cell) for cell in layout.header)
+    header = tuple(compact(cell) for cell in declaration.header)
     matched = [table for table in tables if header_signature(table, (1,)) == (header,)]
     if len(matched) != 1:
         detail = "declared header not found" if not matched else "declared header repeated"
@@ -179,8 +179,8 @@ def _declared_table(
         layout="table",
         header_rows=(1,),
         data_start_row=2,
-        columns=dict(layout.columns),
-        amount_multiplier=layout.amount_multiplier,
+        columns=dict(declaration.columns),
+        amount_multiplier=declaration.amount_multiplier,
         declared=True,
     )
     failure = _failure(source, table, mapping)
