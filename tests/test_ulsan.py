@@ -120,6 +120,30 @@ def test_egov_board_walks_pages_and_preserves_direct_attachment() -> None:
     assert postings[1].attachments == ()
 
 
+def test_egov_board_reads_the_title_past_a_row_number_that_links_to_the_article() -> None:
+    # 동구 목록은 번호 칸도 게시글로 링크한다(2026-09-14 실측). 번호를 제목으로 읽으면
+    # 제목이 밝힌 지출 기간이 사라져 원본이 대상에서 빠진다.
+    url = "https://example.invalid/cop/bbs/selectBoardList.do?bbsId=BBSMSTR_1"
+    list_url = "https://example.invalid/cop/bbs/selectBoardList.do"
+    article = "/cop/bbs/selectBoardArticle.do?bbsId=BBSMSTR_1&amp;nttId=211232"
+    row = (
+        f'<tr><td class="atchFileId"><a href="{article}">46</a></td>'
+        f'<td class="subject"><a href="{article}"> 2026년 2분기 업무추진비 집행내역(합성과) </a>'
+        "</td>"
+        '<td class="writer txtEl">총무과</td><td class="regDate">2026-07-09</td>'
+        '<td class="atchFileI"><a href="/cmm/fms/FileDown.do?atchFileId=FILE_1&amp;fileSn=0">'
+        '<img alt="pdf파일"/></a></td><td>12</td></tr>'
+    )
+    transport = FakeTransport(
+        dict([response(list_url, {"bbsId": "BBSMSTR_1", "pageIndex": "1"}, all_rows(row))])
+    )
+    postings = list(EgovBoard(board(url, EgovBoard), transport).postings(lambda *_: False))
+    assert [item.post_id for item in postings] == ["211232"]
+    assert postings[0].title == "2026년 2분기 업무추진비 집행내역(합성과)"
+    assert postings[0].department == "총무과"
+    assert postings[0].attachments[0].url.endswith("atchFileId=FILE_1&fileSn=0")
+
+
 def test_namgu_board_uses_the_measured_page_size() -> None:
     url = "https://example.invalid/cop/bbs/selectBoardList.do?bbsId=PrmtFee"
     list_url = "https://example.invalid/cop/bbs/selectBoardList.do"
