@@ -87,6 +87,47 @@ git diff --check
 ## 주의 사항
 
 - 비밀값·개인정보·유출 대응은 [SECURITY.md](SECURITY.md)를 따른다. 원본·인허가 원본·`dist/`는 커밋하지 않는다. 정제 산출물의 파일당 20MB 상한은 ADR-0001을 따른다.
-- LLM 호출·재시도·예산 집행은 [폴백 정책](docs/specs/header-mapping-fallback.md)이 기준이다. 프로젝트 합산 USD 15 한도를 실행마다 초기화하거나 옛 비용 추정으로 대체하지 않는다.
+- LLM 호출·재시도·예산 집행은 [폴백 정책](docs/specs/header-mapping-fallback.md)이 기준이다. 이슈 29번이 pr merge까지 완료되는 시점에서 llm을 통한 테스트가 가능하다. 프로젝트 합산 USD 15 한도를 실행마다 초기화하거나 옛 비용 추정으로 대체하지 않는다.
 - 목업 저장소와 헤더 매핑 프로토타입은 지식·검증 경험만 참고하고 정식 코드·데이터로 이식하지 않는다.
 - 미지원 형식·실패·판단 보류를 성공이나 0건으로 숨기지 않는다. 뼈대의 가짜 어댑터 통과를 실제 수집·데이터 품질·배포 완료로 보고하지 않는다.
+
+## Response Format
+
+- Default to ONE line per answer. Only expand when I explicitly ask for detail.
+- When I ask for a "work order" or "ordering", respond with issue numbers only
+  (e.g. `#71 → #79 → #70`), no explanation unless asked.
+- Never add unrequested extras: no background monitoring tasks,
+  no alternative options in issue bodies, no speculative sections.
+
+## Interactive Q&A Protocol
+
+- Ask decision questions ONE AT A TIME, wait for the answer, then ask the next.
+- Each option must have a one-line justification — no paragraphs.
+- Before asking, verify the premise against real data (measure the file, grep the code).
+  Never ask a question built on an assumption.
+
+## Numbers and Claims
+
+- Every number you report must cite its source (file path + command used to derive it).
+- Never compare counts across different units (unique strings vs records vs files)
+  — state the unit explicitly for both sides of any comparison.
+- Re-verify counts before posting them to a GitHub issue or PR comment.
+
+## Long-Running Pipelines
+
+- Load `.env` before any run that touches Naver/Gemini/license APIs;
+  abort with a clear message if credentials are missing rather than producing
+  an invalid benchmark.
+- Before killing or pausing a running process, first report current progress
+  and ask for confirmation.
+- Before merging any PR that regenerates data artifacts, rebase on latest `develop`
+  first — artifact regeneration conflicts have blocked merges repeatedly.
+
+## Agent Fan-Out
+
+- Never point a single agent at a broad category — it serializes the whole run.
+- First run ONE cheap read-only classification pass in the background that splits
+  the target into disjoint categories and reports an item count for each.
+- Then spawn one agent per category, sized to that count, and run them concurrently.
+- Every worker is READ ONLY: write no files, report findings as text in the final message.
+- Give each worker the absolute repo root; never construct paths by concatenation.
