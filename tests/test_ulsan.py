@@ -14,6 +14,7 @@ from deliciousmap.scrapers.ulsan import (
     BukguBoard,
     CityMarketBoard,
     CityTransferBoard,
+    DongguMayorBoard,
     EgovBoard,
     JungguBoard,
     JungguMayorBoard,
@@ -294,6 +295,31 @@ def test_junggu_mayor_table_without_links_is_preserved() -> None:
     assert posting.posted == date(2026, 6, 30)
     assert posting.title == "안전감찰 준비 노고 격려"
     assert posting.attachments == ()
+
+
+def test_donggu_mayor_uses_the_public_month_search() -> None:
+    url = "https://example.invalid/mayor/expense/list.do"
+    list_url = url
+    row = (
+        "<tr><td>1</td><td>2026-02-10</td><td>13:05</td><td>"
+        '<a href="./view.do?ymd2=20260210">부서 회의</a></td></tr>'
+    )
+    responses = [
+        response(
+            list_url,
+            {"searchWrd": f"2026{month:02}", "pageIndex": "1"},
+            all_rows(row if month == 2 else ""),
+        )
+        for month in range(1, 13)
+    ]
+    transport = FakeTransport(dict(responses))
+    postings = list(
+        DongguMayorBoard(board(url, DongguMayorBoard), transport).postings(lambda *_: False)
+    )
+    assert [item.posted for item in postings] == [date(2026, 2, 10)]
+    assert [params["searchWrd"] for _, params in transport.calls] == [
+        f"2026{month:02}" for month in range(1, 13)
+    ]
 
 
 def test_listing_without_page_count_is_rejected() -> None:

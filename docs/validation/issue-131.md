@@ -18,6 +18,12 @@ The Nam-gu list form publishes 10, 15, 20, and 30 rows per page. Its
 `NamguBoard` adapter requests the measured maximum (`recordCountPerPage=30`)
 while the shared Dong-gu eGov adapter keeps the site's fixed page size.
 
+The Dong-gu mayor form publishes year-month search fields that submit through
+`searchWrd`. A measured `searchWrd=202602` request returned one page, so
+`DongguMayorBoard` now requests all twelve `2026MM` values instead of walking
+the unfiltered 404-page archive. This search shortcut is limited to the mayor
+board; the eGov boards retain their measured paging contract.
+
 | organization | measured list endpoint(s) | observed listing size | 원본 boundary |
 | --- | --- | --- | --- |
 | Ulsan city | `https://www.ulsan.go.kr/u/rep/bbs/list.ulsan?bbsId=BBS_0000000000000255&mId=001003002007000000` | market: 1 post; PDF icon; 2026-07-23 | detail `view.do` → `HHBbs.EncDownFile` → `/u/enc/media/bbsFileDown.do` |

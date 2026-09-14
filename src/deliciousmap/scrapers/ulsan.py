@@ -416,15 +416,22 @@ class JungguMayorBoard:
         self.transport = transport
 
     def postings(self, skipped: boards.Skipped) -> Iterator[boards.Posting]:
+        for search_value in self.search_values():
+            yield from self._postings_for_search(search_value, skipped)
+
+    def search_values(self) -> tuple[str | None, ...]:
+        """검색 조건 없이 게시판이 제공하는 전체 목록을 읽는다."""
+        return (None,)
+
+    def _postings_for_search(
+        self, search_value: str | None, skipped: boards.Skipped
+    ) -> Iterator[boards.Posting]:
         page = 1
         while True:
-            parser = _parse(
-                boards.request(
-                    self.transport,
-                    self.list_url,
-                    {**self.params, self.page_parameter: str(page)},
-                )
-            )
+            params = {**self.params, self.page_parameter: str(page)}
+            if search_value is not None:
+                params["searchWrd"] = search_value
+            parser = _parse(boards.request(self.transport, self.list_url, params))
             ordinal = 0
             for row in parser.rows:
                 found = next(
@@ -485,9 +492,14 @@ class JungguMayorBoard:
 
 
 class DongguMayorBoard(JungguMayorBoard):
-    """동구 구청장 원자료 표. 중구와 같은 날짜 링크 경계를 사용한다."""
+    """동구 구청장 원자료 표. 공개된 월 검색으로 대상 연도 목록을 읽는다."""
 
     page_parameter = "pageIndex"
+
+    def search_values(self) -> tuple[str, ...]:
+        from deliciousmap import period
+
+        return tuple(f"{period.START.year}{month:02d}" for month in range(1, 13))
 
 
 class CityMarketBoard:

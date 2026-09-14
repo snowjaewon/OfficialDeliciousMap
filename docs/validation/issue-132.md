@@ -27,25 +27,25 @@ collection and data-quality gates that could not be completed.
 | `ulsan-city` | `fetch.json`: 1 source, 0 missing, 6,409 uncollected postings; the market PDF is the only received 원본, while transfer-board rows have no published 원본 | `headermap`/`parse`: 0 sources and 0 records for the in-period input; `classify`/`geocode`/`closure`: 0 results | organization build completed with 0 records and 0 markers; transfer-board rows remain represented by the uncollected count |
 | `ulsan-junggu` | `fetch.json`: 126 sources, 0 missing, 9,443 uncollected postings; source hashes are unique (126). Boards: deputy 3, director 3, department 120. Containers: PDF 94, OLE2 18, ZIP 14. Fetch warning: `expenses-director=service-unavailable`. Fetch manifest SHA-256: `945f20fa964eef6aa87492f6a099c642fc31b277f548e67d463e4b29d4b2bfc1` | header mappings 0; unresolved 86 (`model_not_configured` 63, `no_table` 12, `unsupported_format` 11). Parse sources 86; excluded `declared_out_of_range=40`, `posted_out_of_range=0`, `undeclared_in_year=0`; repeated expenses 8. Classify/geocode/closure results 0; parse reports no records in the 2026-01-01..2026-06-30 period | organization build completed and wrote `dist/ulsan/orgs/ulsan-junggu/{records,markers}.json`; no city shell was touched |
 | `ulsan-namgu` | `fetch.json`: 392 sources, 0 missing, 2,798 uncollected postings; source hashes are unique. Boards: deputy 8, director 49, department 227, dong 99, health 9. All source containers are PDF. Warning: `unmeasured-attachments=10` | `headermap`: 17 mappings, 254 unresolved sources, 1 unresolved mapping. `parse`: 271 sources, 17 parsed sources, 66 records, 254 unresolved sources. `classify`: 66 decisions, 1 pending | `geocode` wrote one explicit `lookup_error` result then stopped with `lookup-failed` because Naver credentials were not supplied; `closure` completed with 0 results and `build` wrote `dist/ulsan/orgs/ulsan-namgu/{records,markers}.json` with 66 records and 0 markers. No coordinate is claimed |
-| `ulsan-donggu` | no 원본 files or fetch artifact; live fetch stalled before the first 첨부 | not run | **collection held**; no output claimed |
+| `ulsan-donggu` | `fetch.json`: 146 sources, 0 missing, 1,152 uncollected postings; all source containers are PDF. Warning: `unmeasured-attachments=28` | `headermap`/`parse`: 0 sources and 0 records for the in-period input; `classify`/`geocode`/`closure`: 0 results | organization build completed with 0 records and 0 markers. The mayor board was collected through measured `searchWrd=2026MM` queries; no coordinate is claimed |
 | `ulsan-bukgu` | `fetch.json`: 200 sources, 0 missing, 1,995 uncollected postings; all 200 source containers are PDF. Warning: `unmeasured-attachments=18` | `headermap`: 13 mappings, 126 unresolved sources. `parse`: 135 sources, 9 parsed sources, 58 records, 126 unresolved sources. `classify`: 58 decisions, 1 pending | `geocode` wrote one explicit `lookup_error` and stopped with `lookup-failed` because Naver credentials were not supplied; `closure` completed with 0 results and `build` wrote `dist/ulsan/orgs/ulsan-bukgu/{records,markers}.json` with 58 records and 0 markers. No coordinate is claimed |
 | `ulsan-ulju` | `fetch.json`: 8 sources, 0 missing, 66 uncollected postings; all 8 source hashes are unique and all are PDF. Fetch warning: `expenses-director=adapter-failed, expenses-department=adapter-failed`. Fetch manifest SHA-256: `7715c05e07a9217f879ee84d3a413d2623048d26136e7c17479cc1bf915f31e4` | header mappings 0; unresolved 6 (`model_not_configured` 6). Parse sources 6; excluded `declared_out_of_range=2`, `posted_out_of_range=0`, `undeclared_in_year=0`; repeated expenses 8. Classify/geocode/closure results 0; parse reports no records in the 2026-01-01..2026-06-30 period | organization `run` and the individual stages completed; build wrote `dist/ulsan/orgs/ulsan-ulju/{records,markers}.json` |
 
 The completed manifests' paths were re-read outside the repository.  Their
 leading signatures matched the recorded container for every source: Ulsan city
-PDF 1; Jung-gu PDF 94, OLE2 18, ZIP 14; Nam-gu PDF 392; Buk-gu PDF 200;
-Ulju-gun PDF 8.  No unsupported or missing 원본 was silently converted to a
-successful source.  Dong-gu remains incomplete, so no hash claim is made for
-that organization beyond its absent external 수집 장부.
+PDF 1; Jung-gu PDF 94, OLE2 18, ZIP 14; Nam-gu PDF 392; Dong-gu PDF 146;
+Buk-gu PDF 200; Ulju-gun PDF 8.  No unsupported or missing 원본 was silently
+converted to a successful source.  The unmeasured attachment warnings remain
+explicit in the corresponding fetch artifacts.
 
 ## City-level partial merge and build
 
-The five completed organization fetch artifacts (Ulsan city, Jung-gu, Nam-gu,
-Buk-gu, and Ulju-gun) were merged into the city fetch artifact without changing
-any source or inventing records.  Dong-gu remains in
-`data/ulsan/fetch.json`'s `empty_reason` as `collection-held`.
+All six completed organization fetch artifacts were merged into the city fetch
+artifact without changing any source or inventing records.  The merged warning
+text in `data/ulsan/fetch.json` preserves the per-board service, adapter, and
+unmeasured-attachment conditions.
 
-The resulting city artifact contains 727 source hashes and 20,711 uncollected
+The resulting city artifact contains 873 source hashes and 21,863 uncollected
 postings.  `headermap` has 30 mappings, 472 unresolved sources, and 1
 unresolved mapping.  `parse` examined 498 sources and produced 124 records;
 `classify` wrote 124 decisions with 1 pending decision.  The city geocode retry stopped with
@@ -66,12 +66,12 @@ decisions.  No API key, 원본, or personal data was added to the
 repository.  `dist/` and the external 원본 루트 remain local validation
 artifacts; `git status` must be checked before commit.
 
-The city-wide `run --city ulsan` live fetch and city-shell page/tile check are
-**not complete**: collection did not finish for all six organizations, and the
-public Naver map key was not configured in this local environment.  The
-organization and city builds above are structural partial-output checks only;
-they do not prove real-data quality, geocode success, device rendering, or
-measured performance.
+The six organization fetch artifacts are complete, but the city-wide
+`run --city ulsan` and city-shell page/tile check are **not complete** because
+Naver lookup credentials and the public map key were not configured in this
+local environment.  The organization builds above are structural partial-output
+checks only; they do not prove real-data quality, geocode success, device
+rendering, or measured performance.
 
 ## Partial city HTTP check
 
@@ -85,19 +85,19 @@ route and 정제 산출물 integrity check for the partial build only; it is not
 map-tile or real-device check, and the JSON intentionally contains zero
 records and zero markers.
 
-The 2026-09-14 retries completed for Ulsan city and Buk-gu after long listing
-reads. Buk-gu's measured `rows=30` option and Nam-gu's measured
-`recordCountPerPage=30` option are isolated to their adapters. Dong-gu again
-stalled before creating an external directory or fetch manifest and remains
-`collection-held`. Geocode retries for the organizations with records failed
-explicitly with `lookup-failed` because credentials were absent. No coordinate
-or real-data map success is claimed for these partial organization outputs.
+The 2026-09-14 retries completed for Ulsan city, Buk-gu, and Dong-gu after long
+listing reads. Buk-gu's measured `rows=30` option, Nam-gu's measured
+`recordCountPerPage=30` option, and Dong-gu mayor's measured monthly search are
+isolated to their adapters. Geocode retries for the organizations with records
+failed explicitly with `lookup-failed` because credentials were absent. No
+coordinate or real-data map success is claimed for these partial organization
+outputs.
 
 ## Commands and results
 
 ```text
 .\.tools\uv\bin\uv.exe run pytest
-# 647 passed in 49.46s
+# 648 passed (latest local run)
 
 .\.tools\uv\bin\uv.exe run ruff check .
 # All checks passed
@@ -126,9 +126,9 @@ python -m http.server 8765 --directory dist --bind 127.0.0.1
 # /ulsan/markers.json, /manifest.webmanifest
 ```
 
-The remaining acceptance gates are the six-organization live fetch, Naver
-credentials plus independent geocode evidence, a successful city build with
-the public map key, an HTTP page check against the complete city output and
-map-tile behavior, and real-device checks. The partial-output HTTP route check above is not
+The remaining acceptance gates are Naver credentials plus independent geocode
+evidence, a successful city build with the public map key, an HTTP page check
+against the complete city output and map-tile behavior, and real-device checks.
+The partial-output HTTP route check above is not
 substituted for those gates; they remain explicitly incomplete rather than
 being marked as passed from the partial build.
