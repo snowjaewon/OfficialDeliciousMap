@@ -80,10 +80,12 @@ map-tile or real-device check, and the JSON intentionally contains zero
 records and zero markers.
 
 The 2026-09-14 retries for `ulsan-city` and `ulsan-bukgu` again stalled while
-the live listing server was being read. No new fetch manifest was promoted,
-and the existing external originals and ledgers were left unchanged. Both
-organizations therefore remain `collection-held` rather than being reported
-as successfully fetched.
+the live listing server was being read. For Buk-gu, the measured list form's
+published `rows=30` option was added to the scraper and its request contract
+was regression-tested; the live retry still did not reach a completed fetch
+manifest. No new fetch manifest was promoted, and the existing external
+originals and ledgers were left unchanged. Both organizations therefore
+remain `collection-held` rather than being reported as successfully fetched.
 
 ## Commands and results
 

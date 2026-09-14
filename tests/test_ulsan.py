@@ -194,7 +194,7 @@ def test_bukgu_and_ulju_open_details_only_when_not_skipped() -> None:
     transport = FakeTransport(
         dict(
             [
-                response(buk_list, {"cpage": "1"}, all_rows(buk_row)),
+                response(buk_list, {"cpage": "1", "rows": "30"}, all_rows(buk_row)),
                 response(buk_view, {"article_seq": "314936"}, buk_detail),
                 response(
                     ulju_list,

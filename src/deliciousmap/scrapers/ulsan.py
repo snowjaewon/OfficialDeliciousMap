@@ -586,6 +586,10 @@ class BukguBoard:
     """북구 lay1 게시판. 첨부는 목록 아이콘이 아니라 본문에서 읽는다."""
 
     published_suffixes = PDF_SUFFIXES
+    # The measured board exposes 10, 20, and 30 rows per page.  Use the
+    # largest published option so a resumed year-only collection does not
+    # needlessly walk the 10-row default archive.
+    page_size = "30"
 
     def __init__(self, board: Board, transport: Transport) -> None:
         self.list_url, self.params = boards.endpoint(board.url)
@@ -595,7 +599,11 @@ class BukguBoard:
         page = 1
         while True:
             parser = _parse(
-                boards.request(self.transport, self.list_url, {**self.params, "cpage": str(page)})
+                boards.request(
+                    self.transport,
+                    self.list_url,
+                    {**self.params, "cpage": str(page), "rows": self.page_size},
+                )
             )
             rows = [(row, _article_link(row, "view.do", "article_seq")) for row in parser.rows]
             rows = [(row, article) for row, article in rows if article is not None]
