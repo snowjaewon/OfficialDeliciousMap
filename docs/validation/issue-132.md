@@ -35,6 +35,22 @@ was silently converted to a successful source.  For the incomplete Buk-gu and
 city collections, no hash claims beyond the external 수집 장부 are
 made.
 
+## City-level partial merge and build
+
+The two completed organization fetch artifacts were merged into a city fetch
+artifact without changing any source or inventing records.  The missing
+organizations remain in `data/ulsan/fetch.json`'s `empty_reason`:
+`ulsan-city=uncollected`, `ulsan-namgu=uncollected`,
+`ulsan-donggu=collection-held`, and `ulsan-bukgu=collection-held`.
+
+The resulting city artifact contains 134 source hashes and 9,509 uncollected
+postings.  `headermap` has 0 mappings and 92 unresolved sources; `parse` has
+92 sources with `declared_out_of_range=42`; `classify`, `geocode`, and
+`closure` have 0 results.  City `build` completed with 0 records and 0
+markers, writing `dist/ulsan/{index.html,records.json,markers.json}` in a
+clean output root.  This is a structural partial build, not evidence that all
+six organizations were collected or that geocoding succeeded.
+
 ## LLM budget, privacy, and output boundary
 
 No new Gemini reservation or settlement was written while running this issue;
@@ -44,11 +60,12 @@ decisions.  No API key, 원본, or personal data was added to the
 repository.  `dist/` and the external 원본 루트 remain local validation
 artifacts; `git status` must be checked before commit.
 
-The city-wide `run --city ulsan` and city-shell page/tile check are **not
-complete**: collection did not finish for all six organizations, and the
-public Naver map key was not configured in this environment.  The two
-organization builds above are structural output checks only; they do not prove
-real-data quality, geocode success, device rendering, or measured performance.
+The city-wide `run --city ulsan` live fetch and city-shell page/tile check are
+**not complete**: collection did not finish for all six organizations, and the
+public Naver map key was not configured in this local environment.  The
+organization and city builds above are structural partial-output checks only;
+they do not prove real-data quality, geocode success, device rendering, or
+measured performance.
 
 ## Commands and results
 
@@ -70,9 +87,15 @@ git diff --check
 
 gitleaks detect --no-banner --redact --log-opts 'origin/develop..HEAD'
 # no leaks found
+
+.\.tools\uv\bin\uv.exe run python -m deliciousmap.ci check-data --data-root data
+# gwangju
+# ulsan
+
+.\.tools\uv\bin\uv.exe run python -m deliciousmap.ci check-dist --dist <clean-output-root> --commit <validated-commit> --city ulsan
+# check-dist: sealed 12 files for <validated-commit>
 ```
 
-The remaining acceptance gates are the six-organization live fetch, a
-city-level merge/build, a local HTTP page check, and independent geocode
-evidence.  They are left as explicit incomplete work rather than being marked
-as passed from the two organization-scoped builds.
+The remaining acceptance gates are the six-organization live fetch, a local
+HTTP page check, and independent geocode evidence.  They are left as explicit
+incomplete work rather than being marked as passed from the partial build.
