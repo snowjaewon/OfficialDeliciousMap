@@ -74,6 +74,18 @@ class Span:
 REPORTING = Span(START, END)
 
 
+def months() -> tuple[tuple[int, int], ...]:
+    """대상 기간이 걸친 달. 사용월로 거르는 게시판이 무엇을 받을지 여기서만 정한다.
+
+    게시일로만 가를 수 있는 게시판은 해 단위인 `collects`를 따른다. 사용월을 직접
+    고를 수 있는 게시판(서울 은평·관악·서대문 실측)은 그 달을 기관에 물어보므로
+    대상 기간 밖의 달까지 받을 이유가 없다.
+    """
+    first = 12 * START.year + START.month - 1
+    last = 12 * END.year + END.month - 1
+    return tuple((value // 12, value % 12 + 1) for value in range(first, last + 1))
+
+
 def span(spent_on: SpentOn) -> Span:
     """집행일 하나가 가리키는 구간. 일이 있으면 그 하루이고, 일이 비었으면 그 달 전체다.
 

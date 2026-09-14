@@ -4,7 +4,10 @@ import re
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from decimal import Decimal
-from typing import Literal, get_args
+from typing import TYPE_CHECKING, Literal, get_args
+
+if TYPE_CHECKING:  # 스크래퍼가 이 모듈을 읽으므로 실행 시점에 되짚어 부르지 않는다.
+    from deliciousmap.boards import BoardScraper
 
 # 수집 보류 사유의 단일 출처. CONTEXT.md의 네 가지 외에는 보류로 남기지 않는다.
 HoldReason = Literal["bot_blocked", "drm", "board_lost", "below_threshold"]
@@ -30,7 +33,7 @@ class DeclaredTable:
 class Board:
     slug: str
     url: str
-    scraper: type
+    scraper: "type[BoardScraper]"
     # HTML 표 게시판의 선언된 헤더 매핑. 첨부 원본 게시판은 모델·캐시로 매핑하므로 비워 둔다.
     table: DeclaredTable | None = None
 

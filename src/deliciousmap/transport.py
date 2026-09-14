@@ -61,12 +61,15 @@ class HttpTransport:
         attempts: int = 1,
         backoff: float = 0.0,
         session: bool = False,
+        host_intervals: Mapping[str, float] | None = None,
     ) -> None:
         self.timeout = timeout
         # 조회 응답과 원본 첨부는 크기가 달라 상한을 호출자가 정한다.
         self.limit = limit
         # 한 기관에 연달아 요청할 때의 최소 간격. 0이면 기다리지 않는다.
         self.interval = interval
+        # 공통 간격으로는 견디지 못하는 호스트만 여기서 따로 정한다. 실측한 호스트만 둔다.
+        self.host_intervals = dict(host_intervals or {})
         # 일시적 실패를 다시 시도하는 횟수와 그 사이에 두는 대기. 1이면 다시 보내지 않는다.
         self.attempts = max(1, attempts)
         self.backoff = backoff
@@ -74,6 +77,10 @@ class HttpTransport:
         # 여는 방법은 그대로 두고 쿠키만 직접 싣는다. 보내는 자리가 하나여야
         # 재시도·상한·간격이 요청 모양에 따라 갈리지 않는다.
         self.cookies = http.cookiejar.CookieJar() if session else None
+
+    def interval_for(self, url: str) -> float:
+        """이 주소에 둘 간격. 실측으로 따로 정한 호스트가 아니면 공통 간격이다."""
+        return self.host_intervals.get(urllib.parse.urlsplit(url).hostname or "", self.interval)
 
     def fetch(self, url: str, params: Mapping[str, str], headers: Mapping[str, str]) -> bytes:
         request = urllib.request.Request(f"{url}?{query(params)}", headers=dict(headers))
@@ -85,9 +92,10 @@ class HttpTransport:
 
     def _send(self, request: urllib.request.Request) -> bytes:
         """일시적 실패만 다시 시도한다. 없는 자원과 잘못된 요청은 그대로 알린다."""
+        interval = self.interval_for(request.full_url)
         for attempt in range(1, self.attempts + 1):
-            if self.interval > 0:
-                time.sleep(self.interval)
+            if interval > 0:
+                time.sleep(interval)
             try:
                 if self.cookies is not None:
                     self.cookies.add_cookie_header(request)

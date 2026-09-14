@@ -211,8 +211,11 @@ class CacheRef(Contract):
 
 
 # 원본의 실제 컨테이너. 게시판이 붙인 확장자가 아니라 매직 바이트로 판정한 값이다.
-# `html`은 집행내역을 첨부 대신 HTML 표로 내는 게시판의 응답 그대로다(ADR-0008).
-Container = Literal["ole2", "ooxml", "pdf", "spreadsheetml", "zip", "html"]
+# `html`만 예외로 매직 바이트가 없다. 첨부를 내려받지 않고 화면 자체가 집행 표인 게시판
+# (서울시청·은평·관악·서대문 실측, 울산 시청·중구·동구의 HTML 표 — ADR-0008)의 원본이며,
+# 그 게시판에서만 이 값이 나온다.
+# `jpeg`·`png`는 집행내역을 스캔본으로 공개한 게시판의 원본이다(용산 실측).
+Container = Literal["html", "jpeg", "ole2", "ooxml", "pdf", "png", "spreadsheetml", "zip"]
 
 
 class SourceRef(Contract):
@@ -896,6 +899,9 @@ class FetchOutput(Contract):
     # 게시일이 이번 수집의 대상 연도 밖이라 받지 않은 게시글 수(`period.collects`). 게시판에
     # 남아 있다는 사실을 0건으로 숨기지 않으려고 싣는다. 이미 받아 둔 원본은 여기에 세지 않는다.
     uncollected_postings: int = Field(default=0, ge=0)
+    # 업무추진비 집행기관이 아닌 줄이 섞인 게시판에서 걸러 낸 게시글 수. 섞인 게시판
+    # (서울 시청·중구·강남 실측)이 무엇을 뺐는지 0건으로 숨기지 않으려고 싣는다.
+    filtered_postings: int = Field(default=0, ge=0)
 
 
 class HeaderMapInput(Contract):

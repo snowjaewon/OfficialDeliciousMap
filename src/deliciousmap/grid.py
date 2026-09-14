@@ -64,8 +64,16 @@ PARAGRAPH = f"{{{OWPML}}}p"
 TEXT_TAG = f"{{{OWPML}}}t"
 # HTML 표 쪽의 인코딩. 울산 시청·중구·동구 게시판이 모두 UTF-8이다(2026-09-14 실측).
 HTML_ENCODING = "utf-8"
-# HTML 문서형 선언을 찾을 앞부분의 길이. 앞의 공백 줄이 길어도 이 안에 온다.
+# HTML 표식을 찾을 앞부분의 길이. 앞의 공백 줄이 길어도 이 안에 온다.
 HTML_WINDOW = 4096
+# 화면·표 자체가 원본인 게시판의 표식. HTML에는 고정된 매직 바이트가 없어 서명 대신
+# 앞부분의 표식으로 가른다. 2026-09-14 실측: 서울시청·울산시청 상세는 `<!DOCTYPE html>`로,
+# 관악 월별 내려받기는 빈 줄 여덟 개 뒤의 `<meta>`로 시작한다.
+HTML_MARKERS = (b"<!doctype html", b"<html", b"<table", b"<meta", b"<body")
+# 표식을 찾기 전에 걷어낼 앞머리. BOM과 공백만 걷어내고 그 밖의 바이트는 건드리지 않는다.
+BOMS = (b"\xef\xbb\xbf", b"\xff\xfe", b"\xfe\xff")
+# SpreadsheetML 통합문서의 이름공간. 수집은 받아들이지만(`boards.CONTAINERS`) 격자로는 읽지 않는다.
+SPREADSHEETML = b"urn:schemas-microsoft-com:office:spreadsheet"
 # 좁은 화면에서만 보이도록 칸마다 되풀이한 열 이름. 값이 아니다(동구 구청장 상세 실측
 # `<span class="add-head">금액(원)</span><span class="tds">140,000</span>`).
 HTML_REPEATED_LABELS = frozenset({"add-head"})
@@ -135,12 +143,15 @@ def text(value: Cell) -> str:
 
 
 def is_html(content: bytes) -> bool:
-    """HTML 문서인지. 앞의 BOM·공백 뒤에 문서형 선언이나 `<html`이 와야 한다.
+    """HTML 문서인지. BOM·공백을 걷어낸 앞부분이 `<`로 시작하고 실측한 표식을 담아야 한다.
 
-    수집도 이 판정으로 HTML 표 원본을 가른다(`boards.container_of`). 앞부분만 본다.
+    수집도 이 판정으로 화면·표 원본을 가른다(`boards.container_of`). 앞부분만 본다.
     """
-    head = content[:HTML_WINDOW].lstrip(b"\xef\xbb\xbf \t\r\n").lower()
-    return head.startswith((b"<!doctype html", b"<html"))
+    head = content[:HTML_WINDOW]
+    for bom in BOMS:
+        head = head.removeprefix(bom)
+    head = head.lstrip().lower()
+    return head.startswith(b"<") and any(marker in head for marker in HTML_MARKERS)
 
 
 def read_tables(path: Path) -> tuple[Table, ...]:
@@ -157,6 +168,9 @@ def read_tables(path: Path) -> tuple[Table, ...]:
         prefix, blocks = _zip(content)
     elif content.startswith(PDF):
         prefix, blocks = "table", _pdf(content)
+    elif SPREADSHEETML in content[:HTML_WINDOW]:
+        # SpreadsheetML도 `<Table>`을 담아 HTML 표식에 걸린다. 읽지 않는 형식으로 그대로 둔다.
+        raise UnsupportedFormat("SpreadsheetML workbook")
     elif is_html(content):
         prefix, blocks = "table", _html(content)
     else:

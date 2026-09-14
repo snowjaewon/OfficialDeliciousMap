@@ -445,3 +445,14 @@ def test_a_repeated_label_on_an_empty_element_does_not_hide_the_rest_of_the_tabl
     path.write_text(page, encoding="utf-8")
     (table,) = read_tables(path)
     assert table.rows == (("장소", "금액(원)"), ("합성 식당", "62,000"))
+
+
+def test_a_spreadsheetml_workbook_is_not_read_as_an_html_page(tmp_path: Path) -> None:
+    # SpreadsheetML도 `<Table>`을 담지만 HTML 표 쪽이 아니다. 읽지 않는 형식으로 그대로 둔다.
+    path = tmp_path / "집행내역.xls"
+    path.write_bytes(
+        b'<?xml version="1.0"?>\n<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet">'
+        b"<Worksheet><Table><Row><Cell><Data>1</Data></Cell></Row></Table></Worksheet></Workbook>"
+    )
+    with pytest.raises(UnsupportedFormat):
+        read_tables(path)

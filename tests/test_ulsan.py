@@ -475,10 +475,9 @@ def test_city_market_detail_failure_is_not_silently_recorded() -> None:
         list(CityMarketBoard(board(url, CityMarketBoard), transport).postings(lambda *_: False))
 
 
-@pytest.mark.parametrize("suffix", [".pdf", ".zip", ""])
-def test_an_html_page_is_an_original_only_where_the_board_publishes_html(suffix: str) -> None:
+def test_an_html_page_is_an_original_only_where_the_board_publishes_html() -> None:
     # 첨부를 요청했는데 오류 쪽이 HTML로 오는 일이 흔하다. 그것을 원본으로 받지 않는다.
     page = b"\xef\xbb\xbf\r\n  <!DOCTYPE html><html><body><table></table></body></html>"
-    assert boards.container_of(page, ".html") == "html"
+    assert boards.container_of(page, html=True) == "html"
     with pytest.raises(boards.UnsupportedOriginal):
-        boards.container_of(page, suffix)
+        boards.container_of(page)

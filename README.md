@@ -49,9 +49,11 @@ uv run python -m deliciousmap geocode --city seoul --retry-failed
 `fetch`는 레지스트리에 선언된 게시판을 실제로 훑어 원본을 `--raw-root` 아래에 내려받고
 출처를 기록한다. 매직 바이트로 원본 컨테이너를 판정해 `SourceRef.container`에 남기므로 후속 단계는
 게시판이 붙인 확장자가 아니라 이 값을 본다. 어떤 컨테이너도 아닌 응답(200으로 온 HTML 등)은
-저장하지 않고 `unsupported-format`으로 실패한다. 집행내역을 첨부 대신 HTML 표로 내는 게시판(울산
-시청·중구·동구)만 스크래퍼가 `.html`을 선언하고, 그 쪽 응답 전체를 컨테이너 `html` 원본으로
-받는다([ADR-0008](docs/adr/0008-declare-html-table-mappings.md)).
+저장하지 않고 `unsupported-format`으로 실패한다. 첨부 대신 화면 자체가 집행 표인 게시판(서울
+시청·은평·관악·서대문, 울산 시청·중구·동구)만 스크래퍼가 `.html`을 선언하고, 그 쪽 응답 전체를
+컨테이너 `html` 원본으로 받는다. HTML 판정은 게시판 단위로 켜지므로 첨부 게시판이 200으로 준 오류
+화면은 원본이 되지 않는다. 울산 HTML 표의 헤더 매핑·집행일은 [ADR-0008](
+docs/adr/0008-declare-html-table-mappings.md)을 따른다.
 받아들일 확장자는 게시판마다 실측한 것만 선언한다. 실측하지 않은 형식은 게시판을 끝까지 훑은 뒤
 저장소 밖 `unmeasured.jsonl`에 모아 적고 한 번에 `unsupported-format`으로 알린다.
 실측한 구조와 다르거나 통째로 읽을 수 없는 크기의 응답은 `adapter-failed`, 게시판에 닿지 못하면
@@ -68,9 +70,15 @@ uv run python -m deliciousmap geocode --city seoul --retry-failed
 없어 받는다. 이미 받아 둔 원본은 이 규칙과 무관하게 장부에 그대로 남고 출처로 나온다. 대상 기간을
 넓히면(`period.START`·`END`) 그때 받지 않은 게시글부터 이어서 받는다.
 게시판을 아직 선언하지 않은 도시는 0건 성공이 아니라
-`not-implemented`로 실패한다. 현재 선언된 게시판은 광주광역시청과 광주 5개 자치구이고
-근거와 첫 실행 규모는 [시청 정찰 기록](docs/validation/issue-51.md)과
-[자치구 실측](docs/validation/issue-97.md)에 있다.
+`not-implemented`로 실패한다. 현재 선언된 게시판은 광주광역시청과 광주 5개 자치구,
+울산광역시청과 울산 5개 구·군, 서울특별시청과 서울 25개 자치구다. 근거와 실행 규모는
+[광주 시청 정찰 기록](docs/validation/issue-51.md),
+[광주 자치구 실측](docs/validation/issue-97.md),
+[울산 레지스트리](docs/validation/issue-131.md),
+[서울 26개 기관](docs/validation/issue-141.md)에 있다.
+
+기관 하나는 사유를 달고 이번 수집에서 미룰 수 있다(`Organization.hold_reason`). 지금은
+서울 강북구가 `bot_blocked`이며, 그 기관은 0건 성공이 아니라 사유와 함께 장부에 남는다.
 
 `headermap`·`parse`·`classify`는 광주광역시청(`gwangju-city`)에서 구현했고([이슈 #51](
 https://github.com/snowjaewon/OfficialDeliciousMap/issues/51)) 광주 5개 자치구까지 실제로
@@ -143,7 +151,8 @@ PowerShell: Get-Content .env | ForEach-Object { if ($_ -match '^(\w+)=(.*)$') { 
 | `--retry-failed` | 변경 없는 미확정 결과도 다시 판정하고 실패 재시도 revision을 보존. 실패한 조회만 다시 요청하며 성공한 조회·판정은 재사용 |
 
 상대 경로는 실행한 저장소 루트 기준이다. 원본 루트가 저장소 내부이면 거부한다.
-도시별 `registry/<city>.py`는 dataclass 선언이며, 광주를 뺀 나머지 도시의 기관·게시판은 아직 비어 있다.
+도시별 `registry/<city>.py`는 dataclass 선언이며, 광주·울산·서울을 뺀 나머지 도시의
+기관·게시판은 아직 비어 있다.
 기관을 추가할 때 `Organization`과 `Board`에 **직접 확인한** 주소와 실제 스크래퍼 클래스를 등록하고,
 확인 방법과 값을 `docs/validation/`에 남긴다. 스크래퍼는 `src/deliciousmap/scrapers/`에 두며
 `boards.BoardScraper`의 계약(첨부 참조만 내고 저장·형식 판정은 하지 않음)을 따른다.
