@@ -1,19 +1,24 @@
 from datetime import date
 from io import BytesIO
+from pathlib import Path
 from urllib.parse import urlsplit
 from zipfile import ZipFile
 
 import pytest
 
 from deliciousmap import boards
+from deliciousmap.collection import collect
+from deliciousmap.paths import Paths
 from deliciousmap.registry import CITIES, Board, select_target
 from deliciousmap.scrapers.ulsan import (
     BukguBoard,
     CityMarketBoard,
     CityTransferBoard,
+    DongguMayorBoard,
     EgovBoard,
     JungguBoard,
     JungguMayorBoard,
+    NamguBoard,
     UljuBoard,
 )
 
@@ -62,6 +67,23 @@ def test_ulsan_registry_declares_six_nonempty_organizations() -> None:
     assert select_target(CITIES, "ulsan", "ulsan-ulju").organizations[0].slug == "ulsan-ulju"
 
 
+def test_ulsan_collection_keeps_board_failures_and_continues(tmp_path: Path) -> None:
+    class Unavailable:
+        def fetch(self, url: str, params: dict[str, str], headers: dict[str, str]) -> bytes:
+            raise OSError("connection reset")
+
+    target = select_target(CITIES, "ulsan", "ulsan-city")
+    output = collect(
+        target,
+        Paths(Path.cwd(), tmp_path / "raw", tmp_path / "data", tmp_path / "output"),
+        Unavailable(),  # type: ignore[arg-type]
+    )
+    assert output.sources == ()
+    assert output.empty_reason is not None
+    assert "ulsan-city/expenses-market=service-unavailable" in output.empty_reason
+    assert "ulsan-city/expenses-economic=service-unavailable" in output.empty_reason
+
+
 def test_egov_board_walks_pages_and_preserves_direct_attachment() -> None:
     url = "https://example.invalid/cop/bbs/selectBoardList.do?bbsId=PrmtFee"
     list_url = "https://example.invalid/cop/bbs/selectBoardList.do"
@@ -96,6 +118,28 @@ def test_egov_board_walks_pages_and_preserves_direct_attachment() -> None:
     assert postings[0].attachments[0].suffix == ".pdf"
     assert postings[0].attachments[0].url.endswith("atchFileId=FILE_1&fileSn=0")
     assert postings[1].attachments == ()
+
+
+def test_namgu_board_uses_the_measured_page_size() -> None:
+    url = "https://example.invalid/cop/bbs/selectBoardList.do?bbsId=PrmtFee"
+    list_url = "https://example.invalid/cop/bbs/selectBoardList.do"
+    row = (
+        '<tr><td><a href="/cop/bbs/selectBoardArticle.do?bbsId=PrmtFee&nttId=530915">'
+        "2026년 7월 부구청장</a></td><td class=date>2026-08-17</td></tr>"
+    )
+    transport = FakeTransport(
+        dict(
+            [
+                response(
+                    list_url,
+                    {"bbsId": "PrmtFee", "pageIndex": "1", "recordCountPerPage": "30"},
+                    all_rows(row),
+                )
+            ]
+        )
+    )
+    postings = list(NamguBoard(board(url, NamguBoard), transport).postings(lambda *_: False))
+    assert [item.post_id for item in postings] == ["530915"]
 
 
 def test_junggu_board_declares_zip_attachment() -> None:
@@ -174,7 +218,7 @@ def test_bukgu_and_ulju_open_details_only_when_not_skipped() -> None:
     transport = FakeTransport(
         dict(
             [
-                response(buk_list, {"cpage": "1"}, all_rows(buk_row)),
+                response(buk_list, {"cpage": "1", "rows": "30"}, all_rows(buk_row)),
                 response(buk_view, {"article_seq": "314936"}, buk_detail),
                 response(
                     ulju_list,
@@ -212,6 +256,22 @@ def test_transfer_board_keeps_no_attachment_postings() -> None:
     assert posting.attachments == ()
 
 
+def test_transfer_board_reads_two_digit_legacy_dates() -> None:
+    url = "https://example.invalid/u/rep/transfer/director/list.ulsan?mId=M1"
+    list_url = "https://example.invalid/u/rep/transfer/director/list.ulsan"
+    row = (
+        "<tr><td>9</td><td>20. 11. 5</td><td>"
+        '<a href="#" onclick="f_detail(\'20. 11. 5\');">국장 내역</a></td></tr>'
+    )
+    transport = FakeTransport(
+        dict([response(list_url, {"mId": "M1", "curPage": "1"}, all_rows(row))])
+    )
+    posting = next(
+        CityTransferBoard(board(url, CityTransferBoard), transport).postings(lambda *_: False)
+    )
+    assert posting.posted == date(2020, 11, 5)
+
+
 def test_junggu_mayor_table_without_links_is_preserved() -> None:
     url = "https://example.invalid/mayor/board/list.ulsan?boardId=BBS_0000006"
     row = (
@@ -235,6 +295,31 @@ def test_junggu_mayor_table_without_links_is_preserved() -> None:
     assert posting.posted == date(2026, 6, 30)
     assert posting.title == "안전감찰 준비 노고 격려"
     assert posting.attachments == ()
+
+
+def test_donggu_mayor_uses_the_public_month_search() -> None:
+    url = "https://example.invalid/mayor/expense/list.do"
+    list_url = url
+    row = (
+        "<tr><td>1</td><td>2026-02-10</td><td>13:05</td><td>"
+        '<a href="./view.do?ymd2=20260210">부서 회의</a></td></tr>'
+    )
+    responses = [
+        response(
+            list_url,
+            {"searchWrd": f"2026{month:02}", "pageIndex": "1"},
+            all_rows(row if month == 2 else ""),
+        )
+        for month in range(1, 13)
+    ]
+    transport = FakeTransport(dict(responses))
+    postings = list(
+        DongguMayorBoard(board(url, DongguMayorBoard), transport).postings(lambda *_: False)
+    )
+    assert [item.posted for item in postings] == [date(2026, 2, 10)]
+    assert [params["searchWrd"] for _, params in transport.calls] == [
+        f"2026{month:02}" for month in range(1, 13)
+    ]
 
 
 def test_listing_without_page_count_is_rejected() -> None:

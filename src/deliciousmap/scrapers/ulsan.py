@@ -27,6 +27,11 @@ PUBLISHED_SUFFIXES = frozenset({".xls", ".xlsx", ".xlsm", ".hwp", ".hwpx", ".pdf
 PDF_SUFFIXES = frozenset({".pdf"})
 ZIP_SUFFIXES = frozenset({".zip"})
 DATE_RE = re.compile(r"(\d{4})[-./](\d{1,2})[-./](\d{1,2})")
+# The oldest city transfer rows use a two-digit year (`20. 11. 5`).  The
+# surrounding board is a 2000s archive, so the century is explicit rather than
+# inferred from the current year.  Keep this separate from DATE_RE so a full
+# year always wins and a substring of `2020` cannot be read as `20`.
+SHORT_DATE_RE = re.compile(r"(?<!\d)(\d{2})\s*[-./]\s*(\d{1,2})\s*[-./]\s*(\d{1,2})(?!\d)")
 PAGE_RE = re.compile(r"(?:페이지|page)\s*[:：]?\s*\d+\s*/\s*([\d,]+)", re.I)
 EXTENSION_RE = re.compile(r"\.([A-Za-z0-9]{1,8})(?![A-Za-z0-9])")
 PAGINATION_KEYS = frozenset({"cpage", "curPage", "page", "pageIndex", "startPage"})
@@ -163,14 +168,23 @@ def _parse(body: bytes) -> _TableParser:
 
 def _posted(text: str) -> date:
     found = DATE_RE.search(text)
-    if found is None:
-        raise boards.UnreadableBoard("board listing row does not declare its posting date")
+    if found is not None:
+        values = found.groups()
+    else:
+        short = SHORT_DATE_RE.search(text)
+        if short is None:
+            raise boards.UnreadableBoard("board listing row does not declare its posting date")
+        values = (str(2000 + int(short.group(1))), short.group(2), short.group(3))
     try:
-        return date(*(int(part) for part in found.groups()))
+        return date(*(int(part) for part in values))
     except ValueError:
         raise boards.UnreadableBoard(
             "board listing row declares an impossible posting date"
         ) from None
+
+
+def _has_date(text: str) -> bool:
+    return DATE_RE.search(text) is not None or SHORT_DATE_RE.search(text) is not None
 
 
 def _compact_date(value: str) -> date:
@@ -255,7 +269,7 @@ def _department(row: _Row) -> str:
     )
     if title_index + 1 < len(texts):
         candidate = texts[title_index + 1]
-        if candidate and not DATE_RE.search(candidate):
+        if candidate and not _has_date(candidate):
             return candidate
     return ""
 
@@ -264,6 +278,8 @@ class EgovBoard:
     """남구·동구의 표준 eGov 목록 게시판."""
 
     published_suffixes = PDF_SUFFIXES
+    page_size_parameter: str | None = None
+    page_size: str | None = None
 
     def __init__(self, board: Board, transport: Transport) -> None:
         self.list_url, self.params = boards.endpoint(board.url)
@@ -274,11 +290,10 @@ class EgovBoard:
     def postings(self, skipped: boards.Skipped) -> Iterator[boards.Posting]:
         page = 1
         while True:
-            listing = _parse(
-                boards.request(
-                    self.transport, self.list_url, {**self.params, "pageIndex": str(page)}
-                )
-            )
+            params = {**self.params, "pageIndex": str(page)}
+            if self.page_size is not None and self.page_size_parameter is not None:
+                params[self.page_size_parameter] = self.page_size
+            listing = _parse(boards.request(self.transport, self.list_url, params))
             rows = [
                 (row, _article_link(row, "selectBoardArticle.do", "nttId")) for row in listing.rows
             ]
@@ -317,6 +332,13 @@ class EgovBoard:
                     )
                 )
         return tuple(found)
+
+
+class NamguBoard(EgovBoard):
+    """남구 eGov 게시판. 실측된 30건 보기 옵션을 사용한다."""
+
+    page_size_parameter = "recordCountPerPage"
+    page_size = "30"
 
 
 def _title(row: _Row, href: str) -> str:
@@ -394,15 +416,22 @@ class JungguMayorBoard:
         self.transport = transport
 
     def postings(self, skipped: boards.Skipped) -> Iterator[boards.Posting]:
+        for search_value in self.search_values():
+            yield from self._postings_for_search(search_value, skipped)
+
+    def search_values(self) -> tuple[str | None, ...]:
+        """검색 조건 없이 게시판이 제공하는 전체 목록을 읽는다."""
+        return (None,)
+
+    def _postings_for_search(
+        self, search_value: str | None, skipped: boards.Skipped
+    ) -> Iterator[boards.Posting]:
         page = 1
         while True:
-            parser = _parse(
-                boards.request(
-                    self.transport,
-                    self.list_url,
-                    {**self.params, self.page_parameter: str(page)},
-                )
-            )
+            params = {**self.params, self.page_parameter: str(page)}
+            if search_value is not None:
+                params["searchWrd"] = search_value
+            parser = _parse(boards.request(self.transport, self.list_url, params))
             ordinal = 0
             for row in parser.rows:
                 found = next(
@@ -432,11 +461,7 @@ class JungguMayorBoard:
                     )
                 else:
                     posted_index = next(
-                        (
-                            index
-                            for index, cell in enumerate(row.cells)
-                            if DATE_RE.search(cell.text)
-                        ),
+                        (index for index, cell in enumerate(row.cells) if _has_date(cell.text)),
                         None,
                     )
                     if posted_index is None:
@@ -467,9 +492,14 @@ class JungguMayorBoard:
 
 
 class DongguMayorBoard(JungguMayorBoard):
-    """동구 구청장 원자료 표. 중구와 같은 날짜 링크 경계를 사용한다."""
+    """동구 구청장 원자료 표. 공개된 월 검색으로 대상 연도 목록을 읽는다."""
 
     page_parameter = "pageIndex"
+
+    def search_values(self) -> tuple[str, ...]:
+        from deliciousmap import period
+
+        return tuple(f"{period.START.year}{month:02d}" for month in range(1, 13))
 
 
 class CityMarketBoard:
@@ -576,6 +606,10 @@ class BukguBoard:
     """북구 lay1 게시판. 첨부는 목록 아이콘이 아니라 본문에서 읽는다."""
 
     published_suffixes = PDF_SUFFIXES
+    # The measured board exposes 10, 20, and 30 rows per page.  Use the
+    # largest published option so a resumed year-only collection does not
+    # needlessly walk the 10-row default archive.
+    page_size = "30"
 
     def __init__(self, board: Board, transport: Transport) -> None:
         self.list_url, self.params = boards.endpoint(board.url)
@@ -585,7 +619,11 @@ class BukguBoard:
         page = 1
         while True:
             parser = _parse(
-                boards.request(self.transport, self.list_url, {**self.params, "cpage": str(page)})
+                boards.request(
+                    self.transport,
+                    self.list_url,
+                    {**self.params, "cpage": str(page), "rows": self.page_size},
+                )
             )
             rows = [(row, _article_link(row, "view.do", "article_seq")) for row in parser.rows]
             rows = [(row, article) for row, article in rows if article is not None]
@@ -711,6 +749,7 @@ __all__ = [
     "EgovBoard",
     "JungguBoard",
     "JungguMayorBoard",
+    "NamguBoard",
     "PUBLISHED_SUFFIXES",
     "UljuBoard",
 ]
