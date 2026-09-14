@@ -12,11 +12,13 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "(유)막동이회관", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "(유)스타 acc 회참치", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "(유)쌍교숯불갈비", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "(유)아웃백스테이크", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "패밀리 레스토랑", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "(유)아웃백스테이크하우스", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "패밀리레스토랑", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "(유)장터", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 판단불가", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "(유)해남성내", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "(주)가배하우스", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "(주)다소식품", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점이 아닌 업종이다", "status": "non_restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "(주)대성콩물(일곡지", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "콩물국수 전문 식당", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "(주)대성콩물(일곡지외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "(주)서울깍두기", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "(주)예다손창억떡", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -62,6 +64,7 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "acc 회참치", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "참치 전문 음식점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "acc디자인호텔 카페", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점이 아닌 업종이다", "status": "non_restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "acc회참치", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "참치 전문 음식점", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "alber", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 판단 불가", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "alber외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "b.b 브라운빈(brown bean)", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "baskin br robbins", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -98,10 +101,12 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "㈜황솔촌상무점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "갈비 전문 음식점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "㈜황솔촌운암점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "㈜흥학관", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "가람식품", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "식품 유통 및 도소매", "status": "non_restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "가람식품 외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "식품 판매 및 유통", "status": "non_restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "가마골", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "일반 음식점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "가마솥국밥", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "가마솥국밥 외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "가마솥소머리국밥", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "국밥 전문 식당", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "가마솥소머리국밥외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "가마솥순대국밥", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "순대국밥 음식점", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "가마애한상", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식 전문 음식점", "status": "restaurant"}}
@@ -132,6 +137,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "갈능이곰능이수완점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "갈무리", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "갈비당", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "갈비 전문 음식점", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "감성커피효천점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "갓성비", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "갓지은밥", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식 음식점", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "갓파더", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
@@ -145,6 +151,7 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "강원도신황태찜", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "황태찜 전문 음식점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "강원맛코다리(신창신가점)", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "강원맛코다리찜운남점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "강의리추어탕", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "추어탕 전문 식당", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "강의리추어탕 외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "추어탕 전문 음식점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "강진식당", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "강진식당, 모먼트오월", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -183,6 +190,7 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "경도", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "경민회관", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "경복궁", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "숯불구이 한정식당", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "경성한우국밥", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "국밥 전문 식당", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "경성한우국밥 외 1개소", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "경원대구탕", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "경원대구탕, 카페보니떼", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -240,6 +248,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "고향식당", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "고향식당, 커피마운틴", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "고향에봄", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식당", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "고향우렁이쌈밥", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "쌈밥 전문 식당", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "고향우렁이쌈밥 외1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "고향집", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식당", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "고향집, 카페제이콥", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "음식점 및 카페", "status": "restaurant"}}
@@ -250,6 +259,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "고흥회수산", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "고흥회타운", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "횟집", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "고흥회타운 / 면앙로 174", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "곡물창고", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 판단 불가", "status": "pending"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "골목시장sm마트", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "마트", "status": "non_restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "곰지네", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "곰집", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
@@ -335,6 +345,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "구수한식육식당", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "구수향", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "구시포칼국수", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "구움정미소", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "디저트/구움과자 카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "구움정미소외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "국립박물관", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "박물관 기관", "status": "non_restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "국수나무 송정점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -355,6 +366,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "굽네치킨 금호점 도미노피자 광주금호점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "굽네치킨 화정점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "치킨 전문 음식점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "궁", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "궁민정음", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 판단 불가", "status": "pending"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "궁전김치찌개", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "김치찌개 전문점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "궁전제과", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "궁전제과 수완점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -390,6 +402,7 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "그집참치초밥", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "참치 및 초밥 전문점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "근다해수산", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "글래드 호텔앤리조트", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점이 아닌 업종이다", "status": "non_restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "글래드호텔", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "숙박 시설", "status": "non_restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "글래드호텔 외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점이 아닌 업종이다", "status": "non_restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "글로리아웨딩홀", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점이 아닌 업종이다", "status": "non_restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "금강산난꽃백화점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점이 아닌 업종이다", "status": "non_restaurant"}}
@@ -533,6 +546,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "나리들", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "나리들/ 에브르인테라스", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "나리들/파더스베이글", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "나무", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 판단 불가", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "나무외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "나이스카페인클럽 서여의도점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "커피 및 카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "나이테", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
@@ -542,6 +556,7 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "나주곰탕", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "곰탕 전문 음식점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "나주곰탕 봉선관", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "나주곰탕 한옥집", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "나주곰탕, 커피코너", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "음식점 및 카페 코너", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "나주곰탕, 홀브라운외", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "나주곰탕하얀집", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "나주진곰탕", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "곰탕 전문 음식점", "status": "restaurant"}}
@@ -560,6 +575,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "낙지사냥", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "낙지사랑채,하이오커피", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "낙지천국", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "낙지촌", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "낙지 요리 전문 식당", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "낙지촌 96,000원 / 엠지(mg)블루 17,500", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "낙지촌 외", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "낙지한마당", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "낙지 요리 전문점", "status": "restaurant"}}
@@ -581,9 +597,12 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "남도마루", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "남도 음식 전문점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "남도맛집", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "남도미", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "남도미향", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 판단 불가", "status": "pending"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "남도미향 외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "남도 음식 전문점", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "남도보쌈짚", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "보쌈 전문 식당", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "남도생고기", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "생고기 구이 전문점", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "남도소반", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식 전문 음식점", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "남도유통", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "유통 업체", "status": "non_restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "남도유통 외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "유통업체", "status": "non_restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "남도정", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식 전문 음식점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "남도추어탕", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -707,6 +726,7 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "다스브로트", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "베이커리 카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "다슬기전문점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "다시식육식당", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "다연닭갈비", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "닭갈비 전문 식당", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "다연닭갈비 외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "다연닭갈비금호직영점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "다온", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 판단 불가", "status": "pending"}}
@@ -714,6 +734,7 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "다온계절맛지", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "계절음식 전문 식당", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "다올베이커리가든", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "다옴", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 판단 불가", "status": "pending"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "다우데이타_키오스크_1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "결제대행 서비스", "status": "non_restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "다우데이타_키오스크_1외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점이 아닌 업종이다", "status": "non_restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "다운타우너", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "수제버거 전문 식당", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "다운타우너 광주상무", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "수제버거 전문 식당", "status": "restaurant"}}
@@ -779,6 +800,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "닭장금, 투썸플레이스광산구청점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "담소정", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "담소정, 카페수풀림", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "담실한우", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한우 구이 전문 식당", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "담양숯불갈비", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "담양숯불갈비돈앤돈", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "담양장터", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "농특산물 쇼핑몰", "status": "non_restaurant"}}
@@ -800,6 +822,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "대명푸드시스템", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점이 아닌 업종이다", "status": "non_restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "대바람", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "대박집", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "일반 음식점", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "대박추어탕", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "추어탕 전문 식당", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "대박추어탕외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "대박회포차", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "횟집 및 포차", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "대복전", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
@@ -849,6 +872,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "더비카페", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "더시그너스웨딩", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점이 아닌 업종이다", "status": "non_restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "더조은공간한식전문", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "더좋은공간한식", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식 전문 식당", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "더좋은공간한식 외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "더치스토리", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "더커볶", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
@@ -883,6 +907,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "도미노피자 주월점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "도미노피자(광주주월점)", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "도미노피자(광주화정)", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "도미노피자(양산점)", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "피자 전문 음식점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "도미노피자(양산점)외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "도미노피자, 꿀씨닭", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "도미노피자, 이춘봉치킨", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -922,6 +947,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "동경화로 라운지 봉선", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "동구청 구내식당", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점이 아닌 업종이다", "status": "non_restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "동남집", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식당", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "동네커피", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "동네커피외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "동두천솥뚜껑삼겹살", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "삼겹살 전문점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "동림골식육식당", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -1000,6 +1026,7 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "등촌, 파스쿠찌", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "음식점 및 카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "등촌칼국수", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "디엠아이주식회사", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "일반 기업", "status": "non_restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "디유비 백운점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 판단 불가", "status": "pending"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "디자인과사람들", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "디자인 전문 업체", "status": "non_restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "디저트39(전남대점)", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "디저트라디오", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -1071,6 +1098,7 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "레파스", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "베이커리 카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "레파스 베이커스", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "레파스베이커스", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "제과점/베이커리", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "레파스효천점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "베이커리 카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "로니로티", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "로니로티수완점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "로니로티앤이태리반점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -1079,6 +1107,7 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "로뎀나무아래", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 판단 불가", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "로맨스플라워", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점이 아닌 업종이다", "status": "non_restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "롤링파스타 광주 호남대점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "롤링파스타 광주일곡", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "파스타 전문 식당", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "롤링파스타 광주일곡외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "롤링파스타광주전남대", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "롯데리아", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "패스트푸드점", "status": "restaurant"}}
@@ -1188,6 +1217,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "만조성", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "만찬코다리전문점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "만천하", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "중식당/음식점", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "말리화", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "중식당", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "말리화 외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "말바우시장주차장구내식당", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점이 아닌 업종이다", "status": "non_restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "맑은바람", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
@@ -1228,20 +1258,26 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "먹물군단", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "해산물/오징어 음식점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "메가mga커피", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "메가mgc커피 광주산수점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "메가mgc커피 전대후문", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "메가mgc커피 전대후문외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "메가mgc커피광주문흥", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "메가mgc커피광주일곡", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "메가mgc커피광주일곡외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "메가mgc커피광주첨단점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "메가엠지씨커피", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "커피전문점/카페", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "메가엠지씨커피 광주", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "메가엠지씨커피 광주보건대점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "메가엠지씨커피 광주송정사랑점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "메가엠지씨커피 광주송정사랑점외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "메가엠지씨커피 광주수완센트럴점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "메가엠지씨커피 광주수완센트럴점외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "메가엠지씨커피 광주시청역점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "커피전문점/카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "메가엠지씨커피 광주외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "메가엠지씨커피 광주진곡산단점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "메가엠지씨커피(광주", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "메가엠지씨커피광주운", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "메가엠지씨커피광주운외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "메가엠지씨커피광주일", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "메가엠지씨커피광주일외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "메가커피", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "커피전문점/카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "메가커피 광주교대점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -1264,6 +1300,7 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "명가원한정식", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한정식 전문 음식점", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "명궁관", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한정식 전문 음식점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "명덕", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "명동아구찜", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "아구찜 전문 식당", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "명동아구찜외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "명랑핫도그", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "명량핫도그전대점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -1298,6 +1335,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "명태어장, 107호커피", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "명품", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "명품계절음식점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "명품계절음식점, 커피코너", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "음식점 및 카페 코너", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "명품맛집", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "일반 음식점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "명품민물장어", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "명품상무팥죽", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "팥죽/칼국수 음식점", "status": "restaurant"}}
@@ -1314,11 +1352,13 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "모란정", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식 전문 음식점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "모란창평국밥", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "모리사코", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "모먼트(moment)", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 판단 불가", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "모먼트(moment)외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "모먼트오월", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "모밀촌", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "모아식육식당", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "모아한우식육식당", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "모어레스광산점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "모어레스광산점외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "모카", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "모타모타", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
@@ -1346,11 +1386,13 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "무궁화정", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "무궁화정 영미출장뷔페", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "뷔페 음식점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "무대포장어", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "무돌자락", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "업종 미확정", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "무돌자락 외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "무두", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 불분명", "status": "pending"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "무두, 투썸플레이스", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "복수 업소 포함", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "무드165", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "무등골", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "무등골&신똑순이아구", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "아구찜 전문 음식점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "무등골&신똑순이아구찜", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "무등골염소탕", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "무등골한우", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -1381,6 +1423,7 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "무안뻘낙지", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "낙지 요리 전문점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "무안요갤러리카페", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "무진 갈비탕", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "무진참기름", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "기름 판매 방앗간", "status": "non_restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "무처볶아", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "무침나라", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "무침 요리 전문점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "무한대패 수완점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -1429,6 +1472,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "미미참치", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "미성팥죽", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "팥죽 전문 음식점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "미소담카페재미", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "미소식당", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식당", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "미소정", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식당", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "미송식당", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "미숙씨 돼지잡는날", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -1441,6 +1485,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "미스터초밥왕,스타벅스", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "미스터초우", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "중식당", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "미식가", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "업종 불분명", "status": "pending"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "미식가든", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "음식점", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "미식정", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식당 추정 상호", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "미연복집", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "복어 요리 전문점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "미연복집 호대점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -1451,9 +1496,11 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "미즈의숲", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "미즈의숲, 다소", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "미진옥", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "미진옥, 타잔", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "음식점", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "미청", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "업종 불분명", "status": "pending"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "미카도스시", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "회전초밥 전문점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "미카도스시 동천점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "미카도스시동광주점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "회전초밥 전문점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "미카도스시동광주점 외 1개소", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "미푸드시스템", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "식자재 및 유통 업체", "status": "non_restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "미푸드시스템 주식회", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "식자재 및 유통 업체", "status": "non_restaurant"}}
@@ -1584,11 +1631,15 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "벌크커피 보성점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "커피 전문점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "벌크커피 오치쌍굴점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "벌크커피 오치쌍굴점 등 11개소", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "커피 및 음료 전문점", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "벌크커피 오치중앙점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "벌크커피 오치중앙점 외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "벌크커피 운남목련점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "벌크커피 운암문예회관점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "커피 전문점", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "벌크커피 하남메가박스점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "벌크커피 하남메가박스점외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "벌크커피운암벽산점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "벌크커피운암벽산점외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "벌크커피월곡점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "벌크커피월곡점외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "벌크커피임곡점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "범두정, 소미당", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
@@ -1604,6 +1655,7 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "베스킨라빈스", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "아이스크림·디저트", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "베스킨라빈스 광주계림두산위브점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "베스킨라빈스 돌고개역점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "벤티프레소", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페 브랜드", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "벤티프레소 광주송정점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "벤티프레소외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "벼통감자탕", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -1686,6 +1738,7 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "본향,컴포즈", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "복수 업소 혼재", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "볼사리노", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "봄초밥, 아미당", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "봄편지(spring letter)", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "업종 미확정", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "봄편지(spring letter)외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "봉강별곡", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "봉봉커피", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -1712,6 +1765,7 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "부산집", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식 전문 식당", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "부안꽃게", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "꽃게 요리 전문 식당", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "부영상사", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점이 아닌 업종이다", "status": "non_restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "부자가든", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "음식점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "부자가든(남구 서문대로 562)", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "부자네가든", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "부저", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
@@ -1728,7 +1782,9 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "불좀대패", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "대패삼겹살 전문 식당", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "뷔페랑뼈다귀랑", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "뷔페 및 뼈다귀 식당", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "뷔페포브, 스타벅스 코리아", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "뷔페 및 카페 업소", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "뷰밀", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "업종 미확정", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "뷰밀 외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "브라운힐", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "업종 미확정", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "브라운힐외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "브런치빈 광주수완점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "브런치카페 dm", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -1751,14 +1807,18 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "브우디엔(디엠아이 주식회사)", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "베트남 음식 전문점", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "브우디엔사이공", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "베트남 음식 전문점", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "브우디엔사이공 외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "베트남 음식 전문점", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "브이아이피참치", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "참치회 전문점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "브이아이피참치 외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "블랙데이(남구 효우로 200)", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "블랙데이마트", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점이 아닌 업종이다", "status": "non_restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "블랙데이식자재마트", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점이 아닌 업종이다", "status": "non_restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "블랙모밀", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "모밀 전문 음식점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "블랙모밀 외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "블랭크하우즈", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "업종 미확정", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "블랭크하우즈외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "블렌딩샵", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "블렌딩샵외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "븟", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "주점 및 일반음식점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "븟 외 1개소", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "비금", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불명", "status": "pending"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "비금 계절한정식", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한정식 전문 식당", "status": "restaurant"}}
@@ -1769,6 +1829,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "비바프레소", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "비봉", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불명", "status": "pending"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "비비큐(bbq)화정행운", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "치킨 전문 음식점", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "비아 카페 with 비아당 (via coffee with 비아당)", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페 및 디저트", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "비아 카페 with 비아당 (via coffee with 비아당)외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "비아37", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "이탈리안 레스토랑", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "비아맛나 감자탕", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -1813,6 +1874,7 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "사계절", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 판정 불가", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "사계절식당", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "사과당", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "사단법인 한마음노인복지센터", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "복지 시설", "status": "non_restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "사단법인 한마음노인복지센터 외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점이 아닌 업종이다", "status": "non_restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "사랑과사랑", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 판정 불가", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "사랑과사랑 협동조합", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점이 아닌 업종이다", "status": "non_restaurant"}}
@@ -1837,6 +1899,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "산골마을", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "산단국밥(남구 에너지밸리산업9로 17-1)", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "산더미", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 판정 불가", "status": "pending"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "산동교", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 판단 불가", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "산동교 청국장(결제대행:주식회사 오렌지플랫)", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "산동교외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "산동교청국장", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -1849,6 +1912,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "산우옥 광주송정역본점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "산우옥광주송정역본점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식 전문 음식점", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "산장가든", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식당", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "산촌", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식당", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "산촌외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "살림채식뷔페:101,400원 / 커피쌤 28,000원", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "살림클래식 채식뷔페", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -2106,6 +2170,7 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "송원고기마루", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "음식점", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "송원식육식당", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "음식점", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "송원식육식당-모노페이블", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "음식점 및 카페", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "송원회관", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식당", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "송원회관 외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "음식점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "송정 약선흑염소&삼천해물칼국수", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "송정cafe1913", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -2148,9 +2213,11 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "수궁", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "수궁, 카페더박스", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "수담/석산", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "업종 미확정", "status": "pending"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "수라간", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식당", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "수라간외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "수리식당", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "수림갈비", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "수림정", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식당", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "수림정 외 1명", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한정식 전문점", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "수목원", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "업종 미확정", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "수미가", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
@@ -2178,6 +2245,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "수진초밥,댄싱컵 광주 첨단점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "수초밥참치", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "수초밥참치외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "수풀림", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "업종 미확정", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "수풀림외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "숙이네 집", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "업종 미확정", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "숙이네생오리", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -2186,6 +2254,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "순옥이네 보리밥뷔페", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "순옥이네 보리밥집, 카페푸른숲", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "순옥이네보리밥뷔페", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "순자네국밥", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "국밥 전문 음식점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "순창골", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "순창민물매운탕", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "순창민물매운탕 외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -2215,6 +2284,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "슈퍼마켓자연숲주월", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점이 아닌 업종이다", "status": "non_restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "슈퍼크리스피 광주송정점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "스너그", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "스마일떡", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "떡 제조 및 판매", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "스마일떡 외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "떡집/제과 다과", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "스시도감", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "초밥/일식 전문점", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "스시도감/화이트리에", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "초밥 전문점 및 베이커리", "status": "restaurant"}}
@@ -2261,6 +2331,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "시골밥집, 카페홀더광산구청점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "시골밥집, 투썸플레이스광산구청점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "시골집", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "시골집 추어탕", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "추어탕 전문점", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "시골집 추어탕 외1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "추어탕 전문점", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "시골집추어탕", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "추어탕 전문점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "시골집추어탕소촌점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -2297,6 +2368,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "신락원, 모모라", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "신락원주식회사", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "신무돌칼국수", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식당", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "신바람하우스", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "업종 미확정", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "신선횟집", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "신성", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "업종 불명확", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "신세계 중식당", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -2387,6 +2459,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "아웃백스테이크하우스 광천점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "아웃백스테이크하우스광주광천점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "아워홈 해양에너지", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "기관 구내식당", "status": "non_restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "아이두", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "업종 미확정", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "아이두외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "아이러브플라워", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "꽃집", "status": "non_restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "아이스허니 문흥점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -2428,10 +2501,12 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "약선흑염소", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "약선흑염소 광주월산점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "약선흑염소광주용봉점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "약수한방삼계탕", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "삼계탕 전문점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "약수한방삼계탕 외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "약초119", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "약초흑염소", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "얌차", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "중식당 및 찻집", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "양림148", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "양림42", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "양림전통맛집", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "양림청과", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점이 아닌 업종이다", "status": "non_restaurant"}}
@@ -2507,6 +2582,7 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "에이치디씨아이파크몰", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "쇼핑몰", "status": "non_restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "에프지코리아/에이치디씨아이파크", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "쇼핑몰/법인", "status": "non_restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "엔제리너스", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "엔제리너스광주운암di", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "엔제리너스광주운암di외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "엔제리너스커피광주오", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "엔젤리너스", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
@@ -2515,6 +2591,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "엘브릿지", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "엘비엔또", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "양식당", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "여간 좋은날", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식당", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "여간좋은날 커피매그넙", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "식당 및 카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "여간좋은날, 커피매그넙", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "여기가좋겠네", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "여기빵집", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -2613,6 +2690,7 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "예향한우촌", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한우 전문 음식점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "옛날돼지갈비본가돈륵", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "옛날삼겹살", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "삼겹살 전문 음식점", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "옛날에 금잔디", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식당", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "옛날에 금잔디외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "옛날에금잔디", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "옛날에금잔디, 프로머스", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -2629,6 +2707,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "오늘도냉삼집", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "오늘도돈돈먹자", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "오늘도보쌈 칼국수", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "오늘부터애간장", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "게장 전문 한식당", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "오늘부터애간장외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "오늘여기", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "오늘은 짬뽕", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -2646,6 +2725,7 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "오로지전복", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "전복 전문 음식점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "오륙도", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "오리궁뎅이", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "오리나묵제&그러세", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "오리 요리 전문점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "오리랑돼지랑", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "오리랑돼지랑, 모먼트오월", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "오리랑아구랑", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -2662,6 +2742,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "오버릿외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "오복", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "오복수산", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "해산물 전문 음식점", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "오브비", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "오븐마루", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "오블로", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페 및 다이닝", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "오블로 외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페 및 다이닝", "status": "restaurant"}}
@@ -2689,6 +2770,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "오치커피앤빙수", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "오카츠", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "돈카츠 전문 음식점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "오푸르베이커리", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "오푸르베이커리(aufourbakery)", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "제과점(베이커리)", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "오푸르베이커리(aufourbakery)외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "오프박스", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "오프박스(offbox)", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
@@ -2712,6 +2794,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "온누리마트", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점이 아닌 업종이다", "status": "non_restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "온니네지글보글", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "온다방", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페 및 다과점", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "온다방 상무점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페(다방)", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "온다방 상무점 외 1곳", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페 다과 판매처", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "온다방 상무점, 푸드마켓", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "음식점 및 마트 혼재", "status": "pending"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "온다방(서구 치평동)", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페 다과 판매처", "status": "restaurant"}}
@@ -2719,6 +2802,7 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "온다방상무점 등 2곳", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페 다과 판매처", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "온더보더 광화문", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "멕시칸 전문 음식점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "온리돈까스", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "온뼈돌솥해장국", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식당(해장국)", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "온컵(on cup)", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "올능이능이버섯백숙", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "올능이능이버섯백숙, 루다커피", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -2748,6 +2832,7 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "왕뼈사랑", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "감자탕 전문 음식점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "왕뼈사랑 봉선점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "왕뼈사랑 상무점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "감자탕 전문 음식점", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "왕뼈사랑(봉선점)", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식당", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "왕뼈해장국", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "왕산식당", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식 전문 음식점", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "왕산식당 상무점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식 전문 음식점", "status": "restaurant"}}
@@ -2778,6 +2863,7 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "우담정", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식 전문 음식점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "우대감", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "우동이완성되다", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "우동 전문 음식점", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "우동집", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "일식당(우동)", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "우동집 외 1개소", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "우드스톤 여의도", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "양식 전문 음식점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "우래옥모밀", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -2843,6 +2929,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "원지식당, 카페수풀림", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "원창식당", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "원티드버거", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "원할머니보쌈 광주첨단점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식당(보쌈)", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "원할머니보쌈 광주첨단점 외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "원호두", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "제과점/디저트", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "월계닭갈비", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "닭갈비 전문점", "status": "restaurant"}}
@@ -2878,6 +2965,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "유보라본죽", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "유순희네맛집", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "유씨네본가누룽지삼계탕", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "삼계탕 전문점", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "유원옥 광주하남점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "일반음식점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "유원옥 광주하남점 외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "유원옥(하남동)", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "유유사브 동천점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "샤브샤브 전문점", "status": "restaurant"}}
@@ -2888,6 +2976,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "유일장어", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "유일장어외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "유진농원, 텐퍼센트", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "유진이네칼국수", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식당(칼국수)", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "유진이네칼국수 외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "유진정", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "일반 음식점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "유진정(화순)", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
@@ -2941,6 +3030,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "음식나라", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "읍천리382", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페 디저트 전문점", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "읍천리382(광주상무점)", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페 디저트 전문점", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "읍천리382선운점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "읍천리382선운점외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "의정부대찌개냉면", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "이**등 4명", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점이 아닌 업종이다", "status": "non_restaurant"}}
@@ -2951,6 +3041,8 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "이대포땔나무집", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "고기구이 전문 음식점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "이디아(kt타워점)", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "이디야", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "커피 전문 카페", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "이디야 광주백운점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "이디야 광주봉선중앙로점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "이디야 광주봉선중앙로점외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "이디야 말바우점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "이디야 염주포스코점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -2989,6 +3081,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "이서뽕잎칼국수", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "이선희낙지마당", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "이씨네 푸줏간", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "이에스씨(esc)2", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "이에스씨(esc)2외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "이영미 궁중한방삼계탕", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "이영미궁중삼계탕", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -3039,6 +3132,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "일흥식당", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "임가네", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "일반 한식 음식점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "임가네남원추어탕", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "임가네일반음식점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "일반음식점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "임가네일반음식점외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "임곡사골우거지, 벌크커피임곡점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "임곡생태탕", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -3131,6 +3225,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "전라도이야기,아임빈오치점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "전라도이야기/이븐베터커피", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "전소리", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "전 요리 음식점", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "전어랑숭어랑", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "횟집", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "전어랑숭어랑 외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "전원일기", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "전주24시참편한39콩나물국밥", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -3197,6 +3292,7 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "정부세종청사", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "공공기관", "status": "non_restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "정부청사본관카페", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "기관 내부 카페", "status": "non_restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "정성담은", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "정성로컬푸드", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "식자재 판매 마트", "status": "non_restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "정성로컬푸드 외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "농산물/식품 판매처", "status": "non_restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "정성손칼국수", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "정성참치", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "참치 전문 음식점", "status": "restaurant"}}
@@ -3410,6 +3506,8 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "참숯불에 꾸운닭", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "참숯불에꾸운닭", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "참이맛감자탕", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "참이맛뼈다귀", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식당(해장국)", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "참일능이", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식당", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "참일능이 외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식당", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "참좋은참치", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "일식당", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "참죽", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
@@ -3499,7 +3597,9 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "청자다방 말바우점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "청자다방 북구중흥점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "청자다방 송정점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "청자다방 첨단공원점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "청자다방 첨단공원점외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "청자다방일곡점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "청자다방일곡점외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "청자다방중흥점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "청자치평점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "업종 미확인", "status": "pending"}}
@@ -3511,6 +3611,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "청춘회랑", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "청출어람", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "청하", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "청하, 로타리커피", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페/음식점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "청해명가", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "청해명가, 풀입카페", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "음식점 및 카페", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "청해명가, 풀잎카페", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "음식점 및 카페", "status": "restaurant"}}
@@ -3529,6 +3630,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "초심식육식당/파리바게뜨", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "초애삼계탕", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "삼계탕 전문점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "초애삼계탕, 카페올가", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "초원식당", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식당", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "초원식당 외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "초원양꼬치", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "초원칡냉면", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "냉면 전문점", "status": "restaurant"}}
@@ -3540,6 +3642,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "초필살돼지구이", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "초필살돼지구이광주동명점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "촌놈횟집", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "횟집", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "촌닭이두마리", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "치킨 전문점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "촌닭이두마리외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "최고김밥", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "최다연샤브샤브", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "샤브샤브 전문점", "status": "restaurant"}}
@@ -3601,6 +3704,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "카페 빛 베이커리", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "카페 소풍", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "카페 수풀림", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "카페 야그", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "카페 야그외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "카페 에르모소", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "카페 진정성", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -3614,6 +3718,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "카페488", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "카페가배당", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "카페갈라", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "카페괜찮다", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "카페괜찮다외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "카페꼼마", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "카페꽃피움", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -3643,6 +3748,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "카페세일링", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "카페소소", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "카페수풀림", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "카페아빌라", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "카페아빌라외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "카페아쥬르", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "카페아짐", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -3666,6 +3772,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "카페홀더", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "카페홀더광산구청점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점이 아닌 업종이다", "status": "non_restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "카페홀더외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "카페휴", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "카페휴외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "카페희원", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "칸세이스시", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "스시 일식당", "status": "restaurant"}}
@@ -3675,6 +3782,8 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "캐치스피자 상무점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "피자 음식점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "캘리포니아 횟집", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "캘리포니아횟집", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "횟집 (일반음식점)", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "캣잎막회", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "횟집", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "커프커프하우스", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "커프커프하우스외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "커피공방", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "커피다크빈스", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -3704,6 +3813,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "컴포즈커피 계림 그랜", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "컴포즈커피 고흥녹동점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "컴포즈커피 광주계림아이파크점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "컴포즈커피 광주백운점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "컴포즈커피 광주상무", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "컴포즈커피 광주선운어등진아점, 어등골칡냉면", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "컴포즈커피 광주신가선창초교점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -3751,6 +3861,7 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "큐슈 상무점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "일식 전문점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "크라비앙코", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "크래프트한스, 바다로", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "주점 및 음식점", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "크레마수완", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "크레마수완외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "크레센트", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "크레즈", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "업종 판단 불가", "status": "pending"}}
@@ -3764,8 +3875,10 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "큰마루뼈해장국", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "큰바다대구탕", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "큰집나주곰탕", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "곰탕 전문 음식점", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "큰집생태탕", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식당(생태탕)", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "큰집생태탕 외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "큰집식당", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "클랩피자", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "피자 전문점", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "클랩피자 외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "피자 전문 음식점", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "클럽하우스", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "업종 판단 불가", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "키리키리베이커리하우스", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -3801,6 +3914,7 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "털보네집", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식당", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "털보네집, 이디야커피", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "테라커피", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "테라커피 첨단점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "테라커피 첨단점외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "테스타, 이이남카페", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "테이트모던", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "브런치 카페 및 식당", "status": "restaurant"}}
@@ -3810,6 +3924,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "텐퍼센트 광주백운대라수점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "텐퍼센트 광주시청점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "커피 전문 카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "텐퍼센트 광주조선대점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "텐퍼센트 김대중컨벤션센터역점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "텐퍼센트 김대중컨벤션센터역점외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "텐퍼센트 커피 광주남구청점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "텐퍼센트 효천1지구점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -3857,6 +3972,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "투썸플레이스 광주쌍촌dt점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "투썸플레이스 광주월곡점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "투썸플레이스 광주호남대점, 면식당호남대점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "투썸플레이스 두암타", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "투썸플레이스 두암타외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "투썸플레이스(광산구 쌍암동)", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "커피/디저트 카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "투썸플레이스(광산구청점)", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -3866,6 +3982,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "투썸플레이스,삼미닭곰탕", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "투썸플레이스광산구청점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "투썸플레이스광주상무천변점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "투썸플레이스광주월곡점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "투썸플레이스광주월곡점외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "투썸플레이스광주일곡", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "투썸플레이스마륵dt점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -3919,6 +4036,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "평이담백뼈칼국수, 파스쿠찌", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "평이담백뼈칼국수광주", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "포도나무", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 판정 불가", "status": "pending"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "포르코로소", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "양식당", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "포르코로소 외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "이탈리안 레스토랑", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "포르피노", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "포르피노여섯번째이야", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
@@ -3969,6 +4087,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "피자스쿨", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "피키컵스(picky cups)", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "필링, 엔제리너스커피", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "필링돈까스", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "경양식(돈까스)", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "필링돈까스외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "하나로마트", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점이 아닌 업종이다", "status": "non_restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "하나로마트 국회점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "대형 마트 업종", "status": "non_restaurant"}}
@@ -3982,6 +4101,7 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "하늘잔치(하남동)", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "하당먹거리 청자다방 산정점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "하도가", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "하동관", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "한식당(곰탕)", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "하동관 외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "하루연어", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "하루의편지", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
@@ -3991,12 +4111,14 @@
 {"evidence": "claude-opus-5/claude-read-1", "key": "하마네아구찜상무점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "하마네아구찜용봉점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "하삼동커피 쌍암점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "커피 전문점 업종", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "하삼동커피 운남점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페 브랜드", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "하삼동커피 운남점외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "하성장어", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "하성장어 112,000원 / 구름사이에 35,100원", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "하손추어탕", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "하손추어탕장어탕", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "하와이", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "하워짓 커피랩", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "카페 및 커피점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "하워짓 커피랩외 1", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "하이킹광주첨단점", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 판정 불가", "status": "pending"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "하지메", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "일식 전문 식당", "status": "restaurant"}}
@@ -4020,6 +4142,7 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "한김숯불고기", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "숯불고기 전문 식당", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "한날한식", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "한남동 두번째식탁", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "한남동두번째식탁", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "일반 음식점", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "한남동한방통닭", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호 표기가 음식점·카페다", "status": "restaurant"}}
 {"evidence": "claude-opus-5/claude-read-1", "key": "한라", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 업종 불분명", "status": "pending"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "한방선생", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "상호만으로 판단 불가", "status": "pending"}}
