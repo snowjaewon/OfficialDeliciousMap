@@ -11,180 +11,50 @@ from __future__ import annotations
 import re
 import urllib.parse
 from collections.abc import Iterator
-from dataclasses import dataclass
 from datetime import date
-from html.parser import HTMLParser
 from typing import TYPE_CHECKING
 
 from deliciousmap import boards
+from deliciousmap.scrapers import listing
+from deliciousmap.scrapers.listing import Link as _Link
+from deliciousmap.scrapers.listing import Row as _Row
 from deliciousmap.transport import Transport
 
 if TYPE_CHECKING:
     from deliciousmap.registry.models import Board
 
-ENCODING = "utf-8"
+ENCODING = listing.ENCODING
 PUBLISHED_SUFFIXES = frozenset({".xls", ".xlsx", ".xlsm", ".hwp", ".hwpx", ".pdf", ".zip"})
 PDF_SUFFIXES = frozenset({".pdf"})
 ZIP_SUFFIXES = frozenset({".zip"})
-DATE_RE = re.compile(r"(\d{4})[-./](\d{1,2})[-./](\d{1,2})")
-# The oldest city transfer rows use a two-digit year (`20. 11. 5`).  The
-# surrounding board is a 2000s archive, so the century is explicit rather than
-# inferred from the current year.  Keep this separate from DATE_RE so a full
-# year always wins and a substring of `2020` cannot be read as `20`.
-SHORT_DATE_RE = re.compile(r"(?<!\d)(\d{2})\s*[-./]\s*(\d{1,2})\s*[-./]\s*(\d{1,2})(?!\d)")
-PAGE_RE = re.compile(r"(?:페이지|page)\s*[:：]?\s*\d+\s*/\s*([\d,]+)", re.I)
-EXTENSION_RE = re.compile(r"\.([A-Za-z0-9]{1,8})(?![A-Za-z0-9])")
-PAGINATION_KEYS = frozenset({"cpage", "curPage", "page", "pageIndex", "startPage"})
 
 
-@dataclass(frozen=True)
-class _Link:
-    href: str
-    text: str
-    title: str
-    onclick: str
-
-
-@dataclass(frozen=True)
-class _Cell:
-    text: str
-    classes: frozenset[str]
-    links: tuple[_Link, ...]
-
-
-@dataclass(frozen=True)
-class _Row:
-    cells: tuple[_Cell, ...]
-
-    @property
-    def text(self) -> str:
-        return " ".join(cell.text for cell in self.cells)
-
-
-class _TableParser(HTMLParser):
-    """Capture table cells and anchors without depending on a third-party DOM."""
-
-    def __init__(self) -> None:
-        super().__init__(convert_charrefs=True)
-        self.rows: list[_Row] = []
-        self.links: list[_Link] = []
-        self._cells: list[list[tuple[str, frozenset[str], list[_Link], list[str]]]] = []
-        self._cell: list[str] | None = None
-        self._cell_classes: frozenset[str] = frozenset()
-        self._cell_links: list[_Link] = []
-        self._link_attrs: dict[str, str] | None = None
-        self._link_text: list[str] = []
-        self._pagination = False
-        self.pagination_pages: list[int] = []
-        self._tr = False
-        self._text: list[str] = []
-
-    @property
-    def text(self) -> str:
-        return " ".join(" ".join(self._text).split())
-
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        if tag == "ul" and "pagination" in (dict(attrs).get("class") or "").split():
-            self._pagination = True
-        elif tag == "tr" and not self._tr:
-            self._tr = True
-            self._cells = [[]]
-        elif tag in {"td", "th"} and self._tr and self._cell is None:
-            self._cell = []
-            self._cell_classes = frozenset((dict(attrs).get("class") or "").split())
-            self._cell_links = []
-            self._cells[-1].append(("", self._cell_classes, self._cell_links, self._cell))
-        elif tag == "a":
-            raw = dict(attrs)
-            self._link_attrs = {
-                "href": raw.get("href") or "",
-                "title": raw.get("title") or "",
-                "onclick": raw.get("onclick") or "",
-            }
-            self._link_text = []
-        elif tag == "img":
-            alt = dict(attrs).get("alt") or ""
-            if alt and self._cell is not None:
-                self._cell.append(alt)
-            if alt and self._link_attrs is not None:
-                self._link_text.append(alt)
-
-    def handle_endtag(self, tag: str) -> None:
-        if tag == "a" and self._link_attrs is not None:
-            link = _Link(
-                self._link_attrs["href"],
-                " ".join(" ".join(self._link_text).split()),
-                self._link_attrs["title"],
-                self._link_attrs["onclick"],
-            )
-            self.links.append(link)
-            if self._pagination:
-                query = urllib.parse.parse_qs(urllib.parse.urlsplit(link.href).query)
-                for key in PAGINATION_KEYS:
-                    value = query.get(key, [""])[0]
-                    if value.isdigit():
-                        self.pagination_pages.append(int(value))
-                if not query and "현재페이지" in link.title and link.text.strip().isdigit():
-                    self.pagination_pages.append(int(link.text.strip()))
-            if self._cell is not None:
-                self._cell_links.append(link)
-            self._link_attrs = None
-            self._link_text = []
-        elif tag in {"td", "th"} and self._cell is not None:
-            self._cell = None
-            self._cell_links = []
-        elif tag == "tr" and self._tr:
-            cells: list[_Cell] = []
-            for _, classes, links, parts in self._cells[-1]:
-                cells.append(_Cell(" ".join(" ".join(parts).split()), classes, tuple(links)))
-            self.rows.append(_Row(tuple(cells)))
-            self._cells = []
-            self._tr = False
-        elif tag == "ul" and self._pagination:
-            self._pagination = False
-
-    def handle_data(self, data: str) -> None:
-        self._text.append(data)
-        if self._cell is not None:
-            self._cell.append(data)
-        if self._link_attrs is not None:
-            self._link_text.append(data)
-
-    def close(self) -> None:
-        super().close()
-        if self._tr:
-            raise boards.UnreadableBoard("board listing row never closed")
-
-
-def _parse(body: bytes) -> _TableParser:
-    parser = _TableParser()
-    try:
-        parser.feed(body.decode(ENCODING))
-        parser.close()
-    except UnicodeDecodeError:
-        raise boards.UnreadableBoard("board response is not in the measured encoding") from None
-    return parser
+def _parse(body: bytes) -> listing.TableParser:
+    return listing.parse(body, ENCODING)
 
 
 def _posted(text: str) -> date:
-    found = DATE_RE.search(text)
-    if found is not None:
-        values = found.groups()
-    else:
-        short = SHORT_DATE_RE.search(text)
-        if short is None:
-            raise boards.UnreadableBoard("board listing row does not declare its posting date")
-        values = (str(2000 + int(short.group(1))), short.group(2), short.group(3))
-    try:
-        return date(*(int(part) for part in values))
-    except ValueError:
-        raise boards.UnreadableBoard(
-            "board listing row declares an impossible posting date"
-        ) from None
+    return listing.posted(text)
 
 
 def _has_date(text: str) -> bool:
-    return DATE_RE.search(text) is not None or SHORT_DATE_RE.search(text) is not None
+    return listing.has_date(text)
+
+
+def _page_count(parser: listing.TableParser, *, link_keys: tuple[str, ...] = ()) -> int:
+    return listing.page_count(parser, link_keys=link_keys)
+
+
+def _market_page_count(parser: listing.TableParser) -> int:
+    return listing.page_count(parser)
+
+
+def _suffix(link: _Link) -> str:
+    return listing.suffix(link, PUBLISHED_SUFFIXES)
+
+
+def _article_link(row: _Row, needle: str, parameter: str) -> tuple[str, str] | None:
+    return listing.article_link(row, needle, parameter)
 
 
 def _compact_date(value: str) -> date:
@@ -194,60 +64,6 @@ def _compact_date(value: str) -> date:
         raise boards.UnreadableBoard(
             "board listing row declares an impossible posting date"
         ) from None
-
-
-def _market_page_count(parser: _TableParser) -> int:
-    return _page_count(parser)
-
-
-def _page_count(
-    parser: _TableParser,
-    *,
-    link_keys: tuple[str, ...] = (),
-) -> int:
-    found = PAGE_RE.search(parser.text)
-    if found is not None:
-        return int(found.group(1).replace(",", ""))
-    found = re.search(r"전체\s*페이지\s+(\d+)", parser.text, re.I)
-    if found is not None:
-        return int(found.group(1))
-    candidates: list[int] = []
-    for link in parser.links:
-        query = urllib.parse.parse_qs(urllib.parse.urlsplit(link.href).query)
-        for key in link_keys:
-            value = query.get(key, [""])[0]
-            if value.isdigit():
-                candidates.append(int(value))
-    candidates.extend(parser.pagination_pages)
-    if not candidates:
-        raise boards.UnreadableBoard("board listing does not declare its page count")
-    return max(candidates)
-
-
-def _suffix(link: _Link) -> str:
-    for value in (link.text, link.title, link.onclick):
-        match = EXTENSION_RE.search(value)
-        if match is not None:
-            return f".{match.group(1).lower()}"
-        named = re.search(r"\b(zip|pdf|xlsx?|xlsm|hwp|hwpx)\s*(?:파일|다운로드)", value, re.I)
-        if named is not None:
-            return f".{named.group(1).lower()}"
-    found = re.search(r"\.([A-Za-z0-9]{1,8})(?:$|[?&#])", link.href)
-    suffix = f".{found.group(1).lower()}" if found else ""
-    return suffix if suffix in PUBLISHED_SUFFIXES else ""
-
-
-def _article_link(row: _Row, needle: str, parameter: str) -> tuple[str, str] | None:
-    for cell in row.cells:
-        for link in cell.links:
-            if needle not in urllib.parse.urlsplit(link.href).path:
-                continue
-            value = urllib.parse.parse_qs(urllib.parse.urlsplit(link.href).query).get(
-                parameter, [""]
-            )[0]
-            if boards.is_identifier(value):
-                return value, link.href
-    return None
 
 
 def _department(row: _Row) -> str:
@@ -342,11 +158,7 @@ class NamguBoard(EgovBoard):
 
 
 def _title(row: _Row, href: str) -> str:
-    for cell in row.cells:
-        for link in cell.links:
-            if link.href == href:
-                return link.text
-    return ""
+    return listing.title_of(row, href)
 
 
 class JungguBoard(EgovBoard):
