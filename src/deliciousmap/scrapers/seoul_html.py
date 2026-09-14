@@ -62,10 +62,17 @@ class MonthlyScreenBoard:
 
     published_suffixes = HTML_SUFFIXES
     encoding = "utf-8"
+    # 이 화면에서 실측한 표식. 받은 것이 집행 표가 맞는지 내용으로 가른다.
+    marker = ""
 
     def __init__(self, board: Board, transport: Transport) -> None:
         self.list_url, self.params = boards.endpoint(board.url)
         self.transport = transport
+
+    def verify(self, body: bytes) -> None:
+        """받은 화면이 이 게시판의 것인지. 200으로 오는 오류 화면을 원본으로 삼지 않는다."""
+        if self.marker not in self.text(body):
+            raise boards.UnsupportedOriginal("screen does not carry this board's measured marker")
 
     def postings(self, skipped: boards.Skipped) -> Iterator[boards.Posting]:
         for year, month in _months():
@@ -101,6 +108,7 @@ class EunpyeongBoard(MonthlyScreenBoard):
 
     # 화면 하나에 담을 줄 수. 실측한 값 중 가장 큰 것을 써서 한 달이 두 화면에 담긴다.
     page_size = "1000"
+    marker = "사용일자"
 
     def page_params(self, year: int, month: int, page: int) -> dict[str, str]:
         return {
@@ -126,6 +134,7 @@ class SeodaemunBoard(MonthlyScreenBoard):
     """
 
     encoding = "euc-kr"
+    marker = "집행일"
 
     def page_params(self, year: int, month: int, page: int) -> dict[str, str]:
         return {
@@ -151,6 +160,8 @@ class GwanakBoard(MonthlyScreenBoard):
     2026-09-14 실측: `.xls` 이름에 `Content-Type: text/html`이고 매직 바이트가 없다.
     시작일·종료일이 31일 이내여야 하므로 달 하나가 요청 하나다. 2026-06은 1,855행이었다.
     """
+
+    marker = "집행부서"
 
     def page_params(self, year: int, month: int, page: int) -> dict[str, str]:
         last = calendar.monthrange(year, month)[1]
@@ -181,15 +192,26 @@ class CityExpenseBoard:
     """
 
     published_suffixes = HTML_SUFFIXES
+    # 상세에서 실측한 표식. 집행이 없는 달의 상세도 이 글자를 싣는다(실측 83건).
+    marker = "업무추진비 사용내역"
     # 거르는 기관 축. 서울특별시가 아니라 별개 기관의 집행이다.
-    excluded_axes = frozenset({"의회사무처"})
+    filtered_axes = frozenset({"의회사무처"})
     page_size = "50"
 
     def __init__(self, board: Board, transport: Transport) -> None:
         self.list_url, self.params = boards.endpoint(board.url)
         self.transport = transport
         # 제목 축이 걸러 낸 게시글 수. 수집 장부가 아니라 실행 기록으로만 쓴다.
-        self.excluded = 0
+        self.filtered = 0
+
+    def verify(self, body: bytes) -> None:
+        """받은 상세가 이 게시판의 것인지. 200으로 오는 오류 화면을 원본으로 삼지 않는다."""
+        try:
+            text = body.decode("utf-8")
+        except UnicodeDecodeError:
+            raise boards.UnsupportedOriginal("screen is not in the measured encoding") from None
+        if self.marker not in text:
+            raise boards.UnsupportedOriginal("screen does not carry this board's measured marker")
 
     def postings(self, skipped: boards.Skipped) -> Iterator[boards.Posting]:
         for year, month in _months():
@@ -202,7 +224,7 @@ class CityExpenseBoard:
                     break
                 for post_id, title, posted in listing.rows:
                     if self._excluded(title):
-                        self.excluded += 1
+                        self.filtered += 1
                         continue
                     page_url = urllib.parse.urljoin(self.list_url, f"/expense/{post_id}")
                     attachments = (
@@ -215,7 +237,7 @@ class CityExpenseBoard:
 
     def _excluded(self, title: str) -> bool:
         found = CITY_AXIS.match(title)
-        return found is not None and found.group(1) in self.excluded_axes
+        return found is not None and found.group(1) in self.filtered_axes
 
     def _params(self, year: int, month: int, page: int) -> dict[str, str]:
         return {

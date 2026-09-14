@@ -66,7 +66,7 @@ def test_junggu_filters_the_council_rows_and_the_site_image() -> None:
     scraper = JungguBoard(board(JUNG, JungguBoard), transport)
     found = list(scraper.postings(never))
     assert [item.post_id for item in found] == ["1474436341"]
-    assert scraper.excluded == 1
+    assert scraper.filtered == 1
     assert [item.suffix for item in found[0].attachments] == [".xlsx"]
 
 
@@ -238,7 +238,7 @@ def test_gangnam_reads_the_listing_number_and_skips_the_preview_link() -> None:
     scraper = GangnamBoard(board(GANGNAM, GangnamBoard), transport)
     found = list(scraper.postings(never))
     assert [item.post_id for item in found] == ["9367"]
-    assert scraper.excluded == 1
+    assert scraper.filtered == 1
     assert [item.suffix for item in found[0].attachments] == [""]
     assert found[0].attachments[0].url.endswith("/download.do")
     assert found[0].department == "사회보장과"

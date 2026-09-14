@@ -102,7 +102,7 @@ def test_city_board_filters_the_council_axis_and_counts_it() -> None:
     scraper = CityExpenseBoard(board(CITY_LIST, CityExpenseBoard), FakeTransport(responses))
     found = list(scraper.postings(never))
     assert [item.post_id for item in found] == [f"300{month}" for month in range(1, 7)]
-    assert scraper.excluded == 6
+    assert scraper.filtered == 6
 
 
 def test_city_board_reports_an_impossible_posting_date() -> None:
@@ -189,7 +189,10 @@ def test_gwanak_requests_one_export_per_month_without_probing() -> None:
 
 
 def test_html_screens_are_stored_as_originals(tmp_path: Path) -> None:
-    page = b"<html><body><table><tr><td>2026-06-30</td></tr></table></body></html>"
+    page = (
+        "<html><body><table><tr><th>집행부서</th></tr>"
+        "<tr><td>2026-06-30</td></tr></table></body></html>"
+    ).encode()
 
     class Screen:
         def fetch(self, url: str, params: dict[str, str], headers: dict[str, str]) -> bytes:
@@ -213,3 +216,23 @@ def test_seoul_registry_declares_the_measured_html_organizations() -> None:
         for slug in ("seoul-city", "seoul-eunpyeong", "seoul-gwanak", "seoul-seodaemun")
         for board in select_target(CITIES, "seoul", slug).organizations[0].boards
     )
+
+
+def test_a_screen_without_the_measured_marker_is_not_an_original() -> None:
+    """제공자 오류 화면이 200으로 와도 원본으로 저장하지 않는다.
+
+    화면이 곧 원본인 게시판은 매직 바이트가 없어 내용으로만 가릴 수 있다. 그 게시판에서
+    실측한 표식이 없으면 받은 것이 집행 표가 아니라고 본다.
+    """
+    error = "<html><body><h1>일시적인 오류가 발생했습니다</h1></body></html>".encode()
+    scraper = EunpyeongBoard(board(EUNPYEONG, EunpyeongBoard), FakeTransport({}))
+    with pytest.raises(boards.UnsupportedOriginal):
+        scraper.verify(error)
+
+
+def test_a_screen_with_the_measured_marker_passes() -> None:
+    page = (
+        "<html><table><tr><th>사용일자(일시)</th></tr><tr><td>1</td></tr></table></html>".encode()
+    )
+    scraper = EunpyeongBoard(board(EUNPYEONG, EunpyeongBoard), FakeTransport({}))
+    scraper.verify(page)

@@ -1,5 +1,6 @@
 """수집이 원본으로 받아들이는 범위. 화면이 원본인 게시판에서만 HTML을 받는다."""
 
+import hashlib
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -68,7 +69,7 @@ def test_html_board_stores_the_page_it_received_as_the_original(tmp_path: Path) 
     output = collect(_target(_Scraper), _paths(tmp_path), _Transport())
     assert [item.container for item in output.sources] == ["html"]
     assert output.sources[0].path.read_bytes() == PAGE
-    assert output.sources[0].source_hash == __import__("hashlib").sha256(PAGE).hexdigest()
+    assert output.sources[0].source_hash == hashlib.sha256(PAGE).hexdigest()
 
 
 def test_attachment_board_does_not_accept_a_page_as_an_original(tmp_path: Path) -> None:
@@ -117,7 +118,7 @@ class _MixedScraper(_Scraper):
     """업무추진비 집행기관이 아닌 줄을 섞어 싣는 게시판. 거른 수를 스스로 센다."""
 
     published_suffixes = frozenset({".html"})
-    excluded = 2
+    filtered = 2
 
     def postings(self, skipped: boards.Skipped) -> Iterator[boards.Posting]:
         yield from super().postings(skipped)

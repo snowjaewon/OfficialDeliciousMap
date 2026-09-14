@@ -8,6 +8,7 @@ from deliciousmap.registry.models import Board, City, MapBounds, Organization
 from deliciousmap.scrapers.seoul import (
     BbsNoBoard,
     BbsNoDetailBoard,
+    BbsNoMixedBoard,
     CbIdxBoard,
     GwangjinBoard,
     JongnoBoard,
@@ -113,7 +114,9 @@ CITY = City(
         Organization(
             "seoul-seongbuk", "서울특별시 성북구", (Board("expenses", SEONGBUK, BbsNoDetailBoard),)
         ),
-        Organization("seoul-guro", "서울특별시 구로구", (Board("expenses", GURO, BbsNoBoard),)),
+        Organization(
+            "seoul-guro", "서울특별시 구로구", (Board("expenses", GURO, BbsNoMixedBoard),)
+        ),
         Organization(
             "seoul-geumcheon",
             "서울특별시 금천구",

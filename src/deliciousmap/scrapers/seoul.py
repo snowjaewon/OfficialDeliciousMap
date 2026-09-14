@@ -37,9 +37,9 @@ ENCODING = "utf-8"
 PUBLISHED_SUFFIXES = frozenset(
     {"", ".pdf", ".hwp", ".hwpx", ".xls", ".xlsx", ".xlsm", ".zip", ".jpg", ".jpeg", ".png"}
 )
-# 게시글 하나를 담는 요소. 게시판마다 다르므로 계열 스크래퍼가 고른다. 표로 그린
-# 게시판은 `tr`, 광진은 `li` 하나가 게시글, 종로는 `ul` 하나가 게시글이다(실측).
-ROW_TAGS = frozenset({"tr", "ul", "li"})
+# 칸이 될 수 있는 요소. 게시글 하나를 담는 요소는 게시판마다 달라 계열 스크래퍼가
+# `ListingBoard.row_tags`로 고르고(표는 `tr`, 광진은 `li`, 종로는 `ul`), 그 요소는
+# 같은 줄의 칸이 될 수 없다(`Listing.cell_tags`).
 CELL_TAGS = frozenset({"td", "th", "li"})
 # 이 계열들의 게시일 표기. `2026.09.14`·`2026-09-14`·`2026년 09월 10일`을 실측했다.
 POSTED = re.compile(
@@ -270,13 +270,13 @@ class ListingBoard:
     # 첨부 링크가 목록 줄에 있는지. 아니면 게시글 본문을 열어 읽는다(실측으로 갈린다).
     attachments_in_listing = True
     # 이 게시판이 업무추진비 집행기관이 아닌 줄을 섞어 싣는다면 그 부서 이름 조각.
-    excluded_departments: frozenset[str] = frozenset()
+    filtered_departments: frozenset[str] = frozenset()
 
     def __init__(self, board: Board, transport: Transport) -> None:
         self.list_url, self.params = boards.endpoint(board.url)
         self.transport = transport
         # 섞인 게시판에서 걸러 낸 줄 수. 실행 기록으로만 쓴다.
-        self.excluded = 0
+        self.filtered = 0
         # 지금 읽고 있는 목록 쪽. 상세가 없는 게시판이 출처 주소에 쓴다.
         self.page = 1
 
@@ -294,7 +294,7 @@ class ListingBoard:
                 raise boards.UnreadableBoard("board listing page declares no posting date")
             for entry, row in rows:
                 if self._excluded(entry):
-                    self.excluded += 1
+                    self.filtered += 1
                     continue
                 if skipped(entry.post_id, entry.posted):
                     yield entry.posting(())
@@ -315,7 +315,7 @@ class ListingBoard:
         return {**self.params, self.page_parameter: str(page)}
 
     def _excluded(self, entry: Entry) -> bool:
-        return any(name in entry.department for name in self.excluded_departments)
+        return any(name in entry.department for name in self.filtered_departments)
 
     def entry(self, row: Row) -> Entry | None:
         raise NotImplementedError
@@ -412,6 +412,16 @@ class BbsNoBoard(ListingBoard):
     def is_download(self, link: Link) -> bool:
         path = urllib.parse.urlsplit(link.href).path
         return any(name in path for name in self.download_paths)
+
+
+class BbsNoMixedBoard(BbsNoBoard):
+    """의회 줄이 섞일 수 있는 `selectBbsNttList.do` 게시판(구로 실측).
+
+    2026-09-14 실측에서 2026년 줄에는 의회 부서가 나오지 않아 걸러 낸 수가 0이다.
+    섞임은 게시판의 성질이지 그 해의 성질이 아니므로 기준을 선언해 두고 수를 센다.
+    """
+
+    filtered_departments = frozenset({"의회"})
 
 
 class BbsNoDetailBoard(BbsNoBoard):
@@ -671,6 +681,7 @@ def _department(row: Row, title_cell: int) -> str:
 __all__ = [
     "BbsNoBoard",
     "BbsNoDetailBoard",
+    "BbsNoMixedBoard",
     "CbIdxBoard",
     "GwangjinBoard",
     "JongnoBoard",

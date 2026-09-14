@@ -9,7 +9,7 @@ from datetime import date
 from html.parser import HTMLParser
 from io import BytesIO
 from pathlib import PurePosixPath
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from deliciousmap.transport import HttpTransport, ResourceGone, Transport, query
 
@@ -31,6 +31,10 @@ REQUEST_TIMEOUT = 30.0
 # 0.5초일 때 건당 1.78초로 대기가 56%를 차지해 0.2초로 낮췄다. 합산 약 2.1 req/s이고 여전히
 # 순차 요청이다. 기관이 어디까지 견디는지는 측정하지 않았으므로 더 줄이지 않는다.
 REQUEST_INTERVAL = 0.2
+# 공통 간격으로는 순회를 마치지 못한 호스트. 중랑 실측(2026-09-14): 목록 한 쪽에 3.3초가
+# 걸리고 그 사이 읽기가 간헐적으로 끊겨 853쪽 순회가 열두 번 모두 실패했다. 같은 목록을
+# 더 느리게 훑은 별도 측정은 완주했으므로 이 호스트에만 간격을 넓힌다.
+HOST_INTERVALS = {"www.jungnang.go.kr": 1.0}
 # 서명만으로 갈리지 않는 형식이 있어 앞부분에서 표식을 함께 찾는다. 이만큼만 본다.
 MARKER_WINDOW = 4096
 # 수집 주체를 밝힌다. 브라우저를 가장하지 않는다.
@@ -169,6 +173,28 @@ class BoardScraper(Protocol):
     def postings(self, skipped: Skipped) -> Iterator[Posting]: ...
 
 
+@runtime_checkable
+class VerifiesOriginal(Protocol):
+    """받은 것이 원본이 맞는지 내용으로 가리는 게시판.
+
+    화면 자체가 원본인 게시판은 매직 바이트가 없어 `container_of`만으로는 제공자
+    오류 화면과 집행 표를 가르지 못한다. 그런 게시판이 실측한 표식을 여기서 대조한다.
+    """
+
+    def verify(self, body: bytes) -> None: ...
+
+
+@runtime_checkable
+class FiltersRows(Protocol):
+    """업무추진비 집행기관이 아닌 줄을 섞어 싣는 게시판.
+
+    그런 게시판만 이 칸을 가진다(서울 시청·중구·강남 실측). 무엇을 뺐는지 수집이
+    장부에 싣도록 스크래퍼가 스스로 센다.
+    """
+
+    filtered: int
+
+
 class Document(HTMLParser):
     """앵커의 주소·표시 문자열과 본문 텍스트만 남긴다. 요소 구조에는 기대지 않는다."""
 
@@ -210,6 +236,7 @@ def default_transport() -> HttpTransport:
         attempts=REQUEST_ATTEMPTS,
         backoff=REQUEST_BACKOFF,
         session=True,
+        host_intervals=HOST_INTERVALS,
     )
 
 

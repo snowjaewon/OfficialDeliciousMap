@@ -91,7 +91,7 @@ class JungguBoard(ListingBoard):
     page_parameter = "page2"
     attachments_in_listing = False
     download_path = "/cwsboard/board.do"
-    excluded_departments = frozenset({"의회"})
+    filtered_departments = frozenset({"의회"})
 
     def entry(self, row: Row) -> Entry | None:
         for link in row.links:
@@ -231,7 +231,7 @@ class GangnamBoard(ListingBoard):
     page_parameter = "pgno"
     download = re.compile(r"^/file/\d+/get/([0-9a-f-]{8,40})/download\.do$")
     page_call = re.compile(r"selectPage_func\((\d+)\)")
-    excluded_departments = frozenset({"의회"})
+    filtered_departments = frozenset({"의회"})
     # 게시글 번호 칸. 상세가 없어 목록의 번호를 게시글 식별자로 쓴다.
     number_cell = 0
 

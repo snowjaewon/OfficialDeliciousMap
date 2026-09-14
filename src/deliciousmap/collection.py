@@ -71,7 +71,14 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
             collected, gone = _ledger(directory)
             listed = _listed(directory)
             sources.extend(
-                _sources(directory, collected, listed, organization.slug, board.slug, _html(board))
+                _sources(
+                    directory,
+                    collected,
+                    listed,
+                    organization.slug,
+                    board.slug,
+                    _html(board.scraper.published_suffixes),
+                )
             )
             missing.extend(_missing(gone, listed, organization.slug, board.slug))
     if unmeasured and target.city.slug not in UNMEASURED_TOLERANT:
@@ -100,13 +107,13 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
     )
 
 
-def _html(board: Board) -> bool:
+def _html(published: frozenset[str]) -> bool:
     """화면 자체가 원본인 게시판인지. 스크래퍼가 `.html`을 실측 확장자로 선언하면 참이다.
 
     선언은 게시판마다 다르므로 컨테이너 판정도 게시판 단위로 갈린다. 첨부를 내려받는
     게시판에서 200으로 오는 오류 화면을 원본으로 삼지 않기 위해서다.
     """
-    return ".html" in getattr(board.scraper, "published_suffixes", frozenset())
+    return ".html" in published
 
 
 @dataclass(frozen=True)
@@ -132,7 +139,6 @@ def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
     done = set(collected) | set(gone)
     listed = _listed(directory)
     scraper: boards.BoardScraper = board.scraper(board, transport)
-    html = ".html" in scraper.published_suffixes
     unmeasured: list[dict[str, str]] = []
     uncollected = 0
 
@@ -161,7 +167,7 @@ def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
             rejected = []
             for attachment in posting.attachments:
                 try:
-                    _store(directory / attachment.name, attachment, transport, html)
+                    _store(directory / attachment.name, attachment, transport, scraper)
                 except boards.OriginalGone:
                     # 기관이 더는 내주지 않는 원본이다. 다시 요청해도 같으므로 장부에 남긴다.
                     lost.append(attachment)
@@ -187,7 +193,12 @@ def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
         raise AdapterFailure(FailureCause.ADAPTER_FAILED) from None
     _remember_listing(directory, listed)
     _report_unmeasured(directory, unmeasured)
-    return _Walked(unmeasured, uncollected, int(getattr(scraper, "excluded", 0)))
+    return _Walked(unmeasured, uncollected, _filtered(scraper))
+
+
+def _filtered(scraper: boards.BoardScraper) -> int:
+    """스크래퍼가 걸러 낸 게시글 수. 섞인 게시판이 아니면 0이다."""
+    return scraper.filtered if isinstance(scraper, boards.FiltersRows) else 0
 
 
 def _note(attachment: boards.Attachment, reason: str) -> dict[str, str]:
@@ -407,14 +418,20 @@ def _join_reasons(primary: str, warning: str | None) -> str:
 
 
 def _store(
-    destination: Path, attachment: boards.Attachment, transport: Transport, html: bool = False
+    destination: Path,
+    attachment: boards.Attachment,
+    transport: Transport,
+    scraper: boards.BoardScraper,
 ) -> None:
     """원본은 저장소 밖에만 둔다. 이미 받은 원본은 다시 내려받지 않는다."""
     if destination.exists():
         return
     body = boards.request(transport, *boards.endpoint(attachment.url), attachment.referer)
     # 원본으로 받아들일 수 있는지만 확인한다. 무슨 컨테이너였는지는 출처를 만들 때 다시 읽는다.
-    boards.container_of(body, html=html)
+    boards.container_of(body, html=_html(scraper.published_suffixes))
+    if isinstance(scraper, boards.VerifiesOriginal):
+        # 매직 바이트가 없는 원본은 게시판이 실측한 표식으로 한 번 더 가른다.
+        scraper.verify(body)
     _write(destination, body)
 
 
