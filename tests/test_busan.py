@@ -946,3 +946,36 @@ def test_a_real_archive_is_still_a_plain_archive() -> None:
     with ZipFile(buffer, "w") as archive:
         archive.writestr("업무추진비/1월.xls", "x")
     assert boards.container_of(buffer.getvalue()) == "zip"
+
+
+def test_rfc3_takes_the_filename_from_whichever_anchor_declares_it() -> None:
+    """실측(해운대 3173652): 링크 둘이 같은 첨부를 가리키는데 이름이 한쪽에만 온전하다.
+
+    보이는 글자는 `…(문화관광경제국_문화관광과).... (14 kb)`로 잘려 있고, 온전한 이름은
+    옆 링크의 `title`에 있다. 잘린 쪽을 읽으면 확장자가 없어 실측하지 않은 형식이 된다.
+    """
+    detail_body = (
+        '<html><body><dd class="file">'
+        '<a href="/mayor/board/download.bsseogu?boardId=BBS_0000151&amp;dataSid=1'
+        '&amp;fileSid=3135888" title="첨부파일 다운로드">'
+        "26년8월업무추진비집행내역(문화관광경제국_문화관광과).... (14 kb)</a>"
+        '<a href="/mayor/board/download.bsseogu?boardId=BBS_0000151&amp;dataSid=1'
+        '&amp;fileSid=3135888" title="26년8월업무추진비집행내역(문화관광경제국_문화관광과)'
+        '.xlsx 첨부파일 다운로드"><span class="down"></span>내려받기</a>'
+        "</dd></body></html>"
+    )
+    transport = FakeTransport(
+        dict(
+            [
+                response(
+                    LIST_URL,
+                    page_params(1),
+                    listing(row("1", "2026년 8월 문화관광과 업무추진비 집행내역", "2026.09.09")),
+                ),
+                response(VIEW_URL, {"boardId": "BBS_0000151", "dataSid": "1"}, detail_body),
+            ]
+        )
+    )
+    postings = list(Rfc3Board(board(BOARD_URL), transport).postings(lambda *_: False))
+    assert [item.file_id for item in postings[0].attachments] == ["3135888"]
+    assert postings[0].attachments[0].suffix == ".xlsx"

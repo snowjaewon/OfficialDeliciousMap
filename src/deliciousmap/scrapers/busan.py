@@ -24,7 +24,10 @@ PUBLISHED_SUFFIXES = frozenset({".xls", ".xlsx", ".xlsm", ".hwp", ".hwpx", ".pdf
 # (해운대 `do`, 남구 `namgu`) 주소에서 읽고 따로 선언하지 않는다.
 SITE_KEY = re.compile(r"^list\.([A-Za-z0-9]+)$")
 # 내려받기 링크가 밝히는 파일 이름. `title`은 `<이름> 다운받기`, 본문 글자는 `<이름> (20 kb)`다.
-FILENAME = re.compile(r"^\s*(?P<name>.+?)\s*(?:다운받기|\(\s*[\d.,]+\s*[KMGkmg]?[Bb]?\s*\))\s*$")
+FILENAME = re.compile(
+    r"^\s*(?P<name>.+?)\s*"
+    r"(?:(?:첨부파일\s*)?다운(?:받기|로드)|\(\s*[\d.,]+\s*[KMGkmg]?[Bb]?\s*\))\s*$"
+)
 # 연제구 목록이 게시글 번호를 싣는 자리. 주소는 `#`이고 실제 값은 스크립트 호출에만 있다.
 VIEW_CALL = re.compile(r"goTo\.view\(\s*'[^']*'\s*,\s*'(?P<id>[^']+)'")
 # 연제구 쪽 넘김. 마지막 쪽도 주소가 아니라 스크립트 호출로만 밝힌다.
@@ -39,32 +42,42 @@ BADGES = ("새글",)
 COMPACT_DATE = re.compile(r"(\d{4})(\d{2})(\d{2})")
 
 
+def names_of(link: listing.Link) -> tuple[str, ...]:
+    """링크가 밝힌 파일 이름 후보. 게시판마다 이름을 적는 자리가 다르다.
+
+    `title`이 `<이름> 다운받기`인 곳, 보이는 글자가 `<이름> (20 kb)`인 곳, 이름만 적는 곳
+    (동래구), 그리고 보이는 글자는 `…(문화관광과).... (14 kb)`로 자르고 온전한 이름은 옆
+    링크의 `title`에 두는 곳(해운대구)이 모두 있다. 어느 자리가 맞는지는 확장자가 정한다.
+    """
+    found: list[str] = []
+    for value in (link.title, link.text):
+        match = FILENAME.match(value)
+        if match is not None:
+            found.append(match.group("name"))
+        found.append(value.strip())
+    return tuple(found)
+
+
 def filename_of(link: listing.Link) -> str:
     """내려받기 링크가 밝힌 파일 이름. 밝히지 않으면 빈 이름이다.
 
     이름 안에 기간이 들어가 `업무추진비집행내역(개금2동-2026.8.).xlsx`처럼 적히는 일이 잦다
     (부산진구 3977223 실측). 앞에서부터 확장자처럼 보이는 것을 줍지 않고 이름을 통째로 읽는다.
     """
-    for value in (link.title, link.text):
-        found = FILENAME.match(value)
-        if found is not None:
-            return found.group("name")
-    # 크기도 `다운받기`도 붙이지 않고 이름만 적는 게시판이 있다(동래구 실측).
-    for value in (link.title, link.text):
-        if boards.SUFFIX.fullmatch(boards.suffix_of(value)):
-            return value.strip()
+    for name in names_of(link):
+        if boards.SUFFIX.fullmatch(boards.suffix_of(name)):
+            return name
     return ""
 
 
 def suffix_of(link: listing.Link) -> str:
     """링크가 밝힌 형식. 확장자 모양이 아니면 밝히지 않은 것으로 둔다.
 
-    이름이 `…(2026.5.)`처럼 끝나면 마지막 점 뒤가 확장자가 아니다. 그것을 형식이라 우기면
-    게시판 전체가 읽지 못한 것이 된다. 밝히지 않은 것으로 두면 수집이 실측 선언과 대조해
-    그 첨부만 사람이 볼 목록에 남긴다.
+    이름이 `…(2026.5.)`나 `…(문화관광과)....`처럼 끝나면 마지막 점 뒤가 확장자가 아니다.
+    그것을 형식이라 우기면 실제 원본이 실측하지 않은 형식으로 밀린다. 밝히지 않은 것으로
+    두면 수집이 실측 선언과 대조해 그 첨부만 사람이 볼 목록에 남긴다.
     """
-    found = boards.suffix_of(filename_of(link))
-    return found if boards.SUFFIX.fullmatch(found) else ""
+    return boards.suffix_of(filename_of(link))
 
 
 class Rfc3Board:
@@ -149,7 +162,7 @@ class Rfc3Board:
         # 같은 첨부에 내려받기 링크가 둘 붙는 게시판이 있다(동래구·해운대구 실측). 링크가
         # 아니라 파일이 몇 개인지를 센다. 이름은 그중 이름을 밝힌 링크에서 읽는다.
         seen: set[str] = set()
-        for link in sorted(parser.links, key=lambda item: not filename_of(item)):
+        for link in sorted(parser.links, key=lambda item: not suffix_of(item)):
             path = urllib.parse.urlsplit(link.href).path
             if not path.endswith(f"download.{self.site_key}"):
                 continue
