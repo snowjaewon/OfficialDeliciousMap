@@ -998,3 +998,41 @@ def test_an_editor_side_file_is_recorded_rather_than_stopping_the_board() -> Non
 def test_a_real_original_is_not_taken_for_an_editor_side_file() -> None:
     assert not boards.is_placeholder(XLSX_BODY)
     assert not boards.is_placeholder(HWPML_BODY)
+
+
+def test_city_board_counts_one_attachment_per_file_number() -> None:
+    """실측(시청 21660): `/comm/getFile` 링크가 둘이고 이름은 한쪽에만 있다.
+
+    이름 없는 쪽을 첨부로 세면 확장자가 없어 실측하지 않은 형식이 되고, 같은 원본을 두 번
+    내려받는다.
+    """
+    detail_body = (
+        '<html><body><ul class="attfiles"><li>'
+        '<a href="/comm/getFile?srvcId=OPENGOV&amp;upperNo=21660&amp;fileTy=ATTACH'
+        '&amp;fileNo=1" title="파일 다운로드">'
+        "2026년 2분기 업무추진비 집행내역(상수도 북부사업소).hwpx (35 KB)</a>"
+        '<a href="/comm/getFile?srvcId=OPENGOV&amp;upperNo=21660&amp;fileTy=ATTACH'
+        '&amp;fileNo=1" class="btnTypeS btnColorType5" title="새창">다운로드</a>'
+        "</li></ul></body></html>"
+    )
+    transport = FakeTransport(
+        dict(
+            [
+                response(
+                    CITY_LIST,
+                    {"schBizNo": "46", "curPage": "1"},
+                    city_listing(
+                        city_row("21660", "2026년 2분기 업무추진비 집행내역(상수도)", "2026-07-08")
+                    ),
+                ),
+                response(
+                    CITY_VIEW,
+                    {"schCommand": "Expense", "schIndx": "21660"},
+                    detail_body,
+                ),
+            ]
+        )
+    )
+    postings = list(CityBoard(board(CITY_URL, CityBoard), transport).postings(lambda *_: False))
+    assert [item.file_id for item in postings[0].attachments] == ["1"]
+    assert postings[0].attachments[0].suffix == ".hwpx"

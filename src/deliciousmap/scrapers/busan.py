@@ -70,6 +70,16 @@ def filename_of(link: listing.Link) -> str:
     return ""
 
 
+def named_first(links: list[listing.Link]) -> list[listing.Link]:
+    """같은 첨부를 가리키는 링크가 여럿일 때 이름을 밝힌 것을 앞에 둔다.
+
+    부산 게시판은 한 첨부에 링크를 둘 붙이는 일이 잦고(해운대구·동래구·시청 실측), 이름이
+    어느 쪽에 붙는지는 게시판마다 다르다. 뒤에서 파일 번호로 하나만 남길 때 이름 없는 쪽이
+    이기지 않도록 여기서 차례를 정한다.
+    """
+    return sorted(links, key=lambda link: not suffix_of(link))
+
+
 def suffix_of(link: listing.Link) -> str:
     """링크가 밝힌 형식. 확장자 모양이 아니면 밝히지 않은 것으로 둔다.
 
@@ -162,7 +172,7 @@ class Rfc3Board:
         # 같은 첨부에 내려받기 링크가 둘 붙는 게시판이 있다(동래구·해운대구 실측). 링크가
         # 아니라 파일이 몇 개인지를 센다. 이름은 그중 이름을 밝힌 링크에서 읽는다.
         seen: set[str] = set()
-        for link in sorted(parser.links, key=lambda item: not suffix_of(item)):
+        for link in named_first(parser.links):
             path = urllib.parse.urlsplit(link.href).path
             if not path.endswith(f"download.{self.site_key}"):
                 continue
@@ -409,7 +419,9 @@ class CityBoard:
     def _attachments(self, post_id: str, page_url: str) -> tuple[boards.Attachment, ...]:
         parser = listing.parse(boards.request(self.transport, *boards.endpoint(page_url)))
         found: list[boards.Attachment] = []
-        for link in parser.links:
+        # 한 첨부에 링크가 둘 붙고 이름은 한쪽에만 있다(21660 실측). 파일 번호로 하나만 남긴다.
+        seen: set[str] = set()
+        for link in named_first(parser.links):
             split = urllib.parse.urlsplit(link.href)
             if not split.path.endswith("/comm/getFile"):
                 continue
@@ -418,6 +430,9 @@ class CityBoard:
             upper_no = query.get("upperNo", [""])[0]
             if not (boards.is_identifier(file_no) and boards.is_identifier(upper_no)):
                 raise boards.UnreadableBoard("board supplied an unusable attachment identifier")
+            if file_no in seen:
+                continue
+            seen.add(file_no)
             found.append(
                 boards.Attachment(
                     post_id,
