@@ -578,8 +578,8 @@ def test_an_impossible_posting_date_does_not_stop_the_board() -> None:
     assert found[0].title == "2021년 4월 행정지원과 업무추진비"
 
 
-def test_a_listing_row_without_any_date_still_stops_the_board() -> None:
-    # 날짜가 아예 없는 줄은 게시판 구조가 바뀐 것이므로 조용히 넘기지 않는다.
+def test_a_page_where_no_row_declares_a_date_stops_the_board() -> None:
+    # 그 쪽의 어느 줄도 게시일을 밝히지 않으면 게시판 구조가 바뀐 것이므로 멈춘다.
     rows = (
         '<tr><td>1</td><td><a href="./selectBbsNttView.do?bbsNo=172&amp;nttNo=9">가</a></td>'
         "<td>재무과</td></tr>"
@@ -597,3 +597,28 @@ def test_a_listing_row_without_any_date_still_stops_the_board() -> None:
     )
     with pytest.raises(boards.UnreadableBoard):
         list(BbsNoBoard(board(BBSNO, BbsNoBoard), transport).postings(never))
+
+
+def test_a_single_row_with_an_empty_date_cell_does_not_stop_the_board() -> None:
+    """동작 실측(2026-09-14): 2017년 줄 몇 개가 공개일 칸을 비워 두었다.
+
+    같은 쪽의 다른 줄은 게시일을 밝히므로 구조가 바뀐 것이 아니다. 그 줄만 게시일
+    없음으로 두고, 가를 근거가 없는 게시글은 받는다(`period.collects`).
+    """
+    rows = bbsno_row("1", "2017.5월 업무추진비 공개", "상도2동", "", "") + bbsno_row(
+        "2", "2026년 1월 업무추진비 공개", "재무과", "2026-02-03", ""
+    )
+    transport = FakeTransport(
+        dict(
+            [
+                at(
+                    "https://www.sd.go.kr/main/selectBbsNttList.do",
+                    {"bbsNo": "172", "key": "1330", "pageIndex": "1"},
+                    page(rows, 1),
+                )
+            ]
+        )
+    )
+    found = list(BbsNoBoard(board(BBSNO, BbsNoBoard), transport).postings(never))
+    assert [item.post_id for item in found] == ["1", "2"]
+    assert [item.posted for item in found] == [None, date(2026, 2, 3)]

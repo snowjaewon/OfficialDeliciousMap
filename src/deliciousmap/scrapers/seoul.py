@@ -70,15 +70,17 @@ def suffix_from(*values: str) -> str:
 def posted_on(cell: str) -> date | None:
     """줄이 밝힌 게시일. 모양만 날짜인 값은 날짜로 받아들이지 않는다.
 
-    날짜 모양이 아예 없으면 게시판 구조가 바뀐 것이므로 멈춘다. 날짜 모양이지만 달력에
-    없는 날이면 그 줄 하나만 게시일 없음으로 둔다 — 중구 실측(2026-09-14)의
-    `2021-05-70`처럼 기관이 잘못 적은 한 줄 때문에 그 기관의 2026년 원본까지 0건이
-    되지 않게 하기 위해서다. 읽지 못했다는 사실은 빈 게시일로 남고, 그 게시글이 이번
-    제출의 대상인지는 제목이 밝힌 기간이 정한다(`period.exclusion`).
+    읽지 못한 줄은 게시일 없음으로 둔다. 게시판이 그 칸을 비워 두거나(동작 실측의 2017년
+    줄) 달력에 없는 날을 적는(중구 실측의 `2021-05-70`) 일이 있고, 기관이 잘못 적은 한 줄
+    때문에 그 기관의 2026년 원본까지 0건이 되게 하지 않기 위해서다. 읽지 못했다는 사실은
+    빈 게시일로 남고, 이번 제출의 대상인지는 제목이 밝힌 기간이 정한다(`period.exclusion`).
+
+    구조가 바뀐 게시판은 이 함수가 아니라 쪽 단위로 가른다 — 한 쪽의 어느 줄에도 날짜
+    모양이 없으면 `ListingBoard.postings`가 멈춘다.
     """
     found = POSTED.search(cell)
     if found is None:
-        raise boards.UnreadableBoard("board listing row does not declare its posting date")
+        return None
     parts = [value for value in found.groups() if value is not None]
     try:
         return date(*(int(part) for part in parts))
@@ -285,10 +287,12 @@ class ListingBoard:
             listing = listing_of(body, self.encoding, self.row_tags)
             # 상세가 없는 게시판은 지금 읽는 쪽이 게시글의 출처다(강남 실측).
             self.page = page
-            for row in listing.rows:
-                entry = self.entry(row)
-                if entry is None:
-                    continue
+            rows = [(entry, row) for row in listing.rows if (entry := self.entry(row)) is not None]
+            if rows and not any(POSTED.search(row.text) for _, row in rows):
+                # 그 쪽의 어느 줄에도 날짜 모양이 없으면 게시판 구조가 바뀐 것이다. 칸을
+                # 비워 둔 줄이나 달력에 없는 날을 적은 줄 하나와 달리 조용히 넘기지 않는다.
+                raise boards.UnreadableBoard("board listing page declares no posting date")
+            for entry, row in rows:
                 if self._excluded(entry):
                     self.excluded += 1
                     continue
