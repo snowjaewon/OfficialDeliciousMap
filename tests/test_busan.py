@@ -914,3 +914,35 @@ def test_xml_that_is_neither_is_still_refused() -> None:
     """`<?xml`로 시작한다고 다 원본이 아니다. 표식이 있어야 받는다."""
     with pytest.raises(boards.UnsupportedOriginal):
         boards.container_of(b'\xef\xbb\xbf<?xml version="1.0"?><rss><channel/></rss>')
+
+
+def hwpx(*names: str) -> bytes:
+    from io import BytesIO
+    from zipfile import ZIP_STORED, ZipFile
+
+    buffer = BytesIO()
+    with ZipFile(buffer, "w") as archive:
+        # ODF·EPUB과 같은 규칙으로 `mimetype`을 압축 없이 맨 앞에 둔다.
+        archive.writestr("mimetype", "application/hwp+zip", compress_type=ZIP_STORED)
+        for name in names or ("Contents/header.xml", "version.xml"):
+            archive.writestr(name, "<x/>")
+    return buffer.getvalue()
+
+
+def test_hwpx_is_not_reported_as_a_plain_archive() -> None:
+    """실측(북구): `.hwpx` 139건이 한글 문서인데 일반 압축으로 세어졌다.
+
+    컨테이너별 수를 남기는 것이 이 이슈의 완료 기준이라, 압축이라는 사실보다 무엇이
+    들어 있는지가 값이다. 다음 단계가 풀어 볼 압축과 섞이지 않게 따로 센다.
+    """
+    assert boards.container_of(hwpx()) == "hwpx"
+
+
+def test_a_real_archive_is_still_a_plain_archive() -> None:
+    from io import BytesIO
+    from zipfile import ZipFile
+
+    buffer = BytesIO()
+    with ZipFile(buffer, "w") as archive:
+        archive.writestr("업무추진비/1월.xls", "x")
+    assert boards.container_of(buffer.getvalue()) == "zip"

@@ -210,7 +210,7 @@ class CacheRef(Contract):
 
 
 # 원본의 실제 컨테이너. 게시판이 붙인 확장자가 아니라 매직 바이트로 판정한 값이다.
-Container = Literal["ole2", "ooxml", "pdf", "spreadsheetml", "hwpml", "zip"]
+Container = Literal["ole2", "ooxml", "pdf", "spreadsheetml", "hwpml", "hwpx", "zip"]
 
 
 class SourceRef(Contract):

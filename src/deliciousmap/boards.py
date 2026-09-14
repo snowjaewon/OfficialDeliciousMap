@@ -96,6 +96,8 @@ CONTAINERS: tuple[Container, ...] = (
 )
 # UTF-8 바이트 순서 표시. 내용의 일부가 아니라 인코딩 표시다.
 BOM = b"\xef\xbb\xbf"
+# 한글 문서 묶음이 스스로 밝히는 매체 유형. 압축 안의 `mimetype` 항목에 있다.
+HWPX_MEDIA_TYPE = b"application/hwp+zip"
 # 저장 이름에 쓸 수 있는 확장자의 모양. 게시판이 준 이름을 경로로 그대로 쓰지 않는다.
 SUFFIX = re.compile(r"\.[a-z0-9]{1,8}")
 
@@ -284,8 +286,13 @@ def container_of(body: bytes) -> str:
         try:
             with zipfile.ZipFile(BytesIO(body)) as archive:
                 names = set(archive.namelist())
-        except (OSError, zipfile.BadZipFile):
-            names = set()
+                # 한글 문서(HWPX)는 ODF·EPUB과 같이 `mimetype`을 맨 앞에 둔다. 압축이라는
+                # 사실보다 무엇이 들어 있는지가 값이라 일반 압축과 가른다(북구 실측).
+                declared = archive.read("mimetype") if "mimetype" in names else b""
+        except (OSError, zipfile.BadZipFile, KeyError):
+            names, declared = set(), b""
+        if declared.strip() == HWPX_MEDIA_TYPE:
+            return "hwpx"
         if names and (
             "[Content_Types].xml" not in names
             and not any(name.startswith(("word/", "xl/", "ppt/")) for name in names)
