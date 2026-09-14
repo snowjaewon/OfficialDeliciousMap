@@ -553,3 +553,47 @@ def test_jongno_reads_its_page_count_from_the_last_page_button() -> None:
     found = list(JongnoBoard(board(JONGNO, JongnoBoard), transport).postings(never))
     assert len(found) == 603
     assert len(transport.calls) == 603
+
+
+def test_an_impossible_posting_date_does_not_stop_the_board() -> None:
+    """중구 실측(2026-09-14): 게시판이 `2021-05-70`을 게시일로 올려 두었다.
+
+    기관이 잘못 적은 한 줄 때문에 그 기관의 2026년 원본까지 0건이 되지 않게 한다.
+    날짜로 읽지 않았다는 사실은 게시일 없음으로 남고, 대상 여부는 제목이 정한다.
+    """
+    rows = bbsno_row("1", "2021년 4월 행정지원과 업무추진비", "행정지원과", "2021-05-70", "")
+    transport = FakeTransport(
+        dict(
+            [
+                at(
+                    "https://www.sd.go.kr/main/selectBbsNttList.do",
+                    {"bbsNo": "172", "key": "1330", "pageIndex": "1"},
+                    page(rows, 1),
+                )
+            ]
+        )
+    )
+    found = list(BbsNoBoard(board(BBSNO, BbsNoBoard), transport).postings(never))
+    assert [item.posted for item in found] == [None]
+    assert found[0].title == "2021년 4월 행정지원과 업무추진비"
+
+
+def test_a_listing_row_without_any_date_still_stops_the_board() -> None:
+    # 날짜가 아예 없는 줄은 게시판 구조가 바뀐 것이므로 조용히 넘기지 않는다.
+    rows = (
+        '<tr><td>1</td><td><a href="./selectBbsNttView.do?bbsNo=172&amp;nttNo=9">가</a></td>'
+        "<td>재무과</td></tr>"
+    )
+    transport = FakeTransport(
+        dict(
+            [
+                at(
+                    "https://www.sd.go.kr/main/selectBbsNttList.do",
+                    {"bbsNo": "172", "key": "1330", "pageIndex": "1"},
+                    page(rows, 1),
+                )
+            ]
+        )
+    )
+    with pytest.raises(boards.UnreadableBoard):
+        list(BbsNoBoard(board(BBSNO, BbsNoBoard), transport).postings(never))

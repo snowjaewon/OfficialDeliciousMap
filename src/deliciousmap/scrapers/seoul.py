@@ -67,8 +67,15 @@ def suffix_from(*values: str) -> str:
     return ""
 
 
-def posted_on(cell: str) -> date:
-    """줄이 밝힌 게시일. 모양만 날짜인 값은 날짜로 받아들이지 않는다."""
+def posted_on(cell: str) -> date | None:
+    """줄이 밝힌 게시일. 모양만 날짜인 값은 날짜로 받아들이지 않는다.
+
+    날짜 모양이 아예 없으면 게시판 구조가 바뀐 것이므로 멈춘다. 날짜 모양이지만 달력에
+    없는 날이면 그 줄 하나만 게시일 없음으로 둔다 — 중구 실측(2026-09-14)의
+    `2021-05-70`처럼 기관이 잘못 적은 한 줄 때문에 그 기관의 2026년 원본까지 0건이
+    되지 않게 하기 위해서다. 읽지 못했다는 사실은 빈 게시일로 남고, 그 게시글이 이번
+    제출의 대상인지는 제목이 밝힌 기간이 정한다(`period.exclusion`).
+    """
     found = POSTED.search(cell)
     if found is None:
         raise boards.UnreadableBoard("board listing row does not declare its posting date")
@@ -76,9 +83,7 @@ def posted_on(cell: str) -> date:
     try:
         return date(*(int(part) for part in parts))
     except ValueError:
-        raise boards.UnreadableBoard(
-            "board listing row declares an impossible posting date"
-        ) from None
+        return None
 
 
 @dataclass(frozen=True)
@@ -353,7 +358,8 @@ class Entry:
     """목록이 밝힌 게시글 하나. 본문을 열지 결정하는 데 필요한 값만 담는다."""
 
     post_id: str
-    posted: date
+    # 게시판이 읽을 수 있는 게시일을 적지 않은 줄은 빈 값이다(`posted_on`).
+    posted: date | None
     title: str
     department: str
     page_url: str
