@@ -158,7 +158,10 @@ def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
         raise AdapterFailure(FailureCause.SERVICE_UNAVAILABLE) from None
     except boards.UnreadableBoard:
         raise AdapterFailure(FailureCause.ADAPTER_FAILED) from None
-    _remember_listing(directory, listed)
+    finally:
+        # 게시판이 도중에 실패해도 그때까지 목록에서 읽은 값은 맞다. 이미 받은 원본이 게시일·
+        # 제목·집행일을 잃지 않게 남긴다(시청 부서장 목록이 2020년 구간의 행에서 멈춘 실측).
+        _remember_listing(directory, listed)
     _report_unmeasured(directory, unmeasured)
     return _Walked(unmeasured, uncollected)
 

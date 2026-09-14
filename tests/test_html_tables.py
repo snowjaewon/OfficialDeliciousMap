@@ -442,3 +442,35 @@ def test_a_daily_posting_is_targeted_by_its_day_not_its_title(tmp_path: Path) ->
         "undeclared_in_year": 0,
     }
     assert [row["merchant"] for row in records(tmp_path)] == ["합성면"]
+
+
+def test_a_board_that_fails_later_keeps_the_days_it_already_listed(tmp_path: Path) -> None:
+    # 시청 부서장 목록은 2020년 구간의 한 행이 사용일자를 `202-12-28`로 적었다(2026-09-14
+    # 실측). 그 행에서 게시판이 실패로 끝나도, 앞서 받은 날의 원본은 그 날을 잃지 않는다.
+    cities = (city(Board("expenses-deputy", BOARD_URL, CityTransferBoard, CITY_TABLE)),)
+    first = listing("2026-03-05").replace(
+        "<a href=#none title=현재페이지>1</a></li>",
+        "<a href=#none title=현재페이지>1</a></li><li><a href='?curPage=2&se=2&mId=M1'>2</a></li>",
+    )
+    broken = listing("202-12-28").replace("현재페이지>1", "현재페이지>2")
+    board = FakeTransport(
+        {
+            (LIST_URL, frozenset({"se": "2", "mId": "M1", "curPage": "1"}.items())): first,
+            (LIST_URL, frozenset({"se": "2", "mId": "M1", "curPage": "2"}.items())): broken,
+            (LIST_URL, frozenset({"se": "2", "mId": "M1", "useDe": "2026-03-05"}.items())): detail(
+                "2026-03-05", ("1", "합성 협의", "카드", "4", "88", "직원", "합성국밥")
+            ),
+        }
+    )
+
+    assert run(tmp_path, "fetch", cities, board) == 0
+    assert run(tmp_path, "headermap", cities, None) == 0
+    assert run(tmp_path, "parse", cities, None) == 0
+
+    fetched = payload(tmp_path, "fetch")
+    assert "ulsan-city/expenses-deputy=adapter-failed" in fetched["empty_reason"]
+    (source,) = fetched["sources"]
+    assert source["spent_on"] == "2026-03-05"
+    assert [(row["spent_on"], row["merchant"]) for row in records(tmp_path)] == [
+        ("2026-03-05", "합성국밥")
+    ]
