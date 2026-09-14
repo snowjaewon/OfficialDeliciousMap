@@ -256,8 +256,26 @@ git diff --check
 
 pytest 652건 + node 92건이 통과했고 Ruff lint·format이 통과했다.
 
-## 9. 하지 않은 것
+## 9. 남긴 구멍 — `classify`의 낡음 판정이 꼬리말 규칙을 모른다
 
+`storage._dependencies`는 `merchants.POLICY_VERSION`을 `parse`와 `geocode`에만 넣는다. 이번
+변경으로 **`classify`도 그 규칙을 읽게 됐는데 그 낡음 판정은 여전히 모른다.** 꼬리말 정규식이
+언제든 바뀌면 `Store.load("classify", …)`가 옛 규칙으로 계산한 판정을 신선한 것으로 통과시킨다.
+
+이미 그런 산출물이 있다. `data/ulsan/classify.json`은 옛 규칙으로 계산됐고 울산 레코드 124건
+가운데 **11건이 꼬리말**인데 아무것도 그 사실을 알리지 않는다.
+
+**이 PR에서 고치지 않았다. 2026-09-14 사용자 결정이다.** `classify`를 그 집합에 넣어 보면
+`build --city gwangju`와 `build --city ulsan`이 둘 다 `invalid-artifact`로 끝난다(직접 실행해
+확인했다). 광주는 classify 재실행이 캐시 적중이라 LLM 0회지만, 울산은 뗀 이름 기준 캐시에 없는
+이름이 86개(약 3요청 · USD 0.03)이고 현재 판정 124건 가운데 110건이 `unclassified`라 재실행하면
+울산 데이터가 크게 바뀐다. 그것은 #137이 out of scope로 둔 다른 도시이며
+[#132](issue-132.md)의 담당 영역이다. 그래서 이 구멍은
+[#147](https://github.com/snowjaewon/OfficialDeliciousMap/issues/147)로 남긴다.
+
+## 10. 하지 않은 것
+
+- **`classify`의 낡음 판정은 고치지 않았다.** 위 9절과 [#147](https://github.com/snowjaewon/OfficialDeliciousMap/issues/147)이다.
 - **좌표 확정은 0건이다.** 식당으로 갈린 24건은 후보를 얻어 [#135](https://github.com/snowjaewon/OfficialDeliciousMap/issues/135)의 사람 확인 대상이 됐을 뿐이다.
 - **꼬리말 규칙 자체는 건드리지 않았다.** 새 꼬리말 형태를 더하지 않았고 `merchants.read`의
   정규식은 그대로다.
