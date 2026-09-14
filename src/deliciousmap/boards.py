@@ -64,6 +64,14 @@ class EmptyOriginal(Exception):
     """게시판이 내용 없는 첨부를 200으로 주었다. 받을 것이 없다는 점에서 유실과 같다."""
 
 
+class ProtectedOriginal(Exception):
+    """기관이 DRM으로 잠근 첨부다. 200으로 오지만 읽을 수 있는 원본이 들어 있지 않다."""
+
+
+class NotAnOriginal(Exception):
+    """게시판이 원본 대신 편집 도구가 만든 부속 파일을 올렸다. 다시 받아도 같다."""
+
+
 @dataclass(frozen=True)
 class Container:
     """원본으로 받아들이는 형식 하나. 게시판이 밝힌 확장자는 근거가 아니라 대조 대상이다."""
@@ -91,6 +99,9 @@ CONTAINERS: tuple[Container, ...] = (
         frozenset({".xls", ".xlsx"}),
         b"urn:schemas-microsoft-com:office:spreadsheet",
     ),
+    # 한글 XML. 실측(2026-09-14 부산 동구): `.hwp`·`.hwpx` 이름으로 올라오지만 내용은
+    # BOM 뒤에 `<HWPML`로 시작하는 XML이다. 이름이 밝힌 확장자와 다르다고 버리지 않는다.
+    Container("hwpml", b"<?xml", frozenset({".hwp", ".hwpx"}), b"<HWPML"),
     Container("zip", bytes.fromhex("504b0304"), frozenset({".zip"})),
     # 집행내역을 표가 아니라 스캔본으로 공개하는 게시판이 있다. 용산 실측(2026-09-14):
     # 2026년 게시글 10건이 `…집행내역001.jpg` 모양의 이미지였다(JPEG 7·PNG 3).
@@ -98,6 +109,10 @@ CONTAINERS: tuple[Container, ...] = (
     Container("jpeg", bytes.fromhex("ffd8ff"), frozenset({".jpg", ".jpeg"})),
     Container("png", bytes.fromhex("89504e470d0a1a0a"), frozenset({".png"})),
 )
+# UTF-8 바이트 순서 표시. 내용의 일부가 아니라 인코딩 표시다.
+BOM = b"\xef\xbb\xbf"
+# 한글 문서 묶음이 스스로 밝히는 매체 유형. 압축 안의 `mimetype` 항목에 있다.
+HWPX_MEDIA_TYPE = b"application/hwp+zip"
 # 저장 이름에 쓸 수 있는 확장자의 모양. 게시판이 준 이름을 경로로 그대로 쓰지 않는다.
 SUFFIX = re.compile(r"\.[a-z0-9]{1,8}")
 # 집행내역을 첨부 대신 HTML 표로 내는 게시판의 원본 이름. 받은 응답 전체를 그대로 둔다.
@@ -289,11 +304,30 @@ def suffix_of(filename: str) -> str:
     return PurePosixPath(filename.strip()).suffix.lower()
 
 
+# 기관이 DRM으로 잠근 파일의 머리. 이름은 `.xlsx`·`.hwpx`인데 내용이 다르다. 실측 2026-09-14:
+# 부산시청은 Fasoo(`\x9b DRMONE  This Document is encrypted and protected by Fasoo DRM`),
+# 부산 북구는 Softcamp(`SCDSA004`)를 쓴다.
+# 잠긴 파일과 실측하지 않은 형식은 다르다. 형식은 선언하면 읽히고, 이것은 풀어야 읽힌다.
+DRM_SIGNATURES = (b"\x9b DRMONE", b"SCDSA")
+# 편집 도구가 문서 옆에 만드는 부속 파일. 실측(2026-09-14 부산진구 3966536): 668바이트이고
+# UTF-16LE로 `HCellShareFileInfo`로 시작한다. 한셀이 공동 편집에 쓰는 잠금 정보이며 집행 표가
+# 아니다. 형식을 선언해도 표가 생기지 않으므로 실측하지 않은 형식과 같은 자리에 두지 않는다.
+SHARE_INFO = "ShareFileInfo"
 # 문서 묶음임을 알리는 항목. OOXML은 `[Content_Types].xml`이나 부문 폴더로, HWPX는
 # `Contents/`의 본문으로 자신을 밝힌다(양천 `.hwpx` 실측: mimetype·version.xml·
 # Contents/header.xml·META-INF/container.xml). 이것이 없는 묶음만 일반 ZIP이다.
 PACKAGE_FOLDERS = ("word/", "xl/", "ppt/", "Contents/")
 PACKAGE_ENTRY = "[Content_Types].xml"
+
+
+def is_placeholder(body: bytes) -> bool:
+    """원본 대신 올라온 편집 도구의 부속 파일인지. 이름이 아니라 내용으로 가른다."""
+    return SHARE_INFO in body[:64].decode("utf-16-le", errors="ignore")
+
+
+def is_protected(body: bytes) -> bool:
+    """기관이 DRM으로 잠근 첨부인지. 이름이 아니라 내용으로 가른다."""
+    return body.startswith(DRM_SIGNATURES)
 
 
 def _is_document_package(names: set[str]) -> bool:
@@ -313,6 +347,12 @@ def container_of(body: bytes, *, html: bool = False) -> str:
     """
     if not body:
         raise EmptyOriginal("board served an empty attachment")
+    if is_protected(body):
+        raise ProtectedOriginal("organization serves this original under DRM")
+    if is_placeholder(body):
+        raise NotAnOriginal("board published an editor side file instead of an original")
+    # BOM은 형식이 아니라 인코딩 표시다. XML 계열 원본이 그것 때문에 안 걸리지 않게 뗀다.
+    body = body.removeprefix(BOM)
     # A ZIP archive shares the OOXML magic bytes.  Distinguish Office archives
     # by their package entries while retaining the historical fallback for
     # short synthetic OOXML signatures used by older adapters.
@@ -320,8 +360,14 @@ def container_of(body: bytes, *, html: bool = False) -> str:
         try:
             with zipfile.ZipFile(BytesIO(body)) as archive:
                 names = set(archive.namelist())
-        except (OSError, zipfile.BadZipFile):
-            names = set()
+                # 한글 문서(HWPX)는 ODF·EPUB과 같이 `mimetype`을 맨 앞에 둔다. 묶음인 것은
+                # OOXML과 같지만 안을 여는 방법이 달라, 묶음이 스스로 밝힌 매체 유형으로
+                # 가른다(부산 북구 실측). 밝히지 않는 묶음은 아래의 부문 폴더로 갈린다.
+                declared = archive.read("mimetype") if "mimetype" in names else b""
+        except (OSError, zipfile.BadZipFile, KeyError):
+            names, declared = set(), b""
+        if declared.strip() == HWPX_MEDIA_TYPE:
+            return "hwpx"
         if names and not _is_document_package(names):
             return "zip"
     for container in CONTAINERS:

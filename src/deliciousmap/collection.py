@@ -25,15 +25,22 @@ UNMEASURED = "unmeasured.jsonl"
 # 목록에서 읽은 게시일·제목의 색인. 원본과 함께 저장소 밖에 두며, 이미 받아 둔 원본에도
 # 목록만 다시 읽어 이 값을 채운다. 지우면 다음 실행이 목록에서 다시 만든다.
 LISTING = "listing.jsonl"
-# 게시판 하나의 장애를 기관 전체의 0건으로 바꾸지 않는 도시. 실패한 게시판과 사유는
-# 장부의 경고로 남는다. 2026-09-14 사용자 결정으로 서울을 울산과 같게 둔다 — 서울은
-# 기관마다 게시판이 하나여서 실패하면 그 기관의 장부 자체가 남지 않았다. 나머지 도시로
-# 넓힐지는 부산 수집 이슈(#140)에서 정한다.
+# 다시 요청해도 달라지지 않는 사유(목록을 읽지 못함·실측하지 않은 형식)까지 경고로만 남기고
+# 다음 게시판으로 가는 도시. #132가 울산에, #152가 서울에 켰다. 그런 사유는 그 게시판이 아니라
+# 우리 스크래퍼가 틀렸다는 뜻이라 도시 공통으로 넓히지 않는다 — 울산 시청 부서장 목록처럼
+# 기관이 적은 값 하나(`202-12-28`)로 훑기가 끝나는 게시판이 있어(#145) 그 도시는 받아들이기로
+# 했고, 받아들이지 않은 도시는 그 자리에서 알린다.
+#
+# 끊긴 게시판(service-unavailable)은 이 목록과 무관하게 도시를 가리지 않고 이어 간다(#140).
 FAILURE_TOLERANT = frozenset({"seoul", "ulsan"})
 # 실측하지 않은 형식을 경고로만 남기고 통과시키는 도시. 울산 하나뿐이다 — 그 완화는
 # 조용히 빠지는 첨부를 만들므로(울산 장부 실측: 북구 18·동구 28·남구 10건) 서울에는
 # 켜지 않는다. 서울은 스캔본을 만나면 멈췄고, 그래서 `jpeg`·`png`를 실측 컨테이너로
 # 선언해 풀었다.
+#
+# 이 도시 목록을 없애려면 울산 장부의 그 56건이 무슨 형식인지 판정해야 하는데 그 원본은
+# 울산을 수집한 PC에 있다. 확인하지 않은 채로 다른 도시의 파이프라인 결과를 바꾸지 않는다.
+# 게시판 장애를 이어 가는 규칙과는 다른 규칙이라 #140에서 함께 없애지 않았다.
 UNMEASURED_TOLERANT = frozenset({"ulsan"})
 
 
@@ -43,6 +50,8 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
     missing: list[MissingOriginal] = []
     unmeasured: list[dict[str, str]] = []
     failures: list[str] = []
+    # 이어 간 장애. 한 건도 거두지 못한 채 끝나면 그중 첫 사유로 수집을 실패로 알린다.
+    outages: list[FailureCause] = []
     visited: list[str] = []
     held: list[str] = []
     uncollected = 0
@@ -57,14 +66,18 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
             try:
                 walked = _walk(board, directory, transport)
             except AdapterFailure as exc:
-                # 기관별 게시판이 많고 공개 서버가 간헐적으로 끊긴다. 한 게시판의
-                # 장애가 이미 받아 둔 원본까지 0건으로 숨기지 않도록 안전한 사유
-                # 코드만 장부 경고에 남기고 다음 게시판으로 간다. 무엇이 실패했는지
-                # 장부에 남으므로 실패를 성공으로 바꾸는 것이 아니다.
+                # 다시 요청해도 달라지지 않는 사유다. 받아들이기로 한 도시만 이어 간다.
                 if target.city.slug not in FAILURE_TOLERANT:
                     raise
                 failures.append(f"{organization.slug}/{board.slug}={exc.cause.value}")
                 walked = _Walked([], 0, 0)
+            if walked.failure is not None:
+                # #140의 결정: 끊긴 게시판을 이어 가는 규칙에서 도시 이름을 뺀다. 부산은 기관
+                # 열일곱이 호스트 열여섯에 흩어져 있어 공개 서버 하나가 끊기는 일이 상례인데,
+                # 도시 이름은 게시판이 끊겼는지와 무관하다. 끊긴 게시판 하나가 나머지 기관의
+                # 원본까지 0건으로 만들지 않도록 사유만 장부 경고에 남기고 다음 게시판으로 간다.
+                outages.append(walked.failure)
+                failures.append(f"{organization.slug}/{board.slug}={walked.failure.value}")
             unmeasured.extend(walked.unmeasured)
             uncollected += walked.uncollected
             filtered += walked.filtered
@@ -81,6 +94,10 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
                 )
             )
             missing.extend(_missing(gone, listed, organization.slug, board.slug))
+    if not sources and outages:
+        # 게시판을 모두 훑었는데 한 건도 거두지 못했고 그 원인이 장애다. 이것까지 경고로
+        # 남기면 장애가 "첨부가 없는 기관"과 같은 모양이 된다. 실패는 실패로 알린다.
+        raise AdapterFailure(outages[0])
     if unmeasured and target.city.slug not in UNMEASURED_TOLERANT:
         # 게시판을 끝까지 훑은 뒤에 한 번에 알린다. 형식을 하나 만날 때마다 멈추지 않는다.
         raise AdapterFailure(FailureCause.UNSUPPORTED_FORMAT)
@@ -118,12 +135,16 @@ def _html(published: frozenset[str]) -> bool:
 
 @dataclass(frozen=True)
 class _Walked:
-    """게시판 하나를 훑은 결과. 사람이 봐야 하는 첨부와 받지 않은·걸러 낸 게시글 수다."""
+    """게시판 하나를 훑은 결과. 끝까지 못 갔더라도 그때까지 읽은 것을 그대로 담는다."""
 
     unmeasured: list[dict[str, str]]
+    # 게시일이 대상 연도 밖이라 원본을 받지 않은 게시글 수.
     uncollected: int
     # 업무추진비 집행기관이 아니라 스크래퍼가 걸러 낸 줄 수. 스크래퍼가 세지 않으면 0이다.
     filtered: int
+    # 훑기를 끊은 장애. 없으면 게시판을 끝까지 봤다는 뜻이다. 끊긴 뒤에도 위의 수는 남는다 —
+    # 버리면 "기간 밖 게시글이 없는 게시판"과 "끊겨서 세지 못한 게시판"이 같은 모양이 된다.
+    failure: FailureCause | None = None
 
 
 def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
@@ -141,6 +162,7 @@ def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
     scraper: boards.BoardScraper = board.scraper(board, transport)
     unmeasured: list[dict[str, str]] = []
     uncollected = 0
+    failure: FailureCause | None = None
 
     def skip(post_id: str, posted: date | None) -> bool:
         """본문을 열지 않고 넘길 게시글. 아래 루프가 같은 판정을 다시 쓰므로 여기 한 곳에 둔다."""
@@ -159,7 +181,7 @@ def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
                 # 이번 수집이 받지 않는 게시글. 장부에 남기지 않으므로 기간을 넓히면 다시 받는다.
                 uncollected += 1
                 continue
-            stored, lost, empty = [], [], []
+            stored, lost, empty, locked, stray = [], [], [], [], []
             published = scraper.published_suffixes
             unknown = [item for item in posting.attachments if item.suffix not in published]
             unmeasured.extend(_note(item, "format not measured for this board") for item in unknown)
@@ -176,6 +198,14 @@ def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
                 except boards.EmptyOriginal:
                     # 200이지만 받을 것이 없다. 유실과 같은 부류로 장부에 남긴다.
                     empty.append(attachment)
+                except boards.ProtectedOriginal:
+                    # 기관이 DRM으로 잠갔다. 형식을 선언해도 읽히지 않으므로 사람이 볼
+                    # 목록이 아니라 장부에 남긴다. 잠기지 않은 첨부는 그대로 받는다.
+                    locked.append(attachment)
+                except boards.NotAnOriginal:
+                    # 편집 도구가 만든 부속 파일이다. 형식을 선언해도 표가 생기지 않으므로
+                    # 사람이 볼 목록이 아니라 장부에 남기고 다음 첨부로 간다.
+                    stray.append(attachment)
                 except boards.UnsupportedOriginal as reason:
                     # 내용이 실측한 컨테이너와 다르다. 사람이 봐야 하므로 모아서 알린다.
                     rejected.append(_note(attachment, str(reason)))
@@ -186,19 +216,21 @@ def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
                 unmeasured.extend(rejected)
                 continue
             # 게시글을 끝낸 뒤에만 기록한다. 중간에 멈추면 그 게시글은 다시 수집한다.
-            _remember(directory, posting, stored, lost, empty)
+            _remember(directory, posting, stored, lost, empty, locked, stray)
     except boards.UnsupportedOriginal:
         raise AdapterFailure(FailureCause.UNSUPPORTED_FORMAT) from None
-    except boards.BoardUnavailable:
-        raise AdapterFailure(FailureCause.SERVICE_UNAVAILABLE) from None
     except boards.UnreadableBoard:
         raise AdapterFailure(FailureCause.ADAPTER_FAILED) from None
+    except boards.BoardUnavailable:
+        # 다시 요청하면 달라질 수 있는 장애다. 여기서 끊더라도 그때까지 세어 둔 수는 훑기
+        # 결과에 담아 돌려준다 — 버리면 "기간 밖 게시글이 없는 게시판"과 같은 모양이 된다.
+        failure = FailureCause.SERVICE_UNAVAILABLE
     finally:
         # 게시판이 도중에 실패해도 그때까지 목록에서 읽은 값은 맞다. 이미 받은 원본이 게시일·
         # 제목·집행일을 잃지 않게 남긴다(시청 부서장 목록이 2020년 구간의 행에서 멈춘 실측).
         _remember_listing(directory, listed)
     _report_unmeasured(directory, unmeasured)
-    return _Walked(unmeasured, uncollected, _filtered(scraper))
+    return _Walked(unmeasured, uncollected, _filtered(scraper), failure)
 
 
 def _filtered(scraper: boards.BoardScraper) -> int:
@@ -366,6 +398,10 @@ def _ledger(directory: Path) -> tuple[dict[str, Collected], dict[str, Gone]]:
             files = tuple(str(name) for name in entry["files"])
             lost = tuple((str(name), "gone") for name in entry.get("gone", ()))
             lost += tuple((str(name), "empty") for name in entry.get("empty", ()))
+            lost += tuple((str(name), "drm") for name in entry.get("drm", ()))
+            lost += tuple(
+                (str(name), "not_an_original") for name in entry.get("not_an_original", ())
+            )
         except (ValueError, KeyError, TypeError):
             continue
         if files:
@@ -402,6 +438,8 @@ def _remember(
     stored: list[boards.Attachment],
     lost: list[boards.Attachment],
     empty: list[boards.Attachment],
+    locked: list[boards.Attachment],
+    stray: list[boards.Attachment],
 ) -> None:
     if not posting.attachments:
         return
@@ -411,6 +449,8 @@ def _remember(
         "files": [item.name for item in stored],
         "gone": [item.name for item in lost],
         "empty": [item.name for item in empty],
+        "drm": [item.name for item in locked],
+        "not_an_original": [item.name for item in stray],
     }
     directory.mkdir(parents=True, exist_ok=True)
     with (directory / LEDGER).open("a", encoding="utf-8", newline="\n") as stream:

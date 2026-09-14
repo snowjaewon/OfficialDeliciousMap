@@ -215,7 +215,20 @@ class CacheRef(Contract):
 # (서울시청·은평·관악·서대문 실측, 울산 시청·중구·동구의 HTML 표 — ADR-0008)의 원본이며,
 # 그 게시판에서만 이 값이 나온다.
 # `jpeg`·`png`는 집행내역을 스캔본으로 공개한 게시판의 원본이다(용산 실측).
-Container = Literal["html", "jpeg", "ole2", "ooxml", "pdf", "png", "spreadsheetml", "zip"]
+# `hwpml`·`hwpx`는 한글 문서다. 둘 다 `.hwp`·`.hwpx` 이름으로 오지만 하나는 XML이고
+# 하나는 묶음이라 안을 여는 방법이 다르다(부산 동구·북구 실측).
+Container = Literal[
+    "html",
+    "hwpml",
+    "hwpx",
+    "jpeg",
+    "ole2",
+    "ooxml",
+    "pdf",
+    "png",
+    "spreadsheetml",
+    "zip",
+]
 
 
 class SourceRef(Contract):
@@ -884,8 +897,10 @@ class MissingOriginal(Contract):
     # 근거가 되는 게시글 주소와 게시판이 밝힌 파일 이름.
     url: Text
     filename: Text
-    # gone: 기관이 404로 답한다. empty: 200이지만 내용이 없다. 둘 다 받을 것이 없다.
-    reason: Literal["gone", "empty"]
+    # gone: 기관이 404로 답한다. empty: 200이지만 내용이 없다. drm: 200이지만 기관이
+    # 잠가 두었다. not_an_original: 표 대신 편집 도구의 부속 파일이 올라와 있다.
+    # 모두 받을 것이 없고, drm과 not_an_original은 기관이 고치면 달라진다.
+    reason: Literal["gone", "empty", "drm", "not_an_original"]
     # 어느 기간의 장부가 빈 것인지 알 수 있도록 출처와 같은 값을 남긴다.
     posted: date | None = None
     title: Text | None = None

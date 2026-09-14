@@ -171,9 +171,23 @@ def test_a_board_failure_is_recorded_instead_of_losing_the_organization(tmp_path
     assert "test-org/expenses-0=service-unavailable" in output.empty_reason
 
 
-def test_a_city_without_that_decision_still_stops_on_a_board_failure(tmp_path: Path) -> None:
-    # 광주는 이 완화를 받지 않는다. 어느 도시가 받는지는 한 자리에서만 갈린다.
+def test_every_city_records_a_board_failure_the_same_way(tmp_path: Path) -> None:
+    """#140의 결정: 끊긴 게시판을 이어 가는 규칙에서 도시 이름을 뺀다.
+
+    도시 이름은 게시판이 끊겼는지와 무관하다. 광주도 서울·울산과 같이 사유를 장부 경고에
+    남기고 다음 게시판으로 간다.
+    """
     target = _two_board_target((_BrokenScraper, _PdfScraper), slug="gwangju")
+    output = collect(target, _paths(tmp_path), _Pdf())  # type: ignore[arg-type]
+    assert [item.container for item in output.sources] == ["pdf"]
+    assert output.empty_reason is not None
+    assert "test-org/expenses-0=service-unavailable" in output.empty_reason
+
+
+def test_a_board_failure_that_collects_nothing_is_still_a_failure(tmp_path: Path) -> None:
+    """다 훑고도 한 건이 없고 원인이 장애라면 실패다. 그것까지 경고로 남기면 장애가
+    "첨부가 없는 기관"과 같은 모양이 된다."""
+    target = _two_board_target((_BrokenScraper, _BrokenScraper), slug="gwangju")
     with pytest.raises(AdapterFailure):
         collect(target, _paths(tmp_path), _Pdf())  # type: ignore[arg-type]
 
