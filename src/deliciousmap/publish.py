@@ -7,6 +7,7 @@ import re
 import urllib.parse
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import Any
 
 from deliciousmap import site
 from deliciousmap.registry import City
@@ -193,3 +194,66 @@ def oversized_refined(data_root: Path) -> tuple[str, ...]:
         for path in sorted(data_root.rglob("*"))
         if path.is_file() and path.stat().st_size > SIZE_LIMIT
     )
+
+
+def classification_consistency_problems(
+    data_root: Path, cities: tuple[City, ...]
+) -> tuple[str, ...]:
+    """도시·기관 판정이 같은 입력과 코드의 결과인지 확인한다.
+
+    기관 산출물은 도시 산출물의 부분집합이어야 한다. 지오코딩 결과는 기관 범위가
+    판정 키에 들어가므로 조회 키가 다를 수 있지만, 식당 판정은 도시·기관 실행이
+    같은 레코드에 대해 같은 결과를 내야 한다. 기관 파일이 아직 없는 대상은 수집만
+    끝난 도시일 수 있으므로 비교하지 않는다.
+    """
+    problems: list[str] = []
+    for city in cities:
+        city_path = data_root / city.slug / "classify.json"
+        if not city_path.is_file():
+            continue
+        city_decisions, error = _read_classification_decisions(city_path)
+        if error is not None:
+            problems.append(error)
+            continue
+        assert city_decisions is not None
+        for organization in city.organizations:
+            org_path = data_root / city.slug / "orgs" / organization.slug / "classify.json"
+            if not org_path.is_file():
+                continue
+            org_decisions, error = _read_classification_decisions(org_path)
+            if error is not None:
+                problems.append(error)
+                continue
+            assert org_decisions is not None
+            for record_id in sorted(org_decisions):
+                city_decision = city_decisions.get(record_id)
+                if city_decision is None:
+                    problems.append(
+                        f"organization classify record not in city: "
+                        f"{city.slug}/{organization.slug}/{record_id}"
+                    )
+                elif city_decision != org_decisions[record_id]:
+                    problems.append(
+                        f"city/organization classify mismatch: "
+                        f"{city.slug}/{organization.slug}/{record_id}"
+                    )
+    return tuple(problems)
+
+
+def _read_classification_decisions(
+    path: Path,
+) -> tuple[dict[str, dict[str, Any]] | None, str | None]:
+    """분할되지 않은 classify 봉투를 읽어 비교용 record_id 사전으로 만든다."""
+    relative = path.as_posix()
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        decisions = payload["payload"]["decisions"]
+        result: dict[str, dict[str, Any]] = {}
+        for decision in decisions:
+            record_id = decision["record_id"]
+            if record_id in result:
+                return None, f"duplicate classify record: {relative}/{record_id}"
+            result[record_id] = decision
+        return result, None
+    except (OSError, json.JSONDecodeError, KeyError, TypeError) as exc:
+        return None, f"malformed classify artifact: {relative} ({exc})"

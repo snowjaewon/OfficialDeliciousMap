@@ -151,6 +151,7 @@ def _check_data(data_root: Path, cities: tuple[City, ...]) -> int:
             f"not a registered city directory: {name}"
             for name in publish.unknown_directories(data_root, cities)
         ),
+        *publish.classification_consistency_problems(data_root, cities),
     ]
     buildable = publish.buildable_cities(data_root, cities)
     if not buildable:
