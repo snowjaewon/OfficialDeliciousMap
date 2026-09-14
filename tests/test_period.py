@@ -76,6 +76,52 @@ def test_title_without_a_measured_period_declares_nothing(title: str) -> None:
     assert declared(title) is None
 
 
+@pytest.mark.parametrize(
+    ("title", "expected"),
+    [
+        # 서울 구로 게시판(2026-09-14 실측 28건)은 해를 `년` 없이 제목 맨 앞에 적는다. 달은
+        # 해 바로 뒤(3건)나 제목 끝 괄호(25건)에 둔다.
+        ("2026 3월 합성과시책추진업무추진비 공개", Span(date(2026, 3, 1), date(2026, 3, 31))),
+        (
+            "2026 합성국 기관운영업무추진비 집행내역(4월)",
+            Span(date(2026, 4, 1), date(2026, 4, 30)),
+        ),
+        (
+            "2025 합성국 및 합성과 시책추진업무추진비 집행내역 (12월)",
+            Span(date(2025, 12, 1), date(2025, 12, 31)),
+        ),
+        # 광주 게시판에도 해 바로 뒤의 달이 4건 있고, 그중 한 건은 범위다.
+        (
+            "2012 1월 ~4월 합성과 업무추진비집행내역",
+            Span(date(2012, 1, 1), date(2012, 4, 30)),
+        ),
+    ],
+)
+def test_a_bare_year_at_the_start_declares_the_month_beside_it_or_at_the_end(
+    title: str, expected: Span
+) -> None:
+    assert declared(title) == expected
+
+
+@pytest.mark.parametrize(
+    "title",
+    [
+        # 달이 없는 모양은 실측하지 않았다. 그 해 전체로 넓히지 않는다.
+        "2026 합성국 기관운영업무추진비 집행내역",
+        # 제목 끝이 아닌 괄호의 달은 실측하지 않았다.
+        "2026 합성국 업무추진비(4월) 집행내역",
+        # 해가 제목 맨 앞이 아니다.
+        "합성국 2026 업무추진비 집행내역(4월)",
+        # 달 뒤에 붙은 글자와 분기 뒤 괄호의 달은 실측하지 않았다.
+        "2026 3월분 합성과 업무추진비 집행내역",
+        "2026 1분기 합성과 업무추진비 집행내역(3월)",
+    ],
+)
+def test_a_bare_year_reads_only_the_measured_month_positions(title: str) -> None:
+    """기간을 밝히지 않은 제목은 짐작하지 않는다. 대상 여부는 그 사실대로 정해진다."""
+    assert declared(title) is None
+
+
 def test_reporting_period_is_the_first_half_of_2026() -> None:
     assert (START, END) == (date(2026, 1, 1), date(2026, 6, 30))
 
@@ -159,10 +205,24 @@ def test_exclusion_names_why_a_posting_is_not_a_target(
         (date(2026, 1, 5), "6월 업무추진비 사용 내역", "declared_out_of_range"),
         # 게시월과 같은 달은 올해다.
         (date(2026, 1, 5), "1월 업무추진비 사용 내역", None),
-        # 실측하지 않은 표기는 짐작하지 않는다: 범위, 제목 가운데의 달, 달 뒤에 붙은 글자.
+        # 서울 성북 게시판(2026-09-14 실측 4건)은 달을 제목 가운데에 띄어 쓰거나 제목 끝
+        # 괄호에 둔다.
+        (date(2026, 2, 4), "합성과 1월 시책추진업무추진비 공개", None),
+        (date(2026, 7, 15), "합성과 6월 시책추진업무추진비 공개", None),
+        (date(2026, 9, 3), "합성과 시책추진업무추진비 집행내역 공개(8월)", "declared_out_of_range"),
+        # 실측하지 않은 표기는 짐작하지 않는다: 범위, 달 뒤에 붙은 글자.
         (date(2026, 7, 23), "6~7월 업무추진비 사용 내역", "undeclared_in_year"),
-        (date(2026, 7, 23), "시장 6월 업무추진비 사용 내역", "undeclared_in_year"),
+        (date(2026, 7, 23), "합성과 6월 ~ 7월 업무추진비 사용 내역", "undeclared_in_year"),
+        (date(2026, 7, 23), "합성과 1 ~ 3월 업무추진비 사용 내역", "undeclared_in_year"),
         (date(2026, 7, 23), "5월분 업무추진비 사용 내역", "undeclared_in_year"),
+        # 해를 잘못 적은 제목은 해 없는 제목이 아니다. 오기를 짐작하지 않는다(서울 성동·성북 실측).
+        (
+            date(2026, 2, 2),
+            "2026월 1월 합성과 시책추진업무추진비 집행내역 공개",
+            "undeclared_in_year",
+        ),
+        (date(2026, 5, 2), "합성동 업무추진비 집행내역 공개(206.4월)", "undeclared_in_year"),
+        (date(2026, 3, 5), "합성과 업무추진비 사용내역(202년 2월)", "undeclared_in_year"),
     ],
 )
 def test_a_month_without_a_year_is_the_latest_such_month_by_the_posting_date(
