@@ -15,6 +15,7 @@ import urllib.parse
 
 from deliciousmap import boards
 from deliciousmap.scrapers.seoul import (
+    NAMED_SUFFIX,
     POSTED,
     Entry,
     Link,
@@ -23,8 +24,11 @@ from deliciousmap.scrapers.seoul import (
     Row,
     parameter_of,
     posted_on,
-    suffix_from,
 )
+
+# 원본이 아닌 것이 분명한 형식. 중구 상세의 첫 파일 링크는 사이트 그림이다(1.7MB PNG).
+# 실측하지 않은 형식을 여기서 걸러 내지는 않는다 — 그것은 수집 장부가 사람에게 알린다.
+IMAGE_SUFFIXES = frozenset({".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".bmp", ".ico"})
 
 # 게시글 주소가 경로 끝의 번호로 끝나는 게시판(마포·강서·강동 실측).
 PATH_POST = re.compile(r"/(\d+)(?:[?#]|$)")
@@ -110,9 +114,10 @@ class JungguBoard(ListingBoard):
             return False
         if parameter_of(link.href, "mode") != "download":
             return False
-        # 파일 이름이 밝힌 확장자가 이 게시판의 실측 형식일 때만 원본으로 본다.
-        # 첫 링크는 사이트 그림이고 그 이름은 `.png`다.
-        return suffix_from(parameter_of(link.href, "filename") or "") != ""
+        # 사이트 그림만 걸러 낸다. 실측하지 않은 형식은 여기서 조용히 버리지 않고
+        # 수집 장부(`unmeasured.jsonl`)가 사람에게 알리도록 그대로 넘긴다.
+        found = NAMED_SUFFIX.search(parameter_of(link.href, "filename") or "")
+        return found is None or f".{found.group(1).lower()}" not in IMAGE_SUFFIXES
 
 
 class DobongBoard(ListingBoard):

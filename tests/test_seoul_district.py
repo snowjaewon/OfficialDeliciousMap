@@ -281,3 +281,34 @@ def test_gangbuk_is_held_for_its_bot_check() -> None:
     organization = target.organizations[0]
     assert organization.hold_reason == "bot_blocked"
     assert organization.boards == ()
+
+
+def test_junggu_does_not_silently_drop_an_unmeasured_format() -> None:
+    # 실측하지 않은 형식은 걸러 내지 않고 수집 장부가 사람에게 알리도록 넘긴다.
+    rows = (
+        '<tr><td>1</td><td><a href="/content.do?cmsid=15383&amp;mode=view&amp;cid=9">'
+        "2026년 1월 업무추진비</a></td><td>재무과</td><td>2026-02-03</td></tr>"
+    )
+    detail = (
+        '<html><a href="/cwsboard/board.do?mode=download&amp;filename=logo.png">그림</a>'
+        '<a href="/cwsboard/board.do?mode=download&amp;filename=2026-01.doc">집행내역</a></html>'
+    )
+    transport = FakeTransport(
+        dict(
+            [
+                at(
+                    "https://www.junggu.seoul.kr/content.do",
+                    {"cmsid": "15383", "exclude": "Y", "page2": "1"},
+                    wrap(rows, '<a href="?page2=1">1</a>'),
+                ),
+                at(
+                    "https://www.junggu.seoul.kr/content.do",
+                    {"cmsid": "15383", "mode": "view", "cid": "9"},
+                    detail,
+                ),
+            ]
+        )
+    )
+    found = list(JungguBoard(board(JUNG, JungguBoard), transport).postings(never))
+    # 그림은 빠지고, 실측하지 않은 `.doc`는 빈 확장자로 남아 장부가 알린다.
+    assert [item.suffix for item in found[0].attachments] == [""]
