@@ -32,6 +32,7 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
     sources: list[SourceRef] = []
     missing: list[MissingOriginal] = []
     unmeasured: list[dict[str, str]] = []
+    failures: list[str] = []
     visited: list[str] = []
     held: list[str] = []
     uncollected = 0
@@ -42,19 +43,34 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
         for board in organization.boards:
             visited.append(f"{organization.slug}/{board.slug}")
             directory = paths.board_dir(target, organization.slug, board.slug)
-            walked = _walk(board, directory, transport)
+            try:
+                walked = _walk(board, directory, transport)
+            except AdapterFailure as exc:
+                # 울산은 기관별 게시판이 많고 공개 서버가 간헐적으로 끊긴다. 한
+                # 게시판의 장애가 다른 기관의 원본까지 0건으로 숨기지 않도록
+                # 안전한 사유 코드만 장부 경고에 남기고 다음 게시판으로 간다.
+                if target.city.slug != "ulsan":
+                    raise
+                failures.append(f"{organization.slug}/{board.slug}={exc.cause.value}")
+                walked = _Walked([], 0)
             unmeasured.extend(walked.unmeasured)
             uncollected += walked.uncollected
             collected, gone = _ledger(directory)
             listed = _listed(directory)
             sources.extend(_sources(directory, collected, listed, organization.slug, board.slug))
             missing.extend(_missing(gone, listed, organization.slug, board.slug))
-    if unmeasured:
+    if unmeasured and target.city.slug != "ulsan":
         # 게시판을 끝까지 훑은 뒤에 한 번에 알린다. 형식을 하나 만날 때마다 멈추지 않는다.
         raise AdapterFailure(FailureCause.UNSUPPORTED_FORMAT)
+    if unmeasured:
+        failures.append(f"unmeasured-attachments={len(unmeasured)}")
+    warning = _failure_reason(failures)
     if sources:
         return FetchOutput(
-            sources=tuple(sources), missing=tuple(missing), uncollected_postings=uncollected
+            sources=tuple(sources),
+            missing=tuple(missing),
+            empty_reason=warning,
+            uncollected_postings=uncollected,
         )
     if not visited and not held:
         # 아직 게시판을 선언하지 않은 도시를 수집 완료로 표시하지 않는다.
@@ -62,7 +78,7 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
     return FetchOutput(
         sources=(),
         missing=tuple(missing),
-        empty_reason=_empty_reason(visited, held),
+        empty_reason=_join_reasons(_empty_reason(visited, held), warning),
         uncollected_postings=uncollected,
     )
 
@@ -348,6 +364,16 @@ def _empty_reason(visited: list[str], held: list[str]) -> str:
         return f"collection held: {', '.join(held)}"
     published = f"no attachment published on {', '.join(visited)}"
     return f"{published}; collection held: {', '.join(held)}" if held else published
+
+
+def _failure_reason(failures: list[str]) -> str | None:
+    if not failures:
+        return None
+    return "collection failures: " + ", ".join(failures)
+
+
+def _join_reasons(primary: str, warning: str | None) -> str:
+    return f"{primary}; {warning}" if warning else primary
 
 
 def _store(destination: Path, attachment: boards.Attachment, transport: Transport) -> None:

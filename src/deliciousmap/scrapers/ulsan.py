@@ -27,6 +27,11 @@ PUBLISHED_SUFFIXES = frozenset({".xls", ".xlsx", ".xlsm", ".hwp", ".hwpx", ".pdf
 PDF_SUFFIXES = frozenset({".pdf"})
 ZIP_SUFFIXES = frozenset({".zip"})
 DATE_RE = re.compile(r"(\d{4})[-./](\d{1,2})[-./](\d{1,2})")
+# The oldest city transfer rows use a two-digit year (`20. 11. 5`).  The
+# surrounding board is a 2000s archive, so the century is explicit rather than
+# inferred from the current year.  Keep this separate from DATE_RE so a full
+# year always wins and a substring of `2020` cannot be read as `20`.
+SHORT_DATE_RE = re.compile(r"(?<!\d)(\d{2})\s*[-./]\s*(\d{1,2})\s*[-./]\s*(\d{1,2})(?!\d)")
 PAGE_RE = re.compile(r"(?:페이지|page)\s*[:：]?\s*\d+\s*/\s*([\d,]+)", re.I)
 EXTENSION_RE = re.compile(r"\.([A-Za-z0-9]{1,8})(?![A-Za-z0-9])")
 PAGINATION_KEYS = frozenset({"cpage", "curPage", "page", "pageIndex", "startPage"})
@@ -163,14 +168,23 @@ def _parse(body: bytes) -> _TableParser:
 
 def _posted(text: str) -> date:
     found = DATE_RE.search(text)
-    if found is None:
-        raise boards.UnreadableBoard("board listing row does not declare its posting date")
+    if found is not None:
+        values = found.groups()
+    else:
+        short = SHORT_DATE_RE.search(text)
+        if short is None:
+            raise boards.UnreadableBoard("board listing row does not declare its posting date")
+        values = (str(2000 + int(short.group(1))), short.group(2), short.group(3))
     try:
-        return date(*(int(part) for part in found.groups()))
+        return date(*(int(part) for part in values))
     except ValueError:
         raise boards.UnreadableBoard(
             "board listing row declares an impossible posting date"
         ) from None
+
+
+def _has_date(text: str) -> bool:
+    return DATE_RE.search(text) is not None or SHORT_DATE_RE.search(text) is not None
 
 
 def _compact_date(value: str) -> date:
@@ -255,7 +269,7 @@ def _department(row: _Row) -> str:
     )
     if title_index + 1 < len(texts):
         candidate = texts[title_index + 1]
-        if candidate and not DATE_RE.search(candidate):
+        if candidate and not _has_date(candidate):
             return candidate
     return ""
 
@@ -432,11 +446,7 @@ class JungguMayorBoard:
                     )
                 else:
                     posted_index = next(
-                        (
-                            index
-                            for index, cell in enumerate(row.cells)
-                            if DATE_RE.search(cell.text)
-                        ),
+                        (index for index, cell in enumerate(row.cells) if _has_date(cell.text)),
                         None,
                     )
                     if posted_index is None:

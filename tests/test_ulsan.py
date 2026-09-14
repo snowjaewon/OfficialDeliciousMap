@@ -1,11 +1,14 @@
 from datetime import date
 from io import BytesIO
+from pathlib import Path
 from urllib.parse import urlsplit
 from zipfile import ZipFile
 
 import pytest
 
 from deliciousmap import boards
+from deliciousmap.collection import collect
+from deliciousmap.paths import Paths
 from deliciousmap.registry import CITIES, Board, select_target
 from deliciousmap.scrapers.ulsan import (
     BukguBoard,
@@ -60,6 +63,23 @@ def test_ulsan_registry_declares_six_nonempty_organizations() -> None:
     ]
     assert all(item.boards for item in target.organizations)
     assert select_target(CITIES, "ulsan", "ulsan-ulju").organizations[0].slug == "ulsan-ulju"
+
+
+def test_ulsan_collection_keeps_board_failures_and_continues(tmp_path: Path) -> None:
+    class Unavailable:
+        def fetch(self, url: str, params: dict[str, str], headers: dict[str, str]) -> bytes:
+            raise OSError("connection reset")
+
+    target = select_target(CITIES, "ulsan", "ulsan-city")
+    output = collect(
+        target,
+        Paths(Path.cwd(), tmp_path / "raw", tmp_path / "data", tmp_path / "output"),
+        Unavailable(),  # type: ignore[arg-type]
+    )
+    assert output.sources == ()
+    assert output.empty_reason is not None
+    assert "ulsan-city/expenses-market=service-unavailable" in output.empty_reason
+    assert "ulsan-city/expenses-economic=service-unavailable" in output.empty_reason
 
 
 def test_egov_board_walks_pages_and_preserves_direct_attachment() -> None:
@@ -210,6 +230,22 @@ def test_transfer_board_keeps_no_attachment_postings() -> None:
     )
     assert posting.posted == date(2026, 9, 11)
     assert posting.attachments == ()
+
+
+def test_transfer_board_reads_two_digit_legacy_dates() -> None:
+    url = "https://example.invalid/u/rep/transfer/director/list.ulsan?mId=M1"
+    list_url = "https://example.invalid/u/rep/transfer/director/list.ulsan"
+    row = (
+        "<tr><td>9</td><td>20. 11. 5</td><td>"
+        '<a href="#" onclick="f_detail(\'20. 11. 5\');">국장 내역</a></td></tr>'
+    )
+    transport = FakeTransport(
+        dict([response(list_url, {"mId": "M1", "curPage": "1"}, all_rows(row))])
+    )
+    posting = next(
+        CityTransferBoard(board(url, CityTransferBoard), transport).postings(lambda *_: False)
+    )
+    assert posting.posted == date(2020, 11, 5)
 
 
 def test_junggu_mayor_table_without_links_is_preserved() -> None:

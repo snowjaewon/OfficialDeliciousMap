@@ -118,11 +118,15 @@ def test_unknown_map_key_parameter_is_rejected_without_echoing_the_key(
     assert "synthetic-map-key" not in error
 
 
-def test_organization_build_writes_data_without_touching_the_city_shell(tmp_path: Path) -> None:
+def test_organization_build_writes_data_without_touching_the_city_shell(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     context = prepare(tmp_path, org="test-org")
     save_input(context, lookup())
-    for stage in ("geocode", "closure", "build"):
+    for stage in ("geocode", "closure"):
         assert run_cli(context, stage) == 0
+    monkeypatch.delenv("NAVER_MAP_CLIENT_ID")
+    assert run_cli(context, "build") == 0
 
     output_root = context.paths.output_root
     directory = output_root / "seoul" / "orgs" / "test-org"
