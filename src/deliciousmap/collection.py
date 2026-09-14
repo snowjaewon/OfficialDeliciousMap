@@ -115,7 +115,9 @@ def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
         for posting in scraper.postings(skip):
             if posting.posted is not None or posting.title:
                 # 이미 끝낸 게시글도 목록에서 읽은 값은 이번 훑기의 것으로 갱신한다.
-                listed[posting.post_id] = Listed(posting.posted, posting.title, posting.department)
+                listed[posting.post_id] = Listed(
+                    posting.posted, posting.title, posting.department, posting.spent_on
+                )
             if posting.post_id in done:
                 continue
             if skip(posting.post_id, posting.posted):
@@ -189,6 +191,8 @@ class Listed:
     posted: date | None
     title: str
     department: str
+    # 상세 키가 밝힌 집행일(`boards.Posting.spent_on`). 그런 게시판이 아니면 없다.
+    spent_on: date | None = None
 
     @staticmethod
     def of(listed: dict[str, "Listed"], post_id: str) -> tuple[date | None, str | None, str | None]:
@@ -197,6 +201,11 @@ class Listed:
         if entry is None:
             return None, None, None
         return entry.posted, entry.title or None, entry.department or None
+
+    @staticmethod
+    def spent_on_of(listed: dict[str, "Listed"], post_id: str) -> date | None:
+        entry = listed.get(post_id)
+        return entry.spent_on if entry else None
 
 
 def _listed(directory: Path) -> dict[str, Listed]:
@@ -209,10 +218,12 @@ def _listed(directory: Path) -> dict[str, Listed]:
         try:
             entry = json.loads(line)
             posted = entry["posted"]
+            spent_on = entry.get("spent_on")
             listed[str(entry["post_id"])] = Listed(
                 date.fromisoformat(posted) if posted else None,
                 str(entry["title"]),
                 str(entry.get("department") or ""),
+                date.fromisoformat(spent_on) if spent_on else None,
             )
         except (ValueError, KeyError, TypeError):
             continue
@@ -231,6 +242,8 @@ def _remember_listing(directory: Path, listed: dict[str, Listed]) -> None:
                 "posted": entry.posted.isoformat() if entry.posted else None,
                 "title": entry.title,
                 "department": entry.department,
+                # 상세 키가 없는 게시판의 색인은 전과 같은 줄로 남긴다.
+                **({"spent_on": entry.spent_on.isoformat()} if entry.spent_on else {}),
             },
             ensure_ascii=False,
             sort_keys=True,
@@ -267,10 +280,11 @@ def _sources(
                     organization=organization,
                     board=board,
                     url=entry.url,
-                    container=boards.container_of(body),
+                    container=boards.container_of(body, path.suffix),
                     department=department,
                     posted=posted,
                     title=title,
+                    spent_on=Listed.spent_on_of(listed, post_id),
                 )
             )
     return references
@@ -382,7 +396,7 @@ def _store(destination: Path, attachment: boards.Attachment, transport: Transpor
         return
     body = boards.request(transport, *boards.endpoint(attachment.url))
     # 원본으로 받아들일 수 있는지만 확인한다. 무슨 컨테이너였는지는 출처를 만들 때 다시 읽는다.
-    boards.container_of(body)
+    boards.container_of(body, attachment.suffix)
     _write(destination, body)
 
 

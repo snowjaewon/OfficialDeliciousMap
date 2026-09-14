@@ -1,6 +1,8 @@
 """울산광역시와 5개 구·군의 검증된 업무추진비 게시판 레지스트리."""
 
-from deliciousmap.registry.models import Board, City, MapBounds, Organization
+from decimal import Decimal
+
+from deliciousmap.registry.models import Board, City, DeclaredTable, MapBounds, Organization
 from deliciousmap.scrapers.ulsan import (
     BukguBoard,
     CityMarketBoard,
@@ -16,8 +18,42 @@ from deliciousmap.scrapers.ulsan import (
 CITY_MARKET = (
     "https://www.ulsan.go.kr/u/rep/bbs/list.ulsan?bbsId=BBS_0000000000000255&mId=001003002007000000"
 )
-CITY_DIRECTOR = "https://www.ulsan.go.kr/u/rep/transfer/director/list.ulsan?mId=001003002003000000"
-CITY_ECONOMIC = "https://www.ulsan.go.kr/u/rep/transfer/ecnmy/list.ulsan?mId=001003002001000000"
+# 시청 업무추진비 메뉴 진입점(`/u/rep/contents.ulsan?mId=…`)이 넘겨주는 주소(2026-09-14 실측).
+# 게시판 내용은 경로와 `se`가 정하고 `mId`는 화면 제목만 정한다. 실·국장(구)는 2019년까지의
+# 게시글형 옛 자료라 대상 기간 밖이어서 등록하지 않는다.
+CITY_TRANSFER = "https://www.ulsan.go.kr/u/rep/transfer"
+CITY_DEPUTY = f"{CITY_TRANSFER}/ecnmy/list.ulsan?se=2&mId=001003002001000000"
+CITY_ECONOMIC = f"{CITY_TRANSFER}/ecnmy/list.ulsan?se=3&mId=001003002002000000"
+CITY_FEZ = f"{CITY_TRANSFER}/ecnmy/list.ulsan?se=6&mId=001003002006000000"
+CITY_DIRECTOR = f"{CITY_TRANSFER}/director/list.ulsan?mId=001003002003000000"
+CITY_DEPARTMENT = f"{CITY_TRANSFER}/chief/list.ulsan?mId=001003002005000000"
+# 시청 다섯 게시판의 상세 표(2026-09-14 실측). 집행일 열이 없어 상세 키의 날을 쓰고, 금액은
+# 천원이다. `참석대상`에는 역할을 주지 않아 레코드로 옮기지 않는다.
+CITY_TABLE = DeclaredTable(
+    header=("번호", "결제내용", "결제방법", "인원(수량)", "금액(천원)", "참석대상", "장소"),
+    columns={"purpose": 1, "amount_krw": 4, "merchant": 6},
+    amount_multiplier=Decimal(1000),
+)
+# 중구 구청장 목록 표. 목록이 곧 집행내역이고 금액은 원이다(2022-07-01부터, 목록 안내문).
+JUNGGU_MAYOR_TABLE = DeclaredTable(
+    header=(
+        "번호",
+        "날짜",
+        "시간",
+        "장소",
+        "집행목적",
+        "대상 인원수",
+        "금액(원)",
+        "결제방법",
+        "비목",
+    ),
+    columns={"spent_on": 1, "time": 2, "merchant": 3, "purpose": 4, "amount_krw": 6},
+)
+# 동구 구청장 상세 표. 집행일 열이 없어 상세 키의 날을 쓴다.
+DONGGU_MAYOR_TABLE = DeclaredTable(
+    header=("번호", "시간", "장소", "집행목적", "인원수", "금액(원)", "결제방법", "비목", "첨부"),
+    columns={"time": 1, "merchant": 2, "purpose": 3, "amount_krw": 5},
+)
 JUNGGU_MAYOR = "https://www.junggu.ulsan.kr/mayor/board/list.ulsan?boardId=BBS_0000006&listCel=1&listRow=10&menuCd=DOM_000000201005000000"
 JUNGGU_DEPUTY = "https://www.junggu.ulsan.kr/index.ulsan?boardId=BBS_0000114&menuCd=DOM_000000104007001000&paging=ok&startPage=1"
 JUNGGU_DIRECTOR = "https://www.junggu.ulsan.kr/board/list.ulsan?boardId=BBS_0000115&menuCd=DOM_000000104007002000&paging=ok&startPage=1"
@@ -39,15 +75,18 @@ CITY = City(
             "울산광역시",
             (
                 Board("expenses-market", CITY_MARKET, CityMarketBoard),
-                Board("expenses-director", CITY_DIRECTOR, CityTransferBoard),
-                Board("expenses-economic", CITY_ECONOMIC, CityTransferBoard),
+                Board("expenses-deputy", CITY_DEPUTY, CityTransferBoard, CITY_TABLE),
+                Board("expenses-economic", CITY_ECONOMIC, CityTransferBoard, CITY_TABLE),
+                Board("expenses-fez", CITY_FEZ, CityTransferBoard, CITY_TABLE),
+                Board("expenses-director", CITY_DIRECTOR, CityTransferBoard, CITY_TABLE),
+                Board("expenses-department", CITY_DEPARTMENT, CityTransferBoard, CITY_TABLE),
             ),
         ),
         Organization(
             "ulsan-junggu",
             "울산광역시 중구",
             (
-                Board("expenses-mayor", JUNGGU_MAYOR, JungguMayorBoard),
+                Board("expenses-mayor", JUNGGU_MAYOR, JungguMayorBoard, JUNGGU_MAYOR_TABLE),
                 Board("expenses-deputy", JUNGGU_DEPUTY, JungguBoard),
                 Board("expenses-director", JUNGGU_DIRECTOR, JungguBoard),
                 Board("expenses-department", JUNGGU_DEPARTMENT, JungguBoard),
@@ -76,6 +115,7 @@ CITY = City(
                     "expenses-mayor",
                     "https://www.donggu.ulsan.kr/mayor/expense/list.do",
                     DongguMayorBoard,
+                    DONGGU_MAYOR_TABLE,
                 ),
                 Board("expenses-deputy", f"{DONGGU_BASE}?bbsId=BBSMSTR_000000000354", EgovBoard),
                 Board("expenses-director", f"{DONGGU_BASE}?bbsId=BBSMSTR_000000000361", EgovBoard),

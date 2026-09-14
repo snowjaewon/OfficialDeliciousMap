@@ -410,100 +410,102 @@ class JungguBoard(EgovBoard):
 
 
 class JungguMayorBoard:
-    """중구 구청장 원자료 표. 본문에 첨부가 없어 목록만 보존한다."""
+    """중구 구청장 원자료 표. 목록 표가 곧 집행내역이다(행 하나가 지출 하나, 날짜 열이 있다).
 
-    published_suffixes: frozenset[str] = frozenset()
-    page_parameter = "startPage"
+    공개된 회계연도 검색(`searchType=TMP_FIELD1`, `keyword=<연도>`)과 실측한 `listRow=1000`으로
+    대상 연도의 행을 한 쪽에 받고, 그 쪽 응답 전체를 원본으로 둔다(2026-09-14 실측: 2025년
+    482행, 2026년 198행이 한 쪽). 해 목록은 새 행이 위에 쌓여 둘째 쪽부터 내용이 밀리므로, 한 쪽에
+    담기지 않으면 쪽을 짐작해 나누지 않고 읽지 못한 게시판으로 알린다.
+    """
+
+    published_suffixes = frozenset({boards.HTML_SUFFIX})
+    page_size = "1000"
 
     def __init__(self, board: Board, transport: Transport) -> None:
         self.list_url, self.params = boards.endpoint(board.url)
         self.transport = transport
 
     def postings(self, skipped: boards.Skipped) -> Iterator[boards.Posting]:
-        for search_value in self.search_values():
-            yield from self._postings_for_search(search_value, skipped)
+        from deliciousmap import period
 
-    def search_values(self) -> tuple[str | None, ...]:
-        """검색 조건 없이 게시판이 제공하는 전체 목록을 읽는다."""
-        return (None,)
+        for year in range(period.START.year, period.END.year + 1):
+            params = {
+                **self.params,
+                "listRow": self.page_size,
+                "searchType": "TMP_FIELD1",
+                "searchOperation": "OR",
+                "keyword": str(year),
+                "startPage": "1",
+            }
+            parser = _parse(boards.request(self.transport, self.list_url, params))
+            if _page_count(parser, link_keys=("startPage",)) != 1:
+                raise boards.UnreadableBoard("fiscal-year listing no longer fits one page")
+            post_id = str(year)
+            url = boards.address(self.list_url, params)
+            yield boards.Posting(
+                post_id,
+                ()
+                if skipped(post_id, None)
+                else (boards.Attachment(post_id, "1", boards.HTML_SUFFIX, url, url),),
+            )
 
-    def _postings_for_search(
-        self, search_value: str | None, skipped: boards.Skipped
-    ) -> Iterator[boards.Posting]:
+
+class DongguMayorBoard:
+    """동구 구청장 원자료 표. 목록 한 행이 집행일 하루치 게시글이고 표는 상세 쪽에 있다.
+
+    공개된 월 검색(`searchWrd=YYYYMM`)으로 대상 연도 목록만 읽고, 행마다 `view.do?ymd2=YYYYMMDD`
+    상세 쪽 응답 전체를 원본으로 받는다(2026-09-14 실측). 상세 표에는 집행일 열이 없어 상세 키의
+    날을 집행일로 싣는다(ADR-0008). 그 날이 게시글을 가르는 키라 게시글 번호로 쓴다.
+    """
+
+    published_suffixes = frozenset({boards.HTML_SUFFIX})
+
+    def __init__(self, board: Board, transport: Transport) -> None:
+        self.list_url, self.params = boards.endpoint(board.url)
+        self.view_url = urllib.parse.urljoin(self.list_url, "view.do")
+        self.transport = transport
+
+    def postings(self, skipped: boards.Skipped) -> Iterator[boards.Posting]:
+        from deliciousmap import period
+
+        for year in range(period.START.year, period.END.year + 1):
+            for month in range(1, 13):
+                yield from self._month(f"{year}{month:02d}", skipped)
+
+    def _month(self, search: str, skipped: boards.Skipped) -> Iterator[boards.Posting]:
         page = 1
         while True:
-            params = {**self.params, self.page_parameter: str(page)}
-            if search_value is not None:
-                params["searchWrd"] = search_value
+            params = {**self.params, "searchWrd": search, "pageIndex": str(page)}
             parser = _parse(boards.request(self.transport, self.list_url, params))
-            ordinal = 0
             for row in parser.rows:
                 found = next(
                     (
-                        re.search(r"ymd2=(\d{8})", link.href)
+                        (link, key)
                         for cell in row.cells
                         for link in cell.links
+                        if (key := re.search(r"ymd2=(\d{8})", link.href)) is not None
                     ),
                     None,
                 )
-                ordinal += 1
-                if found is not None:
-                    date_id = found.group(1)
-                    posted = _compact_date(date_id)
-                    post_id = f"{date_id}{page:03d}{ordinal:02d}"
-                    title = _title(
-                        row,
-                        next(
-                            (
-                                link.href
-                                for cell in row.cells
-                                for link in cell.links
-                                if "ymd2=" in link.href
-                            ),
-                            "",
-                        ),
-                    )
-                else:
-                    posted_index = next(
-                        (index for index, cell in enumerate(row.cells) if _has_date(cell.text)),
-                        None,
-                    )
-                    if posted_index is None:
-                        ordinal -= 1
-                        continue
-                    posted = _posted(row.cells[posted_index].text)
-                    sequence = next(
-                        (cell.text for cell in row.cells[:posted_index] if cell.text.isdigit()),
-                        str(ordinal),
-                    )
-                    post_id = f"{sequence}{page:03d}{ordinal:02d}"
-                    title = (
-                        row.cells[posted_index + 3].text
-                        if posted_index + 3 < len(row.cells)
-                        else ""
-                    )
-                skipped(post_id, posted)
+                if found is None:
+                    continue
+                link, key = found
+                post_id = key.group(1)
+                posted = _compact_date(post_id)
+                url = boards.address(self.view_url, {"ymd2": post_id})
                 yield boards.Posting(
                     post_id,
-                    (),
+                    ()
+                    if skipped(post_id, posted)
+                    else (boards.Attachment(post_id, "1", boards.HTML_SUFFIX, url, url),),
                     posted,
-                    title,
+                    link.text,
                     "",
+                    spent_on=posted,
                 )
-            if page >= _page_count(parser, link_keys=(self.page_parameter,)):
+            if page >= _page_count(parser, link_keys=("pageIndex",)):
                 return
             page += 1
-
-
-class DongguMayorBoard(JungguMayorBoard):
-    """동구 구청장 원자료 표. 공개된 월 검색으로 대상 연도 목록을 읽는다."""
-
-    page_parameter = "pageIndex"
-
-    def search_values(self) -> tuple[str, ...]:
-        from deliciousmap import period
-
-        return tuple(f"{period.START.year}{month:02d}" for month in range(1, 13))
 
 
 class CityMarketBoard:
@@ -569,9 +571,15 @@ class CityMarketBoard:
 
 
 class CityTransferBoard:
-    """울산시 실·국장/경제부시장 표. 거래 내역은 본문에 있고 첨부는 없다."""
+    """울산시 부시장·경제자유구역청장·실·국장·부서장 표.
 
-    published_suffixes: frozenset[str] = frozenset()
+    목록 한 행이 사용일자 하루치 게시글이고, 집행내역은 첨부가 아니라 `useDe=<사용일자>`로 연
+    상세 쪽의 HTML 표다(2026-09-14 실측). 그 쪽 응답 전체를 원본으로 받는다. 상세 표에는
+    집행일 열이 없어 사용일자를 상세 키가 밝힌 집행일로 싣는다(ADR-0008). 사용일자가 게시글을
+    가르는 키라 게시글 번호로 쓴다 — 목록의 쪽·순번은 새 게시글이 올라오면 밀린다.
+    """
+
+    published_suffixes = frozenset({boards.HTML_SUFFIX})
 
     def __init__(self, board: Board, transport: Transport) -> None:
         self.list_url, self.params = boards.endpoint(board.url)
@@ -583,7 +591,6 @@ class CityTransferBoard:
             parser = _parse(
                 boards.request(self.transport, self.list_url, {**self.params, "curPage": str(page)})
             )
-            ordinal = 0
             for row in parser.rows:
                 detail = next(
                     (
@@ -596,14 +603,26 @@ class CityTransferBoard:
                 )
                 if detail is None:
                     continue
-                ordinal += 1
                 posted = _posted(row.text)
-                post_id = f"{posted:%Y%m%d}{page:03d}{ordinal:02d}"
-                skipped(post_id, posted)
-                yield boards.Posting(post_id, (), posted, detail.text, "")
+                post_id = f"{posted:%Y%m%d}"
+                yield boards.Posting(
+                    post_id,
+                    () if skipped(post_id, posted) else self._detail(post_id, detail),
+                    posted,
+                    detail.text,
+                    "",
+                    spent_on=posted,
+                )
             if page >= _page_count(parser, link_keys=("curPage",)):
                 return
             page += 1
+
+    def _detail(self, post_id: str, link: _Link) -> tuple[boards.Attachment, ...]:
+        found = re.search(r"f_detail\(\s*'([^']+)'", link.onclick)
+        if found is None:
+            raise boards.UnreadableBoard("board listing row does not declare its detail key")
+        url = boards.address(self.list_url, {**self.params, "useDe": found.group(1)})
+        return (boards.Attachment(post_id, "1", boards.HTML_SUFFIX, url, url),)
 
 
 class BukguBoard:

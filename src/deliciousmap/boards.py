@@ -89,6 +89,8 @@ CONTAINERS: tuple[Container, ...] = (
 )
 # 저장 이름에 쓸 수 있는 확장자의 모양. 게시판이 준 이름을 경로로 그대로 쓰지 않는다.
 SUFFIX = re.compile(r"\.[a-z0-9]{1,8}")
+# 집행내역을 첨부 대신 HTML 표로 내는 게시판의 원본 이름. 받은 응답 전체를 그대로 둔다.
+HTML_SUFFIX = ".html"
 
 
 def is_identifier(value: str) -> bool:
@@ -135,6 +137,10 @@ class Posting:
     posted: date | None = None
     title: str = ""
     department: str = ""
+    # 하루치 집행내역을 날짜로 여는 게시판(울산 시청·동구)이 상세 키로 밝힌 집행일. 그 원본의
+    # 표에는 집행일 열이 없어 레코드의 집행일과 대상 기간이 이 값을 쓴다([ADR-0008](
+    # ../../docs/adr/0008-declare-html-table-mappings.md)).
+    spent_on: date | None = None
 
 
 # 본문을 열지 않고 넘길 게시글인지 묻는다. 이미 수집을 마쳤거나 이번 수집의 기간 밖이면 참이다.
@@ -244,14 +250,21 @@ def suffix_of(filename: str) -> str:
     return PurePosixPath(filename.strip()).suffix.lower()
 
 
-def container_of(body: bytes) -> str:
+def container_of(body: bytes, suffix: str = "") -> str:
     """매직 바이트로 컨테이너를 판정한다. 게시판이 밝힌 확장자는 믿지 않는다.
 
     실측(2026-09-11): 이 게시판은 OOXML 파일에 `.xls` 이름을 붙여 올리기도 한다(seq 963·857).
     이름이 어긋난다고 버리면 실제 원본을 잃으므로, 판정한 컨테이너를 출처에 기록해 넘긴다.
+
+    HTML 문서는 스크래퍼가 그 게시판의 원본이 HTML 표라고 밝힌 것(`.html`)만 받는다. 첨부를
+    요청했는데 오류 쪽이 HTML로 오는 일이 흔해서, 이름과 무관하게 받으면 오류 쪽이 원본이 된다.
     """
     if not body:
         raise EmptyOriginal("board served an empty attachment")
+    if is_html(body):
+        if suffix != HTML_SUFFIX:
+            raise UnsupportedOriginal("response is an HTML page, not an original container")
+        return "html"
     # A ZIP archive shares the OOXML magic bytes.  Distinguish Office archives
     # by their package entries while retaining the historical fallback for
     # short synthetic OOXML signatures used by older adapters.
@@ -270,3 +283,9 @@ def container_of(body: bytes) -> str:
         if container.matches(body):
             return container.name
     raise UnsupportedOriginal("response is not an original container")
+
+
+def is_html(body: bytes) -> bool:
+    """HTML 문서인지. 앞의 BOM·공백 뒤에 문서형 선언이나 `<html`이 와야 한다."""
+    head = body[:MARKER_WINDOW].lstrip(b"\xef\xbb\xbf \t\r\n").lower()
+    return head.startswith((b"<!doctype html", b"<html"))

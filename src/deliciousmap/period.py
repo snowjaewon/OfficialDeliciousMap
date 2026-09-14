@@ -113,18 +113,25 @@ def declared(title: str | None) -> Span | None:
     return Span(date(year, first, 1), date(year, last, calendar.monthrange(year, last)[1]))
 
 
-def exclusion(posted: date | None, title: str | None) -> ExclusionReason | None:
+def exclusion(
+    posted: date | None, title: str | None, spent_on: date | None = None
+) -> ExclusionReason | None:
     """대상이 아니면 그 사유. 대상이면 `None`.
 
     `undeclared_in_year`는 감시 지점이다. 게시일이 대상 연도인데 제목이 기간을 밝히지 않으면
     그 게시글은 조용히 빠진다. 0이 아니게 되면 그 표기를 실측해 규칙에 더해야 한다. 광주
     (2026-09-12)는 0건이었고, 울산(2026-09-14)의 147건은 동구 제목 칸 오류와 연도 없는 달
     표기(`YEARLESS_MONTH`)였다(#146).
+
+    상세 키로 집행일을 밝힌 하루치 게시글(`spent_on`)은 제목이 기간을 적지 않는다. 그 게시글이
+    밝힌 지출 기간은 그 하루이므로 제목 대신 그 날로 가른다(ADR-0008).
     """
-    if posted is None and title is None:
+    if posted is None and title is None and spent_on is None:
         return None
     if posted is None or not collects(posted):
         return "posted_out_of_range"
+    if spent_on is not None:
+        return None if Span(spent_on, spent_on).overlaps(REPORTING) else "declared_out_of_range"
     span = declared(title) or _yearless_month(title, posted)
     if span is None:
         return "undeclared_in_year"
@@ -145,13 +152,13 @@ def _yearless_month(title: str | None, posted: date) -> Span | None:
     return Span(date(year, month, 1), date(year, month, calendar.monthrange(year, month)[1]))
 
 
-def targets(posted: date | None, title: str | None) -> bool:
+def targets(posted: date | None, title: str | None, spent_on: date | None = None) -> bool:
     """이번 제출의 대상 게시글인지. 게시일의 해와 제목이 밝힌 지출 기간이 모두 맞아야 한다.
 
     게시일도 제목도 없으면 목록 구조를 읽지 않는 게시판이라 기간으로 가를 수 없다. 그때는
     가르지 않고 대상으로 둔다. 가를 근거가 없다는 것을 0건으로 바꾸지 않기 위해서다.
     """
-    return exclusion(posted, title) is None
+    return exclusion(posted, title, spent_on) is None
 
 
 def _months(found: re.Match[str]) -> tuple[int, int]:

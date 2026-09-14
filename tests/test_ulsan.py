@@ -1,7 +1,7 @@
 from datetime import date
 from io import BytesIO
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
 from zipfile import ZipFile
 
 import pytest
@@ -17,7 +17,6 @@ from deliciousmap.scrapers.ulsan import (
     DongguMayorBoard,
     EgovBoard,
     JungguBoard,
-    JungguMayorBoard,
     NamguBoard,
     UljuBoard,
 )
@@ -65,6 +64,30 @@ def test_ulsan_registry_declares_six_nonempty_organizations() -> None:
     ]
     assert all(item.boards for item in target.organizations)
     assert select_target(CITIES, "ulsan", "ulsan-ulju").organizations[0].slug == "ulsan-ulju"
+
+
+def test_ulsan_registers_every_html_table_board_with_a_declared_mapping() -> None:
+    # 시청 메뉴 진입점(`contents.ulsan?mId=…`)이 넘겨주는 주소(2026-09-14 실측). 내용은
+    # 경로와 `se`가 정하고 `mId`는 화면 제목만 정한다.
+    city, junggu, donggu = (
+        select_target(CITIES, "ulsan", slug).organizations[0]
+        for slug in ("ulsan-city", "ulsan-junggu", "ulsan-donggu")
+    )
+    found = {
+        item.slug: (urlsplit(item.url).path.split("/")[-2], parse_qs(urlsplit(item.url).query))
+        for item in city.boards
+        if item.table is not None
+    }
+    assert found == {
+        "expenses-deputy": ("ecnmy", {"se": ["2"], "mId": ["001003002001000000"]}),
+        "expenses-economic": ("ecnmy", {"se": ["3"], "mId": ["001003002002000000"]}),
+        "expenses-fez": ("ecnmy", {"se": ["6"], "mId": ["001003002006000000"]}),
+        "expenses-director": ("director", {"mId": ["001003002003000000"]}),
+        "expenses-department": ("chief", {"mId": ["001003002005000000"]}),
+    }
+    assert [item.slug for item in city.boards if item.table is None] == ["expenses-market"]
+    assert [item.slug for item in junggu.boards if item.table is not None] == ["expenses-mayor"]
+    assert [item.slug for item in donggu.boards if item.table is not None] == ["expenses-mayor"]
 
 
 def test_ulsan_collection_keeps_board_failures_and_continues(tmp_path: Path) -> None:
@@ -280,21 +303,32 @@ def test_bukgu_and_ulju_open_details_only_when_not_skipped() -> None:
     assert ulju.attachments[0].suffix == ".pdf"
 
 
-def test_transfer_board_keeps_no_attachment_postings() -> None:
+def test_transfer_board_offers_each_day_as_an_html_original_keyed_by_the_day() -> None:
     url = "https://example.invalid/u/rep/transfer/director/list.ulsan?mId=M1"
     list_url = "https://example.invalid/u/rep/transfer/director/list.ulsan"
-    row = (
-        "<tr><td>1</td><td>2026-09-11</td><td>"
-        '<a href="#" onclick="f_detail(\'2026-09-11\');">국장 내역</a></td></tr>'
+    rows = (
+        "<tr><td>2</td><td>2026-09-11</td><td>"
+        '<a href="#" onclick="f_detail(\'2026-09-11\');">국장 내역(2건)</a></td></tr>'
+        "<tr><td>1</td><td>2025-12-30</td><td>"
+        '<a href="#" onclick="f_detail(\'2025-12-30\');">국장 내역(1건)</a></td></tr>'
     )
     transport = FakeTransport(
-        dict([response(list_url, {"mId": "M1", "curPage": "1"}, all_rows(row))])
+        dict([response(list_url, {"mId": "M1", "curPage": "1"}, all_rows(rows))])
     )
-    posting = next(
-        CityTransferBoard(board(url, CityTransferBoard), transport).postings(lambda *_: False)
+    postings = list(
+        CityTransferBoard(board(url, CityTransferBoard), transport).postings(
+            lambda _, posted: posted is not None and posted.year < 2026
+        )
     )
-    assert posting.posted == date(2026, 9, 11)
-    assert posting.attachments == ()
+    assert [(item.post_id, item.posted, item.spent_on) for item in postings] == [
+        ("20260911", date(2026, 9, 11), date(2026, 9, 11)),
+        ("20251230", date(2025, 12, 30), date(2025, 12, 30)),
+    ]
+    (detail,) = postings[0].attachments
+    assert detail.suffix == ".html"
+    assert detail.url == f"{list_url}?mId=M1&useDe=2026-09-11"
+    # 건너뛴 게시글은 상세 쪽을 원본으로 내지 않는다.
+    assert postings[1].attachments == ()
 
 
 def test_transfer_board_reads_two_digit_legacy_dates() -> None:
@@ -311,31 +345,6 @@ def test_transfer_board_reads_two_digit_legacy_dates() -> None:
         CityTransferBoard(board(url, CityTransferBoard), transport).postings(lambda *_: False)
     )
     assert posting.posted == date(2020, 11, 5)
-
-
-def test_junggu_mayor_table_without_links_is_preserved() -> None:
-    url = "https://example.invalid/mayor/board/list.ulsan?boardId=BBS_0000006"
-    row = (
-        "<tr><td>8046</td><td>2026-06-30</td><td>20:14</td><td>등대갈비</td>"
-        "<td>안전감찰 준비 노고 격려</td><td>7</td></tr>"
-    )
-    transport = FakeTransport(
-        dict(
-            [
-                response(
-                    "https://example.invalid/mayor/board/list.ulsan",
-                    {"boardId": "BBS_0000006", "startPage": "1"},
-                    "<p>총게시물 1 / 페이지 : 1/1</p><table>" + row + "</table>",
-                )
-            ]
-        )
-    )
-    posting = next(
-        JungguMayorBoard(board(url, JungguMayorBoard), transport).postings(lambda *_: False)
-    )
-    assert posting.posted == date(2026, 6, 30)
-    assert posting.title == "안전감찰 준비 노고 격려"
-    assert posting.attachments == ()
 
 
 def test_donggu_mayor_uses_the_public_month_search() -> None:
@@ -358,6 +367,14 @@ def test_donggu_mayor_uses_the_public_month_search() -> None:
         DongguMayorBoard(board(url, DongguMayorBoard), transport).postings(lambda *_: False)
     )
     assert [item.posted for item in postings] == [date(2026, 2, 10)]
+    # 집행일이 게시글을 가르는 키이자 상세 쪽을 여는 키다.
+    assert postings[0].post_id == "20260210"
+    assert postings[0].spent_on == date(2026, 2, 10)
+    (detail,) = postings[0].attachments
+    assert (detail.suffix, detail.url) == (
+        ".html",
+        "https://example.invalid/mayor/expense/view.do?ymd2=20260210",
+    )
     assert [params["searchWrd"] for _, params in transport.calls] == [
         f"2026{month:02}" for month in range(1, 13)
     ]
@@ -438,3 +455,12 @@ def test_city_market_detail_failure_is_not_silently_recorded() -> None:
     )
     with pytest.raises(boards.BoardUnavailable):
         list(CityMarketBoard(board(url, CityMarketBoard), transport).postings(lambda *_: False))
+
+
+@pytest.mark.parametrize("suffix", [".pdf", ".zip", ""])
+def test_an_html_page_is_an_original_only_where_the_board_publishes_html(suffix: str) -> None:
+    # 첨부를 요청했는데 오류 쪽이 HTML로 오는 일이 흔하다. 그것을 원본으로 받지 않는다.
+    page = b"\xef\xbb\xbf\r\n  <!DOCTYPE html><html><body><table></table></body></html>"
+    assert boards.container_of(page, ".html") == "html"
+    with pytest.raises(boards.UnsupportedOriginal):
+        boards.container_of(page, suffix)

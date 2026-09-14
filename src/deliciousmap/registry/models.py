@@ -1,7 +1,9 @@
 """City declarations; real boards are added only after verification."""
 
 import re
-from dataclasses import dataclass
+from collections.abc import Mapping
+from dataclasses import dataclass, field
+from decimal import Decimal
 from typing import Literal, get_args
 
 # 수집 보류 사유의 단일 출처. CONTEXT.md의 네 가지 외에는 보류로 남기지 않는다.
@@ -9,10 +11,28 @@ HoldReason = Literal["bot_blocked", "drm", "board_lost", "below_threshold"]
 
 
 @dataclass(frozen=True)
+class DeclaredTable:
+    """게시판이 HTML로 내는 집행내역 표의 헤더 매핑([ADR-0008](
+    ../../../docs/adr/0008-declare-html-table-mappings.md)).
+
+    사이트 틀이 열을 고정한 게시판에만 선언한다. 원본 표의 헤더 행이 `header`와 글자까지
+    같아야 이 매핑을 쓰며, 다르면 틀이 바뀐 것이므로 그 원본은 미해결로 남는다. 코드 검증은
+    모델이 낸 매핑과 똑같이 적용한다. 역할 이름과 열 번호는 헤더 매핑 계약을 따른다.
+    """
+
+    header: tuple[str, ...]
+    # 선언은 레지스트리 상수라 바뀌지 않는다. 사전은 해시할 수 없어 해시에서만 뺀다.
+    columns: Mapping[str, int] = field(hash=False)
+    amount_multiplier: Decimal = Decimal(1)
+
+
+@dataclass(frozen=True)
 class Board:
     slug: str
     url: str
     scraper: type
+    # HTML 표 게시판의 선언된 헤더 매핑. 첨부 원본 게시판은 모델·캐시로 매핑하므로 비워 둔다.
+    table: DeclaredTable | None = None
 
 
 @dataclass(frozen=True)

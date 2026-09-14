@@ -2,6 +2,7 @@ from deliciousmap.registry import busan, daegu, daejeon, gwangju, incheon, seoul
 from deliciousmap.registry.models import (
     Board,
     City,
+    DeclaredTable,
     HoldReason,
     MapBounds,
     Organization,
@@ -15,6 +16,7 @@ __all__ = [
     "CITIES",
     "Board",
     "City",
+    "DeclaredTable",
     "HoldReason",
     "MapBounds",
     "Organization",

@@ -7,6 +7,7 @@ import zipfile
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import date, datetime, time
+from html.parser import HTMLParser
 from pathlib import Path
 from xml.etree import ElementTree
 
@@ -14,6 +15,8 @@ import openpyxl
 import pdfplumber
 import xlrd
 from pdfplumber.table import Table as RuledTable
+
+from deliciousmap.boards import is_html
 
 # 셀 값. 엑셀의 날짜 셀만 datetime이고 숫자는 float, 나머지는 앞뒤 공백을 둔 문자열이다.
 Cell = str | float | datetime
@@ -61,6 +64,15 @@ ADDRESS = f"{{{OWPML}}}cellAddr"
 CELL_SPAN = f"{{{OWPML}}}cellSpan"
 PARAGRAPH = f"{{{OWPML}}}p"
 TEXT_TAG = f"{{{OWPML}}}t"
+# HTML 표 쪽의 인코딩. 울산 시청·중구·동구 게시판이 모두 UTF-8이다(2026-09-14 실측).
+HTML_ENCODING = "utf-8"
+# 좁은 화면에서만 보이도록 칸마다 되풀이한 열 이름. 값이 아니다(동구 구청장 상세 실측
+# `<span class="add-head">금액(원)</span><span class="tds">140,000</span>`).
+HTML_REPEATED_LABELS = frozenset({"add-head"})
+# 글자가 표의 값이 아닌 요소. 스크립트·스타일 본문은 칸 글자로 옮기지 않는다.
+HTML_SKIPPED = frozenset({"script", "style"})
+# 표 앞에서 이름표로 삼을 문단. 시청 상세의 `<h2>`, 동구 상세의 `<p>`가 그 날의 제목이다.
+HTML_HEADINGS = frozenset({"h1", "h2", "h3", "h4", "h5", "h6", "p"})
 
 
 class UnsupportedFormat(Exception):
@@ -89,7 +101,7 @@ class Table:
     """표 하나. `name`은 산출물의 위치 표기, `label`은 원본이 이 표를 부르는 이름이다.
 
     이름표는 형식마다 다른 자리에서 온다 — 통합문서는 시트 이름, PDF는 나온 쪽,
-    HWPX는 표 바로 앞의 제목 문단이다.
+    HWPX는 표 바로 앞의 제목 문단, HTML은 `<caption>`(없으면 표 앞의 제목 문단)이다.
     """
 
     name: str
@@ -121,10 +133,11 @@ def text(value: Cell) -> str:
 
 
 def read_tables(path: Path) -> tuple[Table, ...]:
-    """통합문서는 시트마다, PDF는 괘선으로 나뉜 표마다, HWPX는 `<hp:tbl>`마다 표 하나다.
+    """통합문서는 시트마다, PDF는 괘선으로 나뉜 표마다, HWPX는 `<hp:tbl>`마다, HTML 쪽은
+    `<table>`마다 표 하나다.
 
     내용이 없는 시트·표는 표가 아니며 뒤쪽의 빈 칸·빈 행은 잘라 낸다. 위치 표기는
-    통합문서가 `sheet1`, PDF·HWPX가 `table1`이다.
+    통합문서가 `sheet1`, PDF·HWPX·HTML이 `table1`이다.
     """
     content = path.read_bytes()
     if content.startswith(OLE2):
@@ -133,8 +146,10 @@ def read_tables(path: Path) -> tuple[Table, ...]:
         prefix, blocks = _zip(content)
     elif content.startswith(PDF):
         prefix, blocks = "table", _pdf(content)
+    elif is_html(content):
+        prefix, blocks = "table", _html(content)
     else:
-        raise UnsupportedFormat("not a workbook, HWPX, or PDF")
+        raise UnsupportedFormat("not a workbook, HWPX, PDF, or HTML table page")
     tables = []
     for index, (label, rows, spans) in enumerate(blocks, start=1):
         trimmed = _trim(rows)
@@ -473,6 +488,172 @@ def _joined_text(element: ElementTree.Element) -> str:
         for child in element
         if child.tag != TABLE
     )
+
+
+def _html(content: bytes) -> list[Block]:
+    """게시판 쪽의 `<table>`마다 표 하나다. 표 밖 글자는 표로 만들지 않는다.
+
+    이름표는 `<caption>`이고, 없으면 표 바로 앞의 비어 있지 않은 제목·문단이다. 칸이 여러 열·행을
+    덮으면(`colspan`·`rowspan`) 값은 왼쪽 위 칸에만 두고 세로로 덮은 자리는 `Span`으로 싣는다 —
+    통합문서·HWPX의 병합과 같은 규칙이다. 칸 안에 든 표는 제 표로 따로 낸다.
+    """
+    try:
+        text = content.decode(HTML_ENCODING)
+    except UnicodeDecodeError:
+        raise UnreadableOriginal("HTML page is not in the measured encoding") from None
+    document = _HtmlTables()
+    try:
+        document.feed(text)
+        document.close()
+    except UnreadableOriginal:
+        raise
+    except Exception:
+        raise UnreadableOriginal("HTML page could not be read") from None
+    return [table.block() for table in document.tables]
+
+
+@dataclass
+class _HtmlCell:
+    parts: list[str]
+    rows: int
+    columns: int
+
+
+@dataclass
+class _HtmlTable:
+    label: str
+    caption: list[str] | None = None
+    rows: list[list[_HtmlCell]] = field(default_factory=list)
+
+    def block(self) -> Block:
+        placed: dict[tuple[int, int], Cell] = {}
+        taken: set[tuple[int, int]] = set()
+        spans: list[Span] = []
+        width = 0
+        for index, cells in enumerate(self.rows):
+            column = 0
+            for cell in cells:
+                while (index, column) in taken:
+                    column += 1
+                if len(self.rows) * max(width, column + cell.columns) > MAX_TABLE_CELLS:
+                    # 병합 표기가 깨진 쪽이 격자를 키우지 못하게 한다(HWPX와 같은 상한).
+                    raise UnreadableOriginal("HTML table is too large to lay out")
+                placed[(index, column)] = " ".join(" ".join(cell.parts).split())
+                # 표 끝을 넘는 세로 병합은 없는 행을 덮으므로 표 안의 행까지만 차지한다.
+                height = min(cell.rows, len(self.rows) - index)
+                taken.update(
+                    (index + r, column + c) for r in range(height) for c in range(cell.columns)
+                )
+                spans.extend(
+                    Span(index + r + 1, column + c, index + 1)
+                    for r in range(1, height)
+                    for c in range(cell.columns)
+                )
+                column += cell.columns
+                width = max(width, column)
+        rows = [
+            tuple(placed.get((row, column), "") for column in range(width))
+            for row in range(len(self.rows))
+        ]
+        caption = " ".join(" ".join(self.caption or ()).split())
+        return caption or self.label, rows, tuple(spans)
+
+
+class _HtmlTables(HTMLParser):
+    """표·행·칸과 표 앞의 제목 문단만 따라간다. 요소 구조의 다른 부분에는 기대지 않는다."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.tables: list[_HtmlTable] = []
+        self._open: list[_HtmlTable] = []
+        self._cell: list[_HtmlCell | None] = []
+        # 글자를 버리는 요소들. 되풀이한 열 이름·스크립트 안이면 비어 있지 않다.
+        self._hidden: list[str] = []
+        # 지금 글자를 모으는 캡션·제목 문단. 닫히면 비운다.
+        self._caption: list[str] | None = None
+        self._heading: list[str] | None = None
+        self._label = ""
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        values = dict(attrs)
+        if self._hidden:
+            self._hidden.append(tag)
+            return
+        if tag in HTML_SKIPPED or HTML_REPEATED_LABELS & set((values.get("class") or "").split()):
+            self._hidden.append(tag)
+            return
+        if tag == "table":
+            table = _HtmlTable(self._label)
+            self.tables.append(table)
+            self._open.append(table)
+            self._cell.append(None)
+            self._label = ""
+            return
+        if not self._open:
+            if tag in HTML_HEADINGS:
+                self._heading = []
+            return
+        table = self._open[-1]
+        if tag == "caption":
+            table.caption = self._caption = []
+        elif tag == "tr":
+            table.rows.append([])
+        elif tag in {"td", "th"}:
+            if not table.rows:
+                table.rows.append([])
+            cell = _HtmlCell([], _span(values.get("rowspan")), _span(values.get("colspan")))
+            table.rows[-1].append(cell)
+            self._cell[-1] = cell
+        elif tag == "br" and self._cell[-1] is not None:
+            self._cell[-1].parts.append(" ")
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        # `<br/>`처럼 닫는 태그가 없는 요소는 여는 태그만 본다. 숨긴 깊이를 늘리지 않는다.
+        if tag == "br" and not self._hidden and self._open and self._cell[-1] is not None:
+            self._cell[-1].parts.append(" ")
+
+    def handle_endtag(self, tag: str) -> None:
+        if self._hidden:
+            # 닫는 태그를 빠뜨린 쪽도 있어 같은 이름이 나올 때까지 거슬러 닫는다.
+            while self._hidden and self._hidden.pop() != tag:
+                pass
+            return
+        if tag == "table" and self._open:
+            self._open.pop()
+            self._cell.pop()
+            return
+        if not self._open:
+            if tag in HTML_HEADINGS and self._heading is not None:
+                found = " ".join(" ".join(self._heading).split())
+                if found:
+                    self._label = found
+                self._heading = None
+            return
+        if tag in {"td", "th"}:
+            self._cell[-1] = None
+        elif tag == "caption":
+            self._caption = None
+
+    def handle_data(self, data: str) -> None:
+        if self._hidden:
+            return
+        if not self._open:
+            if self._heading is not None:
+                self._heading.append(data)
+            return
+        cell = self._cell[-1]
+        if cell is not None:
+            cell.parts.append(data)
+        elif self._caption is not None:
+            self._caption.append(data)
+
+
+def _span(value: str | None) -> int:
+    """칸이 덮는 행·열 수. 읽지 못한 값은 칸 하나다."""
+    try:
+        return max(int(value or "1"), 1)
+    except ValueError:
+        return 1
 
 
 def _transitional(content: bytes) -> bytes:

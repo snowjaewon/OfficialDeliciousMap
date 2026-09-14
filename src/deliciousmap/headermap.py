@@ -5,6 +5,7 @@ ADR-0002와 폴백 정책을 따른다. 캐시 적중도 검증하며, 실패한
 """
 
 import uuid
+from collections.abc import Mapping
 from dataclasses import dataclass
 from decimal import Decimal
 from pathlib import Path
@@ -27,8 +28,9 @@ from deliciousmap.contracts import (
     UnresolvedSource,
     Usage,
 )
-from deliciousmap.extract import ValidationFailed, extract, header_signature
+from deliciousmap.extract import ValidationFailed, compact, extract, header_signature
 from deliciousmap.identity import digest
+from deliciousmap.registry import DeclaredTable
 from deliciousmap.storage import append_cache, read_cache
 
 # 캐시 서명·값의 의미가 바뀌면 올린다. 옛 항목은 지우지 않고 다른 키가 된다.
@@ -78,8 +80,14 @@ def resolve(
     answers_path: Path,
     budget: Budget,
     mapper: HeaderMapper | None,
+    declared: Mapping[tuple[str, str], DeclaredTable] | None = None,
 ) -> HeaderMapOutput:
+    """`declared`는 (기관, 게시판)마다 레지스트리가 선언한 HTML 표 매핑이다(ADR-0008).
+
+    선언이 있는 게시판의 원본은 모델에도 캐시에도 묻지 않고 선언만 쓴다.
+    """
     stores = _Stores(cache_path, answers_path, budget)
+    declared = declared or {}
     mappings: list[HeaderMap] = []
     unresolved: list[UnresolvedSource] = []
     unused: list[HeaderMap] = []
@@ -102,7 +110,12 @@ def resolve(
         if not tables:
             unresolved.append(UnresolvedSource(source_hash=source.source_hash, reason="no_table"))
             continue
-        found = _map_tables(source, tables, stores, mapper)
+        layout = declared.get((source.organization, source.board))
+        found = (
+            _map_tables(source, tables, stores, mapper)
+            if layout is None
+            else _declared_table(source, tables, layout)
+        )
         if found.failure is None:
             mappings.extend(found.mappings)
             continue
@@ -144,6 +157,36 @@ def _map_tables(
             if exc.mapping is not None:
                 found.append(exc.mapping)
     return _Mapped(tuple(found), failure)
+
+
+def _declared_table(
+    source: SourceRef, tables: tuple[grid.Table, ...], layout: DeclaredTable
+) -> _Mapped:
+    """선언한 헤더와 첫 행이 같은 표 하나에 선언을 적용한다. 쪽의 다른 표는 집행내역이 아니다.
+
+    HTML 쪽에는 본문 표 말고도 목록·안내 표가 함께 들어 있다(시청 상세 실측). 선언과 같은
+    헤더의 표가 없거나 둘 이상이면 틀이 바뀐 것이므로 짐작하지 않고 미해결로 남긴다.
+    """
+    header = tuple(compact(cell) for cell in layout.header)
+    matched = [table for table in tables if header_signature(table, (1,)) == (header,)]
+    if len(matched) != 1:
+        detail = "declared header not found" if not matched else "declared header repeated"
+        return _Mapped((), Unresolved("validation_failed", detail))
+    table = matched[0]
+    mapping = HeaderMap(
+        source_hash=source.source_hash,
+        table=table.name,
+        layout="table",
+        header_rows=(1,),
+        data_start_row=2,
+        columns=dict(layout.columns),
+        amount_multiplier=layout.amount_multiplier,
+        declared=True,
+    )
+    failure = _failure(source, table, mapping)
+    if failure is not None:
+        return _Mapped((mapping,), Unresolved("validation_failed", failure, mapping))
+    return _Mapped((mapping,), None)
 
 
 def _map_table(

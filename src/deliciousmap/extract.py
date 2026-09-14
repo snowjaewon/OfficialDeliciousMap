@@ -41,6 +41,11 @@ SUBTOTAL = re.compile(r".{0,6}소계")
 TERMINATOR = re.compile(r"(이하)?(빈칸|여백|없음)\.?")
 # 연도 뒤에 오는 월·일. 구분자는 거듭 찍히기도 한다(`2026..03.24.` 동구 실측).
 AFTER_YEAR = r"(?:\s*[-./년])+\s*(\d{1,2})(?:\s*[-./월])+\s*(\d{1,2})(?!\d)"
+# 천원 단위 표의 값으로 볼 수 없는 크기(천원). 울산 시청 표는 헤더가 `금액(천원)`인데 몇 행을
+# 원으로 적었다(`187,000`). 그 값을 곱하면 한 끼가 1억 8,700만 원이 된다. 원본 결함을 고쳐
+# 읽지 않고 그 원본을 미해결로 남긴다(#145, 기준값 근거는 docs/validation/issue-145.md).
+THOUSAND = Decimal(1000)
+THOUSAND_WON_CEILING = Decimal(10_000)
 # 엑셀 1900 체계의 날짜 일련번호가 2000~2099년에 해당하는 범위.
 SERIAL_RANGE = (36526, 73051)
 EXCEL_EPOCH = datetime(1899, 12, 30)
@@ -79,8 +84,7 @@ def extract(table: Table, mapping: HeaderMap, source: SourceRef) -> Extraction:
     if mapping.layout != "table":
         raise ValidationFailed(f"{table.name}: unsupported layout")
     columns = mapping.columns
-    dated = "spent_on" in columns or {"month", "day"} <= columns.keys()
-    if not dated or not {"merchant", "amount_krw"} <= columns.keys():
+    if not _dated(mapping, source) or not {"merchant", "amount_krw"} <= columns.keys():
         raise ValidationFailed(f"{table.name}: missing required roles")
     headers = {
         _signature(table.rows[row - 1]) for row in mapping.header_rows if row <= len(table.rows)
@@ -100,7 +104,7 @@ def extract(table: Table, mapping: HeaderMap, source: SourceRef) -> Extraction:
     for row in range(mapping.data_start_row, len(table.rows) + 1):
         kind = _kind(table, mapping, headers, row)
         if kind == "candidate":
-            sections[-1].candidates.append(_candidate(table, mapping, row))
+            sections[-1].candidates.append(_candidate(table, mapping, source, row))
             continue
         excluded.append(f"{table.name}:R{row} {kind}")
         if kind == "header":
@@ -139,7 +143,19 @@ class _Denominator:
     excluded: tuple[str, ...]
 
 
-def _denominator(table: Table, mapping: HeaderMap) -> _Denominator | None:
+def _dated(mapping: HeaderMap, source: SourceRef) -> bool:
+    """후보마다 집행일을 읽을 자리가 있는지. 표의 날짜 열이거나 상세 키가 밝힌 날이다.
+
+    상세 키의 날(`SourceRef.spent_on`)은 그 원본의 모든 행이 그날의 지출이라는 게시판의
+    선언이다. 날짜 열이 있는 표는 열을 읽고 이 값을 쓰지 않는다(ADR-0008).
+    """
+    columns = mapping.columns
+    return (
+        "spent_on" in columns or {"month", "day"} <= columns.keys() or source.spent_on is not None
+    )
+
+
+def _denominator(table: Table, mapping: HeaderMap, source: SourceRef) -> _Denominator | None:
     """쓰지 않기로 한 매핑으로도 분모만 센다. 값이 온전하지 않다고 후보에서 빼지 않는다.
 
     분모는 추출 성공 레코드가 아니라 원본에서 식별한 지출 후보 전체다. 역할이 모자라 후보를
@@ -147,8 +163,11 @@ def _denominator(table: Table, mapping: HeaderMap) -> _Denominator | None:
     증거가 아니며(`layout=none`도 마찬가지다), 알 수 없음으로 남긴다.
     """
     columns = mapping.columns
-    dated = "spent_on" in columns or {"month", "day"} <= columns.keys()
-    if mapping.layout != "table" or not dated or not {"merchant", "amount_krw"} <= columns.keys():
+    if (
+        mapping.layout != "table"
+        or not _dated(mapping, source)
+        or not {"merchant", "amount_krw"} <= columns.keys()
+    ):
         return None
     headers = {
         _signature(table.rows[row - 1]) for row in mapping.header_rows if row <= len(table.rows)
@@ -166,20 +185,27 @@ def _denominator(table: Table, mapping: HeaderMap) -> _Denominator | None:
     return _Denominator(candidates, tuple(excluded)) if candidates else None
 
 
-def _unresolved_denominator(mappings: list[HeaderMap], path: Path) -> _Denominator | None:
-    """미해결 원본의 분모. 표 하나라도 세지 못하면 이 원본의 후보 수는 알 수 없음이다."""
+def _unresolved_denominator(
+    mappings: list[HeaderMap], path: Path, source: SourceRef
+) -> _Denominator | None:
+    """미해결 원본의 분모. 표 하나라도 세지 못하면 이 원본의 후보 수는 알 수 없음이다.
+
+    선언한 매핑(ADR-0008)은 쪽의 표 가운데 집행내역 표 하나만 가리킨다. 나머지 표는 목록·안내라는
+    것이 선언의 내용이므로, 그때는 선언한 표만 센다.
+    """
     if not mappings:
         return None
     try:
         tables = _tables(path)
     except (UnsupportedFormat, UnreadableOriginal):
         return None
-    if {mapping.table for mapping in mappings} != set(tables):
+    covered = {mapping.table for mapping in mappings}
+    if covered != set(tables) and not all(mapping.declared for mapping in mappings):
         return None
     candidates = 0
     excluded: list[str] = []
     for mapping in mappings:
-        found = _denominator(tables[mapping.table], mapping)
+        found = _denominator(tables[mapping.table], mapping, source)
         if found is None:
             return None
         candidates += found.candidates
@@ -208,7 +234,7 @@ def parse_sources(value: ParseInput, raw_root: Path) -> ParseOutput:
         if source.source_hash in failed:
             item = failed[source.source_hash]
             counted = _unresolved_denominator(
-                unused.get(source.source_hash, []), raw_root / source.path
+                unused.get(source.source_hash, []), raw_root / source.path, source
             )
             reports[source.source_hash] = SourceReport(
                 source_hash=source.source_hash,
@@ -525,20 +551,27 @@ def _payee(table: Table, mapping: HeaderMap, row: int) -> str:
     return REDACTED if PERSONAL_EVENT.search(_purpose(table, mapping, row)) else ""
 
 
-def _candidate(table: Table, mapping: HeaderMap, row: int) -> _Candidate:
+def _candidate(table: Table, mapping: HeaderMap, source: SourceRef, row: int) -> _Candidate:
     """지출 1건의 값을 읽는다. 세로 병합이 덮은 칸은 병합이 담은 값이다(`Table.value`)."""
     columns = mapping.columns
+    spent_on: SpentOn | None
     if "spent_on" in columns:
         spent_on = parse_spent_on(table.value(row, columns["spent_on"]), mapping.year_hint)
-    else:
+    elif {"month", "day"} <= columns.keys():
         spent_on = _month_day(
             table.value(row, columns["month"]), table.value(row, columns["day"]), mapping.year_hint
         )
+    else:
+        # 날짜 열이 없는 표. `_dated`가 상세 키의 날이 있을 때만 여기까지 보낸다.
+        spent_on = SpentOn.of(source.spent_on) if source.spent_on else None
     if spent_on is None:
         raise ValidationFailed(f"{table.name}:R{row} spent_on")
     amount = _amount(table.value(row, columns["amount_krw"]))
     if amount is None:
         raise ValidationFailed(f"{table.name}:R{row} amount_krw")
+    if mapping.amount_multiplier == THOUSAND and abs(amount) >= THOUSAND_WON_CEILING:
+        # 천원 표에 원으로 적은 값이다. 헤더대로 곱하지도, 원으로 고쳐 읽지도 않는다.
+        raise ValidationFailed(f"{table.name}:R{row} amount_unit")
     merchant = text(table.value(row, columns["merchant"])) or _payee(table, mapping, row)
     if not merchant:
         raise ValidationFailed(f"{table.name}:R{row} merchant")
@@ -559,12 +592,12 @@ RowKind = Literal["blank", "header", "subtotal", "total", "unclear_total", "note
 def _kind(table: Table, mapping: HeaderMap, headers: set[tuple[str, ...]], row: int) -> RowKind:
     """지출 1건이 아닌 행을 구별한다. 식당 여부로 레코드를 버리는 일은 여기서 하지 않는다."""
     cells = table.rows[row - 1]
-    joined = "".join(_compact(value) for value in cells)
+    joined = "".join(compact(value) for value in cells)
     if not re.search(r"[0-9A-Za-z가-힣]", joined) or TERMINATOR.fullmatch(joined):
         return "blank"
     if _signature(cells) in headers:
         return "header"
-    labels = {_compact(value) for value in cells}
+    labels = {compact(value) for value in cells}
     if any(SUBTOTAL.fullmatch(label) for label in labels):
         return "subtotal"
     if any(UNCLEAR_TOTAL.fullmatch(label) for label in labels):
@@ -731,12 +764,13 @@ def _count(cells: tuple[Cell, ...]) -> int | None:
     return None
 
 
-def _compact(value: Cell) -> str:
+def compact(value: Cell) -> str:
+    """공백을 모두 지우고 NFC로 모은 셀 글자. 헤더 서명과 행 종류 판정이 같은 규칙을 쓴다."""
     return re.sub(r"\s+", "", unicodedata.normalize("NFC", text(value)))
 
 
 def _signature(cells: tuple[Cell, ...]) -> tuple[str, ...]:
-    return tuple(_compact(value) for value in cells)
+    return tuple(compact(value) for value in cells)
 
 
 def header_signature(table: Table, header_rows: tuple[int, ...]) -> tuple[tuple[str, ...], ...]:
