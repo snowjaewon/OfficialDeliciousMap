@@ -267,12 +267,16 @@ class ListingBoard:
         self.transport = transport
         # 섞인 게시판에서 걸러 낸 줄 수. 실행 기록으로만 쓴다.
         self.excluded = 0
+        # 지금 읽고 있는 목록 쪽. 상세가 없는 게시판이 출처 주소에 쓴다.
+        self.page = 1
 
     def postings(self, skipped: boards.Skipped) -> Iterator[boards.Posting]:
         page = 1
         while True:
             body = self._request(page)
             listing = listing_of(body, self.encoding, self.row_tags)
+            # 상세가 없는 게시판은 지금 읽는 쪽이 게시글의 출처다(강남 실측).
+            self.page = page
             for row in listing.rows:
                 entry = self.entry(row)
                 if entry is None:
@@ -590,6 +594,8 @@ class JongnoBoard(ListingBoard):
     row_tags = frozenset({"ul"})
     view_call = re.compile(r"viewMove\(\s*'(\d+)'\s*\)")
     download_path = "/cmm/fms/FileDown.do"
+    # `viewMove`가 넘겨보내는 본문 주소(2026-09-14 실측).
+    view_path = "/portal/bbs/selectBoardArticle.do"
     # 칸 이름표. 칸 차례가 아니라 이름표로 찾는다. 담당자 칸은 일부러 읽지 않는다.
     labels = {"year": "년도", "month": "해당 월", "department": "작성부서", "posted": "작성일"}
 
@@ -608,7 +614,10 @@ class JongnoBoard(ListingBoard):
         year, month = values["year"], values["month"]
         if not (year.isdigit() and month.isdigit()):
             raise boards.UnreadableBoard("board listing row does not declare its spending month")
-        page_url = boards.address(self.list_url, {**self.params, "nttId": post_id})
+        page_url = boards.address(
+            urllib.parse.urljoin(self.list_url, self.view_path),
+            {**self.params, "menuNo": self.params.get("menuId", ""), "nttId": post_id},
+        )
         return Entry(
             post_id,
             posted_on(values["posted"] or row.text),

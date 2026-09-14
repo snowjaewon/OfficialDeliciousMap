@@ -239,7 +239,7 @@ class GangnamBoard(ListingBoard):
             posted_on(row.text),
             row.cell(self.number_cell + 1),
             _department(row),
-            boards.address(self.list_url, {**self.params, self.page_parameter: "1"}),
+            boards.address(self.list_url, {**self.params, self.page_parameter: str(self.page)}),
         )
 
     def page_count(self, listing: Listing, text: str) -> int:
