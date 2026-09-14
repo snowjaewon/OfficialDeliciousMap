@@ -69,6 +69,13 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
         raise AdapterFailure(causes[0])
     if unmeasured and target.city.slug != "ulsan":
         # 게시판을 끝까지 훑은 뒤에 한 번에 알린다. 형식을 하나 만날 때마다 멈추지 않는다.
+        #
+        # 울산만 빠져 있는 것은 #132가 남긴 것이고 #140이 넓힌 "게시판 실패 뒤 계속"과는 다른
+        # 규칙이다. 여기를 도시 공통으로 바꾸면 울산 산출물에 경고로 적힌 첨부 18건
+        # (`ulsan-bukgu` 장부의 `unmeasured-attachments=18`)이 다음 실행부터 수집 실패가 되는데,
+        # 그 원본은 이 PC에 없어 무슨 형식인지 확인할 수가 없다. 확인하지 않은 채로 다른 도시의
+        # 파이프라인 결과를 바꾸지 않는다. 이 예외를 없애는 일은 울산 원본을 가진 쪽에서 그
+        # 18건을 판정한 뒤에 한다.
         raise AdapterFailure(FailureCause.UNSUPPORTED_FORMAT)
     if unmeasured:
         failures.append(f"unmeasured-attachments={len(unmeasured)}")

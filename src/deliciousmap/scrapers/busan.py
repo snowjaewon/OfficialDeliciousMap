@@ -1,13 +1,13 @@
 """부산시와 16개 구·군의 업무추진비 게시판 수집기.
 
-부산은 구·군 열둘이 같은 rfc3 게시판을 쓴다(`/board/list.<사이트키>` + `startPage`). 그 한 벌을
+부산은 구·군 열이 같은 rfc3 게시판을 쓴다(`/board/list.<사이트키>` + `startPage`). 그 한 벌을
 `Rfc3Board`에 두고, 사이트키·조회 조건처럼 기관마다 다른 값은 레지스트리가 선언한 주소에서 읽는다.
 같은 계열을 쓰지 않는 기관만 따로 둔다.
 """
 
 import re
 import urllib.parse
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from datetime import date
 from typing import TYPE_CHECKING
 
@@ -90,8 +90,46 @@ def suffix_of(link: listing.Link) -> str:
     return boards.suffix_of(filename_of(link))
 
 
+def rfc3_endpoint(url: str) -> tuple[str, dict[str, str], str]:
+    """rfc3 게시판 주소를 기준 주소·조회 조건·사이트키로 나눈다.
+
+    사이트키는 목록 경로에서 읽는다. 도메인과 다를 수 있어(해운대구 `do`, 남구 `namgu`)
+    레지스트리가 주소와 따로 선언하면 두 값이 갈릴 자리가 생긴다.
+    """
+    list_url, params = boards.endpoint(url)
+    if not boards.is_identifier(params.get("boardId", "").replace("_", "")):
+        raise ValueError("board url must declare boardId")
+    found = SITE_KEY.fullmatch(urllib.parse.urlsplit(list_url).path.rsplit("/", 1)[-1])
+    if found is None:
+        raise ValueError("board url must name an rfc3 listing")
+    return list_url, params, found.group(1)
+
+
+def last_page(pages: Iterable[int]) -> int:
+    """쪽 넘김이 밝힌 마지막 쪽. 밝히지 않았으면 쪽 수를 지어내지 않고 읽을 수 없다고 알린다."""
+    found = list(pages)
+    if not found:
+        raise boards.UnreadableBoard("board listing does not declare its page count")
+    return max(found)
+
+
+def listed_pages(parser: listing.TableParser, endpoint: str, parameter: str) -> Iterator[int]:
+    """목록 주소를 가리키는 링크가 싣고 다니는 쪽 번호.
+
+    게시글 링크도 지금 보고 있는 쪽 번호를 달고 다닌다. 아무 링크나 세면 쪽 넘김이 사라진
+    목록을 "한 쪽짜리 게시판"으로 읽으므로, 링크가 가리키는 곳으로 쪽 넘김과 게시글을 가른다.
+    """
+    for link in parser.links:
+        split = urllib.parse.urlsplit(link.href)
+        if not split.path.endswith(endpoint):
+            continue
+        for value in urllib.parse.parse_qs(split.query).get(parameter, []):
+            if value.isdigit():
+                yield int(value)
+
+
 class Rfc3Board:
-    """부산 구·군 열둘이 함께 쓰는 rfc3 게시판. 목록에서 게시글을, 본문에서 첨부를 읽는다.
+    """부산 구·군 열이 함께 쓰는 rfc3 게시판. 목록에서 게시글을, 본문에서 첨부를 읽는다.
 
     목록은 첨부를 밝히지 않는다(실측 2026-09-14, 서구). 그래서 이번 수집이 받을 게시글만
     본문을 열고, 넘길 게시글은 목록에 실린 값만 담아 낸다.
@@ -102,14 +140,7 @@ class Rfc3Board:
     title_filter: re.Pattern[str] | None = None
 
     def __init__(self, board: "Board", transport: Transport) -> None:
-        self.list_url, self.params = boards.endpoint(board.url)
-        if not boards.is_identifier(self.params.get("boardId", "").replace("_", "")):
-            raise ValueError("board url must declare boardId")
-        name = urllib.parse.urlsplit(self.list_url).path.rsplit("/", 1)[-1]
-        found = SITE_KEY.fullmatch(name)
-        if found is None:
-            raise ValueError("board url must name an rfc3 listing")
-        self.site_key = found.group(1)
+        self.list_url, self.params, self.site_key = rfc3_endpoint(board.url)
         self.transport = transport
 
     def postings(self, skipped: boards.Skipped) -> Iterator[boards.Posting]:
@@ -140,27 +171,12 @@ class Rfc3Board:
             page += 1
 
     def _page_count(self, parser: listing.TableParser) -> int:
-        """목록이 밝힌 마지막 쪽. 쪽 넘김 링크만 본다.
-
-        게시글 링크도 `startPage`를 달고 다니므로(지금 보고 있는 쪽) 아무 링크나 세면 쪽
-        넘김이 사라진 목록을 "한 쪽짜리 게시판"으로 읽는다. 쪽 넘김은 언제나 목록 주소를
-        가리키고 게시글은 본문 주소를 가리켜, 가리키는 곳으로 둘을 가른다.
+        """목록이 밝힌 마지막 쪽.
 
         실측(2026-09-14): 열한 게시판이 모두 마지막 쪽 단추에 진짜 마지막 쪽을 싣는다.
         묶는 태그는 기관마다 다르다(`div.paging-wrap2`, `div.page`).
         """
-        pages = [
-            int(value)
-            for link in parser.links
-            if urllib.parse.urlsplit(link.href).path.endswith(f"list.{self.site_key}")
-            for value in urllib.parse.parse_qs(urllib.parse.urlsplit(link.href).query).get(
-                "startPage", []
-            )
-            if value.isdigit()
-        ]
-        if not pages:
-            raise boards.UnreadableBoard("board listing does not declare its page count")
-        return max(pages)
+        return last_page(listed_pages(parser, f"list.{self.site_key}", "startPage"))
 
     def _collects(self, title: str) -> bool:
         """섞인 게시판에서 이 게시글의 원본을 받을지. 조건이 없으면 게시판 전체가 대상이다."""
@@ -232,9 +248,7 @@ class GijangBoard:
     DEPARTMENT, SPENT_ON, PURPOSE = 0, 2, 4
 
     def __init__(self, board: "Board", transport: Transport) -> None:
-        self.list_url, self.params = boards.endpoint(board.url)
-        if not boards.is_identifier(self.params.get("boardId", "").replace("_", "")):
-            raise ValueError("board url must declare boardId")
+        self.list_url, self.params, self.site_key = rfc3_endpoint(board.url)
         self.transport = transport
 
     def postings(self, skipped: boards.Skipped) -> Iterator[boards.Posting]:
@@ -262,7 +276,7 @@ class GijangBoard:
                     row.cells[self.PURPOSE].text,
                     row.cells[self.DEPARTMENT].text,
                 )
-            if page >= _gijang_page_count(parser, self.list_url):
+            if page >= last_page(listed_pages(parser, f"list.{self.site_key}", "startPage")):
                 return
             page += 1
 
@@ -284,22 +298,6 @@ def _spent_on(text: str) -> date | None:
         return listing.posted(text)
     except boards.UnreadableBoard:
         return None
-
-
-def _gijang_page_count(parser: listing.TableParser, list_url: str) -> int:
-    name = urllib.parse.urlsplit(list_url).path.rsplit("/", 1)[-1]
-    pages = [
-        int(value)
-        for link in parser.links
-        if urllib.parse.urlsplit(link.href).path.endswith(name)
-        for value in urllib.parse.parse_qs(urllib.parse.urlsplit(link.href).query).get(
-            "startPage", []
-        )
-        if value.isdigit()
-    ]
-    if not pages:
-        raise boards.UnreadableBoard("board listing does not declare its page count")
-    return max(pages)
 
 
 class EgovPortalBoard:
@@ -344,7 +342,7 @@ class EgovPortalBoard:
                     _title(row),
                     _cell(row, "list_write"),
                 )
-            if page >= _page_count(parser):
+            if page >= _script_page_count(parser):
                 return
             page += 1
 
@@ -454,16 +452,16 @@ class CityBoard:
 
 
 def _city_page_count(parser: listing.TableParser) -> int:
-    """쪽 넘김이 밝힌 마지막 쪽. 게시글 주소도 `curPage`를 달고 다니므로 그것은 세지 않는다."""
-    pages: list[int] = []
-    for link in parser.links:
-        query = urllib.parse.parse_qs(urllib.parse.urlsplit(link.href).query)
-        if "schIndx" in query:
-            continue
-        pages.extend(int(value) for value in query.get("curPage", []) if value.isdigit())
-    if not pages:
-        raise boards.UnreadableBoard("board listing does not declare its page count")
-    return max(pages)
+    """쪽 넘김이 밝힌 마지막 쪽. 시청의 쪽 넘김 주소는 경로가 비어 있어 게시글 번호로 가른다."""
+
+    def pages() -> Iterator[int]:
+        for link in parser.links:
+            query = urllib.parse.parse_qs(urllib.parse.urlsplit(link.href).query)
+            if "schIndx" in query:
+                continue
+            yield from (int(value) for value in query.get("curPage", []) if value.isdigit())
+
+    return last_page(pages())
 
 
 def _cell(row: listing.Row, name: str) -> str:
@@ -481,11 +479,18 @@ def _title(row: listing.Row) -> str:
     return title
 
 
-def _page_count(parser: listing.TableParser) -> int:
-    pages = [int(found) for link in parser.links for found in PAGE_CALL.findall(link.onclick)]
-    if not pages:
-        raise boards.UnreadableBoard("board listing does not declare its page count")
-    return max(pages)
+def _script_page_count(parser: listing.TableParser) -> int:
+    """연제구의 마지막 쪽. 쪽 넘김 주소가 `#`이라 쪽 수는 `goPage` 호출에만 있다."""
+    return last_page(
+        int(found) for link in parser.links for found in PAGE_CALL.findall(link.onclick)
+    )
 
 
-__all__ = ["PUBLISHED_SUFFIXES", "CityBoard", "EgovPortalBoard", "Rfc3Board"]
+__all__ = [
+    "PUBLISHED_SUFFIXES",
+    "CityBoard",
+    "EgovPortalBoard",
+    "GijangBoard",
+    "MixedRfc3Board",
+    "Rfc3Board",
+]

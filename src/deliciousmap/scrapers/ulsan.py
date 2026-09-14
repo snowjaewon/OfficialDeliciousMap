@@ -16,7 +16,6 @@ from typing import TYPE_CHECKING
 
 from deliciousmap import boards
 from deliciousmap.scrapers import listing
-from deliciousmap.scrapers.listing import Link as _Link
 from deliciousmap.scrapers.listing import Row as _Row
 from deliciousmap.transport import Transport
 
@@ -27,34 +26,6 @@ ENCODING = listing.ENCODING
 PUBLISHED_SUFFIXES = frozenset({".xls", ".xlsx", ".xlsm", ".hwp", ".hwpx", ".pdf", ".zip"})
 PDF_SUFFIXES = frozenset({".pdf"})
 ZIP_SUFFIXES = frozenset({".zip"})
-
-
-def _parse(body: bytes) -> listing.TableParser:
-    return listing.parse(body, ENCODING)
-
-
-def _posted(text: str) -> date:
-    return listing.posted(text)
-
-
-def _has_date(text: str) -> bool:
-    return listing.has_date(text)
-
-
-def _page_count(parser: listing.TableParser, *, link_keys: tuple[str, ...] = ()) -> int:
-    return listing.page_count(parser, link_keys=link_keys)
-
-
-def _market_page_count(parser: listing.TableParser) -> int:
-    return listing.page_count(parser)
-
-
-def _suffix(link: _Link) -> str:
-    return listing.suffix(link, PUBLISHED_SUFFIXES)
-
-
-def _article_link(row: _Row, needle: str, parameter: str) -> tuple[str, str] | None:
-    return listing.article_link(row, needle, parameter)
 
 
 def _compact_date(value: str) -> date:
@@ -85,7 +56,7 @@ def _department(row: _Row) -> str:
     )
     if title_index + 1 < len(texts):
         candidate = texts[title_index + 1]
-        if candidate and not _has_date(candidate):
+        if candidate and not listing.has_date(candidate):
             return candidate
     return ""
 
@@ -109,23 +80,24 @@ class EgovBoard:
             params = {**self.params, "pageIndex": str(page)}
             if self.page_size is not None and self.page_size_parameter is not None:
                 params[self.page_size_parameter] = self.page_size
-            listing = _parse(boards.request(self.transport, self.list_url, params))
+            parser = listing.parse(boards.request(self.transport, self.list_url, params))
             rows = [
-                (row, _article_link(row, "selectBoardArticle.do", "nttId")) for row in listing.rows
+                (row, listing.article_link(row, "selectBoardArticle.do", "nttId"))
+                for row in parser.rows
             ]
             rows = [(row, article) for row, article in rows if article is not None]
             for row, article in rows:
                 assert article is not None
                 post_id, href = article
-                posted = _posted(row.text)
+                posted = listing.posted(row.text)
                 page_url = urllib.parse.urljoin(self.list_url, href)
                 attachments = (
                     () if skipped(post_id, posted) else self._attachments(row, post_id, page_url)
                 )
                 yield boards.Posting(
-                    post_id, attachments, posted, _title(row, href), _department(row)
+                    post_id, attachments, posted, listing.title_of(row, href), _department(row)
                 )
-            total = _page_count(listing, link_keys=("pageIndex",))
+            total = listing.page_count(parser, link_keys=("pageIndex",))
             if page >= total:
                 return
             page += 1
@@ -142,7 +114,7 @@ class EgovBoard:
                     boards.Attachment(
                         post_id,
                         str(index),
-                        _suffix(link),
+                        listing.suffix(link, PUBLISHED_SUFFIXES),
                         urllib.parse.urljoin(self.list_url, link.href),
                         page_url,
                     )
@@ -155,10 +127,6 @@ class NamguBoard(EgovBoard):
 
     page_size_parameter = "recordCountPerPage"
     page_size = "30"
-
-
-def _title(row: _Row, href: str) -> str:
-    return listing.title_of(row, href)
 
 
 class JungguBoard(EgovBoard):
@@ -175,25 +143,27 @@ class JungguBoard(EgovBoard):
     def postings(self, skipped: boards.Skipped) -> Iterator[boards.Posting]:
         page = 1
         while True:
-            parser = _parse(
+            parser = listing.parse(
                 boards.request(
                     self.transport, self.list_url, {**self.params, "startPage": str(page)}
                 )
             )
-            rows = [(row, _article_link(row, "view.ulsan", "dataSid")) for row in parser.rows]
+            rows = [
+                (row, listing.article_link(row, "view.ulsan", "dataSid")) for row in parser.rows
+            ]
             rows = [(row, article) for row, article in rows if article is not None]
             for row, article in rows:
                 assert article is not None
                 post_id, href = article
-                posted = _posted(row.text)
+                posted = listing.posted(row.text)
                 page_url = urllib.parse.urljoin(self.list_url, href)
                 attachments = (
                     () if skipped(post_id, posted) else self._attachments(row, post_id, page_url)
                 )
                 yield boards.Posting(
-                    post_id, attachments, posted, _title(row, href), _department(row)
+                    post_id, attachments, posted, listing.title_of(row, href), _department(row)
                 )
-            if page >= _page_count(parser, link_keys=("startPage",)):
+            if page >= listing.page_count(parser, link_keys=("startPage",)):
                 return
             page += 1
 
@@ -209,7 +179,7 @@ class JungguBoard(EgovBoard):
                     boards.Attachment(
                         post_id,
                         str(index),
-                        _suffix(link),
+                        listing.suffix(link, PUBLISHED_SUFFIXES),
                         urllib.parse.urljoin(self.list_url, link.href),
                         page_url,
                     )
@@ -243,7 +213,7 @@ class JungguMayorBoard:
             params = {**self.params, self.page_parameter: str(page)}
             if search_value is not None:
                 params["searchWrd"] = search_value
-            parser = _parse(boards.request(self.transport, self.list_url, params))
+            parser = listing.parse(boards.request(self.transport, self.list_url, params))
             ordinal = 0
             for row in parser.rows:
                 found = next(
@@ -259,7 +229,7 @@ class JungguMayorBoard:
                     date_id = found.group(1)
                     posted = _compact_date(date_id)
                     post_id = f"{date_id}{page:03d}{ordinal:02d}"
-                    title = _title(
+                    title = listing.title_of(
                         row,
                         next(
                             (
@@ -273,13 +243,17 @@ class JungguMayorBoard:
                     )
                 else:
                     posted_index = next(
-                        (index for index, cell in enumerate(row.cells) if _has_date(cell.text)),
+                        (
+                            index
+                            for index, cell in enumerate(row.cells)
+                            if listing.has_date(cell.text)
+                        ),
                         None,
                     )
                     if posted_index is None:
                         ordinal -= 1
                         continue
-                    posted = _posted(row.cells[posted_index].text)
+                    posted = listing.posted(row.cells[posted_index].text)
                     sequence = next(
                         (cell.text for cell in row.cells[:posted_index] if cell.text.isdigit()),
                         str(ordinal),
@@ -298,7 +272,7 @@ class JungguMayorBoard:
                     title,
                     "",
                 )
-            if page >= _page_count(parser, link_keys=(self.page_parameter,)):
+            if page >= listing.page_count(parser, link_keys=(self.page_parameter,)):
                 return
             page += 1
 
@@ -331,27 +305,27 @@ class CityMarketBoard:
     def postings(self, skipped: boards.Skipped) -> Iterator[boards.Posting]:
         page = 1
         while True:
-            parser = _parse(
+            parser = listing.parse(
                 boards.request(self.transport, self.list_url, {**self.params, "page": str(page)})
             )
-            rows = [(row, _article_link(row, "view.do", "dataId")) for row in parser.rows]
+            rows = [(row, listing.article_link(row, "view.do", "dataId")) for row in parser.rows]
             rows = [(row, article) for row, article in rows if article is not None]
             for row, article in rows:
                 assert article is not None
                 post_id, href = article
-                posted = _posted(row.text)
+                posted = listing.posted(row.text)
                 page_url = urllib.parse.urljoin(self.list_url, href)
                 attachments = (
                     () if skipped(post_id, posted) else self._attachments(post_id, page_url, href)
                 )
-                yield boards.Posting(post_id, attachments, posted, _title(row, href), "")
-            if page >= _market_page_count(parser):
+                yield boards.Posting(post_id, attachments, posted, listing.title_of(row, href), "")
+            if page >= listing.page_count(parser):
                 return
             page += 1
 
     def _attachments(self, post_id: str, page_url: str, href: str) -> tuple[boards.Attachment, ...]:
         view_url = urllib.parse.urljoin(self.list_url, href)
-        parser = _parse(boards.request(self.transport, *boards.endpoint(view_url)))
+        parser = listing.parse(boards.request(self.transport, *boards.endpoint(view_url)))
         result: list[boards.Attachment] = []
         for link in parser.links:
             match = re.search(
@@ -366,7 +340,7 @@ class CityMarketBoard:
                 boards.Attachment(
                     post_id,
                     str(len(result) + 1),
-                    _suffix(link),
+                    listing.suffix(link, PUBLISHED_SUFFIXES),
                     boards.address(
                         download, {"bbsId": bbs_id, "atchFileId": file_id, "fileSn": file_sn}
                     ),
@@ -388,7 +362,7 @@ class CityTransferBoard:
     def postings(self, skipped: boards.Skipped) -> Iterator[boards.Posting]:
         page = 1
         while True:
-            parser = _parse(
+            parser = listing.parse(
                 boards.request(self.transport, self.list_url, {**self.params, "curPage": str(page)})
             )
             ordinal = 0
@@ -405,11 +379,11 @@ class CityTransferBoard:
                 if detail is None:
                     continue
                 ordinal += 1
-                posted = _posted(row.text)
+                posted = listing.posted(row.text)
                 post_id = f"{posted:%Y%m%d}{page:03d}{ordinal:02d}"
                 skipped(post_id, posted)
                 yield boards.Posting(post_id, (), posted, detail.text, "")
-            if page >= _page_count(parser, link_keys=("curPage",)):
+            if page >= listing.page_count(parser, link_keys=("curPage",)):
                 return
             page += 1
 
@@ -430,33 +404,35 @@ class BukguBoard:
     def postings(self, skipped: boards.Skipped) -> Iterator[boards.Posting]:
         page = 1
         while True:
-            parser = _parse(
+            parser = listing.parse(
                 boards.request(
                     self.transport,
                     self.list_url,
                     {**self.params, "cpage": str(page), "rows": self.page_size},
                 )
             )
-            rows = [(row, _article_link(row, "view.do", "article_seq")) for row in parser.rows]
+            rows = [
+                (row, listing.article_link(row, "view.do", "article_seq")) for row in parser.rows
+            ]
             rows = [(row, article) for row, article in rows if article is not None]
             for row, article in rows:
                 assert article is not None
                 post_id, href = article
-                posted = _posted(row.text)
+                posted = listing.posted(row.text)
                 page_url = urllib.parse.urljoin(self.list_url, href)
                 attachments = (
                     () if skipped(post_id, posted) else self._attachments(post_id, page_url, href)
                 )
                 yield boards.Posting(
-                    post_id, attachments, posted, _title(row, href), _department(row)
+                    post_id, attachments, posted, listing.title_of(row, href), _department(row)
                 )
-            if page >= _page_count(parser, link_keys=("cpage",)):
+            if page >= listing.page_count(parser, link_keys=("cpage",)):
                 return
             page += 1
 
     def _attachments(self, post_id: str, page_url: str, href: str) -> tuple[boards.Attachment, ...]:
         view_url = urllib.parse.urljoin(self.list_url, href)
-        parser = _parse(boards.request(self.transport, *boards.endpoint(view_url)))
+        parser = listing.parse(boards.request(self.transport, *boards.endpoint(view_url)))
         result: list[boards.Attachment] = []
         for link in parser.links:
             if "download.do" not in urllib.parse.urlsplit(link.href).path:
@@ -465,7 +441,7 @@ class BukguBoard:
                 boards.Attachment(
                     post_id,
                     str(len(result) + 1),
-                    _suffix(link),
+                    listing.suffix(link, PUBLISHED_SUFFIXES),
                     urllib.parse.urljoin(self.list_url, link.href),
                     page_url,
                 )
@@ -485,7 +461,7 @@ class UljuBoard:
     def postings(self, skipped: boards.Skipped) -> Iterator[boards.Posting]:
         page = 1
         while True:
-            parser = _parse(
+            parser = listing.parse(
                 boards.request(self.transport, self.list_url, {**self.params, "page": str(page)})
             )
             rows: list[tuple[_Row, str, str]] = []
@@ -502,7 +478,7 @@ class UljuBoard:
                     continue
                 rows.append((row, view.group(1), view.group(0)))
             for row, post_id, _ in rows:
-                posted = _posted(row.text)
+                posted = listing.posted(row.text)
                 page_url = boards.address(
                     urllib.parse.urljoin(self.list_url, "/ulju/bbs/view.do"),
                     {
@@ -524,13 +500,13 @@ class UljuBoard:
                     "",
                 )
                 yield boards.Posting(post_id, attachments, posted, title, "")
-            if page >= _page_count(parser):
+            if page >= listing.page_count(parser):
                 return
             page += 1
 
     def _attachments(self, post_id: str, page_url: str) -> tuple[boards.Attachment, ...]:
         view_url, params = boards.endpoint(page_url)
-        parser = _parse(boards.request(self.transport, view_url, params))
+        parser = listing.parse(boards.request(self.transport, view_url, params))
         result: list[boards.Attachment] = []
         for link in parser.links:
             match = re.search(
@@ -545,7 +521,7 @@ class UljuBoard:
                 boards.Attachment(
                     post_id,
                     attachment_id,
-                    _suffix(link),
+                    listing.suffix(link, PUBLISHED_SUFFIXES),
                     boards.address(download, {"atchFileId": file_id, "fileSn": file_sn}),
                     page_url,
                 )
