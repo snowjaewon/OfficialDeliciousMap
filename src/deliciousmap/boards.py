@@ -253,15 +253,16 @@ def suffix_of(filename: str) -> str:
     return PurePosixPath(filename.strip()).suffix.lower()
 
 
-# Fasoo DRM이 잠근 파일의 머리. 실측(2026-09-14 부산시청): 이름은 `.xlsx`인데 내용은
-# `\x9b DRMONE  This Document is encrypted and protected by Fasoo DRM`으로 시작한다.
+# 기관이 DRM으로 잠근 파일의 머리. 이름은 `.xlsx`·`.hwpx`인데 내용이 다르다. 실측 2026-09-14:
+# 부산시청은 Fasoo(`\x9b DRMONE  This Document is encrypted and protected by Fasoo DRM`),
+# 부산 북구는 Softcamp(`SCDSA004`)를 쓴다.
 # 잠긴 파일과 실측하지 않은 형식은 다르다. 형식은 선언하면 읽히고, 이것은 풀어야 읽힌다.
-DRM_SIGNATURE = b"\x9b DRMONE"
+DRM_SIGNATURES = (b"\x9b DRMONE", b"SCDSA")
 
 
 def is_protected(body: bytes) -> bool:
     """기관이 DRM으로 잠근 첨부인지. 이름이 아니라 내용으로 가른다."""
-    return body.startswith(DRM_SIGNATURE)
+    return body.startswith(DRM_SIGNATURES)
 
 
 def container_of(body: bytes) -> str:

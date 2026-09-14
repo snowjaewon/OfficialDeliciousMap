@@ -443,6 +443,16 @@ DRM_BODY = b"\x9b DRMONE  This Document is encrypted and protected by Fasoo DRM"
 XLSX_BODY = b"PK\x03\x04" + b"\x00" * 24
 
 
+SOFTCAMP_BODY = bytes.fromhex("534344534130303400004100a1e42186dbaa4046555b9c93")
+
+
+def test_every_measured_drm_product_is_recognised() -> None:
+    """실측: 시청·강서구는 Fasoo, 북구는 Softcamp다. 둘 다 이름이 밝힌 형식이 아니다."""
+    assert boards.is_protected(SOFTCAMP_BODY)
+    with pytest.raises(boards.ProtectedOriginal):
+        boards.container_of(SOFTCAMP_BODY)
+
+
 def test_drm_attachment_is_recorded_instead_of_stopping_the_board() -> None:
     """실측(부산시청): 이름은 `.xlsx`인데 내용이 Fasoo DRM인 첨부가 섞여 있다.
 
