@@ -655,6 +655,7 @@ class ArtifactStore:
         result = {name: artifact_digest(self.directory / name) for name in DEPENDENCIES[stage]}
         if stage == "classify":
             result["manual"] = file_digest(self.paths.manual(self.target, "classify"))
+            result["tail_policy"] = merchants.TAIL_VERSION
         if stage == "parse":
             result["merchants"] = file_digest(self.paths.manual(self.target, "merchants"))
         if stage == "geocode":

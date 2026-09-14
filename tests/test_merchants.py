@@ -6,8 +6,11 @@
 [이슈 #127 검증](../docs/validation/issue-127.md)에 있다.
 """
 
+from dataclasses import astuple
+
 import pytest
 
+from deliciousmap import merchants
 from deliciousmap.merchants import Companions, read
 
 # 실측한 다섯 꼬리말 형태와 맨끝 `외`. 공백이 있는 표기와 없는 표기가 섞여 있다.
@@ -38,6 +41,27 @@ KEPT = (
     "합성곰탕, 합성브라운외",
     "합성밥집, 합성데이지",
 )
+# 꼬리말 규칙이 낸 답을 그 규칙의 버전에 묶어 얼린다(#147). 규칙을 바꿔 답이 달라지면 이 줄을
+# 고치지 말고 `merchants.TAIL_VERSION`을 올려 새 버전의 줄을 더한다. 버전이 그대로면 옛 이름으로
+# 판별한 classify 산출물이 신선한 것으로 통과한다.
+FROZEN = {
+    "tail-1": (
+        ("합성식당 외 1", "합성식당", 1),
+        ("합성카페외 1", "합성카페", 1),
+        ("합성보쌈외 1개소", "합성보쌈", 1),
+        ("합성매운탕외1개소", "합성매운탕", 1),
+        ("합성어장 외 1곳", "합성어장", 1),
+        ("합성한정식 외 1명", "합성한정식", 1),
+        ("합성감자탕 외 1개", "합성감자탕", 1),
+        ("합성회식당 외 2", "합성회식당", 2),
+        ("합성낙지 외", "합성낙지", None),
+        ("합성해외 2", "합성해", 2),
+        ("외갓집 순두부 본점", "외갓집 순두부 본점", 0),
+        ("합성로컬푸드직외", "합성로컬푸드직외", 0),
+        ("합성곰탕, 합성브라운외", "합성곰탕, 합성브라운외", 0),
+        ("외 1", "외 1", 0),
+    ),
+}
 
 
 @pytest.mark.parametrize("merchant", sorted(TAILS))
@@ -70,3 +94,9 @@ def test_a_counted_tail_is_cut_even_when_a_word_happens_to_end_in_the_same_lette
     않는다(`identity.decide_identity`가 상호·지점·주소의 독립 근거를 요구한다).
     """
     assert read("합성해외 2") == Companions("합성해", 2)
+
+
+def test_the_tail_rule_answers_as_its_version_froze_it() -> None:
+    """버전을 올리지 않고 규칙만 바꾸면 여기서 실패한다. classify의 낡음 판정이 그 버전을 본다."""
+    frozen = FROZEN[merchants.TAIL_VERSION]
+    assert [(merchant, *astuple(read(merchant))) for merchant, _, _ in frozen] == list(frozen)

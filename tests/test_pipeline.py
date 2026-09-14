@@ -157,6 +157,23 @@ def test_changed_records_cannot_reuse_stale_classification_in_single_build(tmp_p
     assert adapters.calls == []
 
 
+@pytest.mark.parametrize("stage", ["geocode", "closure", "build"])
+def test_changed_tail_rule_cannot_reuse_stale_classification(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, stage: str
+) -> None:
+    """꼬리말 규칙이 바뀌면 옛 이름으로 판별한 판정을 뒤 단계가 받지 않는다(#147)."""
+    from deliciousmap import merchants
+    from deliciousmap.pipeline import PipelineFailure
+
+    context = context_at(tmp_path)
+    execute("run", context, SyntheticAdapters())
+    monkeypatch.setattr(merchants, "TAIL_VERSION", "tail-changed")
+    adapters = SyntheticAdapters()
+    with pytest.raises(PipelineFailure, match=f"{stage} .*cause=invalid-artifact"):
+        execute(stage, context, adapters)
+    assert adapters.calls == []
+
+
 def test_headermap_must_refer_to_fetched_originals(tmp_path: Path) -> None:
     from deliciousmap.contracts import HeaderMapOutput
     from deliciousmap.pipeline import PipelineFailure
