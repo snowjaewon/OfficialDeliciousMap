@@ -22,8 +22,10 @@ import re
 from collections.abc import Iterable
 from dataclasses import dataclass
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
-from deliciousmap.contracts import Record
+if TYPE_CHECKING:  # 판별할 이름을 고르는 계약이 이 규칙을 부르므로 실행 시 계약을 되부르지 않는다.
+    from deliciousmap.contracts import Record
 
 POLICY_VERSION = "merchants-1"
 
@@ -58,6 +60,15 @@ def read(merchant: str) -> Companions:
     return Companions(named, int(count) if count is not None else None)
 
 
+def chosen_name(merchant: str, restored: str | None) -> str:
+    """조회·좌표 판정·비식당 판별이 함께 읽는 이름. 사람이 확정한 복원명이 규칙보다 앞선다.
+
+    확정 복원명 → 꼬리말을 뗀 이름 → 원본 표기 순이다(#137). 세 자리가 이 함수 하나를 보므로
+    캐시를 채운 키와 판정을 읽는 키가 어긋나지 않는다. 레코드의 원본 표기는 바뀌지 않는다.
+    """
+    return restored if restored is not None else read(merchant).named
+
+
 def parts(merchant: str) -> tuple[str, ...]:
     """상호 표기를 이름 후보로 나눈다. 나눌 구분자가 없으면 표기 하나를 그대로 돌려준다."""
     found = tuple(item.strip() for item in SEPARATOR.split(merchant))
@@ -69,7 +80,7 @@ def is_merged(merchant: str) -> bool:
     return len(parts(merchant)) > 1
 
 
-def expense_total(records: Iterable[Record]) -> Decimal:
+def expense_total(records: Iterable["Record"]) -> Decimal:
     """지출 총액. 나뉜 레코드는 금액이 빈 값이므로 그 지출의 금액을 한 번만 더한다(ADR-0007)."""
     total = Decimal(0)
     counted: set[str] = set()
@@ -82,6 +93,6 @@ def expense_total(records: Iterable[Record]) -> Decimal:
     return total
 
 
-def unsplit_expenses(records: Iterable[Record]) -> int:
+def unsplit_expenses(records: Iterable["Record"]) -> int:
     """업소 둘 이상으로 읽히는데 사람 확인이 없어 가르지 못한 지출 수."""
     return sum(record.expense is None and is_merged(record.merchant) for record in records)
