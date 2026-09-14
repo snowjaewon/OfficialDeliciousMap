@@ -162,7 +162,11 @@ removed, model transport refused).
 | build | 124 records, 1 marker | 124 records, 1 marker |
 
 - `ulsan-donggu`: 95 target sources, 51 `declared_out_of_range`, 0
-  `undeclared_in_year`.  `headermap` 0 mappings, 95 unresolved
+  `undeclared_in_year`.  By the corrected listing titles 116 postings are in
+  the period (department 105, deputy 2, director 9); 93 of them have sources
+  (the 95 PDFs).  The other 23 department postings carry HWP (15) or HWPX (8)
+  attachments, formats not measured for this board, so they were not collected
+  and are part of the `unmeasured-attachments=28` warning.  `headermap` 0 mappings, 95 unresolved
   (`model_not_configured` 91, `no_table` 4), so `parse` produced 0 records and
   `build` 0 records / 0 markers.
 - `ulsan-city`: the market PDF is a target source; `headermap` leaves it
@@ -181,8 +185,9 @@ The `ulsan-junggu`, `ulsan-namgu`, `ulsan-bukgu`, and `ulsan-ulju`
 organization artifacts were not regenerated; the Nam-gu and Buk-gu
 organization classifications do not reflect #137.
 
-Checks on the tree after the #146 commits and the develop merge (`1890d2f`) plus
-these artifacts: `uv run pytest` 657 passed; `ruff check`, `ruff format
+Checks on the tree after the #146 commits, the develop merge (`1890d2f`), and the
+review fixes that narrowed the month-only rule (the Ulsan target counts above are
+unchanged by the narrowing): `uv run pytest` 662 passed; `ruff check`, `ruff format
 --check` (141 files), `mypy src`, `git diff --check`, and `check-data` passed;
 `check-dist --city ulsan` on a clean Ulsan-only output root sealed 12 files.
 
