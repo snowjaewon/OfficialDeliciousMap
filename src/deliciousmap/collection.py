@@ -33,6 +33,8 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
     missing: list[MissingOriginal] = []
     unmeasured: list[dict[str, str]] = []
     failures: list[str] = []
+    # 실패한 게시판의 사유. 한 건도 거두지 못한 채 끝나면 그중 첫 사유로 수집을 실패로 알린다.
+    causes: list[FailureCause] = []
     visited: list[str] = []
     held: list[str] = []
     uncollected = 0
@@ -46,11 +48,18 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
             try:
                 walked = _walk(board, directory, transport)
             except AdapterFailure as exc:
-                # 울산은 기관별 게시판이 많고 공개 서버가 간헐적으로 끊긴다. 한
-                # 게시판의 장애가 다른 기관의 원본까지 0건으로 숨기지 않도록
-                # 안전한 사유 코드만 장부 경고에 남기고 다음 게시판으로 간다.
-                if target.city.slug != "ulsan":
+                # 도시 하나가 기관 열일곱·호스트 열여섯으로 늘면 공개 서버 하나가 끊기는 일이
+                # 상례가 된다(부산 실측). 끊긴 게시판 하나가 나머지 기관의 원본까지 0건으로
+                # 만들지 않도록, 다시 요청하면 달라질 수 있는 장애만 사유로 남기고 다음
+                # 게시판으로 간다. 이어 가기는 도시를 가리지 않는다 — 도시 이름은 게시판이
+                # 끊겼는지와 무관하다.
+                #
+                # 이어 가는 것은 장애뿐이다. 목록을 읽지 못했거나 실측하지 않은 형식을 만난
+                # 것은 그 게시판이 아니라 우리 스크래퍼가 틀렸다는 뜻이고, 그대로 두면 다음
+                # 실행도 같은 자리에서 같은 만큼만 거둔다. 그런 사유는 그 자리에서 알린다.
+                if exc.cause is not FailureCause.SERVICE_UNAVAILABLE:
                     raise
+                causes.append(exc.cause)
                 failures.append(f"{organization.slug}/{board.slug}={exc.cause.value}")
                 walked = _Walked([], 0)
             unmeasured.extend(walked.unmeasured)
@@ -59,6 +68,10 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
             listed = _listed(directory)
             sources.extend(_sources(directory, collected, listed, organization.slug, board.slug))
             missing.extend(_missing(gone, listed, organization.slug, board.slug))
+    if not sources and causes:
+        # 게시판을 모두 훑었는데 한 건도 거두지 못했고 그 원인이 장애다. 이것까지 경고로
+        # 남기면 장애가 "첨부가 없는 기관"과 같은 모양이 된다. 실패는 실패로 알린다.
+        raise AdapterFailure(causes[0])
     if unmeasured and target.city.slug != "ulsan":
         # 게시판을 끝까지 훑은 뒤에 한 번에 알린다. 형식을 하나 만날 때마다 멈추지 않는다.
         raise AdapterFailure(FailureCause.UNSUPPORTED_FORMAT)

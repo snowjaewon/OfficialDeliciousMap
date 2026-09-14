@@ -9,6 +9,7 @@ import pytest
 from deliciousmap import boards
 from deliciousmap.collection import collect
 from deliciousmap.paths import Paths
+from deliciousmap.pipeline import AdapterFailure, FailureCause
 from deliciousmap.registry import CITIES, Board, select_target
 from deliciousmap.scrapers.ulsan import (
     BukguBoard,
@@ -67,21 +68,65 @@ def test_ulsan_registry_declares_six_nonempty_organizations() -> None:
     assert select_target(CITIES, "ulsan", "ulsan-ulju").organizations[0].slug == "ulsan-ulju"
 
 
+MARKET_LIST = "https://www.ulsan.go.kr/u/rep/bbs/list.ulsan"
+MARKET_VIEW = "https://www.ulsan.go.kr/u/rep/bbs/view.do"
+MARKET_DOWNLOAD = "https://www.ulsan.go.kr/u/enc/media/bbsFileDown.do"
+MARKET_IDS = {"bbsId": "BBS_0000000000000255", "mId": "001003002007000000"}
+
+
+class OneWorkingBoard:
+    """시장 게시판만 응답하고 나머지 게시판은 끊긴다. 실측한 간헐적 장애의 모양이다."""
+
+    def fetch(self, url: str, params: dict[str, str], headers: dict[str, str]) -> bytes:
+        if url == MARKET_LIST:
+            return (
+                "<p>총 게시물 : 1 건</p><table>"
+                '<tr><td><a href="/u/rep/bbs/view.do?bbsId=BBS_0000000000000255'
+                '&mId=001003002007000000&dataId=182571">2026년 6월 시장 업무추진비</a></td>'
+                "<td>2026-07-23</td></tr>"
+                "</table><ul class='pagination'><li class='active'>"
+                "<a href='#none' title='현재페이지'>1</a></li></ul>"
+            ).encode()
+        if url == MARKET_VIEW:
+            return (
+                "<a href=\"#\" onclick=\"HHBbs.EncDownFile('/u','BBS_1','fileid','1');\">"
+                '<img alt="시장 내역.pdf (64.7KByte)" /></a>'
+            ).encode()
+        if url == MARKET_DOWNLOAD:
+            return b"%PDF-1.4 measured"
+        raise OSError("connection reset")
+
+
 def test_ulsan_collection_keeps_board_failures_and_continues(tmp_path: Path) -> None:
+    """한 게시판이 끊겨도 같은 기관의 다른 게시판은 끝까지 훑는다. 사유는 장부 경고에 남는다."""
+    target = select_target(CITIES, "ulsan", "ulsan-city")
+    output = collect(
+        target,
+        Paths(Path.cwd(), tmp_path / "raw", tmp_path / "data", tmp_path / "output"),
+        OneWorkingBoard(),  # type: ignore[arg-type]
+    )
+    assert [item.board for item in output.sources] == ["expenses-market"]
+    assert output.empty_reason is not None
+    # 시장 게시판 뒤의 두 게시판을 모두 시도했다. 첫 실패에서 멈추지 않는다.
+    assert "ulsan-city/expenses-director=service-unavailable" in output.empty_reason
+    assert "ulsan-city/expenses-economic=service-unavailable" in output.empty_reason
+
+
+def test_collection_refuses_to_report_a_total_outage_as_an_empty_board(tmp_path: Path) -> None:
+    """게시판을 다 훑고도 한 건이 없고 원인이 장애라면 실패다. 도시를 가리지 않는다."""
+
     class Unavailable:
         def fetch(self, url: str, params: dict[str, str], headers: dict[str, str]) -> bytes:
             raise OSError("connection reset")
 
     target = select_target(CITIES, "ulsan", "ulsan-city")
-    output = collect(
-        target,
-        Paths(Path.cwd(), tmp_path / "raw", tmp_path / "data", tmp_path / "output"),
-        Unavailable(),  # type: ignore[arg-type]
-    )
-    assert output.sources == ()
-    assert output.empty_reason is not None
-    assert "ulsan-city/expenses-market=service-unavailable" in output.empty_reason
-    assert "ulsan-city/expenses-economic=service-unavailable" in output.empty_reason
+    with pytest.raises(AdapterFailure) as failure:
+        collect(
+            target,
+            Paths(Path.cwd(), tmp_path / "raw", tmp_path / "data", tmp_path / "output"),
+            Unavailable(),  # type: ignore[arg-type]
+        )
+    assert failure.value.cause is FailureCause.SERVICE_UNAVAILABLE
 
 
 def test_egov_board_walks_pages_and_preserves_direct_attachment() -> None:
