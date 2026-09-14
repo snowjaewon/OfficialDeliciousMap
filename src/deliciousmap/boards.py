@@ -89,8 +89,13 @@ CONTAINERS: tuple[Container, ...] = (
         frozenset({".xls", ".xlsx"}),
         b"urn:schemas-microsoft-com:office:spreadsheet",
     ),
+    # 한글 XML. 실측(2026-09-14 부산 동구): `.hwp`·`.hwpx` 이름으로 올라오지만 내용은
+    # BOM 뒤에 `<HWPML`로 시작하는 XML이다. 이름이 밝힌 확장자와 다르다고 버리지 않는다.
+    Container("hwpml", b"<?xml", frozenset({".hwp", ".hwpx"}), b"<HWPML"),
     Container("zip", bytes.fromhex("504b0304"), frozenset({".zip"})),
 )
+# UTF-8 바이트 순서 표시. 내용의 일부가 아니라 인코딩 표시다.
+BOM = b"\xef\xbb\xbf"
 # 저장 이름에 쓸 수 있는 확장자의 모양. 게시판이 준 이름을 경로로 그대로 쓰지 않는다.
 SUFFIX = re.compile(r"\.[a-z0-9]{1,8}")
 
@@ -250,7 +255,7 @@ def suffix_of(filename: str) -> str:
 
 # Fasoo DRM이 잠근 파일의 머리. 실측(2026-09-14 부산시청): 이름은 `.xlsx`인데 내용은
 # `\x9b DRMONE  This Document is encrypted and protected by Fasoo DRM`으로 시작한다.
-# 잠긴 파일과 실측하지 않은 형식은 다르다 — 형식은 선언하면 읽히고, 이것은 풀지 않는 한 읽히지 않는다.
+# 잠긴 파일과 실측하지 않은 형식은 다르다. 형식은 선언하면 읽히고, 이것은 풀어야 읽힌다.
 DRM_SIGNATURE = b"\x9b DRMONE"
 
 
@@ -269,6 +274,8 @@ def container_of(body: bytes) -> str:
         raise EmptyOriginal("board served an empty attachment")
     if is_protected(body):
         raise ProtectedOriginal("organization serves this original under DRM")
+    # BOM은 형식이 아니라 인코딩 표시다. XML 계열 원본이 그것 때문에 안 걸리지 않게 뗀다.
+    body = body.removeprefix(BOM)
     # A ZIP archive shares the OOXML magic bytes.  Distinguish Office archives
     # by their package entries while retaining the historical fallback for
     # short synthetic OOXML signatures used by older adapters.

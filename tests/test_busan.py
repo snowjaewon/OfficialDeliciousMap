@@ -874,3 +874,33 @@ def test_listing_ignores_script_text_inside_a_cell() -> None:
         b"<a href='/x'>hello</a></td></tr></table>"
     )
     assert parser.rows[0].cells[0].text == "hello"
+
+
+HWPML_BODY = (
+    b'\xef\xbb\xbf<?xml version="1.0" encoding="UTF-8" standalone="no" ?>'
+    b'<HWPML Style="embed" SubVersion="8.0.0.0" Version="2.8"><HEAD/></HWPML>'
+)
+
+
+def test_hwpml_is_an_original_container() -> None:
+    """실측(동구): `.hwp`·`.hwpx` 이름으로 한글 XML(HWPML)을 올린다.
+
+    이름이 밝힌 확장자와 내용이 다르지만 원본은 원본이다. 컨테이너로 판정해 받아 두고,
+    무엇이었는지는 출처에 남긴다. 표를 읽는 것은 이 이슈의 범위가 아니다(#140 제외 범위).
+    """
+    assert boards.container_of(HWPML_BODY) == "hwpml"
+
+
+def test_a_byte_order_mark_does_not_hide_the_container() -> None:
+    """BOM은 형식이 아니라 인코딩 표시다. 그것 때문에 원본을 못 알아보지 않는다."""
+    spreadsheet = (
+        b'<?xml version="1.0"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"/>'
+    )
+    assert boards.container_of(spreadsheet) == "spreadsheetml"
+    assert boards.container_of(b"\xef\xbb\xbf" + spreadsheet) == "spreadsheetml"
+
+
+def test_xml_that_is_neither_is_still_refused() -> None:
+    """`<?xml`로 시작한다고 다 원본이 아니다. 표식이 있어야 받는다."""
+    with pytest.raises(boards.UnsupportedOriginal):
+        boards.container_of(b'\xef\xbb\xbf<?xml version="1.0"?><rss><channel/></rss>')
