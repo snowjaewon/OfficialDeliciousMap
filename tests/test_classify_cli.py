@@ -146,6 +146,12 @@ def tail_parsed(root: Path) -> None:
     assert run(root, "parse") == 0
 
 
+def asked(model: FakeModel) -> list[str]:
+    """그 실행이 모델에 실제로 보인 상호. 캐시 키와 질문이 같은 이름인지 보는 자리다."""
+    (prompt,) = model.calls("classify")
+    return [line.split(". ", 1)[1] for line in prompt.splitlines()]
+
+
 def cached(root: Path, verdicts: dict[str, str]) -> None:
     """공통 캐시를 키 정렬 JSONL로 미리 채운다. 이미 답한 이름을 다시 묻지 않는지 본다."""
     write_text(
@@ -175,13 +181,8 @@ def test_the_unnamed_companion_tail_is_cut_from_the_name_the_classifier_reads(
     tail_parsed(tmp_path)
     model = FakeModel(verdict=lambda name: "restaurant")
     assert run(tmp_path, "classify", model) == 0
-    (prompt,) = model.calls("classify")
     # 모델에 보이는 표기도 뗀 이름이어야 캐시 키와 질문이 같은 이름을 가리킨다.
-    assert sorted(line.split(". ", 1)[1] for line in prompt.splitlines()) == [
-        "외 1",
-        "외갓집",
-        "합성카페",
-    ]
+    assert sorted(asked(model)) == ["외 1", "외갓집", "합성카페"]
     assert {item["key"] for item in shared(tmp_path)} == {"합성카페", "외갓집", "외 1"}
     # 레코드의 원본 표기는 어느 단계에서도 바뀌지 않는다.
     assert [item["merchant"] for item in records(tmp_path)] == ["합성카페외 1", "외갓집", "외 1"]
@@ -232,7 +233,5 @@ def test_a_confirmed_restored_name_wins_over_the_cut_name(tmp_path: Path, config
     )
     model = FakeModel(verdict=lambda name: "restaurant")
     assert run(tmp_path, "classify", model) == 0
-    (prompt,) = model.calls("classify")
-    asked = [line.split(". ", 1)[1] for line in prompt.splitlines()]
-    assert "합성카페 본점" in asked
-    assert "합성카페" not in asked
+    assert "합성카페 본점" in asked(model)
+    assert "합성카페" not in asked(model)

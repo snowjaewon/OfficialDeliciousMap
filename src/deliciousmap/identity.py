@@ -105,8 +105,8 @@ def decide_identity(
     }
     # 확정된 복원명만 원본 표기를 대신한다. 확인 전 후보는 복원명이 아니다.
     # 복원명이 없으면 이름 없는 동행 업소의 꼬리말을 뗀 첫 업소의 이름과 대조한다(#127).
-    expected_name = (
-        restoration.restored_merchant if restoration else merchants.read(record.merchant).named
+    expected_name = merchants.chosen_name(
+        record.merchant, restoration.restored_merchant if restoration else None
     )
 
     def unresolved(reason: str) -> GeocodeResult:

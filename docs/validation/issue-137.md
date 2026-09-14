@@ -9,8 +9,7 @@
 
 ## 1. 판별이 읽는 이름을 고르는 순서
 
-`ClassifyInput.names()` 하나가 레코드마다 판별할 이름을 정하고, `ClassifyInput.merchants`와
-classify 단계가 그것을 함께 읽는다. 둘이 어긋나면 캐시를 채운 키와 판정을 읽는 키가 달라진다.
+규칙은 `merchants.chosen_name` 하나다.
 
 | 순서 | 이름 | 예 |
 | --- | --- | --- |
@@ -18,9 +17,12 @@ classify 단계가 그것을 함께 읽는다. 둘이 어긋나면 캐시를 채
 | 2 | 꼬리말을 뗀 이름 | `카페말바우외 1` → `카페말바우` |
 | 3 | 원본 표기 | `외갓집`·`외 1` → 그대로 |
 
-좌표 판정(`identity.decide_identity`)이 근거와 대조할 이름을 고르는 순서와 같다. 꼬리말
-규칙은 `src/deliciousmap/merchants.read` 하나가 소유하며 새 정규식을 만들지 않았다 — 조회·좌표
-판정·판별이 같은 규칙 하나를 본다.
+세 자리가 그 함수 하나를 부른다 — 조회(`lookup.resolve`), 좌표 판정(`identity.decide_identity`),
+그리고 이번에 더한 판별(`ClassifyInput.names`)이다. 꼬리말을 읽는 정규식은 `merchants.read`가
+그대로 소유하며 새 정규식이나 둘째 규칙을 만들지 않았다.
+
+classify 단계는 `ClassifyInput.names()`가 준 이름으로 캐시를 채우고 같은 이름으로 판정을 읽는다.
+캐시를 채우는 키와 판정을 읽는 키가 한 자리에서 나온다.
 
 떼면 이름이 하나도 남지 않는 표기(`외 1`)와 이름 가운데의 `외`(`외갓집`)는 원본 표기 그대로
 판별한다. 조회할 이름을 지어내지 않는다. 이 선택은 `tests/test_classify_cli.py`와
