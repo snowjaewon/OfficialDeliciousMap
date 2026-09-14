@@ -304,7 +304,8 @@ def test_gwangjin_reads_one_posting_per_list_item() -> None:
                 at(
                     "https://www.gwangjin.go.kr/portal/bbs/B0000027/list.do",
                     {"menuNo": "201646", "pageIndex": "1"},
-                    f'<html>Total : 5702 건 [ 1 / 1 pages ]<ul class="board-list">{items}</ul></html>',
+                    "<html>Total : 5702 건 [ 1 / 1 pages ]"
+                    f'<ul class="board-list">{items}</ul></html>',
                 )
             ]
         )

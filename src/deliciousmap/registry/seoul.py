@@ -16,6 +16,15 @@ from deliciousmap.scrapers.seoul import (
     PortalDetailBoard,
     YangcheonBoard,
 )
+from deliciousmap.scrapers.seoul_district import (
+    DobongBoard,
+    GangdongBoard,
+    GangnamBoard,
+    GangseoBoard,
+    JungguBoard,
+    MapoBoard,
+    NowonBoard,
+)
 from deliciousmap.scrapers.seoul_html import (
     CityExpenseBoard,
     EunpyeongBoard,
@@ -44,6 +53,14 @@ YEONGDEUNGPO = "https://www.ydp.go.kr/www/selectBbsNttList.do?bbsNo=31&key=2814"
 SONGPA = "https://www.songpa.go.kr/www/selectBbsNttList.do?bbsNo=327&key=2323"
 YANGCHEON = "https://www.yangcheon.go.kr/site/yangcheon/ex/bbs/List.do?cbIdx=397"
 SEOCHO = "https://www.seocho.go.kr/site/seocho/ex/bbs/List.do?cbIdx=33"
+JUNG = "https://www.junggu.seoul.kr/content.do?cmsid=15383&exclude=Y"
+DOBONG = "https://www.dobong.go.kr/bbs.asp?code=10008860"
+NOWON = "https://www.nowon.kr/www/user/bbs/BD_selectBbsList.do?q_bbsCode=1012"
+MAPO = "https://www.mapo.go.kr/site/main/board/expense/list"
+GANGSEO = "https://www.gangseo.seoul.kr/gs030325"
+GANGNAM = "https://www.gangnam.go.kr/board/B_000673/list.do?mid=ID05_04200502"
+GANGNAM_SUBSIDY = "https://www.gangnam.go.kr/board/B_000672/list.do?mid=ID05_04200502"
+GANGDONG = "https://www.gangdong.go.kr/web/newportal/bbs/b_054"
 
 CITY = City(
     "seoul",
@@ -112,5 +129,28 @@ CITY = City(
             "seoul-yangcheon", "서울특별시 양천구", (Board("expenses", YANGCHEON, YangcheonBoard),)
         ),
         Organization("seoul-seocho", "서울특별시 서초구", (Board("expenses", SEOCHO, CbIdxBoard),)),
+        Organization("seoul-jung", "서울특별시 중구", (Board("expenses", JUNG, JungguBoard),)),
+        Organization(
+            "seoul-dobong", "서울특별시 도봉구", (Board("expenses", DOBONG, DobongBoard),)
+        ),
+        Organization("seoul-nowon", "서울특별시 노원구", (Board("expenses", NOWON, NowonBoard),)),
+        Organization("seoul-mapo", "서울특별시 마포구", (Board("expenses", MAPO, MapoBoard),)),
+        Organization(
+            "seoul-gangseo", "서울특별시 강서구", (Board("expenses", GANGSEO, GangseoBoard),)
+        ),
+        Organization(
+            "seoul-gangnam",
+            "서울특별시 강남구",
+            (
+                Board("expenses", GANGNAM, GangnamBoard),
+                Board("expenses-subsidy", GANGNAM_SUBSIDY, GangnamBoard),
+            ),
+        ),
+        Organization(
+            "seoul-gangdong", "서울특별시 강동구", (Board("expenses", GANGDONG, GangdongBoard),)
+        ),
+        # 첫 응답이 쿠키 서명을 되돌려 보내라는 433바이트 스크립트다. 그 서명을 돌려보내는
+        # 것은 봇 확인 우회이므로 수집을 보류한다(이슈 #141, 2026-09-14 실측).
+        Organization("seoul-gangbuk", "서울특별시 강북구", (), hold_reason="bot_blocked"),
     ),
 )

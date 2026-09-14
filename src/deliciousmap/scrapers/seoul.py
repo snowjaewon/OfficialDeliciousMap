@@ -237,6 +237,13 @@ def total_pages(listing: Listing, parameter: str) -> int:
     return max(pages)
 
 
+def decode(body: bytes, encoding: str) -> str:
+    try:
+        return body.decode(encoding)
+    except UnicodeDecodeError:
+        raise boards.UnreadableBoard("board response is not in the measured encoding") from None
+
+
 def parameter_of(href: str, name: str) -> str | None:
     value = urllib.parse.parse_qs(urllib.parse.urlsplit(href).query).get(name, [""])[0]
     return value or None
@@ -264,7 +271,8 @@ class ListingBoard:
     def postings(self, skipped: boards.Skipped) -> Iterator[boards.Posting]:
         page = 1
         while True:
-            listing = listing_of(self._request(page), self.encoding, self.row_tags)
+            body = self._request(page)
+            listing = listing_of(body, self.encoding, self.row_tags)
             for row in listing.rows:
                 entry = self.entry(row)
                 if entry is None:
@@ -276,12 +284,16 @@ class ListingBoard:
                     yield entry.posting(())
                     continue
                 yield entry.posting(self.attachments(entry, row))
-            if page >= total_pages(listing, self.page_parameter):
+            if page >= self.page_count(listing, decode(body, self.encoding)):
                 return
             page += 1
 
     def _request(self, page: int) -> bytes:
         return boards.request(self.transport, self.list_url, self.page_params(page))
+
+    def page_count(self, listing: Listing, text: str) -> int:
+        """전체 쪽 수. 쪽 넘김을 주소가 아니라 스크립트로 그리는 게시판이 덮어쓴다."""
+        return total_pages(listing, self.page_parameter)
 
     def page_params(self, page: int) -> dict[str, str]:
         return {**self.params, self.page_parameter: str(page)}
@@ -295,9 +307,12 @@ class ListingBoard:
     def attachments(self, entry: Entry, row: Row) -> tuple[boards.Attachment, ...]:
         links = row.links if self.attachments_in_listing else self.detail_links(entry)
         found: list[boards.Attachment] = []
+        seen: set[str] = set()
         for link in links:
-            if not self.is_download(link):
+            if not self.is_download(link) or link.href in seen:
+                # 같은 원본을 파일 이름 링크와 그림 링크로 두 번 싣는 게시판이 있다(노원 실측).
                 continue
+            seen.add(link.href)
             found.append(
                 boards.Attachment(
                     entry.post_id,
@@ -630,11 +645,19 @@ __all__ = [
     "GwangjinBoard",
     "JongnoBoard",
     "JungnangBoard",
+    "Entry",
+    "Link",
     "ListingBoard",
     "PUBLISHED_SUFFIXES",
+    "Row",
     "PortalBoard",
     "PortalDetailBoard",
     "YangcheonBoard",
+    "decode",
+    "parameter_of",
+    "posted_on",
+    "suffix_from",
+    "total_pages",
 ]
 
 
