@@ -17,6 +17,7 @@ from deliciousmap.scrapers.ulsan import (
     EgovBoard,
     JungguBoard,
     JungguMayorBoard,
+    NamguBoard,
     UljuBoard,
 )
 
@@ -116,6 +117,28 @@ def test_egov_board_walks_pages_and_preserves_direct_attachment() -> None:
     assert postings[0].attachments[0].suffix == ".pdf"
     assert postings[0].attachments[0].url.endswith("atchFileId=FILE_1&fileSn=0")
     assert postings[1].attachments == ()
+
+
+def test_namgu_board_uses_the_measured_page_size() -> None:
+    url = "https://example.invalid/cop/bbs/selectBoardList.do?bbsId=PrmtFee"
+    list_url = "https://example.invalid/cop/bbs/selectBoardList.do"
+    row = (
+        '<tr><td><a href="/cop/bbs/selectBoardArticle.do?bbsId=PrmtFee&nttId=530915">'
+        "2026년 7월 부구청장</a></td><td class=date>2026-08-17</td></tr>"
+    )
+    transport = FakeTransport(
+        dict(
+            [
+                response(
+                    list_url,
+                    {"bbsId": "PrmtFee", "pageIndex": "1", "recordCountPerPage": "30"},
+                    all_rows(row),
+                )
+            ]
+        )
+    )
+    postings = list(NamguBoard(board(url, NamguBoard), transport).postings(lambda *_: False))
+    assert [item.post_id for item in postings] == ["530915"]
 
 
 def test_junggu_board_declares_zip_attachment() -> None:

@@ -14,6 +14,10 @@ boards in that order. Boards whose current page contains transaction rows
 without a published 원본 are intentionally represented by postings with
 `Posting.attachments=()`.
 
+The Nam-gu list form publishes 10, 15, 20, and 30 rows per page. Its
+`NamguBoard` adapter requests the measured maximum (`recordCountPerPage=30`)
+while the shared Dong-gu eGov adapter keeps the site's fixed page size.
+
 | organization | measured list endpoint(s) | observed listing size | 원본 boundary |
 | --- | --- | --- | --- |
 | Ulsan city | `https://www.ulsan.go.kr/u/rep/bbs/list.ulsan?bbsId=BBS_0000000000000255&mId=001003002007000000` | market: 1 post; PDF icon; 2026-07-23 | detail `view.do` → `HHBbs.EncDownFile` → `/u/enc/media/bbsFileDown.do` |

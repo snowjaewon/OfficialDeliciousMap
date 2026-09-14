@@ -278,6 +278,8 @@ class EgovBoard:
     """남구·동구의 표준 eGov 목록 게시판."""
 
     published_suffixes = PDF_SUFFIXES
+    page_size_parameter: str | None = None
+    page_size: str | None = None
 
     def __init__(self, board: Board, transport: Transport) -> None:
         self.list_url, self.params = boards.endpoint(board.url)
@@ -288,11 +290,10 @@ class EgovBoard:
     def postings(self, skipped: boards.Skipped) -> Iterator[boards.Posting]:
         page = 1
         while True:
-            listing = _parse(
-                boards.request(
-                    self.transport, self.list_url, {**self.params, "pageIndex": str(page)}
-                )
-            )
+            params = {**self.params, "pageIndex": str(page)}
+            if self.page_size is not None and self.page_size_parameter is not None:
+                params[self.page_size_parameter] = self.page_size
+            listing = _parse(boards.request(self.transport, self.list_url, params))
             rows = [
                 (row, _article_link(row, "selectBoardArticle.do", "nttId")) for row in listing.rows
             ]
@@ -331,6 +332,13 @@ class EgovBoard:
                     )
                 )
         return tuple(found)
+
+
+class NamguBoard(EgovBoard):
+    """남구 eGov 게시판. 실측된 30건 보기 옵션을 사용한다."""
+
+    page_size_parameter = "recordCountPerPage"
+    page_size = "30"
 
 
 def _title(row: _Row, href: str) -> str:
@@ -729,6 +737,7 @@ __all__ = [
     "EgovBoard",
     "JungguBoard",
     "JungguMayorBoard",
+    "NamguBoard",
     "PUBLISHED_SUFFIXES",
     "UljuBoard",
 ]

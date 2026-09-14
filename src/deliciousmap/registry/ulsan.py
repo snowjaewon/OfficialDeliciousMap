@@ -9,6 +9,7 @@ from deliciousmap.scrapers.ulsan import (
     EgovBoard,
     JungguBoard,
     JungguMayorBoard,
+    NamguBoard,
     UljuBoard,
 )
 
@@ -57,7 +58,7 @@ CITY = City(
             "ulsan-namgu",
             "울산광역시 남구",
             tuple(
-                Board(f"expenses-{slug}", f"{NAMGU_BASE}?bbsId={bbs}", EgovBoard)
+                Board(f"expenses-{slug}", f"{NAMGU_BASE}?bbsId={bbs}", NamguBoard)
                 for slug, bbs in (
                     ("deputy", "PrmtFee"),
                     ("director", "PrmtFee1"),
