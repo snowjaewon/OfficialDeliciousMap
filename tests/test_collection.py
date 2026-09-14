@@ -75,3 +75,39 @@ def test_attachment_board_does_not_accept_a_page_as_an_original(tmp_path: Path) 
     # Referer 없는 중랑 첨부처럼 200으로 온 화면을 PDF 게시판의 원본으로 받아들이지 않는다.
     with pytest.raises(AdapterFailure):
         collect(_target(_PdfScraper), _paths(tmp_path), _Transport())
+
+
+class _RefererScraper(_Scraper):
+    """중랑처럼 첨부에 Referer를 요구하는 게시판. 목록 주소를 그대로 실어 보낸다."""
+
+    published_suffixes = frozenset({".pdf"})
+
+    def postings(self, skipped: boards.Skipped) -> Iterator[boards.Posting]:
+        yield boards.Posting(
+            "1",
+            (
+                boards.Attachment(
+                    "1", "1", ".pdf", self.board.url, self.board.url, referer=self.board.url
+                ),
+            ),
+            None,
+            "2026년 1월 업무추진비",
+        )
+
+
+class _RefererTransport:
+    """Referer가 없으면 200과 함께 오류 화면을 주는 제공자. 실측한 중랑의 동작이다."""
+
+    def __init__(self) -> None:
+        self.referers: list[str | None] = []
+
+    def fetch(self, url: str, params: dict[str, str], headers: dict[str, str]) -> bytes:
+        self.referers.append(headers.get("Referer"))
+        return b"%PDF-1.4 body" if headers.get("Referer") else PAGE
+
+
+def test_attachment_referer_reaches_the_request(tmp_path: Path) -> None:
+    transport = _RefererTransport()
+    output = collect(_target(_RefererScraper), _paths(tmp_path), transport)
+    assert transport.referers == ["https://example.invalid/list"]
+    assert [item.container for item in output.sources] == ["pdf"]

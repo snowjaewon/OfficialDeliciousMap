@@ -1,5 +1,8 @@
 """원본 컨테이너 판정의 계약. 게시판이 밝힌 이름이 아니라 바이트가 근거다."""
 
+from io import BytesIO
+from zipfile import ZipFile
+
 import pytest
 
 from deliciousmap import boards
@@ -37,3 +40,23 @@ def test_html_acceptance_does_not_reach_binary_containers() -> None:
 def test_bytes_without_markup_are_still_unsupported() -> None:
     with pytest.raises(boards.UnsupportedOriginal):
         boards.container_of(b"\xef\xbb\xbf   plain text, no markup", html=True)
+
+
+def _archive(*names: str) -> bytes:
+    stream = BytesIO()
+    with ZipFile(stream, "w") as archive:
+        for name in names:
+            archive.writestr(name, "x")
+    return stream.getvalue()
+
+
+def test_hwpx_packages_are_not_read_as_plain_zip_archives() -> None:
+    # 양천 실측(2026-09-14): `.hwpx` 첨부는 `[Content_Types].xml`도 `word/`도 없어
+    # 일반 ZIP과 갈리지 않았다. 이미 커밋된 장부는 hwpx를 ooxml로 세고 있다.
+    hwpx = _archive("mimetype", "version.xml", "Contents/header.xml", "META-INF/container.xml")
+    assert boards.container_of(hwpx) == "ooxml"
+
+
+def test_plain_zip_archives_stay_zip() -> None:
+    assert boards.container_of(_archive("a.pdf", "b.pdf")) == "zip"
+    assert boards.container_of(_archive("[Content_Types].xml", "xl/workbook.xml")) == "ooxml"

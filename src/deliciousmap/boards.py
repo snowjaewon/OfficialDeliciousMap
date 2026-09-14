@@ -114,6 +114,10 @@ class Attachment:
     url: str
     # 원본의 출처로 남길 게시글 주소.
     page_url: str
+    # 이 첨부를 받을 때 함께 보낼 Referer. 비어 있으면 보내지 않는다.
+    # 중랑 실측(2026-09-14): Referer 없이 부르면 200과 함께 1,052바이트 오류 화면이 온다.
+    # 일반 브라우저가 보내는 헤더를 그대로 붙이는 것이므로 차단 우회가 아니다.
+    referer: str = ""
 
     def __post_init__(self) -> None:
         if not (is_identifier(self.post_id) and is_identifier(self.file_id)):
@@ -233,10 +237,11 @@ def address(url: str, params: Mapping[str, str]) -> str:
     return f"{url}?{query(params)}"
 
 
-def request(transport: Transport, url: str, params: Mapping[str, str]) -> bytes:
+def request(transport: Transport, url: str, params: Mapping[str, str], referer: str = "") -> bytes:
     """게시판 응답 하나를 받는다. 제공자 오류는 안전한 예외로만 알린다."""
+    headers = {**HEADERS, "Referer": referer} if referer else HEADERS
     try:
-        body = transport.fetch(url, params, HEADERS)
+        body = transport.fetch(url, params, headers)
     except ResourceGone:
         raise OriginalGone("board links a file the organization no longer serves") from None
     except Exception:
@@ -249,6 +254,17 @@ def request(transport: Transport, url: str, params: Mapping[str, str]) -> bytes:
 def suffix_of(filename: str) -> str:
     """게시판이 밝힌 형식. 받아들일지는 수집이 스크래퍼의 선언과 대조해 정한다."""
     return PurePosixPath(filename.strip()).suffix.lower()
+
+
+# 문서 묶음임을 알리는 항목. OOXML은 `[Content_Types].xml`이나 부문 폴더로, HWPX는
+# `Contents/`의 본문으로 자신을 밝힌다(양천 `.hwpx` 실측: mimetype·version.xml·
+# Contents/header.xml·META-INF/container.xml). 이것이 없는 묶음만 일반 ZIP이다.
+PACKAGE_FOLDERS = ("word/", "xl/", "ppt/", "Contents/")
+PACKAGE_ENTRY = "[Content_Types].xml"
+
+
+def _is_document_package(names: set[str]) -> bool:
+    return PACKAGE_ENTRY in names or any(name.startswith(PACKAGE_FOLDERS) for name in names)
 
 
 def is_html(body: bytes) -> bool:
@@ -281,10 +297,7 @@ def container_of(body: bytes, *, html: bool = False) -> str:
                 names = set(archive.namelist())
         except (OSError, zipfile.BadZipFile):
             names = set()
-        if names and (
-            "[Content_Types].xml" not in names
-            and not any(name.startswith(("word/", "xl/", "ppt/")) for name in names)
-        ):
+        if names and not _is_document_package(names):
             return "zip"
     for container in CONTAINERS:
         if container.matches(body):

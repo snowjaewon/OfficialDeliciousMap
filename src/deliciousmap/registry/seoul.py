@@ -5,6 +5,17 @@
 """
 
 from deliciousmap.registry.models import Board, City, MapBounds, Organization
+from deliciousmap.scrapers.seoul import (
+    BbsNoBoard,
+    BbsNoDetailBoard,
+    CbIdxBoard,
+    GwangjinBoard,
+    JongnoBoard,
+    JungnangBoard,
+    PortalBoard,
+    PortalDetailBoard,
+    YangcheonBoard,
+)
 from deliciousmap.scrapers.seoul_html import (
     CityExpenseBoard,
     EunpyeongBoard,
@@ -16,6 +27,23 @@ CITY_EXPENSE = "https://opengov.seoul.go.kr/expense/list"
 EUNPYEONG = "https://www.ep.go.kr/www/selectJobPrtnCtWebList.do?key=666"
 GWANAK = "https://www.gwanak.go.kr/site/gwanak/estimate/estimateListExcel.do"
 SEODAEMUN = "https://www.sdm.go.kr/admininfo/budget/openmoney.do"
+JONGNO = (
+    "https://www.jongno.go.kr/portal/bbs/selectBoardList.do"
+    "?bbsId=BBSMSTR_000000001167&menuId=110210"
+)
+YONGSAN = "https://www.yongsan.go.kr/portal/bbs/B0000030/list.do?menuNo=200140"
+GWANGJIN = "https://www.gwangjin.go.kr/portal/bbs/B0000027/list.do?menuNo=201646"
+DONGJAK = "https://www.dongjak.go.kr/portal/bbs/B0000591/list.do?menuNo=200209"
+JUNGNANG = "https://www.jungnang.go.kr/portal/bbs/list/B0000143.do?menuNo=200432"
+SEONGDONG = "https://www.sd.go.kr/main/selectBbsNttList.do?bbsNo=172&key=1330"
+DONGDAEMUN = "https://www.ddm.go.kr/www/selectBbsNttList.do?bbsNo=160&key=152"
+SEONGBUK = "https://www.sb.go.kr/www/selectBbsNttList.do?bbsNo=28&key=5923"
+GURO = "https://www.guro.go.kr/www/selectBbsNttList.do?bbsNo=655&key=1732"
+GEUMCHEON = "https://www.geumcheon.go.kr/portal/selectBbsNttList.do?bbsNo=86&key=269"
+YEONGDEUNGPO = "https://www.ydp.go.kr/www/selectBbsNttList.do?bbsNo=31&key=2814"
+SONGPA = "https://www.songpa.go.kr/www/selectBbsNttList.do?bbsNo=327&key=2323"
+YANGCHEON = "https://www.yangcheon.go.kr/site/yangcheon/ex/bbs/List.do?cbIdx=397"
+SEOCHO = "https://www.seocho.go.kr/site/seocho/ex/bbs/List.do?cbIdx=33"
 
 CITY = City(
     "seoul",
@@ -42,5 +70,47 @@ CITY = City(
             "서울특별시 서대문구",
             (Board("expenses", SEODAEMUN, SeodaemunBoard),),
         ),
+        Organization(
+            "seoul-jongno", "서울특별시 종로구", (Board("expenses", JONGNO, JongnoBoard),)
+        ),
+        Organization(
+            "seoul-yongsan", "서울특별시 용산구", (Board("expenses", YONGSAN, PortalBoard),)
+        ),
+        Organization(
+            "seoul-gwangjin", "서울특별시 광진구", (Board("expenses", GWANGJIN, GwangjinBoard),)
+        ),
+        Organization(
+            "seoul-jungnang", "서울특별시 중랑구", (Board("expenses", JUNGNANG, JungnangBoard),)
+        ),
+        Organization(
+            "seoul-dongjak", "서울특별시 동작구", (Board("expenses", DONGJAK, PortalDetailBoard),)
+        ),
+        Organization(
+            "seoul-seongdong", "서울특별시 성동구", (Board("expenses", SEONGDONG, BbsNoBoard),)
+        ),
+        Organization(
+            "seoul-dongdaemun",
+            "서울특별시 동대문구",
+            (Board("expenses", DONGDAEMUN, BbsNoDetailBoard),),
+        ),
+        Organization(
+            "seoul-seongbuk", "서울특별시 성북구", (Board("expenses", SEONGBUK, BbsNoDetailBoard),)
+        ),
+        Organization("seoul-guro", "서울특별시 구로구", (Board("expenses", GURO, BbsNoBoard),)),
+        Organization(
+            "seoul-geumcheon",
+            "서울특별시 금천구",
+            (Board("expenses", GEUMCHEON, BbsNoDetailBoard),),
+        ),
+        Organization(
+            "seoul-yeongdeungpo",
+            "서울특별시 영등포구",
+            (Board("expenses", YEONGDEUNGPO, BbsNoBoard),),
+        ),
+        Organization("seoul-songpa", "서울특별시 송파구", (Board("expenses", SONGPA, BbsNoBoard),)),
+        Organization(
+            "seoul-yangcheon", "서울특별시 양천구", (Board("expenses", YANGCHEON, YangcheonBoard),)
+        ),
+        Organization("seoul-seocho", "서울특별시 서초구", (Board("expenses", SEOCHO, CbIdxBoard),)),
     ),
 )

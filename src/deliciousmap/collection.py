@@ -395,7 +395,7 @@ def _store(
     """원본은 저장소 밖에만 둔다. 이미 받은 원본은 다시 내려받지 않는다."""
     if destination.exists():
         return
-    body = boards.request(transport, *boards.endpoint(attachment.url))
+    body = boards.request(transport, *boards.endpoint(attachment.url), attachment.referer)
     # 원본으로 받아들일 수 있는지만 확인한다. 무슨 컨테이너였는지는 출처를 만들 때 다시 읽는다.
     boards.container_of(body, html=html)
     _write(destination, body)
