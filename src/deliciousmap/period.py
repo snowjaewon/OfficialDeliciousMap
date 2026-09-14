@@ -38,6 +38,11 @@ DECLARATION = re.compile(
 )
 
 
+# 연도 없이 달 하나로 시작하는 제목(울산시청 시장 게시판 실측). 실측한 것이 첫머리의 달뿐이라
+# 제목 가운데의 달과 범위(`6~7월`)는 읽지 않는다.
+MONTH_ONLY = re.compile(r"^\s*(?P<month>1[0-2]|[1-9])\s*월(?!\s*[~\-–∼,])")
+
+
 def collects(posted: date | None) -> bool:
     """이번 수집이 받을 게시글인지. 게시일의 해가 대상 기간의 해와 같아야 한다.
 
@@ -116,10 +121,25 @@ def exclusion(posted: date | None, title: str | None) -> ExclusionReason | None:
         return None
     if posted is None or not collects(posted):
         return "posted_out_of_range"
-    span = declared(title)
+    span = declared(title) or _month_before(title, posted)
     if span is None:
         return "undeclared_in_year"
     return None if span.overlaps(REPORTING) else "declared_out_of_range"
+
+
+def _month_before(title: str | None, posted: date) -> Span | None:
+    """연도 없이 달만 적은 제목의 기간. 게시일 이전의 가장 가까운 그 달이다.
+
+    울산시청 시장 게시판이 `6월 업무추진비 사용 내역`처럼 적는다(2026-09-14 실측). 지출은
+    게시보다 먼저 있으므로 게시일의 달보다 뒤인 달은 지난해다. 연도 없는 분기·반기·범위는
+    실측하지 않아 읽지 않는다.
+    """
+    found = MONTH_ONLY.search(title or "")
+    if found is None:
+        return None
+    month = int(found["month"])
+    year = posted.year if month <= posted.month else posted.year - 1
+    return Span(date(year, month, 1), date(year, month, calendar.monthrange(year, month)[1]))
 
 
 def targets(posted: date | None, title: str | None) -> bool:

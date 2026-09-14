@@ -142,6 +142,24 @@ def test_exclusion_names_why_a_posting_is_not_a_target(
 
 
 @pytest.mark.parametrize(
+    ("posted", "title", "expected"),
+    [
+        # 울산시청 시장 게시판은 연도 없이 달만 적는다(2026-09-14 실측 `6월 업무추진비 사용 내역`).
+        # 지출은 게시보다 먼저이므로 게시일 이전의 가장 가까운 그 달이다.
+        (date(2026, 7, 23), "6월 업무추진비 사용 내역", None),
+        (date(2026, 6, 30), "6월 업무추진비 사용 내역", None),
+        (date(2026, 8, 10), "7월 업무추진비 사용 내역", "declared_out_of_range"),
+        # 연초에 올린 `12월`은 지난해 12월이다.
+        (date(2026, 1, 5), "12월 업무추진비 사용 내역", "declared_out_of_range"),
+    ],
+)
+def test_a_month_without_a_year_is_the_latest_such_month_by_the_posting_date(
+    posted: date, title: str, expected: str | None
+) -> None:
+    assert exclusion(posted, title) == expected
+
+
+@pytest.mark.parametrize(
     ("posted", "title"),
     [
         (date(2026, 4, 2), "2026년 1분기 업무추진비 사용내역(합성과)"),
