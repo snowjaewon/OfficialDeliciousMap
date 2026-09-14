@@ -391,3 +391,68 @@ def test_broken_pdf_is_unreadable_rather_than_an_unsupported_format(tmp_path: Pa
     path.write_bytes(b"%PDF-1.7 synthetic")
     with pytest.raises(UnreadableOriginal):
         read_tables(path)
+
+
+def test_html_tables_are_read_with_merges_like_the_other_formats(tmp_path: Path) -> None:
+    """쪽의 `<table>`마다 표 하나다. 캡션이 이름표이고, 병합 값은 왼쪽 위 칸에만 둔다."""
+    page = (
+        "<!DOCTYPE html><html><head><script>var cell = '<td>x</td>';</script></head><body>"
+        "<h2>2026-03-17 합성 집행내역</h2>"
+        "<table><caption>합성 상세</caption>"
+        "<tr><th>일자</th><th colspan=2>사용 내역</th></tr>"
+        "<tr><td rowspan=2>2026-03-17</td><td>합성 식당</td><td>62,000</td></tr>"
+        "<tr><td>합성 찻집<br/>2층</td><td>27,000</td></tr>"
+        "<tr><td></td><td>합성 국밥</td><td>15,000</td></tr>"
+        "</table>"
+        "<p>안내</p><table><tr><td>목록</td></tr></table></body></html>"
+    )
+    path = tmp_path / "20260317-1.html"
+    path.write_text(page, encoding="utf-8")
+    first, second = read_tables(path)
+    assert (first.name, first.label) == ("table1", "합성 상세")
+    # 가로 병합이 덮은 자리는 빈 값이고, 행 끝의 빈 칸은 다른 형식처럼 잘린다.
+    assert first.rows == (
+        ("일자", "사용 내역"),
+        ("2026-03-17", "합성 식당", "62,000"),
+        ("", "합성 찻집 2층", "27,000"),
+        ("", "합성 국밥", "15,000"),
+    )
+    assert first.value(3, 0) == "2026-03-17"
+    # 병합이 아닌 빈 칸은 그대로 빈 값이다.
+    assert first.value(4, 0) == ""
+    # 캡션이 없으면 표 바로 앞의 문단이 이름표다.
+    assert (second.name, second.label) == ("table2", "안내")
+
+
+def test_an_html_page_outside_the_measured_encoding_is_unreadable(tmp_path: Path) -> None:
+    path = tmp_path / "1-1.html"
+    path.write_bytes("<html><table><tr><td>합성</td></tr></table></html>".encode("euc-kr"))
+    with pytest.raises(UnreadableOriginal):
+        read_tables(path)
+
+
+def test_a_repeated_label_on_an_empty_element_does_not_hide_the_rest_of_the_table(
+    tmp_path: Path,
+) -> None:
+    # 닫는 태그가 없는 요소(`<br>`·`<img>`)에 열 이름 표시가 붙어도 뒤의 칸을 숨기지 않는다.
+    page = (
+        "<html><body><table><tr><th>장소</th><th>금액(원)</th></tr>"
+        '<tr><td><img class="add-head" alt="장소">합성 식당</td>'
+        '<td><br class="add-head"><span class="add-head">금액(원)</span>62,000</td></tr>'
+        "</table></body></html>"
+    )
+    path = tmp_path / "1-1.html"
+    path.write_text(page, encoding="utf-8")
+    (table,) = read_tables(path)
+    assert table.rows == (("장소", "금액(원)"), ("합성 식당", "62,000"))
+
+
+def test_a_spreadsheetml_workbook_is_not_read_as_an_html_page(tmp_path: Path) -> None:
+    # SpreadsheetML도 `<Table>`을 담지만 HTML 표 쪽이 아니다. 읽지 않는 형식으로 그대로 둔다.
+    path = tmp_path / "집행내역.xls"
+    path.write_bytes(
+        b'<?xml version="1.0"?>\n<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet">'
+        b"<Worksheet><Table><Row><Cell><Data>1</Data></Cell></Row></Table></Worksheet></Workbook>"
+    )
+    with pytest.raises(UnsupportedFormat):
+        read_tables(path)

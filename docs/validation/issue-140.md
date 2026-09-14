@@ -355,17 +355,23 @@ Reading HWPML tables is out of scope for #140; the run records what was received
 
 ## Collection behaviour changed for every city
 
-#132 turned on "continue to the next board after a failure" for Ulsan only, by
-comparing `target.city.slug`.  #140 removes the city name from that decision.
-Busan spreads 17 organizations over 16 hosts, so one public server dropping is
-ordinary, and a city name says nothing about whether a board is reachable.
+#132 turned this on for Ulsan and #152 added Seoul, both by comparing
+`target.city.slug`, and #152 left a note that #140 would decide whether to widen it.
 
-What continues is only `service-unavailable` — a failure that a later request can
-answer differently.  `adapter-failed` (the listing no longer parses) and
-`unsupported-format` mean *our scraper* is wrong, not the board; continuing past
-those would make every later run collect the same short amount from the same
-place, so they are still raised where they happen.  That also keeps the 광주
-guarantees intact: a listing that lost its page count still fails loudly rather
+**The decision: `service-unavailable` continues for every city.**  Busan spreads 17
+organizations over 16 hosts, so one public server dropping is ordinary, and a city
+name says nothing about whether a board is reachable.  A later request can answer
+differently, so the board is recorded and the walk moves on.
+
+**The other causes keep their city list.**  `adapter-failed` (the listing no longer
+parses) and `unsupported-format` mean *our scraper* is wrong, not the board, and
+continuing past those makes every later run collect the same short amount from the
+same place.  Widening them was tempting but wrong: #145 landed while this branch was
+open and depends on that tolerance — Ulsan's 시청 부서장 listing ends its walk on one
+row the organization typed as `202-12-28`, and failing the city for that would throw
+away the originals already collected.  So `FAILURE_TOLERANT` stays as Seoul and Ulsan,
+and the cities that did not opt in still hear about it where it happens.  That keeps
+the 광주 guarantee intact too: a listing that lost its page count fails loudly rather
 than quietly collecting page 1 of N.
 
 Walking every board and still collecting nothing, when the cause was a failure,

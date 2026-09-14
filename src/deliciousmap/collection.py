@@ -25,6 +25,14 @@ UNMEASURED = "unmeasured.jsonl"
 # 목록에서 읽은 게시일·제목의 색인. 원본과 함께 저장소 밖에 두며, 이미 받아 둔 원본에도
 # 목록만 다시 읽어 이 값을 채운다. 지우면 다음 실행이 목록에서 다시 만든다.
 LISTING = "listing.jsonl"
+# 다시 요청해도 달라지지 않는 사유(목록을 읽지 못함·실측하지 않은 형식)까지 경고로만 남기고
+# 다음 게시판으로 가는 도시. #132가 울산에, #152가 서울에 켰다. 그런 사유는 그 게시판이 아니라
+# 우리 스크래퍼가 틀렸다는 뜻이라 도시 공통으로 넓히지 않는다 — 울산 시청 부서장 목록처럼
+# 기관이 적은 값 하나(`202-12-28`)로 훑기가 끝나는 게시판이 있어(#145) 그 도시는 받아들이기로
+# 했고, 받아들이지 않은 도시는 그 자리에서 알린다.
+#
+# 끊긴 게시판(service-unavailable)은 이 목록과 무관하게 도시를 가리지 않고 이어 간다(#140).
+FAILURE_TOLERANT = frozenset({"seoul", "ulsan"})
 # 실측하지 않은 형식을 경고로만 남기고 통과시키는 도시. 울산 하나뿐이다 — 그 완화는
 # 조용히 빠지는 첨부를 만들므로(울산 장부 실측: 북구 18·동구 28·남구 10건) 서울에는
 # 켜지 않는다. 서울은 스캔본을 만나면 멈췄고, 그래서 `jpeg`·`png`를 실측 컨테이너로
@@ -42,8 +50,8 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
     missing: list[MissingOriginal] = []
     unmeasured: list[dict[str, str]] = []
     failures: list[str] = []
-    # 실패한 게시판의 사유. 한 건도 거두지 못한 채 끝나면 그중 첫 사유로 수집을 실패로 알린다.
-    causes: list[FailureCause] = []
+    # 이어 간 장애. 한 건도 거두지 못한 채 끝나면 그중 첫 사유로 수집을 실패로 알린다.
+    outages: list[FailureCause] = []
     visited: list[str] = []
     held: list[str] = []
     uncollected = 0
@@ -55,19 +63,20 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
         for board in organization.boards:
             visited.append(f"{organization.slug}/{board.slug}")
             directory = paths.board_dir(target, organization.slug, board.slug)
-            # #140의 결정: 끊긴 게시판을 이어 가는 규칙에서 도시 이름을 뺀다. 부산은 기관
-            # 열일곱이 호스트 열여섯에 흩어져 있어 공개 서버 하나가 끊기는 일이 상례이고,
-            # 서울·울산도 같은 이유로 예외 목록에 올라 있었다. 도시 이름은 게시판이 끊겼는지와
-            # 무관하므로, 끊긴 게시판 하나가 나머지 기관의 원본까지 0건으로 만들지 않도록
-            # 사유만 장부 경고에 남기고 다음 게시판으로 간다.
-            #
-            # 이어 가는 것은 다시 요청하면 달라질 수 있는 장애뿐이다. 목록을 읽지 못했거나
-            # 실측하지 않은 형식을 만난 것은 그 게시판이 아니라 우리 스크래퍼가 틀렸다는 뜻이고,
-            # 그대로 두면 다음 실행도 같은 자리에서 같은 만큼만 거둔다. 그런 사유는 `_walk`가
-            # 그 자리에서 알린다.
-            walked = _walk(board, directory, transport)
+            try:
+                walked = _walk(board, directory, transport)
+            except AdapterFailure as exc:
+                # 다시 요청해도 달라지지 않는 사유다. 받아들이기로 한 도시만 이어 간다.
+                if target.city.slug not in FAILURE_TOLERANT:
+                    raise
+                failures.append(f"{organization.slug}/{board.slug}={exc.cause.value}")
+                walked = _Walked([], 0, 0)
             if walked.failure is not None:
-                causes.append(walked.failure)
+                # #140의 결정: 끊긴 게시판을 이어 가는 규칙에서 도시 이름을 뺀다. 부산은 기관
+                # 열일곱이 호스트 열여섯에 흩어져 있어 공개 서버 하나가 끊기는 일이 상례인데,
+                # 도시 이름은 게시판이 끊겼는지와 무관하다. 끊긴 게시판 하나가 나머지 기관의
+                # 원본까지 0건으로 만들지 않도록 사유만 장부 경고에 남기고 다음 게시판으로 간다.
+                outages.append(walked.failure)
                 failures.append(f"{organization.slug}/{board.slug}={walked.failure.value}")
             unmeasured.extend(walked.unmeasured)
             uncollected += walked.uncollected
@@ -85,10 +94,10 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
                 )
             )
             missing.extend(_missing(gone, listed, organization.slug, board.slug))
-    if not sources and causes:
+    if not sources and outages:
         # 게시판을 모두 훑었는데 한 건도 거두지 못했고 그 원인이 장애다. 이것까지 경고로
         # 남기면 장애가 "첨부가 없는 기관"과 같은 모양이 된다. 실패는 실패로 알린다.
-        raise AdapterFailure(causes[0])
+        raise AdapterFailure(outages[0])
     if unmeasured and target.city.slug not in UNMEASURED_TOLERANT:
         # 게시판을 끝까지 훑은 뒤에 한 번에 알린다. 형식을 하나 만날 때마다 멈추지 않는다.
         raise AdapterFailure(FailureCause.UNSUPPORTED_FORMAT)
@@ -121,7 +130,7 @@ def _html(published: frozenset[str]) -> bool:
     선언은 게시판마다 다르므로 컨테이너 판정도 게시판 단위로 갈린다. 첨부를 내려받는
     게시판에서 200으로 오는 오류 화면을 원본으로 삼지 않기 위해서다.
     """
-    return ".html" in published
+    return boards.HTML_SUFFIX in published
 
 
 @dataclass(frozen=True)
@@ -163,7 +172,9 @@ def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
         for posting in scraper.postings(skip):
             if posting.posted is not None or posting.title:
                 # 이미 끝낸 게시글도 목록에서 읽은 값은 이번 훑기의 것으로 갱신한다.
-                listed[posting.post_id] = Listed(posting.posted, posting.title, posting.department)
+                listed[posting.post_id] = Listed(
+                    posting.posted, posting.title, posting.department, posting.spent_on
+                )
             if posting.post_id in done:
                 continue
             if skip(posting.post_id, posting.posted):
@@ -211,10 +222,13 @@ def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
     except boards.UnreadableBoard:
         raise AdapterFailure(FailureCause.ADAPTER_FAILED) from None
     except boards.BoardUnavailable:
-        # 다시 요청하면 달라질 수 있는 장애다. 여기서 끊더라도 그때까지 읽은 목록과 수는
-        # 그대로 남긴다. 이어서 다시 실행할 때 같은 자리를 다시 읽지 않게 하기 위해서다.
+        # 다시 요청하면 달라질 수 있는 장애다. 여기서 끊더라도 그때까지 세어 둔 수는 훑기
+        # 결과에 담아 돌려준다 — 버리면 "기간 밖 게시글이 없는 게시판"과 같은 모양이 된다.
         failure = FailureCause.SERVICE_UNAVAILABLE
-    _remember_listing(directory, listed)
+    finally:
+        # 게시판이 도중에 실패해도 그때까지 목록에서 읽은 값은 맞다. 이미 받은 원본이 게시일·
+        # 제목·집행일을 잃지 않게 남긴다(시청 부서장 목록이 2020년 구간의 행에서 멈춘 실측).
+        _remember_listing(directory, listed)
     _report_unmeasured(directory, unmeasured)
     return _Walked(unmeasured, uncollected, _filtered(scraper), failure)
 
@@ -252,6 +266,8 @@ class Listed:
     posted: date | None
     title: str
     department: str
+    # 상세 키가 밝힌 집행일(`boards.Posting.spent_on`). 그런 게시판이 아니면 없다.
+    spent_on: date | None = None
 
     @staticmethod
     def of(listed: dict[str, "Listed"], post_id: str) -> tuple[date | None, str | None, str | None]:
@@ -260,6 +276,11 @@ class Listed:
         if entry is None:
             return None, None, None
         return entry.posted, entry.title or None, entry.department or None
+
+    @staticmethod
+    def spent_on_of(listed: dict[str, "Listed"], post_id: str) -> date | None:
+        entry = listed.get(post_id)
+        return entry.spent_on if entry else None
 
 
 def _listed(directory: Path) -> dict[str, Listed]:
@@ -272,10 +293,12 @@ def _listed(directory: Path) -> dict[str, Listed]:
         try:
             entry = json.loads(line)
             posted = entry["posted"]
+            spent_on = entry.get("spent_on")
             listed[str(entry["post_id"])] = Listed(
                 date.fromisoformat(posted) if posted else None,
                 str(entry["title"]),
                 str(entry.get("department") or ""),
+                date.fromisoformat(spent_on) if spent_on else None,
             )
         except (ValueError, KeyError, TypeError):
             continue
@@ -294,6 +317,8 @@ def _remember_listing(directory: Path, listed: dict[str, Listed]) -> None:
                 "posted": entry.posted.isoformat() if entry.posted else None,
                 "title": entry.title,
                 "department": entry.department,
+                # 상세 키가 없는 게시판의 색인은 전과 같은 줄로 남긴다.
+                **({"spent_on": entry.spent_on.isoformat()} if entry.spent_on else {}),
             },
             ensure_ascii=False,
             sort_keys=True,
@@ -335,6 +360,7 @@ def _sources(
                     department=department,
                     posted=posted,
                     title=title,
+                    spent_on=Listed.spent_on_of(listed, post_id),
                 )
             )
     return references

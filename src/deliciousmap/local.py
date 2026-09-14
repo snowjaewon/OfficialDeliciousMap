@@ -49,6 +49,12 @@ class LocalAdapters:
             context.paths.city_dir(context.target) / HEADERMAP_ANSWERS,
             Budget(context.paths.shared("llm-budget")),
             context.header_mapper,
+            {
+                (organization.slug, board.slug): board.table
+                for organization in context.target.organizations
+                for board in organization.boards
+                if board.table is not None
+            },
         )
 
     def parse(self, value: ParseInput, context: ExecutionContext) -> ParseOutput:

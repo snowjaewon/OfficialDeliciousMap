@@ -11,6 +11,7 @@ from io import BytesIO
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
+from deliciousmap.grid import is_html
 from deliciousmap.transport import HttpTransport, ResourceGone, Transport, query
 
 if TYPE_CHECKING:  # 레지스트리가 스크래퍼를 선언하므로 실행 시점에 되짚어 부르지 않는다.
@@ -87,13 +88,6 @@ class Container:
         return not self.marker or self.marker in body[:MARKER_WINDOW]
 
 
-# 화면 자체가 원본인 게시판의 표식. HTML에는 고정된 매직 바이트가 없어 서명 대신
-# 앞부분의 표식으로 가른다. 2026-09-14 실측: 서울시청 상세는 `<!DOCTYPE html>`로,
-# 관악 월별 내려받기는 빈 줄 여덟 개 뒤의 `<meta>`로 시작한다.
-HTML_MARKERS = (b"<!doctype html", b"<html", b"<table", b"<meta", b"<body")
-# 표식을 찾기 전에 걷어낼 앞머리. BOM과 공백만 걷어내고 그 밖의 바이트는 건드리지 않는다.
-BOMS = (b"\xef\xbb\xbf", b"\xff\xfe", b"\xfe\xff")
-
 # 실측으로 확인한 컨테이너만 둔다. `.xls`는 OLE2와 SpreadsheetML 둘 다로 올라온다.
 CONTAINERS: tuple[Container, ...] = (
     Container("ole2", bytes.fromhex("d0cf11e0a1b11ae1"), frozenset({".xls", ".hwp"})),
@@ -121,6 +115,8 @@ BOM = b"\xef\xbb\xbf"
 HWPX_MEDIA_TYPE = b"application/hwp+zip"
 # 저장 이름에 쓸 수 있는 확장자의 모양. 게시판이 준 이름을 경로로 그대로 쓰지 않는다.
 SUFFIX = re.compile(r"\.[a-z0-9]{1,8}")
+# 집행내역을 첨부 대신 HTML 표로 내는 게시판의 원본 이름. 받은 응답 전체를 그대로 둔다.
+HTML_SUFFIX = ".html"
 
 
 def is_identifier(value: str) -> bool:
@@ -171,6 +167,10 @@ class Posting:
     posted: date | None = None
     title: str = ""
     department: str = ""
+    # 하루치 집행내역을 날짜로 여는 게시판(울산 시청·동구)이 상세 키로 밝힌 집행일. 그 원본의
+    # 표에는 집행일 열이 없어 레코드의 집행일과 대상 기간이 이 값을 쓴다([ADR-0008](
+    # ../../docs/adr/0008-declare-html-table-mappings.md)).
+    spent_on: date | None = None
 
 
 # 본문을 열지 않고 넘길 게시글인지 묻는다. 이미 수집을 마쳤거나 이번 수집의 기간 밖이면 참이다.
@@ -334,15 +334,6 @@ def _is_document_package(names: set[str]) -> bool:
     return PACKAGE_ENTRY in names or any(name.startswith(PACKAGE_FOLDERS) for name in names)
 
 
-def is_html(body: bytes) -> bool:
-    """화면 자체가 원본인 게시판이 준 HTML인지. 표식이 없으면 원본으로 받아들이지 않는다."""
-    head = body[:MARKER_WINDOW]
-    for bom in BOMS:
-        head = head.removeprefix(bom)
-    head = head.lstrip().lower()
-    return head.startswith(b"<") and any(marker in head for marker in HTML_MARKERS)
-
-
 def container_of(body: bytes, *, html: bool = False) -> str:
     """매직 바이트로 컨테이너를 판정한다. 게시판이 밝힌 확장자는 믿지 않는다.
 
@@ -351,7 +342,8 @@ def container_of(body: bytes, *, html: bool = False) -> str:
 
     `html`은 화면 자체가 원본인 게시판에서만 켠다(`.html`을 실측 확장자로 선언한 게시판).
     첨부를 내려받는 게시판에서 켜면 Referer 없는 중랑 첨부처럼 200으로 오는 오류 화면을
-    원본으로 받아들이게 되므로, 기본값은 끈 상태다.
+    원본으로 받아들이게 되므로, 기본값은 끈 상태다. HTML 판정 자체는 표를 읽는 쪽과 같은
+    `grid.is_html` 하나다(서울 화면 게시판, 울산 HTML 표 게시판 — ADR-0008).
     """
     if not body:
         raise EmptyOriginal("board served an empty attachment")

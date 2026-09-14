@@ -635,7 +635,7 @@ class ArtifactStore:
         return tuple(
             item
             for item in self.load("fetch", FetchOutput).sources
-            if period.targets(item.posted, item.title)
+            if period.targets(item.posted, item.title, item.spent_on)
         )
 
     def excluded_sources(self) -> ExcludedSources:
@@ -643,7 +643,7 @@ class ArtifactStore:
         counted = Counter(
             reason
             for item in self.load("fetch", FetchOutput).sources
-            if (reason := period.exclusion(item.posted, item.title)) is not None
+            if (reason := period.exclusion(item.posted, item.title, item.spent_on)) is not None
         )
         return ExcludedSources(
             posted_out_of_range=counted["posted_out_of_range"],
