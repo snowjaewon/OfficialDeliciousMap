@@ -25,6 +25,16 @@ UNMEASURED = "unmeasured.jsonl"
 # 목록에서 읽은 게시일·제목의 색인. 원본과 함께 저장소 밖에 두며, 이미 받아 둔 원본에도
 # 목록만 다시 읽어 이 값을 채운다. 지우면 다음 실행이 목록에서 다시 만든다.
 LISTING = "listing.jsonl"
+# 게시판 하나의 장애를 기관 전체의 0건으로 바꾸지 않는 도시. 실패한 게시판과 사유는
+# 장부의 경고로 남는다. 2026-09-14 사용자 결정으로 서울을 울산과 같게 둔다 — 서울은
+# 기관마다 게시판이 하나여서 실패하면 그 기관의 장부 자체가 남지 않았다. 나머지 도시로
+# 넓힐지는 부산 수집 이슈(#140)에서 정한다.
+FAILURE_TOLERANT = frozenset({"seoul", "ulsan"})
+# 실측하지 않은 형식을 경고로만 남기고 통과시키는 도시. 울산 하나뿐이다 — 그 완화는
+# 조용히 빠지는 첨부를 만들므로(울산 장부 실측: 북구 18·동구 28·남구 10건) 서울에는
+# 켜지 않는다. 서울은 스캔본을 만나면 멈췄고, 그래서 `jpeg`·`png`를 실측 컨테이너로
+# 선언해 풀었다.
+UNMEASURED_TOLERANT = frozenset({"ulsan"})
 
 
 def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
@@ -47,10 +57,11 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
             try:
                 walked = _walk(board, directory, transport)
             except AdapterFailure as exc:
-                # 울산은 기관별 게시판이 많고 공개 서버가 간헐적으로 끊긴다. 한
-                # 게시판의 장애가 다른 기관의 원본까지 0건으로 숨기지 않도록
-                # 안전한 사유 코드만 장부 경고에 남기고 다음 게시판으로 간다.
-                if target.city.slug != "ulsan":
+                # 기관별 게시판이 많고 공개 서버가 간헐적으로 끊긴다. 한 게시판의
+                # 장애가 이미 받아 둔 원본까지 0건으로 숨기지 않도록 안전한 사유
+                # 코드만 장부 경고에 남기고 다음 게시판으로 간다. 무엇이 실패했는지
+                # 장부에 남으므로 실패를 성공으로 바꾸는 것이 아니다.
+                if target.city.slug not in FAILURE_TOLERANT:
                     raise
                 failures.append(f"{organization.slug}/{board.slug}={exc.cause.value}")
                 walked = _Walked([], 0, 0)
@@ -63,7 +74,7 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
                 _sources(directory, collected, listed, organization.slug, board.slug, _html(board))
             )
             missing.extend(_missing(gone, listed, organization.slug, board.slug))
-    if unmeasured and target.city.slug != "ulsan":
+    if unmeasured and target.city.slug not in UNMEASURED_TOLERANT:
         # 게시판을 끝까지 훑은 뒤에 한 번에 알린다. 형식을 하나 만날 때마다 멈추지 않는다.
         raise AdapterFailure(FailureCause.UNSUPPORTED_FORMAT)
     if unmeasured:
