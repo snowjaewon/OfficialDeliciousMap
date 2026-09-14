@@ -18,12 +18,16 @@
 바꾸는 것은 근거와 대조할 이름이라 그 판정의 버전은 `identity.POLICY_VERSION`이 맡는다.
 """
 
+from __future__ import annotations
+
 import re
 from collections.abc import Iterable
 from dataclasses import dataclass
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
-from deliciousmap.contracts import Record
+if TYPE_CHECKING:  # 판별 이름을 고르는 계약이 이 규칙을 부르므로 실행 시 계약을 되부르지 않는다.
+    from deliciousmap.contracts import Record
 
 POLICY_VERSION = "merchants-1"
 

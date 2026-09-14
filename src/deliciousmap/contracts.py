@@ -19,6 +19,7 @@ from pydantic import (
     model_validator,
 )
 
+from deliciousmap import merchants
 from deliciousmap.registry import Target
 
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
@@ -1128,15 +1129,24 @@ class ClassifyInput(Contract):
     manual: tuple[ManualCorrection, ...] = ()
     restorations: tuple[RestoredName, ...] = ()
 
+    def names(self) -> dict[str, str]:
+        """레코드마다 판별할 이름. 확정 복원명 → 꼬리말을 뗀 이름 → 원본 표기 순으로 고른다.
+
+        좌표 판정이 근거와 대조할 이름을 고르는 순서와 같다(#137). 레코드의 원본 표기는
+        어느 단계에서도 바뀌지 않는다. 꼬리말이 없거나 떼면 이름이 남지 않는 표기는
+        `merchants.read`가 원본 표기를 그대로 돌려준다 — 조회할 이름을 지어내지 않는다.
+        """
+        restored = {item.record_id: item.restored_merchant for item in self.restorations}
+        return {
+            record.record_id: restored.get(record.record_id)
+            or merchants.read(record.merchant).named
+            for record in self.records
+        }
+
     @property
     def merchants(self) -> tuple[str, ...]:
-        """확정 복원명이 있으면 그 이름을 판별한다. 원본 표기는 레코드에 그대로 남는다."""
-        restored = {item.record_id: item.restored_merchant for item in self.restorations}
-        return tuple(
-            dict.fromkeys(
-                restored.get(record.record_id, record.merchant) for record in self.records
-            )
-        )
+        """판별 대상 고유 이름. 캐시를 채우는 키와 판정을 읽는 키가 같도록 `names`를 쓴다."""
+        return tuple(dict.fromkeys(self.names().values()))
 
 
 class ClassifyOutput(Contract):

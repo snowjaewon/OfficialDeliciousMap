@@ -7,7 +7,15 @@ import pytest
 
 from deliciousmap.storage import write_text
 from tests.gwangju import FakeModel, header_answer, sheet_a, workbook
-from tests.test_parse_cli import DATA, ledger, payload, publish, record_spending, run
+from tests.test_parse_cli import (
+    DATA,
+    ledger,
+    payload,
+    publish,
+    record_spending,
+    records,
+    run,
+)
 
 SHEET = sheet_a(
     ("2026-01-05", "합성 식당", "간담회", 4.0, 62000.0),
@@ -122,3 +130,108 @@ def test_without_a_model_every_merchant_stays_pending(
     monkeypatch.delenv("GEMINI_API_KEY")
     assert run(tmp_path, "classify") == 0
     assert set(decisions(tmp_path)) == {("pending", "unclassified: model_not_configured")}
+
+
+TAIL_SHEET = sheet_a(
+    ("2026-02-02", "합성카페외 1", "간담회", 3.0, 33000.0),
+    ("2026-02-03", "외갓집", "간담회", 2.0, 22000.0),
+    ("2026-02-04", "외 1", "협의", 2.0, 11000.0),
+)
+
+
+def tail_parsed(root: Path) -> None:
+    record_spending(root)
+    publish(root, ("2월.xls", workbook(TAIL_SHEET)))
+    assert run(root, "headermap", FakeModel(headers=[header_answer()])) == 0
+    assert run(root, "parse") == 0
+
+
+def cached(root: Path, verdicts: dict[str, str]) -> None:
+    """공통 캐시를 키 정렬 JSONL로 미리 채운다. 이미 답한 이름을 다시 묻지 않는지 본다."""
+    write_text(
+        root / DATA / "_shared" / "classify.jsonl",
+        "".join(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "key": key,
+                    "revision": 1,
+                    "valid": True,
+                    "evidence": "gemini-3.6-flash/classify-1",
+                    "value": {"status": verdicts[key], "reason": "이미 답한 이름"},
+                },
+                ensure_ascii=False,
+            )
+            + "\n"
+            for key in sorted(verdicts)
+        ),
+    )
+
+
+def test_the_unnamed_companion_tail_is_cut_from_the_name_the_classifier_reads(
+    tmp_path: Path, configured: None
+) -> None:
+    """판별이 읽는 이름에서 꼬리말을 뗀다. 레코드의 원본 표기는 바뀌지 않는다(#137)."""
+    tail_parsed(tmp_path)
+    model = FakeModel(verdict=lambda name: "restaurant")
+    assert run(tmp_path, "classify", model) == 0
+    (prompt,) = model.calls("classify")
+    # 모델에 보이는 표기도 뗀 이름이어야 캐시 키와 질문이 같은 이름을 가리킨다.
+    assert sorted(line.split(". ", 1)[1] for line in prompt.splitlines()) == [
+        "외 1",
+        "외갓집",
+        "합성카페",
+    ]
+    assert {item["key"] for item in shared(tmp_path)} == {"합성카페", "외갓집", "외 1"}
+    # 레코드의 원본 표기는 어느 단계에서도 바뀌지 않는다.
+    assert [item["merchant"] for item in records(tmp_path)] == ["합성카페외 1", "외갓집", "외 1"]
+
+
+def test_a_cached_cut_name_is_reused_without_a_call(tmp_path: Path, configured: None) -> None:
+    """뗀 이름이 이미 공통 캐시에 있으면 묻지 않는다. 기존 항목도 덮어쓰지 않는다(#137)."""
+    cached(tmp_path, {"합성카페": "restaurant", "외갓집": "restaurant", "외 1": "pending"})
+    before = shared(tmp_path)
+    tail_parsed(tmp_path)
+    model = FakeModel()
+    assert run(tmp_path, "classify", model) == 0
+    assert model.prompts == []
+    assert [status for status, _ in decisions(tmp_path)] == ["restaurant", "restaurant", "pending"]
+    assert shared(tmp_path) == before
+
+
+def test_a_manual_correction_matches_the_cut_name(tmp_path: Path, configured: None) -> None:
+    """사람 보정도 뗀 이름으로 맞는다. 보정 파일의 상호가 뗀 이름과 같으면 적용된다(#137)."""
+    tail_parsed(tmp_path)
+    correct(tmp_path, "합성카페", "restaurant")
+    assert run(tmp_path, "classify", FakeModel(verdict=lambda name: "pending")) == 0
+    assert decisions(tmp_path)[0] == ("restaurant", "manual: 담당자가 업소 정보를 확인")
+    # 보정이 맞은 상호는 캐시를 채우지 않는다.
+    assert {item["key"] for item in shared(tmp_path)} == {"외갓집", "외 1"}
+
+
+def test_a_confirmed_restored_name_wins_over_the_cut_name(tmp_path: Path, configured: None) -> None:
+    """확정 복원명 → 꼬리말을 뗀 이름 → 원본 표기 순이다. 복원명이 앞선다(#137)."""
+    tail_parsed(tmp_path)
+    record_id = records(tmp_path)[0]["record_id"]
+    write_text(
+        tmp_path / DATA / "manual" / "gwangju" / "restore.jsonl",
+        json.dumps(
+            {
+                "schema_version": 1,
+                "scope": {
+                    "city": "gwangju",
+                    "merchant": "합성카페외 1",
+                    "record_id": record_id,
+                },
+                "restored_merchant": "합성카페 본점",
+                "evidence": "기관의 다른 공개자료에서 전체 상호를 확인",
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+    )
+    model = FakeModel(verdict=lambda name: "restaurant")
+    assert run(tmp_path, "classify", model) == 0
+    (prompt,) = model.calls("classify")
+    assert "합성카페 본점" in [line.split(". ", 1)[1] for line in prompt.splitlines()]
+    assert "합성카페" not in [line.split(". ", 1)[1] for line in prompt.splitlines()]
