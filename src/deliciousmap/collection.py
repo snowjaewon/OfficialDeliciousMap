@@ -57,7 +57,9 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
             uncollected += walked.uncollected
             collected, gone = _ledger(directory)
             listed = _listed(directory)
-            sources.extend(_sources(directory, collected, listed, organization.slug, board.slug))
+            sources.extend(
+                _sources(directory, collected, listed, organization.slug, board.slug, _html(board))
+            )
             missing.extend(_missing(gone, listed, organization.slug, board.slug))
     if unmeasured and target.city.slug != "ulsan":
         # 게시판을 끝까지 훑은 뒤에 한 번에 알린다. 형식을 하나 만날 때마다 멈추지 않는다.
@@ -83,6 +85,15 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
     )
 
 
+def _html(board: Board) -> bool:
+    """화면 자체가 원본인 게시판인지. 스크래퍼가 `.html`을 실측 확장자로 선언하면 참이다.
+
+    선언은 게시판마다 다르므로 컨테이너 판정도 게시판 단위로 갈린다. 첨부를 내려받는
+    게시판에서 200으로 오는 오류 화면을 원본으로 삼지 않기 위해서다.
+    """
+    return ".html" in getattr(board.scraper, "published_suffixes", frozenset())
+
+
 @dataclass(frozen=True)
 class _Walked:
     """게시판 하나를 훑은 결과. 사람이 봐야 하는 첨부와 기간 밖이라 받지 않은 게시글 수다."""
@@ -104,6 +115,7 @@ def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
     done = set(collected) | set(gone)
     listed = _listed(directory)
     scraper: boards.BoardScraper = board.scraper(board, transport)
+    html = ".html" in scraper.published_suffixes
     unmeasured: list[dict[str, str]] = []
     uncollected = 0
 
@@ -132,7 +144,7 @@ def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
             rejected = []
             for attachment in posting.attachments:
                 try:
-                    _store(directory / attachment.name, attachment, transport)
+                    _store(directory / attachment.name, attachment, transport, html)
                 except boards.OriginalGone:
                     # 기관이 더는 내주지 않는 원본이다. 다시 요청해도 같으므로 장부에 남긴다.
                     lost.append(attachment)
@@ -247,6 +259,7 @@ def _sources(
     listed: dict[str, Listed],
     organization: str,
     board: str,
+    html: bool = False,
 ) -> list[SourceRef]:
     """수집 기록 전체를 출처로 옮긴다. 이번 실행에서 새로 받은 것만 세지 않는다.
 
@@ -267,7 +280,7 @@ def _sources(
                     organization=organization,
                     board=board,
                     url=entry.url,
-                    container=boards.container_of(body),
+                    container=boards.container_of(body, html=html),
                     department=department,
                     posted=posted,
                     title=title,
@@ -376,13 +389,15 @@ def _join_reasons(primary: str, warning: str | None) -> str:
     return f"{primary}; {warning}" if warning else primary
 
 
-def _store(destination: Path, attachment: boards.Attachment, transport: Transport) -> None:
+def _store(
+    destination: Path, attachment: boards.Attachment, transport: Transport, html: bool = False
+) -> None:
     """원본은 저장소 밖에만 둔다. 이미 받은 원본은 다시 내려받지 않는다."""
     if destination.exists():
         return
     body = boards.request(transport, *boards.endpoint(attachment.url))
     # 원본으로 받아들일 수 있는지만 확인한다. 무슨 컨테이너였는지는 출처를 만들 때 다시 읽는다.
-    boards.container_of(body)
+    boards.container_of(body, html=html)
     _write(destination, body)
 
 

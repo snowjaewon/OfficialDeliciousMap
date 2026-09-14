@@ -74,6 +74,13 @@ class Container:
         return not self.marker or self.marker in body[:MARKER_WINDOW]
 
 
+# 화면 자체가 원본인 게시판의 표식. HTML에는 고정된 매직 바이트가 없어 서명 대신
+# 앞부분의 표식으로 가른다. 2026-09-14 실측: 서울시청 상세는 `<!DOCTYPE html>`로,
+# 관악 월별 내려받기는 빈 줄 여덟 개 뒤의 `<meta>`로 시작한다.
+HTML_MARKERS = (b"<!doctype html", b"<html", b"<table", b"<meta", b"<body")
+# 표식을 찾기 전에 걷어낼 앞머리. BOM과 공백만 걷어내고 그 밖의 바이트는 건드리지 않는다.
+BOMS = (b"\xef\xbb\xbf", b"\xff\xfe", b"\xfe\xff")
+
 # 실측으로 확인한 컨테이너만 둔다. `.xls`는 OLE2와 SpreadsheetML 둘 다로 올라온다.
 CONTAINERS: tuple[Container, ...] = (
     Container("ole2", bytes.fromhex("d0cf11e0a1b11ae1"), frozenset({".xls", ".hwp"})),
@@ -244,11 +251,24 @@ def suffix_of(filename: str) -> str:
     return PurePosixPath(filename.strip()).suffix.lower()
 
 
-def container_of(body: bytes) -> str:
+def is_html(body: bytes) -> bool:
+    """화면 자체가 원본인 게시판이 준 HTML인지. 표식이 없으면 원본으로 받아들이지 않는다."""
+    head = body[:MARKER_WINDOW]
+    for bom in BOMS:
+        head = head.removeprefix(bom)
+    head = head.lstrip().lower()
+    return head.startswith(b"<") and any(marker in head for marker in HTML_MARKERS)
+
+
+def container_of(body: bytes, *, html: bool = False) -> str:
     """매직 바이트로 컨테이너를 판정한다. 게시판이 밝힌 확장자는 믿지 않는다.
 
     실측(2026-09-11): 이 게시판은 OOXML 파일에 `.xls` 이름을 붙여 올리기도 한다(seq 963·857).
     이름이 어긋난다고 버리면 실제 원본을 잃으므로, 판정한 컨테이너를 출처에 기록해 넘긴다.
+
+    `html`은 화면 자체가 원본인 게시판에서만 켠다(`.html`을 실측 확장자로 선언한 게시판).
+    첨부를 내려받는 게시판에서 켜면 Referer 없는 중랑 첨부처럼 200으로 오는 오류 화면을
+    원본으로 받아들이게 되므로, 기본값은 끈 상태다.
     """
     if not body:
         raise EmptyOriginal("board served an empty attachment")
@@ -269,4 +289,6 @@ def container_of(body: bytes) -> str:
     for container in CONTAINERS:
         if container.matches(body):
             return container.name
+    if html and is_html(body):
+        return "html"
     raise UnsupportedOriginal("response is not an original container")
