@@ -19,6 +19,7 @@ from pydantic import (
     model_validator,
 )
 
+from deliciousmap import merchants
 from deliciousmap.registry import Target
 
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
@@ -1128,15 +1129,21 @@ class ClassifyInput(Contract):
     manual: tuple[ManualCorrection, ...] = ()
     restorations: tuple[RestoredName, ...] = ()
 
+    def names(self) -> dict[str, str]:
+        """레코드마다 판별할 이름. 규칙은 조회·좌표 판정과 같은 `merchants.chosen_name`이다.
+
+        레코드의 원본 표기는 어느 단계에서도 바뀌지 않는다(#137).
+        """
+        restored = {item.record_id: item.restored_merchant for item in self.restorations}
+        return {
+            record.record_id: merchants.chosen_name(record.merchant, restored.get(record.record_id))
+            for record in self.records
+        }
+
     @property
     def merchants(self) -> tuple[str, ...]:
-        """확정 복원명이 있으면 그 이름을 판별한다. 원본 표기는 레코드에 그대로 남는다."""
-        restored = {item.record_id: item.restored_merchant for item in self.restorations}
-        return tuple(
-            dict.fromkeys(
-                restored.get(record.record_id, record.merchant) for record in self.records
-            )
-        )
+        """판별 대상 고유 이름. 무엇을 묻게 되는지 보는 자리이며 `names`와 같은 규칙을 쓴다."""
+        return tuple(dict.fromkeys(self.names().values()))
 
 
 class ClassifyOutput(Contract):
