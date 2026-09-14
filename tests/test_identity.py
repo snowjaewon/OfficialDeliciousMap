@@ -44,9 +44,34 @@ def judgement(record: Record) -> GeocodeResult:
     return decide_identity(record, candidates(), dependency_key=DEPENDENCY_KEY)
 
 
+# 판정이 값이 아니라 사실로 읽는 칸. 키에는 `identity.held_as_merged`가 낸 사실만 담기므로
+# 칸을 통째로 담는 쪽에도, 판정이 읽지 않는 쪽에도 두지 않는다(#117).
+READ_AS_A_FACT = frozenset({"expense"})
+
+
 def test_every_record_field_is_declared_either_keyed_or_not() -> None:
-    assert set(KEYED_RECORD_FIELDS) | set(OTHER_VALUES) == set(Record.model_fields)
+    declared = set(KEYED_RECORD_FIELDS) | set(OTHER_VALUES) | READ_AS_A_FACT
+    assert declared == set(Record.model_fields)
     assert not set(KEYED_RECORD_FIELDS) & set(OTHER_VALUES)
+    assert not READ_AS_A_FACT & (set(KEYED_RECORD_FIELDS) | set(OTHER_VALUES))
+
+
+def test_only_the_fact_a_merchant_review_leaves_reaches_the_key() -> None:
+    """확인이 붙었는지는 판정을 바꾸고, 그 지출의 금액·식별자는 키를 바꾸지 않는다(ADR-0005)."""
+    merged = synthetic_record(merchant="시골밥집, 데이지")
+    assert judgement(merged).reason == "merged_merchant"
+    reviewed = merged.model_copy(update={"expense": {"expense_id": "r1", "amount_krw": "1000"}})
+    assert judgement(reviewed).reason != "merged_merchant"
+    other = merged.model_copy(update={"expense": {"expense_id": "e9", "amount_krw": "2000"}})
+    assert key(reviewed) == key(other) != key(merged)
+
+
+def test_a_review_on_a_merchant_without_a_separator_leaves_the_key_alone() -> None:
+    """구분자가 없는 상호는 확인이 붙어도 판정이 같으므로 이력을 다시 쌓지 않는다."""
+    reviewed = synthetic_record().model_copy(
+        update={"expense": {"expense_id": "r1", "amount_krw": "1000"}}
+    )
+    assert key(reviewed) == key(synthetic_record())
 
 
 @pytest.mark.parametrize("field,value", sorted(OTHER_VALUES.items()))

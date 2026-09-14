@@ -227,7 +227,7 @@ function fakeWindow() {
   };
 }
 
-// markers.json v7의 마커. 방문 요약 값은 합성값이다.
+// markers.json v9의 마커. 방문 요약 값은 합성값이다.
 const summary = {
   address: "합성로 1",
   last_visited_on: "2026-01-02",
@@ -1229,6 +1229,73 @@ test("the landing page shows the install guide and registers the service worker"
 
   assert.equal(page.guide.hidden, false);
   assert.deepEqual(registered, [["https://map.example/sw.js", "./"]]);
+});
+
+test("a marker detail tells how many of its visits carry no amount", async () => {
+  const sheet = new FakeElement();
+  const documentObject = new FakeDocument({ "[data-restaurant-detail]": sheet });
+  const windowObject = fakeWindow();
+  const config = { map_bounds: { south: 34, west: 126, north: 38, east: 130 } };
+  // 업소별로 가른 레코드는 금액이 빈 값이라 합계에 들어가지 않는다(ADR-0007).
+  const marker = { ...markers[1], visit_count: 3, unpriced_visit_count: 1 };
+
+  const selection = selectMarker(windowObject, documentObject, config, undefined, marker, {});
+  windowObject.frames.shift()();
+  windowObject.frames.shift()();
+  await selection;
+
+  const lines = sheet.children.map((child) => child.textContent);
+  assert.ok(lines.includes("방문 3회 · 합계 1,000원 (금액 미상 1회 제외)"));
+});
+
+test("a marker whose visits all lack an amount does not claim a total", async () => {
+  const sheet = new FakeElement();
+  const documentObject = new FakeDocument({ "[data-restaurant-detail]": sheet });
+  const windowObject = fakeWindow();
+  const config = { map_bounds: { south: 34, west: 126, north: 38, east: 130 } };
+  const marker = {
+    ...markers[1],
+    visit_count: 2,
+    unpriced_visit_count: 2,
+    total_amount_krw: "0",
+  };
+
+  const selection = selectMarker(windowObject, documentObject, config, undefined, marker, {});
+  windowObject.frames.shift()();
+  windowObject.frames.shift()();
+  await selection;
+
+  const lines = sheet.children.map((child) => child.textContent);
+  assert.ok(lines.includes("방문 2회 · 합계 미상"));
+  assert.ok(!lines.some((line) => line.includes("합계 0원")));
+});
+
+test("the record view shows an empty amount as unknown instead of zero", () => {
+  const list = new FakeElement();
+  const status = new FakeElement();
+  const more = new FakeElement();
+  const documentObject = new FakeDocument({
+    "[data-records-list]": list,
+    "[data-records-more]": more,
+    "[data-records-status]": status,
+  });
+
+  renderRecords(documentObject, [
+    {
+      amount_krw: null,
+      classification: "restaurant",
+      geocode_reason: "merged_merchant",
+      map_status: "geocode_failed",
+      merchant: "시골밥집",
+      organization: "합성 기관",
+      purpose: "간담회",
+      spent_on: "2026-01-01",
+    },
+  ]);
+
+  const shown = list.children[0].children.map((child) => child.textContent);
+  assert.ok(shown.includes("2026-01-01 · 합성 기관 · 금액 미상"));
+  assert.ok(shown.includes("지오코딩 실패 · 합쳐 적은 상호"));
 });
 
 test("the ledger says how many places the original left unnamed", () => {

@@ -34,8 +34,9 @@ def tally(
 ) -> SubmissionTally:
     """이번 제출이 남긴 미해결을 사유별로 센다. `reviews`는 대상 도시·기관의 것만 받는다.
 
-    `records`는 장부에 실리는 레코드 전부다. 이름 없는 동행 업소는 판정 사유가 아니라 상호
-    표기에서 세므로 여기서 함께 읽는다.
+    `records`는 장부에 실리는 레코드 전부다. 이름 없는 동행 업소도 가르지 못한 지출도 판정
+    사유가 아니라 상호 표기에서 세므로 여기서 함께 읽는다. 기본값을 두지 않는다 — 빠뜨린 호출이
+    그 둘을 0건으로 통과시키면 세지 않은 것과 0건인 것을 구별할 수 없다.
     """
     confirmed = {item.source_hash: item for item in reviews if item.confirmed_by.strip()}
     unresolved = [item for item in sources if item.status == "unresolved"]
@@ -51,6 +52,7 @@ def tally(
         pending_records=sum(item.status == "pending" for item in decisions),
         restaurant_records=sum(item.status == "restaurant" for item in decisions),
         unconfirmed_places=_unconfirmed_places(geocodes),
+        unsplit_expenses=merchants.unsplit_expenses(records),
         unnamed_companions=_unnamed_companions(records),
     )
 

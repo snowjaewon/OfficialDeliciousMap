@@ -184,6 +184,7 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
                     unresolved=mapped.unresolved,
                     confirmations=store.repeat_confirmations(),
                     unresolved_mappings=mapped.unresolved_mappings,
+                    merchants=store.merchant_reviews(),
                 ),
                 context,
             )

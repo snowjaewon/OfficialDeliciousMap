@@ -13,7 +13,7 @@ from itertools import combinations
 from pathlib import Path
 from typing import Literal, NamedTuple
 
-from deliciousmap import period
+from deliciousmap import period, restoration
 from deliciousmap.contracts import (
     ExpenseScope,
     HeaderMap,
@@ -125,7 +125,7 @@ def extract(table: Table, mapping: HeaderMap, source: SourceRef) -> Extraction:
         review=tuple(
             f"{record.source_location} non_positive_amount"
             for record in records
-            if record.amount_krw <= 0
+            if record.amount_krw is not None and record.amount_krw <= 0
         ),
         total_check=check,
     )
@@ -273,16 +273,21 @@ def parse_sources(value: ParseInput, raw_root: Path) -> ParseOutput:
             else "absent",
         )
     merged = merge_repeats(tuple(records), value.sources, value.confirmations)
+    # 사람 확인이 있는 지출만 업소마다 레코드로 갈린다. 재게시를 합친 뒤에 가른다 —
+    # 반복된 지출을 먼저 한 건으로 모아야 같은 지출이 두 번 갈리지 않는다.
+    divided = restoration.divide(merged.records, value.merchants)
+    # 합친 뒤의 수와 가른 뒤의 수를 따로 센다. 재게시로 뺀 수는 가르기 전의 수로 세야 한다.
     kept = Counter(record.source_hash for record in merged.records)
+    remaining = Counter(record.source_hash for record in divided)
     return ParseOutput(
-        records=merged.records,
-        empty_reason=None if merged.records else "no records in the reporting period",
+        records=divided,
+        empty_reason=None if divided else "no records in the reporting period",
         sources=tuple(
             item
             if item.status == "unresolved"
             else item.model_copy(
                 update={
-                    "records": kept[item.source_hash],
+                    "records": remaining[item.source_hash],
                     "repeated": item.records - kept[item.source_hash],
                 }
             )

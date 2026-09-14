@@ -11,7 +11,7 @@ from collections.abc import Iterable, Iterator, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
-from deliciousmap import identity, period, restoration
+from deliciousmap import identity, merchants, period, restoration
 from deliciousmap.contracts import (
     BuildOutput,
     CacheEntry,
@@ -23,6 +23,7 @@ from deliciousmap.contracts import (
     Contract,
     EvidenceScope,
     ExcludedSources,
+    Expense,
     FetchOutput,
     GeocodeOutput,
     GeocodeResult,
@@ -30,6 +31,7 @@ from deliciousmap.contracts import (
     IdentityConfirmation,
     LedgerEntry,
     ManualCorrection,
+    MerchantReview,
     NameRestoration,
     ParseOutput,
     ProviderCandidates,
@@ -59,6 +61,9 @@ RECORD_FIELDS = (
     "source_hash",
     "source_location",
     "repeats",
+    # 사람이 업소별로 확인한 지출과 그 지출이 밝힌 금액. 확인이 없는 레코드는 두 칸이 빈다.
+    "expense_id",
+    "expense_amount_krw",
 )
 
 OUTPUT_MODELS: dict[str, type[Contract]] = {
@@ -72,9 +77,10 @@ OUTPUT_MODELS: dict[str, type[Contract]] = {
 }
 
 # fetch는 받지 않은 게시글 수를 담은 v4, headermap은 미해결 원본의 매핑을 담은 v2,
-# parse는 사람이 확정한 재게시 수를 담은 v4, geocode는 확인한 업소를 담은 v5,
-# closure는 조회 요청 기록을 포함하는 v4, build는 이름 없는 동행 업소의 수까지 담은 v8이다.
-SCHEMA_VERSIONS = {"fetch": 4, "headermap": 2, "parse": 4, "geocode": 5, "closure": 4, "build": 8}
+# parse는 업소별로 가른 레코드를 담은 v5, geocode는 확인한 업소를 담은 v5, closure는 조회 요청
+# 기록을 포함하는 v4, build는 금액 미상 방문과 이름 없는 동행 업소의 수를 함께 담은 v9다 —
+# 두 변경이 각각 v8을 쓰고 합쳐졌으므로 어느 쪽 v8도 이 산출물을 설명하지 못한다.
+SCHEMA_VERSIONS = {"fetch": 4, "headermap": 2, "parse": 5, "geocode": 5, "closure": 4, "build": 9}
 
 # 제공자 조회 캐시. 확정 업소 판정 이력(geocode-history-v2.jsonl)과 분리해 둔다.
 LOOKUP_CACHE = "geocode-lookup-v1.jsonl"
@@ -115,7 +121,9 @@ def read_reviews[T: Contract](path: Path, model: type[T]) -> tuple[T, ...]:
 
 
 def require_scoped_reviews(
-    entries: Sequence[NameRestoration | IdentityConfirmation | RepeatConfirmation | ScopedReview],
+    entries: Sequence[
+        NameRestoration | IdentityConfirmation | MerchantReview | RepeatConfirmation | ScopedReview
+    ],
     city: str,
 ) -> None:
     if any(item.scope.city != city for item in entries):
@@ -176,13 +184,30 @@ def load_repeats(raw: str) -> tuple[RecordOrigin, ...]:
     return tuple(origins)
 
 
+def dump_expense(expense: Expense | None) -> dict[str, str]:
+    """`expense_id`·`expense_amount_krw` 두 칸. 확인이 없는 레코드는 둘 다 빈 값이다."""
+    if expense is None:
+        return {"expense_id": "", "expense_amount_krw": ""}
+    return {"expense_id": expense.expense_id, "expense_amount_krw": str(expense.amount_krw)}
+
+
+def load_expense(row: Mapping[str, str]) -> dict[str, str] | None:
+    """두 칸을 되읽는다. 지출을 가리키지 않는 줄은 확인이 없는 레코드다."""
+    if not row["expense_id"]:
+        return None
+    return {"expense_id": row["expense_id"], "amount_krw": row["expense_amount_krw"]}
+
+
 def write_records(path: Path, records: tuple[Record, ...]) -> None:
     stream = io.StringIO(newline="")
     writer = csv.DictWriter(stream, fieldnames=RECORD_FIELDS, lineterminator="\n")
     writer.writeheader()
     for record in records:
         row = Record.model_validate(record).model_dump(mode="json")
-        writer.writerow({**row, "repeats": dump_repeats(record.repeats)})
+        row.pop("expense")
+        writer.writerow(
+            {**row, "repeats": dump_repeats(record.repeats), **dump_expense(record.expense)}
+        )
     write_text(path, stream.getvalue())
 
 
@@ -192,10 +217,20 @@ def read_records(path: Path) -> tuple[Record, ...]:
         if reader.fieldnames != list(RECORD_FIELDS):
             raise ValueError("invalid record CSV columns")
         # 집행일 칸이 받는 두 모양(`YYYY-MM-DD`와 일을 비운 원본 표기)은 계약이 가른다.
-        return tuple(
-            Record.model_validate({**row, "repeats": load_repeats(row["repeats"] or "")})
-            for row in reader
-        )
+        return tuple(_record_from(row) for row in reader)
+
+
+def _record_from(row: Mapping[str, str]) -> Record:
+    """장부 CSV 한 줄. 빈 금액 칸은 금액이 지출에 남아 있다는 뜻이다(ADR-0007)."""
+    fields = {name: row[name] for name in RECORD_FIELDS if not name.startswith("expense")}
+    return Record.model_validate(
+        {
+            **fields,
+            "amount_krw": fields["amount_krw"] or None,
+            "repeats": load_repeats(row["repeats"] or ""),
+            "expense": load_expense(row),
+        }
+    )
 
 
 def _numbered_part(path: Path, number: int) -> Path:
@@ -620,11 +655,15 @@ class ArtifactStore:
         result = {name: artifact_digest(self.directory / name) for name in DEPENDENCIES[stage]}
         if stage == "classify":
             result["manual"] = file_digest(self.paths.manual(self.target, "classify"))
+        if stage == "parse":
+            result["merchants"] = file_digest(self.paths.manual(self.target, "merchants"))
         if stage == "geocode":
             result["candidates"] = file_digest(self.directory / "geocode-input.json")
             result["lookups"] = file_digest(self.directory / LOOKUP_CACHE)
             result["confirmations"] = file_digest(self.paths.manual(self.target, "geocode"))
             result["policy"] = identity.POLICY_VERSION
+        if stage in {"parse", "geocode"}:
+            result["merchant_policy"] = merchants.POLICY_VERSION
         if stage in {"classify", "geocode"}:
             result["restorations"] = file_digest(self.paths.manual(self.target, "restore"))
             result["restoration_policy"] = restoration.POLICY_VERSION
@@ -794,7 +833,11 @@ class ArtifactStore:
         """확정한 업소 확인의 직렬화. 적용 범위 판단은 파일을 보지 않는다."""
         return self._declared("geocode", IdentityConfirmation)
 
-    def _declared[T: NameRestoration | IdentityConfirmation | RepeatConfirmation](
+    def merchant_reviews(self) -> tuple[MerchantReview, ...]:
+        """상호 가르기의 직렬화. 레코드를 가르는 규칙은 파일을 보지 않는다."""
+        return self._declared("merchants", MerchantReview)
+
+    def _declared[T: NameRestoration | IdentityConfirmation | MerchantReview | RepeatConfirmation](
         self, name: str, model: type[T]
     ) -> tuple[T, ...]:
         """범위를 선언한 검토 입력 중 이 실행의 기관에 해당하는 줄만 돌려준다."""
@@ -834,6 +877,7 @@ class ArtifactStore:
             {
                 "policy": identity.POLICY_VERSION,
                 "restoration_policy": restoration.POLICY_VERSION,
+                "merchant_policy": merchants.POLICY_VERSION,
             }
         )
 

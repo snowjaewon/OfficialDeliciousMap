@@ -52,6 +52,7 @@
     missing_coordinates: "좌표 없음",
     lookup_error: "조회 실패",
     insufficient_evidence: "근거 부족",
+    merged_merchant: "합쳐 적은 상호",
   };
 
   const INSTALL_GUIDE_KEY = "deliciousmap:install-guide";
@@ -294,9 +295,13 @@
         const heading = documentObject.createElement("h3");
         heading.textContent = record.merchant;
         const summary = documentObject.createElement("p");
-        const amount = new Intl.NumberFormat("ko-KR").format(Number(record.amount_krw));
+        // 업소별로 가른 레코드는 금액이 빈 값이다. 지출에 남은 금액을 나누어 적지 않는다.
+        const amount =
+          record.amount_krw === null
+            ? "금액 미상"
+            : `${new Intl.NumberFormat("ko-KR").format(Number(record.amount_krw))}원`;
         const organization = organizations[record.organization] ?? record.organization;
-        summary.textContent = `${record.spent_on} · ${organization} · ${amount}원`;
+        summary.textContent = `${record.spent_on} · ${organization} · ${amount}`;
         const purpose = documentObject.createElement("p");
         purpose.textContent = record.purpose || "목적 미기재";
         const state = documentObject.createElement("span");
@@ -449,6 +454,20 @@
     };
   }
 
+  // 합계에 들어가지 못한 방문. 밝히지 않으면 합계가 방문 전부를 더한 값으로 읽힌다.
+  // 업소별로 가른 레코드는 금액이 빈 값이라 합계에 들어가지 않는다.
+  function totalSummary(marker) {
+    const unpriced = marker.unpriced_visit_count ?? 0;
+    if (!unpriced) {
+      return `합계 ${formatWon(marker.total_amount_krw)}`;
+    }
+    if (unpriced >= marker.visit_count) {
+      return "합계 미상";
+    }
+    const left = unpriced.toLocaleString("ko-KR");
+    return `합계 ${formatWon(marker.total_amount_krw)} (금액 미상 ${left}회 제외)`;
+  }
+
   function formatWon(amount) {
     return `${new Intl.NumberFormat("ko-KR").format(Number(amount))}원`;
   }
@@ -467,7 +486,7 @@
         documentObject,
         "p",
         "detail-visits",
-        `${visits} · 합계 ${formatWon(marker.total_amount_krw)}`,
+        `${visits} · ${totalSummary(marker)}`,
       ),
       textElement(documentObject, "p", "detail-address", marker.address),
       textElement(documentObject, "p", "detail-line", `최근 방문 ${marker.last_visited_on}`),

@@ -82,6 +82,7 @@ GEOCODE_REASON_LABELS: dict[GeocodeReason, str] = {
     "missing_coordinates": "좌표 없음",
     "lookup_error": "조회 실패",
     "insufficient_evidence": "근거 부족",
+    "merged_merchant": "합쳐 적은 상호",
 }
 # 방문 구간: (키, 필터 버튼, 범례). 필터·범례·마커 색이 같은 구간을 쓴다. 판정은 app.js가 한다.
 VISIT_BAND_LABELS = (
@@ -203,6 +204,7 @@ def _marker_file(target: Target, value: BuildInput) -> MarkerFile:
         # 묶인 레코드는 같은 좌표를 공유하므로 첫 레코드의 근거로 출처와 주소를 밝힌다.
         source, address = _coordinate_origin(geocodes[candidate.record_ids[0]])
         visits = [records[record_id] for record_id in candidate.record_ids]
+        priced = [visit.amount_krw for visit in visits if visit.amount_krw is not None]
         markers.append(
             PublishedMarker(
                 business_id=candidate.business_id,
@@ -214,7 +216,8 @@ def _marker_file(target: Target, value: BuildInput) -> MarkerFile:
                 coordinate_source=source,
                 address=address,
                 last_visited_on=max(visit.spent_on for visit in visits),
-                total_amount_krw=sum((visit.amount_krw for visit in visits), Decimal(0)),
+                total_amount_krw=sum(priced, Decimal(0)),
+                unpriced_visit_count=len(visits) - len(priced),
                 organizations=tuple(sorted({visit.organization for visit in visits})),
             )
         )
@@ -263,7 +266,7 @@ def _published_record(
 ) -> PublishedRecord:
     """장부는 마커가 되지 못한 레코드도 판정 상태·사유와 함께 보존한다."""
     fields = record.model_dump(mode="json")
-    for provenance in ("source_hash", "source_location", "repeats"):
+    for provenance in ("source_hash", "source_location", "repeats", "expense"):
         fields.pop(provenance)
     # 이름 없는 동행 업소의 수. 원본 표기는 그대로 두고 그 표기가 밝힌 수만 함께 낸다(#127).
     fields["unnamed_companions"] = merchants.read(record.merchant).unnamed
@@ -522,9 +525,27 @@ def _tally_lines(tally: SubmissionTally) -> str:
         for line in (
             _unresolved_source_line(tally),
             _unmapped_record_line(tally),
+            _unsplit_expense_line(tally),
             _unnamed_companion_line(tally.unnamed_companions),
         )
         if line
+    )
+
+
+def _unsplit_expense_line(tally: SubmissionTally) -> str:
+    """상호 칸에 업소 둘 이상이 적혀 업소별로 가르지 못한 지출(#117).
+
+    사람이 확인해야 업소마다 갈리므로 확인 전에는 한 레코드로 둔다. 수를 밝히지 않으면 그
+    지출들이 업소 하나짜리 레코드로 읽힌다. 지도에 오르지 못한 수는 여기서 말하지 않는다 —
+    비식당·판단 보류도, 구분자가 있어도 확정된 레코드도 이 수에 들어 있기 때문이다. 좌표를
+    확정하지 못한 수는 `합쳐 적은 상호` 사유로 위 줄이 따로 낸다. 가르지 못한 지출이 없으면
+    낼 말이 없어 줄을 내지 않는다.
+    """
+    if not tally.unsplit_expenses:
+        return ""
+    return (
+        f"상호 칸에 업소 둘 이상이 적힌 지출 {tally.unsplit_expenses:,}건은 사람 확인 전이라"
+        " 업소별로 가르지 못하고 레코드 하나로 남습니다."
     )
 
 

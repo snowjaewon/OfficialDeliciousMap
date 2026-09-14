@@ -15,16 +15,29 @@ from deliciousmap.contracts import (
 )
 
 # identity-2: 업소 확인이 상호 범위를 선언할 수 있게 됐다(#64).
-# identity-3: 이름 없는 동행 업소의 꼬리말(`외 N`)을 뗀 이름을 근거와 대조한다(#127).
+# identity-3: 이름 없는 동행 업소의 꼬리말(`외 N`)을 뗀 이름을 근거와 대조하고(#127),
+# 합쳐 적은 상호를 사람이 확인하지 않은 레코드를 전용 사유로 보류한다(#117).
 POLICY_VERSION = "identity-3"
 
-# 판정 키가 레코드에서 담는 칸. `decide_identity`가 레코드에서 읽는 것이 이 둘뿐이다 —
+# 판정 키가 레코드에서 값으로 담는 칸. `decide_identity`가 레코드의 값으로 읽는 것이 이 둘뿐이다 —
 # `record_id`는 판정을 그 지출에 묶고, `merchant`는 확정 복원명이 없을 때 근거와 맞춰 볼 이름의
-# 출처다 — 꼬리말을 뗀 이름도 이 칸 하나에서 나오므로 키에 담는 칸은 늘지 않는다.
+# 출처이자 합쳐 적은 상호인지 읽는 표기다. 꼬리말을 뗀 이름도 이 칸 하나에서 나오므로 키에 담는
+# 칸은 늘지 않는다. `expense`는 값이 아니라 사실로만 읽으므로 아래 `held_as_merged`가 그 사실을
+# 키에 담는다.
 # 판정이 읽지 않는 칸을 담으면 판정이 하나도 바뀌지 않은 재실행이 이력을 통째로 다시 쌓는다.
 # 목록을 여기 두는 것은 레코드 계약이 늘 때 키가 조용히 바뀌지 않게 하기 위해서다([ADR-0005](
 # ../../docs/adr/0005-key-only-what-the-decision-reads.md)).
 KEYED_RECORD_FIELDS = ("record_id", "merchant")
+
+
+def held_as_merged(record: Record) -> bool:
+    """사람이 업소별로 보지 않은 합쳐 적은 상호인가. 판정이 `expense`에서 읽는 것은 이 사실뿐이다.
+
+    `Expense`를 통째로 키에 담으면 판정이 읽지 않는 금액까지 키를 바꾼다 — ADR-0005가 이름을
+    대어 뺀 `amount_krw`가 그 안에 있다. 그래서 값이 아니라 이 사실만 키에 담는다. 사실이
+    `merchant`까지 함께 읽는 덕에, 구분자가 없는 상호는 확인이 붙어도 키가 그대로다.
+    """
+    return record.expense is None and merchants.is_merged(record.merchant)
 
 
 def normalized(value: str) -> str:
@@ -63,6 +76,7 @@ def lookup_key(
         {
             "policy": POLICY_VERSION,
             "record": record.model_dump(mode="json", include=set(KEYED_RECORD_FIELDS)),
+            "held_as_merged": held_as_merged(record),
             "dependencies": dependency_key,
             "lookup": lookup.model_dump(mode="json"),
             "confirmation": confirmation.model_dump(mode="json") if confirmation else None,
@@ -96,6 +110,11 @@ def decide_identity(
     )
 
     def unresolved(reason: str) -> GeocodeResult:
+        # 사람이 업소별로 보지 않은 합쳐 적은 상호는 나뉘지 않은 질의어로 조회한 결과다.
+        # 그 사유를 내용인 것처럼 남기지 않고 확인이 없다는 사실을 사유로 남긴다(#117).
+        # 조회 실패만은 덮지 않는다 — 제공자 장애를 보류로 바꾸면 실행이 종료 0으로 지나간다.
+        if reason != "lookup_error" and held_as_merged(record):
+            reason = "merged_merchant"
         return GeocodeResult.model_validate(
             {
                 **common,

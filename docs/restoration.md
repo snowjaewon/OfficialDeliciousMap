@@ -45,14 +45,55 @@
   `license`(인허가 자료), `place`(지역검색 후보), `other`다. `detail`은 500자 이내로,
   동일성 판단에 필요한 부분만 적고 원본 전체나 개인정보·비밀값을 옮기지 않는다.
 
-네 가지 사람 검토 입력은 의미가 다르므로 파일을 나눈다.
+다섯 가지 사람 검토 입력은 의미가 다르므로 파일을 나눈다.
 
 | 파일 | 의미 | 결과 |
 | --- | --- | --- |
 | `classify.jsonl` | 사람 보정 | 식당 포함·제외 판정 |
 | `restore.jsonl` | 상호 복원 | 확정 복원명. 원본 표기는 그대로 |
 | `geocode.jsonl` | 업소 확인 | 후보 하나를 동일 업소로 확정. `scope`는 위와 같은 `ReviewScope` |
+| `merchants.jsonl` | 상호 가르기 | 상호 표기 하나가 업소 몇 곳인지. 레코드를 가르는 유일한 경로 |
 | `compare.jsonl` | 후보 비교 지정 | 모델에 보낼 미해결 건의 지정. 확정은 아니다 |
+
+## 상호 가르기 — 합쳐 적은 상호를 업소마다
+
+`data/manual/<city>/merchants.jsonl`은 한 줄당 `MerchantReview`다. 원본이 한 칸에 업소 둘
+이상을 적은 상호([#117](https://github.com/snowjaewon/OfficialDeliciousMap/issues/117))를
+사람이 업소마다 가른 결과이며, 파일이 없으면 확인이 없는 것과 같아 레코드 수가 그대로다.
+
+```json
+{
+  "schema_version": 1,
+  "scope": {
+    "city": "gwangju", "merchant": "시골밥집, 데이지",
+    "organization": null, "source_hash": null, "record_id": null
+  },
+  "merchants": ["시골밥집", "데이지"],
+  "evidence": "게시 원문의 같은 행에 간담회 뒤 자리를 옮긴 업소 둘이 적힌 것을 확인",
+  "references": []
+}
+```
+
+- `scope`·`evidence`·`references`는 상호 복원과 같은 계약이고 범위·충돌 규칙도 같다.
+  범위가 상호 표기 단위이므로 같은 표기의 레코드 여럿이 한 줄로 처리된다.
+- `merchants`: 그 표기가 가리키는 업소 이름 목록이다. 둘 이상을 선언하면 그 지출이 레코드
+  그만큼으로 갈리고, 하나만 선언하면(`["본죽&비빔밥"]`) 가르지 않는다 — 나누지 않는다는 것도
+  판정이며, 그 확인이 있어야 `merged_merchant` 보류에서 빠진다.
+  하나를 선언한 줄은 범위가 가리키는 표기와 같은 이름만 적을 수 있다. 이름을 바꾸는 것은
+  상호 복원의 일이라 다른 이름을 적으면 `cause=conflicting-review`로 거부한다.
+
+나뉜 레코드의 금액은 **빈 값**이고 금액은 지출에 그대로 남는다([ADR-0007](
+adr/0007-do-not-split-unallocated-amounts.md)). 반씩 나누거나 한쪽에 몰지 않으므로 나누기 전후의
+지출 총액은 같다. 장부 CSV는 `expense_id`·`expense_amount_krw` 두 칸으로 그 지출과 금액을 싣고,
+화면은 마커 상세에 금액 미상 방문 수를, 자료 범위에 가르지 못한 지출 수를 낸다.
+
+구분자(쉼표·슬래시·`&`·`및`)를 규칙으로 나누는 것은 **조회뿐이다**. 나눈 이름으로 후보를 미리
+조회해 `geocode-lookup-v1.jsonl`에 쌓아 두고, 그 후보로 업소를 확정하지는 않는다 —
+`그저,쉼`처럼 이름 안에 구분자가 든 한 업소를 규칙으로는 가릴 수 없기 때문이다. 숫자 사이의
+쉼표는 천단위 구분이라 가르지 않는다(`낙지촌 96,000원 / 엠지(MG)블루 17,500`은 슬래시로만 갈린다).
+
+`merchants.jsonl`의 파일 해시와 `merchants.POLICY_VERSION`은 parse·geocode의 의존성에 들어간다.
+확인을 더하거나 고치면 레코드 자체가 달라지므로 parse부터 다시 실행한다.
 
 ## 적용과 실행
 
@@ -102,7 +143,7 @@ uv run python -m deliciousmap build --city seoul
 같은 실행 범위의 다른 업소 결과는 그대로 유지되며 `geocode-history-v2.jsonl`의 이전 이력은 남는다.
 
 geocode 산출물은 상호 범위 업소 확인을 담은 v5, closure는 조회 요청 기록까지 담은 v4,
-build는 장부에 이름 없는 동행 업소의 수까지 담은 v8이다.
+build는 장부에 금액 미상 방문과 이름 없는 동행 업소의 수까지 담은 v9다.
 `markers.json`에는 확정 상호·좌표·방문 횟수·폐업 표시·좌표 출처와 식당별 방문 요약
 (주소·최근 방문일·합계 금액·방문 기관)만 싣는다. 이전 버전은
 `regeneration-required`로 거부하고
