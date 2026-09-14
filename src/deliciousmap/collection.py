@@ -113,7 +113,7 @@ def _html(published: frozenset[str]) -> bool:
     선언은 게시판마다 다르므로 컨테이너 판정도 게시판 단위로 갈린다. 첨부를 내려받는
     게시판에서 200으로 오는 오류 화면을 원본으로 삼지 않기 위해서다.
     """
-    return ".html" in published
+    return boards.HTML_SUFFIX in published
 
 
 @dataclass(frozen=True)
@@ -150,7 +150,9 @@ def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
         for posting in scraper.postings(skip):
             if posting.posted is not None or posting.title:
                 # 이미 끝낸 게시글도 목록에서 읽은 값은 이번 훑기의 것으로 갱신한다.
-                listed[posting.post_id] = Listed(posting.posted, posting.title, posting.department)
+                listed[posting.post_id] = Listed(
+                    posting.posted, posting.title, posting.department, posting.spent_on
+                )
             if posting.post_id in done:
                 continue
             if skip(posting.post_id, posting.posted):
@@ -191,7 +193,10 @@ def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
         raise AdapterFailure(FailureCause.SERVICE_UNAVAILABLE) from None
     except boards.UnreadableBoard:
         raise AdapterFailure(FailureCause.ADAPTER_FAILED) from None
-    _remember_listing(directory, listed)
+    finally:
+        # 게시판이 도중에 실패해도 그때까지 목록에서 읽은 값은 맞다. 이미 받은 원본이 게시일·
+        # 제목·집행일을 잃지 않게 남긴다(시청 부서장 목록이 2020년 구간의 행에서 멈춘 실측).
+        _remember_listing(directory, listed)
     _report_unmeasured(directory, unmeasured)
     return _Walked(unmeasured, uncollected, _filtered(scraper))
 
@@ -229,6 +234,8 @@ class Listed:
     posted: date | None
     title: str
     department: str
+    # 상세 키가 밝힌 집행일(`boards.Posting.spent_on`). 그런 게시판이 아니면 없다.
+    spent_on: date | None = None
 
     @staticmethod
     def of(listed: dict[str, "Listed"], post_id: str) -> tuple[date | None, str | None, str | None]:
@@ -237,6 +244,11 @@ class Listed:
         if entry is None:
             return None, None, None
         return entry.posted, entry.title or None, entry.department or None
+
+    @staticmethod
+    def spent_on_of(listed: dict[str, "Listed"], post_id: str) -> date | None:
+        entry = listed.get(post_id)
+        return entry.spent_on if entry else None
 
 
 def _listed(directory: Path) -> dict[str, Listed]:
@@ -249,10 +261,12 @@ def _listed(directory: Path) -> dict[str, Listed]:
         try:
             entry = json.loads(line)
             posted = entry["posted"]
+            spent_on = entry.get("spent_on")
             listed[str(entry["post_id"])] = Listed(
                 date.fromisoformat(posted) if posted else None,
                 str(entry["title"]),
                 str(entry.get("department") or ""),
+                date.fromisoformat(spent_on) if spent_on else None,
             )
         except (ValueError, KeyError, TypeError):
             continue
@@ -271,6 +285,8 @@ def _remember_listing(directory: Path, listed: dict[str, Listed]) -> None:
                 "posted": entry.posted.isoformat() if entry.posted else None,
                 "title": entry.title,
                 "department": entry.department,
+                # 상세 키가 없는 게시판의 색인은 전과 같은 줄로 남긴다.
+                **({"spent_on": entry.spent_on.isoformat()} if entry.spent_on else {}),
             },
             ensure_ascii=False,
             sort_keys=True,
@@ -312,6 +328,7 @@ def _sources(
                     department=department,
                     posted=posted,
                     title=title,
+                    spent_on=Listed.spent_on_of(listed, post_id),
                 )
             )
     return references

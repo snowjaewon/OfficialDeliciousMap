@@ -734,3 +734,16 @@ def test_a_repost_relation_that_contradicts_a_separate_confirmation_is_rejected(
     apart = confirm(first, second, decision="separate_expenses")
     with pytest.raises(ValueError, match="confirmed to be separate"):
         merge_repeats(records, (first, second, third), (apart,))
+
+
+def test_the_won_amount_hold_applies_only_to_a_declared_thousand_won_table() -> None:
+    # 천원 표의 원 단위 행 보류는 사람이 틀을 확인해 선언한 HTML 표의 결정이다(ADR-0008).
+    # 모델이 천원으로 판정한 표는 그 판정이 틀렸을 수도 있어 같은 규칙을 걸지 않는다.
+    rows = table(spend(5, "합성 식당", 62.0), spend(6, "합성 행사장", 12000.0))
+    thousand = MAPPING.model_copy(update={"amount_multiplier": Decimal(1000)})
+    assert [record.amount_krw for record in extract(rows, thousand, SOURCE).records] == [
+        Decimal(62000),
+        Decimal(12000000),
+    ]
+    with pytest.raises(ValidationFailed, match="sheet1:R4 amount_unit"):
+        extract(rows, thousand.model_copy(update={"declared": True}), SOURCE)

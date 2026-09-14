@@ -212,7 +212,8 @@ class CacheRef(Contract):
 
 # 원본의 실제 컨테이너. 게시판이 붙인 확장자가 아니라 매직 바이트로 판정한 값이다.
 # `html`만 예외로 매직 바이트가 없다. 첨부를 내려받지 않고 화면 자체가 집행 표인 게시판
-# (서울시청·은평·관악·서대문 실측)의 원본이며, 그 게시판에서만 이 값이 나온다.
+# (서울시청·은평·관악·서대문 실측, 울산 시청·중구·동구의 HTML 표 — ADR-0008)의 원본이며,
+# 그 게시판에서만 이 값이 나온다.
 # `jpeg`·`png`는 집행내역을 스캔본으로 공개한 게시판의 원본이다(용산 실측).
 Container = Literal["html", "jpeg", "ole2", "ooxml", "pdf", "png", "spreadsheetml", "zip"]
 
@@ -233,6 +234,10 @@ class SourceRef(Contract):
     # 고르는 일이 이 값을 쓴다. 목록 구조를 읽지 않는 스크래퍼는 채우지 않는다.
     posted: date | None = None
     title: Text | None = None
+    # 하루치 집행내역을 날짜로 여는 게시판이 상세 키로 밝힌 집행일. 이 원본의 표는 집행일 열이
+    # 없어 레코드의 집행일이 되고, 대상 기간도 제목 대신 이 날로 가른다([ADR-0008](
+    # ../../docs/adr/0008-declare-html-table-mappings.md)). 그런 게시판이 아니면 비어 있다.
+    spent_on: date | None = None
 
 
 class HeaderMap(Contract):
@@ -250,6 +255,8 @@ class HeaderMap(Contract):
     ]
     amount_multiplier: Decimal = Field(gt=0, allow_inf_nan=False)
     cache: CacheRef | None = None
+    # 레지스트리가 게시판에 선언한 매핑인지(ADR-0008). 모델에 묻거나 캐시에서 꺼낸 것이 아니다.
+    declared: bool = False
 
     @model_validator(mode="after")
     def header_cache_requires_headers(self) -> "HeaderMap":
