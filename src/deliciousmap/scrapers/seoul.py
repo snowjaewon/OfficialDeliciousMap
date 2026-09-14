@@ -33,7 +33,10 @@ ENCODING = "utf-8"
 # 빈 값은 게시판이 형식을 밝히지 않은 첨부다(종로·동작 실측: 링크에 그림과 "다운로드"만
 # 있고 파일 이름이 없다). 무엇으로 받아들일지는 어차피 매직 바이트가 정하므로, 밝히지
 # 않은 것을 실측하지 않은 형식으로 바꿔 세지 않는다.
-PUBLISHED_SUFFIXES = frozenset({"", ".pdf", ".hwp", ".hwpx", ".xls", ".xlsx", ".xlsm", ".zip"})
+# `.jpg`·`.png`는 용산이 집행내역을 스캔본으로 올린 2026년 게시글 10건에서 실측했다.
+PUBLISHED_SUFFIXES = frozenset(
+    {"", ".pdf", ".hwp", ".hwpx", ".xls", ".xlsx", ".xlsm", ".zip", ".jpg", ".jpeg", ".png"}
+)
 # 게시글 하나를 담는 요소. 게시판마다 다르므로 계열 스크래퍼가 고른다. 표로 그린
 # 게시판은 `tr`, 광진은 `li` 하나가 게시글, 종로는 `ul` 하나가 게시글이다(실측).
 ROW_TAGS = frozenset({"tr", "ul", "li"})

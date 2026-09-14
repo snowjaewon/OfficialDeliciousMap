@@ -93,6 +93,11 @@ CONTAINERS: tuple[Container, ...] = (
         b"urn:schemas-microsoft-com:office:spreadsheet",
     ),
     Container("zip", bytes.fromhex("504b0304"), frozenset({".zip"})),
+    # 집행내역을 표가 아니라 스캔본으로 공개하는 게시판이 있다. 용산 실측(2026-09-14):
+    # 2026년 게시글 10건이 `…집행내역001.jpg` 모양의 이미지였다(JPEG 7·PNG 3).
+    # 표를 읽는 일은 이 이슈의 범위 밖이고, 여기서는 받은 형식을 그대로 센다.
+    Container("jpeg", bytes.fromhex("ffd8ff"), frozenset({".jpg", ".jpeg"})),
+    Container("png", bytes.fromhex("89504e470d0a1a0a"), frozenset({".png"})),
 )
 # 저장 이름에 쓸 수 있는 확장자의 모양. 게시판이 준 이름을 경로로 그대로 쓰지 않는다.
 SUFFIX = re.compile(r"\.[a-z0-9]{1,8}")

@@ -60,3 +60,10 @@ def test_hwpx_packages_are_not_read_as_plain_zip_archives() -> None:
 def test_plain_zip_archives_stay_zip() -> None:
     assert boards.container_of(_archive("a.pdf", "b.pdf")) == "zip"
     assert boards.container_of(_archive("[Content_Types].xml", "xl/workbook.xml")) == "ooxml"
+
+
+def test_scanned_images_are_measured_containers() -> None:
+    # 용산 실측(2026-09-14): 2026년 게시글 10건이 집행내역을 스캔본으로 공개한다
+    # (`7월 업무추진비 집행내역001.jpg`). JPEG 7건·PNG 3건이었다.
+    assert boards.container_of(bytes.fromhex("ffd8ffe000104a464946")) == "jpeg"
+    assert boards.container_of(bytes.fromhex("89504e470d0a1a0a")) == "png"

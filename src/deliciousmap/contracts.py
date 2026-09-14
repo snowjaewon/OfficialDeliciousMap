@@ -213,7 +213,8 @@ class CacheRef(Contract):
 # 원본의 실제 컨테이너. 게시판이 붙인 확장자가 아니라 매직 바이트로 판정한 값이다.
 # `html`만 예외로 매직 바이트가 없다. 첨부를 내려받지 않고 화면 자체가 집행 표인 게시판
 # (서울시청·은평·관악·서대문 실측)의 원본이며, 그 게시판에서만 이 값이 나온다.
-Container = Literal["html", "ole2", "ooxml", "pdf", "spreadsheetml", "zip"]
+# `jpeg`·`png`는 집행내역을 스캔본으로 공개한 게시판의 원본이다(용산 실측).
+Container = Literal["html", "jpeg", "ole2", "ooxml", "pdf", "png", "spreadsheetml", "zip"]
 
 
 class SourceRef(Contract):
