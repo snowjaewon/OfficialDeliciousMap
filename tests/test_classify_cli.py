@@ -233,5 +233,6 @@ def test_a_confirmed_restored_name_wins_over_the_cut_name(tmp_path: Path, config
     model = FakeModel(verdict=lambda name: "restaurant")
     assert run(tmp_path, "classify", model) == 0
     (prompt,) = model.calls("classify")
-    assert "합성카페 본점" in [line.split(". ", 1)[1] for line in prompt.splitlines()]
-    assert "합성카페" not in [line.split(". ", 1)[1] for line in prompt.splitlines()]
+    asked = [line.split(". ", 1)[1] for line in prompt.splitlines()]
+    assert "합성카페 본점" in asked
+    assert "합성카페" not in asked
