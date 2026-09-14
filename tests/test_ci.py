@@ -39,10 +39,12 @@ def test_check_data_lists_only_cities_with_committed_artifacts_in_registry_order
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     data_root = tmp_path / "data"
-    refined(data_root, "gwangju/records.csv")
-    refined(data_root, "seoul/records.csv")
+    refined(data_root, "gwangju/closure.json")
+    refined(data_root, "seoul/closure.json")
     refined(data_root, "_shared/classify.jsonl")
     refined(data_root, "manual/busan/classify.jsonl")
+    # 수집만 끝난 도시는 빌드 대상이 아니다. 디렉터리는 있지만 `build` 입력이 없다.
+    refined(data_root, "ulsan/orgs/ulsan-city/fetch.json")
 
     assert main(["check-data", "--data-root", str(data_root)]) == 0
 
@@ -212,3 +214,21 @@ def test_check_dist_still_rejects_an_image_outside_the_published_icons(
     assert check_dist(dist, "seoul") == 1
 
     assert "not a screen file: assets/icon-1024.png" in capsys.readouterr().err
+
+
+def test_a_city_with_only_collection_artifacts_is_not_buildable(tmp_path: Path) -> None:
+    """수집만 끝난 도시는 사이트 빌드 대상이 아니다(이슈 #141).
+
+    `data/<city>/`가 생겼다고 빌드하면 `build`가 읽을 입력이 없어 io-error로 멈춘다.
+    서울은 기관별 `fetch.json`만 커밋된 상태로 이 자리에 들어온다.
+    """
+    from deliciousmap import publish
+    from deliciousmap.registry import CITIES as REGISTRY
+
+    (tmp_path / "seoul" / "orgs" / "seoul-city").mkdir(parents=True)
+    (tmp_path / "seoul" / "orgs" / "seoul-city" / "fetch.json").write_text("{}", encoding="utf-8")
+    (tmp_path / "gwangju").mkdir()
+    (tmp_path / "gwangju" / "closure.json").write_text("{}", encoding="utf-8")
+
+    buildable = publish.buildable_cities(tmp_path, REGISTRY)
+    assert [city.slug for city in buildable] == ["gwangju"]
