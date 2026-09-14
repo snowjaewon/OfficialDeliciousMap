@@ -58,6 +58,10 @@ class EmptyOriginal(Exception):
     """게시판이 내용 없는 첨부를 200으로 주었다. 받을 것이 없다는 점에서 유실과 같다."""
 
 
+class ProtectedOriginal(Exception):
+    """기관이 DRM으로 잠근 첨부다. 200으로 오지만 읽을 수 있는 원본이 들어 있지 않다."""
+
+
 @dataclass(frozen=True)
 class Container:
     """원본으로 받아들이는 형식 하나. 게시판이 밝힌 확장자는 근거가 아니라 대조 대상이다."""
@@ -244,6 +248,17 @@ def suffix_of(filename: str) -> str:
     return PurePosixPath(filename.strip()).suffix.lower()
 
 
+# Fasoo DRM이 잠근 파일의 머리. 실측(2026-09-14 부산시청): 이름은 `.xlsx`인데 내용은
+# `\x9b DRMONE  This Document is encrypted and protected by Fasoo DRM`으로 시작한다.
+# 잠긴 파일과 실측하지 않은 형식은 다르다 — 형식은 선언하면 읽히고, 이것은 풀지 않는 한 읽히지 않는다.
+DRM_SIGNATURE = b"\x9b DRMONE"
+
+
+def is_protected(body: bytes) -> bool:
+    """기관이 DRM으로 잠근 첨부인지. 이름이 아니라 내용으로 가른다."""
+    return body.startswith(DRM_SIGNATURE)
+
+
 def container_of(body: bytes) -> str:
     """매직 바이트로 컨테이너를 판정한다. 게시판이 밝힌 확장자는 믿지 않는다.
 
@@ -252,6 +267,8 @@ def container_of(body: bytes) -> str:
     """
     if not body:
         raise EmptyOriginal("board served an empty attachment")
+    if is_protected(body):
+        raise ProtectedOriginal("organization serves this original under DRM")
     # A ZIP archive shares the OOXML magic bytes.  Distinguish Office archives
     # by their package entries while retaining the historical fallback for
     # short synthetic OOXML signatures used by older adapters.

@@ -46,6 +46,9 @@ class Cell:
 @dataclass(frozen=True)
 class Row:
     cells: tuple[Cell, ...]
+    # 머리글 줄인지. `<th>`만으로 이루어진 줄은 값이 아니라 열 이름이다. 표 자체가 자료인
+    # 게시판(기장군)은 게시글 링크로 걸러 낼 수가 없어 이 표시로 가른다.
+    header: bool = False
 
     @property
     def text(self) -> str:
@@ -73,13 +76,18 @@ class TableParser(HTMLParser):
         self.pagination_pages: list[int] = []
         self._tr = False
         self._text: list[str] = []
+        # `<script>`·`<style>` 안의 글자는 화면에 나오지 않는다. 칸 글자로 세면 제목이 두 번
+        # 나오거나(동래구 `console.log('제목')`) 없는 값이 생긴다.
+        self._mute = 0
 
     @property
     def text(self) -> str:
         return " ".join(" ".join(self._text).split())
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        if tag == "ul" and "pagination" in (dict(attrs).get("class") or "").split():
+        if tag in {"script", "style"}:
+            self._mute += 1
+        elif tag == "ul" and "pagination" in (dict(attrs).get("class") or "").split():
             self._pagination = True
         elif tag == "tr" and not self._tr:
             self._tr = True
@@ -88,7 +96,7 @@ class TableParser(HTMLParser):
             self._cell = []
             self._cell_classes = frozenset((dict(attrs).get("class") or "").split())
             self._cell_links = []
-            self._cells[-1].append(("", self._cell_classes, self._cell_links, self._cell))
+            self._cells[-1].append((tag, self._cell_classes, self._cell_links, self._cell))
         elif tag == "a":
             raw = dict(attrs)
             self._link_attrs = {
@@ -105,7 +113,9 @@ class TableParser(HTMLParser):
                 self._link_text.append(alt)
 
     def handle_endtag(self, tag: str) -> None:
-        if tag == "a" and self._link_attrs is not None:
+        if tag in {"script", "style"}:
+            self._mute = max(0, self._mute - 1)
+        elif tag == "a" and self._link_attrs is not None:
             link = Link(
                 self._link_attrs["href"],
                 " ".join(" ".join(self._link_text).split()),
@@ -124,9 +134,11 @@ class TableParser(HTMLParser):
             self._cell_links = []
         elif tag == "tr" and self._tr:
             cells: list[Cell] = []
-            for _, classes, links, parts in self._cells[-1]:
+            tags: list[str] = []
+            for name, classes, links, parts in self._cells[-1]:
                 cells.append(Cell(" ".join(" ".join(parts).split()), classes, tuple(links)))
-            self.rows.append(Row(tuple(cells)))
+                tags.append(name)
+            self.rows.append(Row(tuple(cells), bool(tags) and set(tags) == {"th"}))
             self._cells = []
             self._tr = False
         elif tag == "ul" and self._pagination:
@@ -142,6 +154,8 @@ class TableParser(HTMLParser):
             self.pagination_pages.append(int(link.text.strip()))
 
     def handle_data(self, data: str) -> None:
+        if self._mute:
+            return
         self._text.append(data)
         if self._cell is not None:
             self._cell.append(data)
@@ -180,6 +194,18 @@ def posted(text: str) -> date:
         raise boards.UnreadableBoard(
             "board listing row declares an impossible posting date"
         ) from None
+
+
+def posted_of(row: Row) -> date:
+    """행이 밝힌 게시일. 날짜만 담긴 칸을 먼저 보고, 그런 칸이 없을 때만 줄 전체를 본다.
+
+    rfc3 계열은 열 차례가 기관마다 다르고(실측 2026-09-14, 아홉 게시판에 일곱 가지) 제목 칸이
+    게시일 칸보다 앞에 온다. 줄 전체를 훑으면 제목에 적힌 날짜를 게시일로 읽는다.
+    """
+    for cell in row.cells:
+        if DATE_RE.fullmatch(cell.text) or SHORT_DATE_RE.fullmatch(cell.text):
+            return posted(cell.text)
+    return posted(row.text)
 
 
 def has_date(text: str) -> bool:

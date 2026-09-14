@@ -30,7 +30,8 @@ DECLARATION = re.compile(
     # `1/4분기`처럼 분모를 적는 분수형. 실측은 분모가 모두 4다.
     r"(?P<fraction>[1-4])\s*/\s*4\s*분기"
     rf"|(?P<first_quarter>[1-4]){RANGE}(?P<last_quarter>[1-4])\s*분기"
-    r"|(?P<quarter>[1-4])\s*분기"
+    # `제2분기`처럼 차례를 밝히는 표기. 2026-09-14 부산시청 게시판에서 실측했다.
+    r"|제?\s*(?P<quarter>[1-4])\s*분기"
     rf"|(?P<first_month>1[0-2]|[1-9])\s*월?{RANGE}(?P<last_month>1[0-2]|[1-9])\s*월"
     r"|(?P<month>1[0-2]|[1-9])\s*월"
     r"|(?P<half>[상하])\s*반기"

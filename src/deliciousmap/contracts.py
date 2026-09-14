@@ -873,8 +873,9 @@ class MissingOriginal(Contract):
     # 근거가 되는 게시글 주소와 게시판이 밝힌 파일 이름.
     url: Text
     filename: Text
-    # gone: 기관이 404로 답한다. empty: 200이지만 내용이 없다. 둘 다 받을 것이 없다.
-    reason: Literal["gone", "empty"]
+    # gone: 기관이 404로 답한다. empty: 200이지만 내용이 없다. drm: 200이지만 기관이
+    # 잠가 두었다(Fasoo). 셋 다 받을 것이 없고, drm만 기관이 풀면 달라진다.
+    reason: Literal["gone", "empty", "drm"]
     # 어느 기간의 장부가 빈 것인지 알 수 있도록 출처와 같은 값을 남긴다.
     posted: date | None = None
     title: Text | None = None
