@@ -1,7 +1,7 @@
 # Issue #132 validation — Ulsan pipeline run
 
 Validation date: 2026-09-14.  The collection root was an external directory
-passed with `--raw-root`; no 원본 file was copied into this
+passed with `--raw-root`; no 원본 was copied into this
 repository.  This report separates implemented pipeline behavior from live
 collection and data-quality gates that could not be completed.
 
@@ -75,7 +75,7 @@ returned HTTP 200: `/`, `/ulsan/`, `/ulsan/index.html`,
 `/ulsan/records.json` (68 bytes, `application/json`),
 `/ulsan/markers.json` (68 bytes, `application/json`), and
 `/manifest.webmanifest` (642 bytes, `application/manifest+json`). This is a
-route and artifact-integrity check for the partial build only; it is not a
+route and 정제 산출물 integrity check for the partial build only; it is not a
 map-tile or real-device check, and the JSON intentionally contains zero
 records and zero markers.
 
@@ -84,7 +84,7 @@ the live listing server was being read. For Buk-gu, the measured list form's
 published `rows=30` option was added to the scraper and its request contract
 was regression-tested; the live retry still did not reach a completed fetch
 manifest. No new fetch manifest was promoted, and the existing external
-originals and ledgers were left unchanged. Both organizations therefore
+원본 and 수집 장부 were left unchanged. Both organizations therefore
 remain `collection-held` rather than being reported as successfully fetched.
 
 ## Commands and results
