@@ -21,6 +21,13 @@ LABEL = "2026년 상반기"
 CENTURY = 2000
 # 범위를 잇는 글자. 물결·하이픈·붙임표·쉼표를 모두 실측했고 분기와 달에 같이 쓰인다.
 RANGE = r"\s*[~\-–∼,]\s*"
+# 달 하나 또는 달의 범위. 해 뒤에 오는 달 표기는 모두 이 모양이다.
+MONTHS = (
+    rf"(?P<first_month>1[0-2]|[1-9])\s*월?{RANGE}(?P<last_month>1[0-2]|[1-9])\s*월"
+    r"|(?P<month>1[0-2]|[1-9])\s*월"
+)
+# 제목 끝 괄호에 둔 달. 서울 구로(해 있음)와 성북(해 없음) 게시판이 이 자리에 달을 둔다.
+BRACKETED_MONTH = r"\(\s*(?P<bracketed_month>1[0-2]|[1-9])\s*월\s*\)\s*$"
 # 게시글 제목이 밝히는 지출 기간 표기. 2026-09-12 광주시청 게시판 제목 10,476건을 전수로 보고
 # 실제로 쓰인 모양만 읽는다. 연도 뒤에 바로 붙은 표기만 보므로 제목 뒤쪽의 다른 숫자(부서의
 # `5·18`, 분기 뒤 괄호의 달)는 기간으로 읽지 않는다. 연도만 있으면 그 해 전체다.
@@ -32,19 +39,35 @@ DECLARATION = re.compile(
     rf"|(?P<first_quarter>[1-4]){RANGE}(?P<last_quarter>[1-4])\s*분기"
     # `제2분기`처럼 차례를 밝히는 표기. 2026-09-14 부산시청 게시판에서 실측했다.
     r"|제?\s*(?P<quarter>[1-4])\s*분기"
-    rf"|(?P<first_month>1[0-2]|[1-9])\s*월?{RANGE}(?P<last_month>1[0-2]|[1-9])\s*월"
-    r"|(?P<month>1[0-2]|[1-9])\s*월"
+    rf"|{MONTHS}"
     r"|(?P<half>[상하])\s*반기"
     r")?"
 )
 
+# `년` 없이 제목 맨 앞에 적은 네 자리 해. 서울 구로 게시판(2026-09-14 실측 28건)의
+# `2026 3월 …`(3건)과 `2026 …집행내역(4월)`(25건)이고, 광주 게시판에도 앞 모양이 8종 11건
+# (`2015 5~6월 …` 같은 범위 5종 포함) 있으나 모두 2020년까지의 게시라 판정이 바뀌지 않는다.
+# 해에 붙은 표기가 아니므로 `DECLARATION`이 기간을 못 읽은 제목에만 쓰고, 달은 실측한 두
+# 자리 — 띄어 쓴 해 바로 뒤와 제목 끝 괄호 — 에서만 읽는다. 달이 없으면 그 해 전체로 넓히지
+# 않고, 달 뒤에 붙은 글자(`3월분`)와 분기 뒤 괄호의 달은 읽지 않는다.
+BARE_YEAR = re.compile(rf"^\s*(?P<year>\d{{4}})\s+(?:(?:{MONTHS})\s|[^\d\s].*{BRACKETED_MONTH})")
 
-# 연도 없이 달 하나로 시작하고 띄어 쓴 제목. 울산시청 시장 게시판의 `6월 업무추진비 사용 내역`
-# (2026-09-14)이고, 광주 게시판에도 같은 모양 38건(`6월 업무추진비 집행내역(의정담당관실)`)이
-# 있으나 모두 2026년 이전 게시라 판정이 바뀌지 않는다. `DECLARATION`은 연도에 붙은 표기만 읽으므로
-# 따로 두고, `DECLARATION`이 기간을 못 읽은 제목에만 쓴다. 실측하지 않은 모양 —
-# 범위(`6~7월`), 제목 가운데의 달, 달 뒤에 붙은 글자(`5월분`·`8월중`) — 은 읽지 않는다.
-YEARLESS_MONTH = re.compile(r"^\s*(?P<month>1[0-2]|[1-9])\s*월\s")
+
+# 연도 없이 달 하나만 적은 제목. 달을 제목 맨 앞이나 가운데에 띄어 쓰거나 제목 끝 괄호에 둔다.
+# 맨 앞은 울산시청 시장 게시판의 `6월 업무추진비 사용 내역`(2026-09-14)이고, 광주 게시판에도
+# 같은 모양 38건(`6월 업무추진비 집행내역(의정담당관실)`)이 있으나 모두 2026년 이전 게시라 판정이
+# 바뀌지 않는다. 가운데(`민원여권과 1월 …`)와 끝 괄호(`…집행내역 공개(8월)`)는 서울 성북
+# 게시판(2026-09-14)에서 실측했고, 광주에도 8건 있으나 모두 2012~2015년 게시다.
+# `DECLARATION`은 연도에 붙은 표기만 읽으므로 따로 두고, `DECLARATION`·`BARE_YEAR`가 기간을
+# 못 읽은 제목에만 쓴다. 실측하지 않은 모양 — 범위(`6~7월`), 달 뒤에 붙은 글자(`5월분`·`8월중`)
+# — 은 읽지 않는다.
+YEARLESS_MONTH = re.compile(rf"(?:^|\s)(?P<month>1[0-2]|[1-9])\s*월\s|{BRACKETED_MONTH}")
+# 해 자리에 쓴 세 자리 이상의 숫자. 이런 제목은 해 없는 제목이 아니라 해를 잘못 적은 제목이다
+# (서울 성동 `2026월 1월 …`, 성북 `…(206.4월)`, 부산 `2026월 3월 …`·`…(202년 2월)`). 오기는
+# 네 건이 세 모양이라 규칙이 되지 않으므로 짐작하지 않고 기간 미선언으로 둔다.
+MISWRITTEN_YEAR = re.compile(r"(?<!\d)\d{3,}\s*[년월.]")
+# 달의 범위. 해 없는 제목에서는 범위를 달 하나로 잘라 읽지 않도록 범위가 있으면 읽지 않는다.
+MONTH_RANGE = re.compile(rf"{RANGE}(?:1[0-2]|[1-9])\s*월")
 
 
 def collects(posted: date | None) -> bool:
@@ -114,7 +137,8 @@ ExclusionReason = Literal["posted_out_of_range", "declared_out_of_range", "undec
 
 def declared(title: str | None) -> Span | None:
     """게시글 제목이 밝힌 지출 기간. 실측한 표기가 아니면 밝히지 않은 것으로 둔다."""
-    found = DECLARATION.search(title or "")
+    text = title or ""
+    found = DECLARATION.search(text) or BARE_YEAR.search(text)
     if found is None:
         return None
     year = int(found["year"])
@@ -134,7 +158,9 @@ def exclusion(
     `undeclared_in_year`는 감시 지점이다. 게시일이 대상 연도인데 제목이 기간을 밝히지 않으면
     그 게시글은 조용히 빠진다. 0이 아니게 되면 그 표기를 실측해 규칙에 더해야 한다. 광주
     (2026-09-12)는 0건이었고, 울산(2026-09-14)의 147건은 동구 제목 칸 오류와 연도 없는 달
-    표기(`YEARLESS_MONTH`)였다(#146).
+    표기(`YEARLESS_MONTH`)였다(#146). 서울(2026-09-14)의 37건 중 32건은 `년` 없는 해
+    (`BARE_YEAR`)와 가운데·끝 괄호의 달이었고, 남은 5건은 기간을 적지 않았거나 해를 잘못
+    적은 제목이다(#155).
 
     상세 키로 집행일을 밝힌 하루치 게시글(`spent_on`)은 제목이 기간을 적지 않는다. 그 게시글이
     밝힌 지출 기간은 그 하루이므로 제목 대신 그 날로 가른다(ADR-0008).
@@ -157,10 +183,11 @@ def _yearless_month(title: str | None, posted: date) -> Span | None:
     지출은 게시보다 먼저 있으므로 게시월보다 뒤인 달은 지난해다. 게시월과 같은 달은 올해다.
     연도 없는 분기·반기·범위는 실측하지 않아 읽지 않는다.
     """
-    found = YEARLESS_MONTH.search(title or "")
-    if found is None:
+    text = title or ""
+    found = YEARLESS_MONTH.search(text)
+    if found is None or MISWRITTEN_YEAR.search(text) or MONTH_RANGE.search(text):
         return None
-    month = int(found["month"])
+    month = int(found["month"] or found["bracketed_month"])
     year = posted.year if month <= posted.month else posted.year - 1
     return Span(date(year, month, 1), date(year, month, calendar.monthrange(year, month)[1]))
 
@@ -176,18 +203,20 @@ def targets(posted: date | None, title: str | None, spent_on: date | None = None
 
 def _months(found: re.Match[str]) -> tuple[int, int]:
     """표기가 가리키는 첫 달과 끝 달. 분기는 달 셋씩이고, 밝히지 않았으면 그 해 전체다."""
-    if found["fraction"]:
-        return _quarter(int(found["fraction"]), int(found["fraction"]))
-    if found["first_quarter"]:
-        return _quarter(int(found["first_quarter"]), int(found["last_quarter"]))
-    if found["quarter"]:
-        return _quarter(int(found["quarter"]), int(found["quarter"]))
-    if found["first_month"]:
-        return int(found["first_month"]), int(found["last_month"])
-    if found["month"]:
-        return int(found["month"]), int(found["month"])
-    if found["half"]:
-        return (1, 6) if found["half"] == "상" else (7, 12)
+    groups = found.groupdict()
+    if groups.get("fraction"):
+        return _quarter(int(groups["fraction"]), int(groups["fraction"]))
+    if groups.get("first_quarter"):
+        return _quarter(int(groups["first_quarter"]), int(groups["last_quarter"]))
+    if groups.get("quarter"):
+        return _quarter(int(groups["quarter"]), int(groups["quarter"]))
+    if groups.get("first_month"):
+        return int(groups["first_month"]), int(groups["last_month"])
+    month = groups.get("month") or groups.get("bracketed_month")
+    if month:
+        return int(month), int(month)
+    if groups.get("half"):
+        return (1, 6) if groups["half"] == "상" else (7, 12)
     return 1, 12
 
 
