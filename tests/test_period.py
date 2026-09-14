@@ -142,6 +142,30 @@ def test_exclusion_names_why_a_posting_is_not_a_target(
 
 
 @pytest.mark.parametrize(
+    ("posted", "title", "expected"),
+    [
+        # 울산시청 시장 게시판은 연도 없이 달만 적는다(2026-09-14 실측 `6월 업무추진비 사용 내역`).
+        # 지출은 게시보다 먼저이므로 게시일 이전의 가장 가까운 그 달이다.
+        (date(2026, 7, 23), "6월 업무추진비 사용 내역", None),
+        (date(2026, 6, 30), "6월 업무추진비 사용 내역", None),
+        (date(2026, 8, 10), "7월 업무추진비 사용 내역", "declared_out_of_range"),
+        # 게시월보다 뒤인 달은 지난해다. 올해로 읽으면 대상이 되므로 이 줄이 해를 가른다.
+        (date(2026, 1, 5), "6월 업무추진비 사용 내역", "declared_out_of_range"),
+        # 게시월과 같은 달은 올해다.
+        (date(2026, 1, 5), "1월 업무추진비 사용 내역", None),
+        # 실측하지 않은 표기는 짐작하지 않는다: 범위, 제목 가운데의 달, 달 뒤에 붙은 글자.
+        (date(2026, 7, 23), "6~7월 업무추진비 사용 내역", "undeclared_in_year"),
+        (date(2026, 7, 23), "시장 6월 업무추진비 사용 내역", "undeclared_in_year"),
+        (date(2026, 7, 23), "5월분 업무추진비 사용 내역", "undeclared_in_year"),
+    ],
+)
+def test_a_month_without_a_year_is_the_latest_such_month_by_the_posting_date(
+    posted: date, title: str, expected: str | None
+) -> None:
+    assert exclusion(posted, title) == expected
+
+
+@pytest.mark.parametrize(
     ("posted", "title"),
     [
         (date(2026, 4, 2), "2026년 1분기 업무추진비 사용내역(합성과)"),
