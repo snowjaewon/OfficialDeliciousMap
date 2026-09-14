@@ -262,6 +262,18 @@ def test_rfc3_keeps_the_measured_query_conditions_of_the_board() -> None:
     assert transport.calls[0][1] == {**params, "startPage": "1"}
 
 
+def test_mixed_boards_are_the_three_measured_shared_boards() -> None:
+    """섞인 게시판만 제목으로 고른다. 전용 게시판에 조건을 걸면 조용히 빠지는 글이 생긴다."""
+    target = select_target(CITIES, "busan", None)
+    mixed = {
+        org.slug
+        for org in target.organizations
+        for board_ in org.boards
+        if board_.scraper is MixedRfc3Board
+    }
+    assert mixed == {"busan-jung", "busan-suyeong", "busan-haeundae"}
+
+
 def test_busan_registry_declares_seventeen_organizations() -> None:
     target = select_target(CITIES, "busan", None)
     assert len(target.organizations) == 17

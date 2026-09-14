@@ -94,7 +94,10 @@ CITY = City(
         Organization(
             "busan-haeundae",
             "부산광역시 해운대구",
-            (Board("expenses", _rfc3("haeundae.go.kr", "do", "BBS_0000004"), Rfc3Board),),
+            # 전 부서 통합 게시판이라 업무추진비 아닌 글이 섞인다. 실측 2026-09-14: 2026년
+            # 게시글 가운데 `보건소 수의계약내역, 신용카드 사용내역 알림` 13건이 그것이고,
+            # 거르지 않으면 수의계약 표가 집행내역으로 들어온다.
+            (Board("expenses", _rfc3("haeundae.go.kr", "do", "BBS_0000004"), MixedRfc3Board),),
         ),
         # 사하구: 옛 게시판(`portal/bbs/list.do?ptIdx=29`)이 "삭제되었거나 존재하지 않습니다"를
         # 돌려준다. 같은 호스트의 `robots.txt`가 `Disallow: /*bbs*`를 선언해 새 게시판을
