@@ -3,6 +3,7 @@
 import json
 import os
 from collections.abc import Mapping
+from contextlib import suppress
 from dataclasses import dataclass, field
 
 from deliciousmap.contracts import (
@@ -59,9 +60,11 @@ class NaverPlaceSearch:
             return ProviderCandidates(status="error", error="unavailable")
         try:
             found = ProviderCandidates(status="ok", candidates=_interpret(body))
-            self._answered[query] = ProviderCategories(status="ok", categories=_categories(body))
         except (ValueError, TypeError, LookupError, UnicodeDecodeError):
             return ProviderCandidates(status="error", error="invalid_response")
+        # 업종을 읽지 못해도 후보 조회는 그대로다. 그 업종은 필요할 때 다시 묻는다.
+        with suppress(ValueError, TypeError, LookupError, UnicodeDecodeError):
+            self._answered[query] = ProviderCategories(status="ok", categories=_categories(body))
         return found
 
     def categories(self, query: str) -> ProviderCategories:

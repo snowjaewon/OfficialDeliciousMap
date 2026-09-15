@@ -5,6 +5,7 @@ import json
 import math
 import os
 from collections.abc import Mapping
+from contextlib import suppress
 from typing import Literal
 
 from pyproj import Transformer
@@ -57,31 +58,38 @@ class FoodLicenseSearch:
         self._key = key
         self.transport = transport
         self.limit = limit
-        # 이 실행에서 받은 응답의 업태. 방금 조회한 요청을 업종 때문에 다시 보내지 않는다.
+        # 이 실행에서 받은 응답의 업종. 방금 조회한 요청을 업종 때문에 다시 보내지 않는다.
         self._answered: dict[str, ProviderCategories] = {}
 
     def search(self, query: str) -> ProviderCandidates:
         """업종마다 한 쪽씩 조회한다. 한 업종이라도 실패하면 조회 전체를 실패로 남긴다."""
         try:
-            candidates, categories = self._ask(query)
+            candidates, rows = self._ask(query)
         except _Failure as failure:
             return ProviderCandidates(status="error", error=failure.code)
-        self._answered[query] = ProviderCategories(status="ok", categories=categories)
+        # 업종을 읽지 못해도 후보 조회는 그대로다. 그 업종은 필요할 때 다시 묻는다.
+        with suppress(ValueError, TypeError, LookupError):
+            self._answered[query] = ProviderCategories(status="ok", categories=_categories(rows))
         return ProviderCandidates(status="ok", candidates=candidates)
 
     def categories(self, query: str) -> ProviderCategories:
-        """같은 요청의 업태구분명을 후보 출처별로 읽는다. 업태가 빈 행은 싣지 않는다."""
+        """같은 요청의 업태구분명을 후보 출처별로 읽는다. 업태구분명이 빈 행은 싣지 않는다."""
         if query in self._answered:
             return self._answered[query]
         try:
-            _, categories = self._ask(query)
+            _, rows = self._ask(query)
+            return ProviderCategories(status="ok", categories=_categories(rows))
         except _Failure as failure:
             return ProviderCategories(status="error", error=failure.code)
-        return ProviderCategories(status="ok", categories=categories)
+        except (ValueError, TypeError, LookupError):
+            return ProviderCategories(status="error", error="invalid_response")
 
-    def _ask(self, query: str) -> tuple[tuple[PlaceCandidate, ...], tuple[SourceCategory, ...]]:
+    def _ask(
+        self, query: str
+    ) -> tuple[tuple[PlaceCandidate, ...], tuple[tuple[str, list[object]], ...]]:
+        """업종마다 받은 행과 그 후보. 업종(표시용) 해석은 여기서 하지 않는다."""
         candidates: list[PlaceCandidate] = []
-        categories: list[SourceCategory] = []
+        answered: list[tuple[str, list[object]]] = []
         for service in SERVICES:
             try:
                 body = self._fetch(service, query)
@@ -90,12 +98,12 @@ class FoodLicenseSearch:
             try:
                 rows = _rows(body)
                 candidates.extend(_candidate(row, service) for row in rows)
-                categories.extend(_categories(rows, service))
             except ServiceError:
                 raise _Failure("unavailable") from None
             except (ValueError, TypeError, LookupError, UnicodeDecodeError):
                 raise _Failure("invalid_response") from None
-        return tuple(candidates), tuple(categories)
+            answered.append((service, rows))
+        return tuple(candidates), tuple(answered)
 
     def _fetch(self, service: str, query: str) -> bytes:
         return self.transport.fetch(
@@ -148,15 +156,16 @@ def _rows(body: bytes) -> list[object]:
     return rows
 
 
-def _categories(rows: list[object], service: str) -> tuple[SourceCategory, ...]:
+def _categories(answered: tuple[tuple[str, list[object]], ...]) -> tuple[SourceCategory, ...]:
     """후보 출처는 `_candidate`와 같은 규칙으로 만든다. 그래야 확정한 후보와 맞춰 볼 수 있다."""
     found = []
-    for row in rows:
-        source = _candidate(row, service).source
-        # 객체가 아닌 행은 `_candidate`가 이미 거부했다.
-        category = plain(str(row.get(CATEGORY_FIELD) or "")) if isinstance(row, dict) else ""
-        if category:
-            found.append(SourceCategory(source_id=source.source_id, category=category))
+    for service, rows in answered:
+        for row in rows:
+            source = _candidate(row, service).source
+            # 객체가 아닌 행은 `_candidate`가 이미 거부했다.
+            category = plain(str(row.get(CATEGORY_FIELD) or "")) if isinstance(row, dict) else ""
+            if category:
+                found.append(SourceCategory(source_id=source.source_id, category=category))
     return tuple(found)
 
 

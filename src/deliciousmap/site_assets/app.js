@@ -516,7 +516,7 @@
     }
     children.push(
       // 필터는 갈래로 거르지만 상세는 제공자가 붙인 원문을 그대로 보인다.
-      textElement(documentObject, "p", "category", `업종: ${marker.category ?? "미상"}`),
+      textElement(documentObject, "p", "category", `업종: ${marker.category}`),
       textElement(
         documentObject,
         "p",

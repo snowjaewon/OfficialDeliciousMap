@@ -26,7 +26,7 @@
 | 판단 | 이유 |
 | --- | --- |
 | 업소를 찾은 조회를 같은 질의로 다시 묻고, 확정한 후보와 출처(`source_id`)가 같은 항목만 쓴다 | 같은 응답의 다른 후보 업종으로 채우지 않는다 |
-| 같은 실행에서 방금 받은 응답은 다시 요청하지 않는다 | 새로 조회해 규칙으로 확정한 업소는 응답에 이미 업종이 있다 |
+| 같은 실행에서 방금 받은 응답은 다시 요청하지 않는다 | 새로 조회해 규칙으로 확정한 업소는 응답에 이미 업종이 있다. 그 응답의 업종을 읽지 못해도 후보 조회 결과는 바뀌지 않는다 |
 | 업종 조회 실패는 `lookup-failed`로 종료하고, `--retry-failed` 전까지 다시 묻지 않는다 | 후보 조회 실패와 같은 규칙이다. 실패를 `미상`으로 숨기지 않는다 |
 | 갈래에 없는 원문은 `기타`, 모르는 업종은 `미상` | 업종을 아는 마커와 모르는 마커를 섞지 않는다 |
 | 도시 화면은 마커가 있는 갈래만 버튼으로 낸다 | 누르면 0곳인 버튼을 두지 않는다 |
@@ -89,18 +89,19 @@
 
 ## 검증 명령
 
-저장소 루트, 양쪽 공통:
+저장소 루트, 양쪽 공통. 결과는 리뷰 반영 뒤 마지막 실행이다.
 
-```text
-uv run ruff check .
-uv run ruff format --check .
-uv run mypy src
-uv run pytest
-node --test tests/site_behavior.test.js tests/measure_map.test.js tests/service_worker.test.js
-uv run python -m deliciousmap.ci check-data --data-root data
-uv run python -m deliciousmap.ci check-dist --dist dist --commit <커밋> --city gwangju --city ulsan
-git diff --check
-```
+| 명령 | 결과 |
+| --- | --- |
+| `uv run ruff check .` | All checks passed |
+| `uv run ruff format --check .` | 166 files already formatted |
+| `uv run mypy src` | no issues found in 56 source files |
+| `uv run pytest` | 825 passed |
+| `node --test tests/*.test.js` | pass 94, fail 0 |
+| `uv run python -m deliciousmap.ci check-data --data-root data` | 종료 0 (gwangju, ulsan) |
+| `uv run python -m deliciousmap.ci check-dist --dist dist --commit <커밋> --city gwangju --city ulsan` | 종료 0, 15개 파일 봉인 |
+| `git diff --check` | 출력 없음 |
+| `gitleaks git --log-opts="origin/develop..HEAD"` | no leaks found |
 
 ## 남은 제한
 
