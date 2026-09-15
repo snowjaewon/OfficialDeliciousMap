@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 import pytest
+from pyproj import Transformer
 
 from deliciousmap.cli import main
 from deliciousmap.licenses import BASE_URL
@@ -30,10 +31,15 @@ from tests.test_naver_lookup_cli import (
 )
 
 SERVICE_KEY = "합성-인허가-서비스키"
-# 중부원점TM(EPSG:5174) 좌표 한 쌍과 그 WGS84 변환 결과. 네이버 좌표(35.1, 129.1)에서 약 300 m
-# 북쪽이라 허용 오차 200 m 밖이다. 오차 안의 좌표는 아래 NEARBY_X, NEARBY_Y다.
+# 중부원점TM(EPSG:5174) 좌표 한 쌍. 네이버 좌표(35.1, 129.1)에서 약 300 m 북쪽이라 허용 오차
+# 200 m 밖이다. 오차 안의 좌표는 아래 NEARBY_X, NEARBY_Y다.
 LICENSE_X, LICENSE_Y = "391413.5", "180197.3"
-LATITUDE, LONGITUDE = 35.10270223741562, 129.10006886326784
+# 변환값(약 35.10270, 129.10007)은 pyproj 빌드에 따라 소수점 끝자리가 달라 Windows와 CI의 Linux가
+# 같지 않다. 기대값은 같은 좌표계 선언으로 그 자리에서 얻고, 첫 테스트가 문서의 값과 1e-5° 안에서
+# 맞는지 따로 본다.
+LONGITUDE, LATITUDE = Transformer.from_crs("EPSG:5174", "EPSG:4326", always_xy=True).transform(
+    float(LICENSE_X), float(LICENSE_Y)
+)
 # 네이버 좌표에서 수 cm 떨어진 인허가 좌표. 같은 건물의 변환 오차 수준이다.
 NEARBY_X, NEARBY_Y = "391413.5", "179897.3"
 
@@ -100,6 +106,8 @@ def test_license_candidates_convert_coordinates_and_reach_the_marker(
     result = geocoded(context)
     assert result["status"] == "success"
     assert (result["latitude"], result["longitude"]) == (LATITUDE, LONGITUDE)
+    assert result["latitude"] == pytest.approx(35.10270, abs=1e-5)
+    assert result["longitude"] == pytest.approx(129.10007, abs=1e-5)
     assert result["confirmed_merchant"] == "같은 식당"
     assert sources(context) == ["license", "license"]
     query = result["lookup"]["queries"][0]
