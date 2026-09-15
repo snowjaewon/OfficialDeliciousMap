@@ -494,6 +494,28 @@ class ProviderCandidates(Contract):
         return self
 
 
+class SourceCategory(Contract):
+    """제공자가 후보 하나에 붙인 업종 원문. 업소 확인의 근거가 아니라 표시용이다."""
+
+    source_id: Text
+    category: Text
+
+
+class ProviderCategories(Contract):
+    """업종 조회 한 번을 해석한 결과. 원본 응답·인증 정보는 남기지 않는다."""
+
+    status: Literal["ok", "error"]
+    error: Literal["unavailable", "invalid_response"] | None = None
+    categories: tuple[SourceCategory, ...] = ()
+
+    @model_validator(mode="after")
+    def consistent_result(self) -> "ProviderCategories":
+        require_error_code(self.status, self.error)
+        if self.status == "error" and self.categories:
+            raise ValueError("failed lookups cannot supply categories")
+        return self
+
+
 class ProviderQuery(Contract):
     """조회 하나의 요청 맥락·해석 버전·결과 상태. 후보 사실과 분리해 재사용과 추적에 쓴다."""
 
@@ -632,6 +654,8 @@ class PublishedMarker(Contract):
     coordinate_source: Provider
     # 좌표를 준 근거의 주소. 업소 확인은 주소가 일치한 후보만 채택하므로 확정 마커에는 언제나 있다.
     address: Text
+    # 업소를 확정한 후보에 그 제공자가 붙인 업종 원문. 모르면 `미상`이다(#96).
+    category: Text
     # 아래 셋은 이 식당으로 묶인 레코드의 요약이다. 목록·상세가 장부를 받지 않고도 보여 준다.
     last_visited_on: SpendingDay
     # 금액이 있는 방문만 더한 합계와, 금액을 알 수 없는 방문 수. 합쳐 적은 상호를 업소별로
@@ -682,7 +706,8 @@ class PublishedRecord(Contract):
 
 
 class MarkerFile(Contract):
-    schema_version: Literal[10] = 10
+    # v11: 마커가 업종을 싣는다(#96).
+    schema_version: Literal[11] = 11
     city: Text
     org: str | None = None
     markers: tuple[PublishedMarker, ...]
@@ -1214,6 +1239,8 @@ class BuildInput(Contract):
     repeated_expenses: RepeatedExpenses = RepeatedExpenses()
     # 제출 시점 기준이 공개하는 남은 미해결(#106). 화면의 자료 범위가 사유별로 낸다.
     tally: SubmissionTally = SubmissionTally()
+    # 업소 식별자별 업종 원문. 여기 없는 마커는 업종을 모른다(#96).
+    categories: dict[Sha256, Text] = Field(default_factory=dict)
 
 
 class BuildOutput(Contract):

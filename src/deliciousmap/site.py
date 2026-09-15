@@ -11,7 +11,7 @@ from importlib.resources import files
 from pathlib import Path
 from typing import Literal
 
-from deliciousmap import merchants, period
+from deliciousmap import category, merchants, period
 from deliciousmap.contracts import (
     BuildInput,
     ClassificationStatus,
@@ -20,7 +20,6 @@ from deliciousmap.contracts import (
     GeocodeReason,
     GeocodeResult,
     MarkerFile,
-    Provider,
     PublishedMarker,
     PublishedRecord,
     Record,
@@ -31,6 +30,7 @@ from deliciousmap.contracts import (
     UnnamedCompanions,
     UnresolvedReason,
 )
+from deliciousmap.identity import coordinate_origin
 from deliciousmap.registry import CITIES, City, HoldReason, Organization, Target
 from deliciousmap.storage import write_bytes, write_text
 
@@ -202,7 +202,7 @@ def _marker_file(target: Target, value: BuildInput) -> MarkerFile:
     markers = []
     for candidate in value.candidates:
         # 묶인 레코드는 같은 좌표를 공유하므로 첫 레코드의 근거로 출처와 주소를 밝힌다.
-        source, address = _coordinate_origin(geocodes[candidate.record_ids[0]])
+        source, address = coordinate_origin(geocodes[candidate.record_ids[0]])
         visits = [records[record_id] for record_id in candidate.record_ids]
         priced = [visit.amount_krw for visit in visits if visit.amount_krw is not None]
         markers.append(
@@ -213,8 +213,9 @@ def _marker_file(target: Target, value: BuildInput) -> MarkerFile:
                 latitude=candidate.latitude,
                 longitude=candidate.longitude,
                 closed=closures[candidate.business_id].status == "closed",
-                coordinate_source=source,
+                coordinate_source=source.provider,
                 address=address,
+                category=value.categories.get(candidate.business_id, category.UNKNOWN),
                 last_visited_on=max(visit.spent_on for visit in visits),
                 total_amount_krw=sum(priced, Decimal(0)),
                 unpriced_visit_count=len(visits) - len(priced),
@@ -239,26 +240,6 @@ def _record_file(target: Target, value: BuildInput) -> RecordFile:
             for record in value.records
         ),
     )
-
-
-def _coordinate_origin(result: GeocodeResult) -> tuple[Provider, str]:
-    """좌표를 준 제공자와 그 근거의 주소. 사람이 확인한 건은 확인한 후보와 주소가 정본이다.
-
-    업소 확인은 상호·지점·주소가 일치한 후보만 채택하므로(`identity.decide_identity`) 주소 없는
-    후보는 좌표의 근거가 될 수 없다.
-    """
-    if result.reason == "human_confirmed" and result.confirmation is not None:
-        return result.confirmation.candidate_source.provider, result.confirmation.address
-    # 여러 제공자의 근거가 같은 좌표로 겹치면 제공자 이름 순으로 하나를 밝힌다.
-    origins = sorted(
-        (candidate.source.provider, candidate.address)
-        for candidate in result.lookup.candidates
-        if (candidate.latitude, candidate.longitude) == (result.latitude, result.longitude)
-        and candidate.address is not None
-    )
-    if not origins:
-        raise ValueError("a confirmed coordinate must come from one of its candidates")
-    return origins[0]
 
 
 def _published_record(

@@ -145,7 +145,11 @@ def test_local_and_license_supplied_facts_reach_the_same_business_and_marker(
     assert len(transport.urls) == len(LICENSE_SERVICES)
     assert geocoded(local)["business_id"] == geocoded(remote)["business_id"]
     assert geocoded(local)["reason"] == geocoded(remote)["reason"] == "matched"
-    assert markers(local)["markers"] == markers(remote)["markers"]
+    supplied, searched = markers(local)["markers"], markers(remote)["markers"]
+    # 업종은 조회로 찾은 후보만 안다. 담당자가 준 후보는 다시 물을 조회가 없다.
+    assert [marker.pop("category") for marker in supplied] == ["미상"]
+    assert [marker.pop("category") for marker in searched] == ["한식"]
+    assert supplied == searched
 
 
 def test_license_coordinates_complete_a_naver_candidate_without_usable_ones(

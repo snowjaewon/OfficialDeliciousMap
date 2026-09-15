@@ -35,6 +35,7 @@ from deliciousmap.contracts import (
     NameRestoration,
     ParseOutput,
     ProviderCandidates,
+    ProviderCategories,
     Record,
     RecordOrigin,
     RepeatConfirmation,
@@ -86,6 +87,8 @@ SCHEMA_VERSIONS = {"fetch": 4, "headermap": 2, "parse": 5, "geocode": 5, "closur
 LOOKUP_CACHE = "geocode-lookup-v1.jsonl"
 # 모델 제안 이력. 사람 확인 입력·업소 판정과 분리해 두며 판정의 의존성에 넣지 않는다.
 PROPOSAL_CACHE = "restore-proposal-v1.jsonl"
+# 확정 업소의 업종 조회 캐시. 표시용이라 판정의 의존성에 넣지 않고 build만 읽는다(#96).
+CATEGORY_CACHE = "category-lookup-v1.jsonl"
 
 DEPENDENCIES = {
     "fetch": (),
@@ -524,13 +527,15 @@ class LookupCache:
         """그 키의 유효한 최신 항목. 적중 자체는 업소 확정이 아니다."""
         return self._latest.get(key)
 
-    def remember_candidates(self, key: str, found: ProviderCandidates, evidence: str) -> int:
+    def remember_candidates(
+        self, key: str, found: ProviderCandidates | ProviderCategories, evidence: str
+    ) -> int:
         """같은 결과는 다시 쌓지 않고, 달라지면 새 revision으로 이력에 남긴다.
 
         앞선 판정은 부르는 쪽이 넘기지 않고 사전에서 직접 본다. 넘겨받으면 사전이 들고 있는
         것과 어긋난 revision으로 쌓을 여지가 생긴다.
         """
-        value = ProviderCandidates.model_validate(found).model_dump(mode="json")
+        value = type(found).model_validate(found).model_dump(mode="json")
         previous = self._latest.get(key)
         if previous is not None and previous.value == value:
             return previous.revision
@@ -663,6 +668,8 @@ class ArtifactStore:
             result["lookups"] = file_digest(self.directory / LOOKUP_CACHE)
             result["confirmations"] = file_digest(self.paths.manual(self.target, "geocode"))
             result["policy"] = identity.POLICY_VERSION
+        if stage == "build":
+            result["categories"] = file_digest(self.directory / CATEGORY_CACHE)
         if stage in {"parse", "geocode"}:
             result["merchant_policy"] = merchants.POLICY_VERSION
         if stage in {"classify", "geocode"}:
@@ -889,6 +896,10 @@ class ArtifactStore:
         받은 객체를 그 실행 내내 들고 다닌다.
         """
         return LookupCache(self.directory / LOOKUP_CACHE)
+
+    def category_cache(self) -> LookupCache:
+        """이 실행이 쓸 업종 조회 캐시. 조회 캐시와 같은 규칙으로 한 번 읽어 들고 다닌다."""
+        return LookupCache(self.directory / CATEGORY_CACHE)
 
     def cached_proposal(self, key: str) -> CacheEntry | None:
         """같은 입력의 유효한 최신 제안. 제안 자체는 복원 확정이 아니다."""

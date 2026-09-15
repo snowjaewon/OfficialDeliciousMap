@@ -6,6 +6,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from deliciousmap import boards, gemini, licenses, naver, site
+from deliciousmap.category import CategorySource
 from deliciousmap.lookup import CandidateProvider
 from deliciousmap.paths import Paths
 from deliciousmap.pipeline import STAGES, Adapters, ExecutionContext, PipelineFailure, execute
@@ -57,10 +58,11 @@ def main(
         print(f"selection: {exc}", file=sys.stderr)
         return 2
     try:
-        configured: tuple[CandidateProvider | None, ...] = (
-            naver.from_environment(naver_transport),
-            licenses.from_environment(license_transport),
-        )
+        search = naver.from_environment(naver_transport)
+        licensed = licenses.from_environment(license_transport)
+        configured: tuple[CandidateProvider | None, ...] = (search, licensed)
+        # 후보를 준 제공자가 업종도 준다. 같은 조회를 다시 물어 확정 업소의 업종을 얻는다.
+        described: tuple[CategorySource | None, ...] = (search, licensed)
         models = gemini.models_from_environment(model_transport)
         # 도시 셸을 만드는 실행만 공개 지도 키를 요구한다. 기관 산출물은
         # 지도 셸을 건드리지 않으므로 키 없이도 재실행할 수 있어야 한다.
@@ -84,6 +86,7 @@ def main(
                 board_transport or boards.default_transport(),
                 models.header_mapper if models else None,
                 models.classifier if models else None,
+                tuple(item for item in described if item is not None),
             ),
             adapters,
         )

@@ -8,6 +8,7 @@ from collections.abc import Sequence
 from deliciousmap import merchants
 from deliciousmap.contracts import (
     CandidateLookup,
+    CandidateSource,
     ConfirmedPlace,
     GeocodeResult,
     Record,
@@ -220,6 +221,29 @@ def _evidence(
         return agreement
     # 여러 제공자의 근거가 겹쳐 하나의 업소를 가리키면 어느 출처가 일치했는지 함께 남긴다.
     return f"{agreement} {'+'.join(sorted(providers))}"
+
+
+def coordinate_origin(result: GeocodeResult) -> tuple[CandidateSource, str]:
+    """좌표를 준 후보의 출처와 그 근거의 주소. 사람이 확인한 건은 확인한 후보와 주소가 정본이다.
+
+    업소 확인은 상호·지점·주소가 일치한 후보만 채택하므로(`decide_identity`) 주소 없는
+    후보는 좌표의 근거가 될 수 없다.
+    """
+    if result.reason == "human_confirmed" and result.confirmation is not None:
+        return result.confirmation.candidate_source, result.confirmation.address
+    # 여러 제공자의 근거가 같은 좌표로 겹치면 제공자 이름 순으로 하나를 밝힌다.
+    origins = sorted(
+        (
+            (candidate.source, candidate.address)
+            for candidate in result.lookup.candidates
+            if (candidate.latitude, candidate.longitude) == (result.latitude, result.longitude)
+            and candidate.address is not None
+        ),
+        key=lambda origin: (origin[0].provider, origin[1], origin[0].source_id),
+    )
+    if not origins:
+        raise ValueError("a confirmed coordinate must come from one of its candidates")
+    return origins[0]
 
 
 def reconcile_coordinates(results: tuple[GeocodeResult, ...]) -> tuple[GeocodeResult, ...]:

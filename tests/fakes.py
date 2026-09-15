@@ -243,12 +243,13 @@ def naver_item(
     mapx: str = "1291000000",
     mapy: str = "351000000",
     link: str = "",
+    category: str = "음식점>한식",
 ) -> dict[str, str]:
     """지역검색 응답 한 건. 실제 응답처럼 공급자 전용 필드도 함께 둔다."""
     return {
         "title": title,
         "link": link,
-        "category": "음식점>한식",
+        "category": category,
         "description": "합성 설명",
         "telephone": "051-000-0000",
         "address": "부산 합성동 1-2",
@@ -283,6 +284,7 @@ def license_item(
     y: str = "179897.3",
     management: str = "3250000-101-2026-00001",
     lot_address: str = "부산 합성동 1-2",
+    category: str = "한식",
 ) -> dict[str, str]:
     """조회서비스 응답 한 건. 실제 응답처럼 대조에 쓰지 않는 필드도 함께 둔다."""
     return {
@@ -296,7 +298,7 @@ def license_item(
         "CLSBIZ_YMD": "",
         "CRD_INFO_X": x,
         "CRD_INFO_Y": y,
-        "BZSTAT_SE_NM": "한식",
+        "BZSTAT_SE_NM": category,
         "TELNO": "051-000-0000",
         "LCPMT_YMD": "20200101",
     }
