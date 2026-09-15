@@ -16,6 +16,52 @@ from deliciousmap.storage import LookupCache
 POLICY_VERSION = "category-1"
 # 업종을 모르는 마커의 값. 다른 업종으로 채우지 않는다.
 UNKNOWN = "미상"
+# 갈래에 없는 원문의 갈래. 업종을 아는 마커이므로 미상과 섞지 않는다.
+OTHER = "기타"
+# 화면 필터의 갈래와 그 갈래로 묶는 원문 단계 이름. 네이버 `category`의 `>` 단계와
+# 인허가 업태구분명을 함께 받는다. 여기 없는 이름은 기타로 간다(#96).
+GROUPS: tuple[tuple[str, frozenset[str]], ...] = (
+    (
+        "한식",
+        frozenset(
+            {
+                "한식",
+                "육류,고기요리",
+                "해물,생선요리",
+                "식육(숯불구이)",
+                "탕류(보신용)",
+                "냉면집",
+                "횟집",
+                "복어취급",
+            }
+        ),
+    ),
+    ("중식", frozenset({"중식", "중식당", "중국식"})),
+    ("일식", frozenset({"일식", "일식당", "초밥,롤"})),
+    ("양식", frozenset({"양식", "경양식", "이탈리아음식", "패밀리레스트랑"})),
+    ("분식", frozenset({"분식", "김밥(도시락)"})),
+    (
+        "카페",
+        frozenset(
+            {"카페", "카페,디저트", "커피숍", "까페", "다방", "전통찻집", "제과점영업", "베이커리"}
+        ),
+    ),
+    ("주점", frozenset({"술집", "호프/통닭", "정종/대포집/소주방", "감성주점"})),
+)
+# 화면이 필터 버튼을 늘어놓는 순서. 판정 없는 두 값은 끝에 둔다.
+GROUP_ORDER = (*(name for name, _ in GROUPS), OTHER, UNKNOWN)
+
+
+def group(category: str) -> str:
+    """원문의 단계를 앞에서부터 보고 처음 알려진 이름의 갈래를 쓴다. `음식점`처럼 갈래가 아닌
+    앞 단계는 건너뛴다."""
+    if category == UNKNOWN:
+        return UNKNOWN
+    for step in category.split(">"):
+        for name, members in GROUPS:
+            if step.strip() in members:
+                return name
+    return OTHER
 
 
 class CategorySource(Protocol):

@@ -205,6 +205,7 @@ def _marker_file(target: Target, value: BuildInput) -> MarkerFile:
         source, address = coordinate_origin(geocodes[candidate.record_ids[0]])
         visits = [records[record_id] for record_id in candidate.record_ids]
         priced = [visit.amount_krw for visit in visits if visit.amount_krw is not None]
+        described = value.categories.get(candidate.business_id, category.UNKNOWN)
         markers.append(
             PublishedMarker(
                 business_id=candidate.business_id,
@@ -215,7 +216,8 @@ def _marker_file(target: Target, value: BuildInput) -> MarkerFile:
                 closed=closures[candidate.business_id].status == "closed",
                 coordinate_source=source.provider,
                 address=address,
-                category=value.categories.get(candidate.business_id, category.UNKNOWN),
+                category=described,
+                category_group=category.group(described),
                 last_visited_on=max(visit.spent_on for visit in visits),
                 total_amount_krw=sum(priced, Decimal(0)),
                 unpriced_visit_count=len(visits) - len(priced),
@@ -275,11 +277,12 @@ def write_site_shell(
     map_key: MapKey,
     statuses: tuple[CollectionStatus, ...],
     scope: SourceScope,
+    groups: tuple[str, ...],
 ) -> tuple[Path, ...]:
     """Write shared assets, the city landing, and one city entry page."""
     written: list[Path] = []
     city_page = city_directory / "index.html"
-    write_text(city_page, _city_page(city, map_key, statuses, scope))
+    write_text(city_page, _city_page(city, map_key, statuses, scope, groups))
     written.append(city_page)
 
     # 진입 페이지를 먼저 쓰고 랜딩을 만들어, 이번 실행의 도시도 링크 대상이 되게 한다.
@@ -378,6 +381,27 @@ def _visit_filters() -> str:
             f'            <button type="button" aria-pressed="false" data-visits="{key}">'
             f"{label}</button>"
             for key, label, _ in VISIT_BAND_LABELS
+        ),
+    ]
+    return "\n".join(buttons)
+
+
+def category_groups(value: BuildInput) -> tuple[str, ...]:
+    """이 도시의 마커가 속한 업종 갈래. 마커가 없는 갈래의 버튼은 내지 않는다."""
+    present = {
+        category.group(value.categories.get(item.business_id, category.UNKNOWN))
+        for item in value.candidates
+    }
+    return tuple(name for name in category.GROUP_ORDER if name in present)
+
+
+def _category_filters(groups: tuple[str, ...]) -> str:
+    buttons = [
+        '            <button type="button" aria-pressed="true" data-category="all">전체</button>',
+        *(
+            f'            <button type="button" aria-pressed="false" data-category="{label}">'
+            f"{label}</button>"
+            for label in map(escape, groups)
         ),
     ]
     return "\n".join(buttons)
@@ -618,7 +642,11 @@ def _unmapped_record_line(tally: SubmissionTally) -> str:
 
 
 def _city_page(
-    city: City, map_key: MapKey, statuses: tuple[CollectionStatus, ...], scope: SourceScope
+    city: City,
+    map_key: MapKey,
+    statuses: tuple[CollectionStatus, ...],
+    scope: SourceScope,
+    groups: tuple[str, ...],
 ) -> str:
     city_name = escape(city.name)
     scope_lines = (
@@ -681,6 +709,9 @@ def _city_page(
             </label>
             <fieldset class="visit-filters"><legend class="sr-only">방문 횟수</legend>
 {_visit_filters()}
+            </fieldset>
+            <fieldset class="visit-filters category-filters"><legend class="sr-only">업종</legend>
+{_category_filters(groups)}
             </fieldset>
             <p class="result-count" aria-live="polite">
               <strong data-total-count>0</strong>곳 전체 ·

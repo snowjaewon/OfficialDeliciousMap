@@ -183,6 +183,7 @@ def test_build_separates_map_data_from_complete_record_list(tmp_path: Path) -> N
             "business_id": markers["markers"][0]["business_id"],
             # 담당자가 준 후보는 다시 물을 조회가 없어 업종을 모른다.
             "category": "미상",
+            "category_group": "미상",
             "closed": False,
             "coordinate_source": "local",
             "last_visited_on": "2026-01-02",

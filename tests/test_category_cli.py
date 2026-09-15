@@ -1,5 +1,6 @@
 """확정 업소의 업종을 실제 어댑터로 조회하고 외부 응답만 주입해 공개 CLI로 관찰한다."""
 
+import re
 from pathlib import Path
 
 import pytest
@@ -66,6 +67,46 @@ def test_a_naver_marker_carries_the_category_of_the_candidate_that_confirmed_it(
     assert len(transport.requests) == 1
 
 
+@pytest.mark.parametrize(
+    "raw,group",
+    [
+        # 실측 원문(#96). 앞 단계가 `음식점`처럼 갈래가 아니면 다음 단계를 본다.
+        ("음식점>한식", "한식"),
+        ("음식점>일식>초밥,롤", "일식"),
+        ("육류,고기요리>정육식당", "한식"),
+        ("분식>김밥", "분식"),
+        ("카페,디저트>카페", "카페"),
+        ("술집>요리주점", "주점"),
+        # 갈래에 없는 원문은 업종을 아는 채로 기타에 둔다. 미상과 섞지 않는다.
+        ("생활,편의>편의점", "기타"),
+    ],
+)
+def test_a_marker_is_filed_under_a_group_while_keeping_the_original_category(
+    tmp_path: Path, searched: None, raw: str, group: str
+) -> None:
+    context = prepare(tmp_path)
+    save_input(context, evidence_only())
+    transport = FakeTransport(
+        naver_body(naver_item("같은 식당 부산점", ROAD_ADDRESS, category=raw))
+    )
+    assert [
+        (marker["category"], marker["category_group"]) for marker in build(context, transport)
+    ] == [(raw, group)]
+
+
+def test_the_city_page_offers_only_the_groups_its_markers_fall_under(
+    tmp_path: Path, searched: None
+) -> None:
+    context = prepare(tmp_path)
+    save_input(context, evidence_only())
+    transport = FakeTransport(
+        naver_body(naver_item("같은 식당 부산점", ROAD_ADDRESS, category="음식점>일식>초밥,롤"))
+    )
+    build(context, transport)
+    page = (context.paths.output_root / "seoul" / "index.html").read_text(encoding="utf-8")
+    assert re.findall(r'data-category="([^"]+)"', page) == ["all", "일식"]
+
+
 def looked_up_before_confirmation(context: ExecutionContext) -> None:
     """조회는 캐시에 있고 업소는 그 뒤에 확정된 상태. 쌓인 광주 확정 업소가 이 경로다."""
     save_input(context, evidence_only(address=None))
@@ -108,7 +149,9 @@ def test_a_candidate_supplied_without_a_lookup_is_not_asked_and_stays_unknown(
     context = prepare(tmp_path)
     save_input(context, lookup())
     transport = FakeTransport(naver_body(naver_item("같은 식당 부산점", ROAD_ADDRESS)))
-    assert [marker["category"] for marker in build(context, transport)] == ["미상"]
+    assert [
+        (marker["category"], marker["category_group"]) for marker in build(context, transport)
+    ] == [("미상", "미상")]
     assert transport.requests == []
 
 

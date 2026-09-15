@@ -656,6 +656,8 @@ class PublishedMarker(Contract):
     address: Text
     # 업소를 확정한 후보에 그 제공자가 붙인 업종 원문. 모르면 `미상`이다(#96).
     category: Text
+    # 화면 필터가 쓰는 갈래. 규칙은 `category.group`이 정한다.
+    category_group: Text
     # 아래 셋은 이 식당으로 묶인 레코드의 요약이다. 목록·상세가 장부를 받지 않고도 보여 준다.
     last_visited_on: SpendingDay
     # 금액이 있는 방문만 더한 합계와, 금액을 알 수 없는 방문 수. 합쳐 적은 상호를 업소별로

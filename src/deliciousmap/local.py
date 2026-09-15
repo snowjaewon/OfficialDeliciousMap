@@ -28,6 +28,7 @@ from deliciousmap.identity import decide_identity, lookup_key, reconcile_coordin
 from deliciousmap.pipeline import AdapterFailure, ExecutionContext, FailureCause
 from deliciousmap.site import (
     SourceScope,
+    category_groups,
     collection_status,
     write_city_data,
     write_site_shell,
@@ -128,6 +129,7 @@ class LocalAdapters:
                     repeated=value.repeated_expenses,
                     tally=value.tally,
                 ),
+                category_groups(value),
             )
         return BuildOutput(
             files=files,
