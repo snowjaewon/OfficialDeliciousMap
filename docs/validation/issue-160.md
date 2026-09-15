@@ -54,11 +54,10 @@ uv run python -m deliciousmap build --city ulsan
 # exit 0
 
 uv run pytest tests/test_storage.py tests/test_ci.py tests/test_pipeline.py
-# 58 passed, 8 errors: test fixtures require a temporary raw-root outside the repository;
-# this sandbox only permits workspace writes (`raw-root must be outside the repository`)
+# 66 passed
 
 uv run pytest
-# 510 passed, 264 failed, 36 errors; the failures are the same sandbox raw-root restriction
+# 810 passed in 46.96s
 
 uv run ruff check src tests
 uv run ruff format --check src tests
@@ -66,12 +65,9 @@ git diff --check
 # all passed
 ```
 
-The repository-standard commands above were executed with the locked `.venv` equivalent
-(`.venv/Scripts/python.exe -m ...`) because this sandbox denies access to `.tools/uv`.
-The targeted and full pytest counts above are environment-limited: tests that do not
-construct an external temporary raw-root pass, while fixture cases that do construct
-one are rejected by `Paths.validate` before exercising their assertions. No source
-code or test changes were made to bypass that safety check.
+The repository-standard commands above were executed with `uv run` after granting the
+test process access to its external temporary directory. No source code or test changes
+were made to bypass the `Paths.validate` safety check.
 
 두 기관의 `fetch`, `headermap`, `parse`, `classify`, `geocode`, `closure`, `build`를
 `ArtifactStore.load`로 각각 읽었고 모두 성공했다. `dist/`는 로컬 빌드 산출물이며 커밋하지
@@ -97,4 +93,4 @@ for org in ("ulsan-namgu", "ulsan-ulju"):
 # each organization printed loaded for all seven stages
 ```
 
-status: environment-limited
+status: verified
