@@ -513,17 +513,29 @@ import csv, hashlib, json
 from collections import Counter, defaultdict
 from pathlib import Path
 
+
 def summarize(d: Path) -> None:
     load = lambda s: json.loads((d / f"{s}.json").read_text(encoding="utf-8"))["payload"]
     f, h, p = load("fetch"), load("headermap"), load("parse")
     c, g = load("classify")["decisions"], load("geocode")["results"]
     print(hashlib.sha256((d / "fetch.json").read_bytes()).hexdigest())
     board = {s["source_hash"]: (s["organization"], s["board"]) for s in f["sources"]}
-    print(len(f["sources"]), len(board), len(f["missing"]), f["uncollected_postings"],
-          Counter(s["container"] for s in f["sources"]), f["empty_reason"])
-    print(Counter(u["reason"] for u in h["unresolved"]), p["excluded_sources"], p["repeated_expenses"])
+    print(
+        len(f["sources"]),
+        len(board),
+        len(f["missing"]),
+        f["uncollected_postings"],
+        Counter(s["container"] for s in f["sources"]),
+        f["empty_reason"],
+    )
+    print(
+        Counter(u["reason"] for u in h["unresolved"]), p["excluded_sources"], p["repeated_expenses"]
+    )
     print(Counter(s["status"] for s in p["sources"]), sum(s["records"] for s in p["sources"]))
-    print(Counter(x["status"] for x in c), Counter(x["evidence"] for x in c if x["status"] == "pending"))
+    print(
+        Counter(x["status"] for x in c),
+        Counter(x["evidence"] for x in c if x["status"] == "pending"),
+    )
     print(Counter((x["status"], x["reason"]) for x in g), load("closure")["results"], load("build"))
     rows = csv.DictReader((d / "records.csv").open(encoding="utf-8", newline=""))
     source_of = {r["record_id"]: r["source_hash"] for r in rows}
