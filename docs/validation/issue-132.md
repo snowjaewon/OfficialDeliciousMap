@@ -5,6 +5,11 @@ passed with `--raw-root`; no 원본 was copied into this
 repository.  This report separates implemented pipeline behavior from live
 collection and data-quality gates that could not be completed.
 
+The sections up to "Commands and results" record the 2026-09-14 runs.  The
+[2026-09-15 completion check](#2026-09-15-completion-check) re-reads the
+current artifacts after #145, #146, #147, #151, and #160 and supersedes their
+figures.
+
 ## Implementation under test
 
 - Ulsan transfer-board rows with legacy dates such as `20. 11. 5` are parsed
@@ -279,3 +284,317 @@ real-device checks.  `파리바게트` stays held until a branch or address can 
 tied to the record; confirming a store by visit or phone is outside this issue.
 The HTTP route check above is not substituted for those gates; they remain
 explicitly incomplete rather than being marked as passed from the build.
+
+## 2026-09-15 completion check
+
+Base commit `20703d689d59f9daf4f8ceff8315e8f5abea0c47`: `origin/develop`
+(`1110d5e`, after #147) plus the two #160 regeneration commits, which were on
+local `develop` only when this was written.  Every
+figure below was read from the committed `data/ulsan/**` artifacts: `fetch.json`
+`payload.sources`/`missing`/`uncollected_postings`/`empty_reason`,
+`headermap.json` `mappings`/`unresolved`, `parse.json` `sources`/
+`excluded_sources`/`repeated_expenses`, `classify.json` `decisions`,
+`geocode.json` and `closure.json` `results`, and `build.json`
+`record_count`/`marker_count`.  Board figures join `fetch.json` `board` to
+`parse.json` and `records.csv` by source hash.  SHA-256 is `sha256sum` of the
+file.  Units: sources and target sources are 원본 files, postings are listing
+rows, records are `records.csv` rows.  The script that produced the tables is
+under [Derivation](#derivation).
+
+### Stage exits
+
+With the committed artifacts as input, `headermap`, `parse`, `classify`,
+`geocode`, `closure`, and `build` were re-run for each organization
+(`--org <slug>`) and then for the city, 42 stage runs in all.  The runner loaded
+only `NAVER_SEARCH_*`, `NAVER_MAP_*`, and `DATA_GO_KR_KEY` from `.env`, removed
+`GEMINI_*`, and replaced `socket.connect` and `socket.create_connection` with a
+refusal.  All 42 runs exited 0 and made no network attempt (`fetch` was not
+re-run; it is the live collection recorded above and in #145/#146).  Every
+tracked output was byte-identical except the Nam-gu and Buk-gu organization
+`headermap.json`.  Those were written before #145 added the optional
+`declared` field, and the re-run adds only `"declared": false` to each mapping
+(13 in Buk-gu, 17 plus one unresolved mapping in Nam-gu).  The mappings are
+otherwise equal, so they are committed as re-serialized.  `ArtifactStore.load`
+then read all seven stages of the city and of each organization with the current
+code.
+
+### Collection record (`fetch.json`) by organization
+
+| organization | `fetch.json` SHA-256 | 원본 (unique hashes) · missing · uncollected postings | containers | fetch warning |
+| --- | --- | --- | --- | --- |
+| `ulsan-city` | `73c88b8dfd167652560fa89870fc8f49336c730ae6faaa0b6a79d131d511c087` | 648 (648) · 0 · 11,991 | html 647, pdf 1 | `ulsan-city/expenses-department=adapter-failed` |
+| `ulsan-junggu` | `534d9450be114ec12c08728fc8a0304667d3a5df323c8b512e843ba246954111` | 156 (156) · 0 · 1,865 | pdf 118, ole2 23, zip 12, ooxml 2, html 1 | none |
+| `ulsan-namgu` | `c07fb8043a4999ec240374caa313ca7ea8b7d6713d37e8f15313089d471684ec` | 392 (392) · 0 · 2,798 | pdf 392 | `unmeasured-attachments=10` |
+| `ulsan-donggu` | `4a2d75d529405aab3990151884ab3736801029824a59d38cc389dc3ffc12f58f` | 171 (171) · 0 · 1,152 | pdf 146, html 25 | `unmeasured-attachments=28` |
+| `ulsan-bukgu` | `565f67a0ef53bc7c2fdf287c917bdd63e1f95487b9a5c18d92ebb262daf0611b` | 200 (199) · 0 · 1,995 | pdf 200 | `unmeasured-attachments=18` |
+| `ulsan-ulju` | `7715c05e07a9217f879ee84d3a413d2623048d26136e7c17479cc1bf915f31e4` | 8 (8) · 0 · 66 | pdf 8 | `expenses-director=adapter-failed, expenses-department=adapter-failed` |
+| city (`data/ulsan`) | `f3183f8b88af707bc219ccbb7846d37695f13b19d7ac48516e01465764c41bd8` | 1,575 (1,574) · 0 · 19,867 | pdf 865, html 673, ole2 23, zip 12, ooxml 2 | the five warnings above, joined |
+
+- The city `fetch.json` is the six organization `fetch.json` payloads
+  concatenated in registry order.  Its counts are the sums of the rows above
+  (1,575 원본, 19,867 postings).
+- Buk-gu's one repeated hash is one PDF attached to two postings, `2025년 4분기
+  업무추진비 집행내역` (2026-01-07) and `2025년 4분기 업무추진비 집행현황(농소3동)`
+  (2026-08-31).  Both declare 2025, so the file is not a target source and adds no
+  record.
+- Uncollected postings are listing rows whose posting year is outside 2026.
+  The warnings mark what `fetch.json` cannot count: `unmeasured-attachments=N` is
+  postings whose attachments have a format not measured for the board (not
+  downloaded), and `adapter-failed` is a board whose walk stopped.  Ulsan city
+  `expenses-department` stops at a 2020 row dated `202-12-28`, after the
+  2026 rows ([#145](issue-145.md)).  The Ulju-gun director and department boards
+  collected nothing.  The postings after a stop are not counted in
+  `uncollected_postings`.  For Ulsan city `expenses-department`, #145 counted
+  1,688 walked out-of-year rows in the listing index outside the repository.
+  No count exists for the two Ulju-gun boards.
+- Every one of the 1,575 `fetch.json` sources was re-read from `--raw-root`
+  and hashed again.  All 1,575 SHA-256 values equal the recorded
+  `source_hash`, and no file is missing.
+
+### Parse, decisions, and map status by organization
+
+| organization | target 원본 · parsed / unresolved (reasons) | out of period (`declared_out_of_range`) | records | restaurant / non-restaurant / pending | geocode | closure | build records / markers |
+| --- | --- | ---: | ---: | --- | --- | --- | --- |
+| `ulsan-city` | 502 · 467 / 35 (`validation_failed` 34, `model_not_configured` 1) | 146 | 3,070 | 62 / 65 / 2,943 | 62 `failed`/`missing_address` | 0 | 3,070 / 0 |
+| `ulsan-junggu` | 105 · 1 / 104 (`model_not_configured` 78, `unsupported_format` 14, `no_table` 12) | 51 | 198 | 9 / 14 / 175 | 9 `failed`/`missing_address` | 0 | 198 / 0 |
+| `ulsan-namgu` | 271 · 17 / 254 (`model_not_configured` 223, `no_table` 31) | 121 | 66 | 1 / 1 / 64 | 1 `success`/`human_confirmed` | 1 `unknown` | 66 / 1 |
+| `ulsan-donggu` | 120 · 23 / 97 (`model_not_configured` 91, `no_table` 4, `validation_failed` 2) | 51 | 33 | 0 / 5 / 28 | 0 | 0 | 33 / 0 |
+| `ulsan-bukgu` | 135 · 9 / 126 (`model_not_configured` 110, `no_table` 16) | 65 | 58 | 2 / 0 / 56 | 2 `failed`/`missing_address` | 0 | 58 / 0 |
+| `ulsan-ulju` | 6 · 0 / 6 (`model_not_configured` 6) | 2 | 0 | 0 / 0 / 0 | 0 | 0 | 0 / 0 |
+| city (`data/ulsan`) | 1,139 · 517 / 622 (`model_not_configured` 509, `no_table` 63, `validation_failed` 36, `unsupported_format` 14) | 436 | 3,425 | 74 / 85 / 3,266 | 1 `success`/`human_confirmed`, 73 `failed`/`missing_address` | 1 `unknown` | 3,425 / 1 |
+
+- The city row equals the column sums of the six organizations.  No
+  `posted_out_of_range` or `undeclared_in_year` source remains.
+- Pending (3,266 records): 3,174 are `unclassified: model_not_configured`.  The
+  other 92 reuse cached shared-classification decisions
+  (`data/_shared/classify.jsonl`) that are themselves pending.  91 are Gemini
+  decisions (`gemini-3.6-flash/classify-1`): `상호명 정보 없음` 81, `업종 확인 불가` 4,
+  `업종 미확인` 3, `상호만으로 판정 불가` 2, `업종 판단 불가` 1.  One,
+  `상호만으로 업종 불분명`, is a `claude-opus-5/claude-read-1` cache entry
+  written during the Gwangju work (#99).  That entry is not an API call and has
+  no budget entry.  By
+  organization, 2,862 + 81 in Ulsan city, 175 in Jung-gu, 64 in Nam-gu, 28 in
+  Dong-gu, and 45 + 11 in Buk-gu.
+- Unsupported format: the 14 `unsupported_format` sources are Jung-gu `ole2`
+  원본 (department 10, director 4).  `validation_failed` is 34 Ulsan city
+  department days with won amounts in a thousand-won table (`amount_unit`) and
+  2 Dong-gu mayor days with a blank amount (`amount_krw`), both in
+  [#145](issue-145.md).  These sources stay unresolved in `parse.json`.  None
+  is converted to records or dropped.
+- Repeated expenses: Ulsan city has 25 expenses (26 records) that appear once
+  in each of two 원본 and are not merged (ADR-0004).  The other organizations have none.
+- Coordinate failures: all 73 are `missing_address`.  The 원본 carry a merchant
+  name without an address or branch, and search rank is not used to choose one.
+  The only coordinate is the record-scoped `경복궁` confirmation described in
+  [City geocode human review](#city-geocode-human-review).  Its closure status
+  is `unknown` (`license-evidence-not-supplied`).
+
+### Board detail
+
+| organization / board | 원본 (containers) · target | parsed / unresolved (reasons) | records | restaurant / non-restaurant / pending | geocode failed |
+| --- | --- | --- | ---: | --- | ---: |
+| `ulsan-city/expenses-market` | 1 (pdf) · 1 | 0 / 1 (`model_not_configured` 1) | 0 | 0 / 0 / 0 | 0 |
+| `ulsan-city/expenses-deputy` | 105 (html) · 85 | 85 / 0 | 167 | 2 / 0 / 165 | 2 |
+| `ulsan-city/expenses-economic` | 88 (html) · 77 | 77 / 0 | 144 | 1 / 0 / 143 | 1 |
+| `ulsan-city/expenses-fez` | 83 (html) · 73 | 73 / 0 | 79 | 0 / 4 / 75 | 0 |
+| `ulsan-city/expenses-director` | 179 (html) · 129 | 129 / 0 | 1,180 | 20 / 30 / 1,130 | 20 |
+| `ulsan-city/expenses-department` | 192 (html) · 137 | 103 / 34 (`validation_failed` 34) | 1,500 | 39 / 31 / 1,430 | 39 |
+| `ulsan-junggu/expenses-mayor` | 1 (html) · 1 | 1 / 0 | 198 | 9 / 14 / 175 | 9 |
+| `ulsan-junggu/expenses-deputy` | 3 (pdf) · 2 | 0 / 2 (`model_not_configured` 2) | 0 | 0 / 0 / 0 | 0 |
+| `ulsan-junggu/expenses-director` | 32 (pdf 26, ole2 6) · 21 | 0 / 21 (`model_not_configured` 17, `unsupported_format` 4) | 0 | 0 / 0 / 0 | 0 |
+| `ulsan-junggu/expenses-department` | 120 (pdf 89, ole2 17, zip 12, ooxml 2) · 81 | 0 / 81 (`model_not_configured` 59, `no_table` 12, `unsupported_format` 10) | 0 | 0 / 0 / 0 | 0 |
+| `ulsan-namgu/expenses-deputy` | 8 (pdf) · 6 | 0 / 6 (`no_table` 6) | 0 | 0 / 0 / 0 | 0 |
+| `ulsan-namgu/expenses-director` | 49 (pdf) · 37 | 0 / 37 (`model_not_configured` 31, `no_table` 6) | 0 | 0 / 0 / 0 | 0 |
+| `ulsan-namgu/expenses-department` | 227 (pdf) · 155 | 12 / 143 (`model_not_configured` 134, `no_table` 9) | 44 | 1 / 0 / 43 | 0 (1 confirmed) |
+| `ulsan-namgu/expenses-dong` | 99 (pdf) · 67 | 5 / 62 (`model_not_configured` 56, `no_table` 6) | 22 | 0 / 1 / 21 | 0 |
+| `ulsan-namgu/expenses-health` | 9 (pdf) · 6 | 0 / 6 (`no_table` 4, `model_not_configured` 2) | 0 | 0 / 0 / 0 | 0 |
+| `ulsan-donggu/expenses-mayor` | 25 (html) · 25 | 23 / 2 (`validation_failed` 2) | 33 | 0 / 5 / 28 | 0 |
+| `ulsan-donggu/expenses-deputy` | 4 (pdf) · 3 | 0 / 3 (`model_not_configured` 3) | 0 | 0 / 0 / 0 | 0 |
+| `ulsan-donggu/expenses-director` | 12 (pdf) · 9 | 0 / 9 (`model_not_configured` 8, `no_table` 1) | 0 | 0 / 0 / 0 | 0 |
+| `ulsan-donggu/expenses-department` | 130 (pdf) · 83 | 0 / 83 (`model_not_configured` 80, `no_table` 3) | 0 | 0 / 0 / 0 | 0 |
+| `ulsan-bukgu/expenses` | 200 (pdf) · 135 | 9 / 126 (`model_not_configured` 110, `no_table` 16) | 58 | 2 / 0 / 56 | 2 |
+| `ulsan-ulju/expenses-deputy` | 8 (pdf) · 6 | 0 / 6 (`model_not_configured` 6) | 0 | 0 / 0 / 0 | 0 |
+
+Uncollected postings are kept per organization only.  `fetch.json` has no
+board field for them ([#145](issue-145.md), remaining limits).  Boards absent from
+the table (Ulju-gun director and department) have no 원본.
+
+### LLM budget
+
+`data/_shared/llm-budget.jsonl` (SHA-256
+`b1cfd25a8808ed33713947a1cd34243529e9ee56073fccb16422b660329a0e28`) has 755
+entries: 1 `prior_usage`, 377 reservations (header mapping 335, classification
+42), and 377 settlements.  `Budget.committed()` is USD 0.75009150 against the
+USD 15 limit.  The file was last changed by `81fecd8` (#137, Gwangju), and no
+Ulsan commit or run changed it.  The Ulsan pipeline made no LLM call, so its
+call count is 0.  Its 92 model-evidenced pending decisions above are
+shared-cache reuse, not new calls.
+
+### Published output, size, and privacy
+
+- `build --city ulsan` with the public map key from `.env` exited 0 and wrote
+  `dist/ulsan/records.json` (1,320,202 bytes, 3,425 records) and
+  `dist/ulsan/markers.json` (502 bytes, 1 marker).  Records by
+  classification/map status: pending 3,266, non-restaurant 85, restaurant with
+  geocode failure 73, and mapped 1.
+- `check-data --data-root data` passed (20MB cap per refined artifact,
+  registered directories, and city/organization classification consistency).  A
+  clean build to a scratch output root passed `check-dist --city ulsan` and
+  sealed 12 files for `20703d6`.  The build's rewrite of `data/ulsan/build.json`
+  was restored.
+- The `merchant`, `purpose`, and `department` of all 3,425 records in
+  `records.json` were scanned with the patterns under
+  [Derivation](#derivation) (phone, card, resident number, e-mail, masked
+  name, and a 2–3 syllable word followed by a title).  Only the title pattern
+  matched, in 406 record purposes.  It matched 13 distinct words, counted in
+  records: `행정국장` 105, `업투자국장` 66, `지정원국장` 59, `환경국장` 48,
+  `도시국장` 40, `총무과장` 36, `민건강국장` 22, `광체육국장` 20, `사무국장` 5,
+  `부처님` 2, `육관광국장` 1, `지공원과장` 1, `업지원과장` 1.  All are office
+  titles cut by the syllable window (for example `(기업투자국장)`) or `부처님`.
+  No personal name, phone number, or card number was found.  The `참석대상`
+  column stays unmapped, as in [#145](issue-145.md).
+- `git diff origin/develop..HEAD -- data/gwangju data/_shared` is empty.  No
+  other city's refined outputs or confirmed businesses were changed.
+
+### Browser check (local)
+
+`dist` was served with `python -m http.server 8765 --directory dist --bind
+127.0.0.1`, and `http://127.0.0.1:8765/ulsan/` was opened in Chrome.  The server
+answered 200 or 304 for every request (`/ulsan/`, `markers.json`,
+`records.json`, `app.js`, `styles.css`, the manifest, `sw.js`, and the icons).
+
+- Map tiles rendered with the configured key.  No authentication-failure
+  notice appeared.
+- The `경복궁` marker was drawn in 삼산동, and the list showed `1곳 전체 · 1곳 현재
+  지도 영역`.  Clicking the marker opened the detail: 방문 1회, 합계 351,000원,
+  울산광역시 남구 산업로 595, 2~3층 (삼산동), 최근 방문 2026-05-21, 방문 기관
+  울산광역시 남구, 폐업 확인 없음, 좌표 출처 인허가 자료, and a Naver map link.
+- Dragging the map away from the marker changed the count to `1곳 전체 · 0곳
+  현재 지도 영역`.
+- The 장부 tab loaded `records.json` and showed `전체 3,425건`.  After paging to
+  the end (`3,425건 표시`), the 장부 showed 판단 보류 3,266, 비식당 85,
+  `지오코딩 실패 · 주소 근거 없음` 73, and the one mapped record.  These match
+  the counts above.
+- Not re-checked here: the zoom-out limit and the pan bounds.  Wheel input did
+  not reach the map through the automation.  The automation's scroll,
+  screenshot, and script calls also timed out several times (30–45 s), both
+  before and after all 3,425 장부 rows were rendered.  The cause was not
+  isolated.  Those map controls are city-independent code verified in
+  [#50](https://github.com/snowjaewon/OfficialDeliciousMap/issues/50).
+  Real-device checks belong to
+  [#77](https://github.com/snowjaewon/OfficialDeliciousMap/issues/77).
+
+### Checks
+
+```text
+uv sync --locked
+uv run pytest                    # 810 passed
+uv run ruff check .              # All checks passed
+uv run ruff format --check .     # 162 files already formatted
+uv run mypy src                  # Success: no issues found in 55 source files
+git diff --check                 # passed
+uv run python -m deliciousmap.ci check-data --data-root data   # gwangju, ulsan
+uv run python -m deliciousmap.ci check-dist --dist <scratch-root> \
+  --commit 20703d689d59f9daf4f8ceff8315e8f5abea0c47 --city ulsan
+                                 # check-dist: sealed 12 files
+gitleaks git --pre-commit --staged (pre-commit hook, each commit)
+                                 # no leaks found
+```
+
+### Derivation
+
+All scripts ran from the repository root with `uv run python -` (PowerShell
+and Git Bash alike).  They read files only.
+
+Tables above (run once for `data/ulsan` and once per `data/ulsan/orgs/<org>`; board rows are keyed by organization and board):
+
+```python
+import csv, hashlib, json
+from collections import Counter, defaultdict
+from pathlib import Path
+
+
+def summarize(d: Path) -> None:
+    load = lambda s: json.loads((d / f"{s}.json").read_text(encoding="utf-8"))["payload"]
+    f, h, p = load("fetch"), load("headermap"), load("parse")
+    c, g = load("classify")["decisions"], load("geocode")["results"]
+    print(hashlib.sha256((d / "fetch.json").read_bytes()).hexdigest())
+    board = {s["source_hash"]: (s["organization"], s["board"]) for s in f["sources"]}
+    print(
+        len(f["sources"]),
+        len(board),
+        len(f["missing"]),
+        f["uncollected_postings"],
+        Counter(s["container"] for s in f["sources"]),
+        f["empty_reason"],
+    )
+    print(
+        Counter(u["reason"] for u in h["unresolved"]), p["excluded_sources"], p["repeated_expenses"]
+    )
+    print(Counter(s["status"] for s in p["sources"]), sum(s["records"] for s in p["sources"]))
+    print(
+        Counter(x["status"] for x in c),
+        Counter(x["evidence"] for x in c if x["status"] == "pending"),
+    )
+    print(Counter((x["status"], x["reason"]) for x in g), load("closure")["results"], load("build"))
+    rows = csv.DictReader((d / "records.csv").open(encoding="utf-8", newline=""))
+    source_of = {r["record_id"]: r["source_hash"] for r in rows}
+    status = {x["record_id"]: x["status"] for x in c}
+    per = defaultdict(Counter)
+    for s in f["sources"]:
+        per[board[s["source_hash"]]]["sources"] += 1
+    for s in p["sources"]:
+        per[board[s["source_hash"]]].update(target=1, **{s["status"]: 1}, records=s["records"])
+    for rid, sh in source_of.items():
+        per[board[sh]][status[rid]] += 1
+    for x in g:
+        per[board[source_of[x["record_id"]]]]["geocode_" + x["status"]] += 1
+    for name in sorted(per):
+        print(name, dict(per[name]))
+```
+
+Stage re-run: a runner loaded the five keys named above from `.env`, deleted
+`GEMINI_*`, replaced `socket.socket.connect` and `socket.create_connection` with
+functions that record the attempt and raise `OSError`, and called
+`deliciousmap.cli.main([stage, "--city", "ulsan", *org])` for each target and
+stage.  It printed the return value and the attempt count after each call.
+Artifact loading used `ArtifactStore(paths, select_target(CITIES, "ulsan",
+org)).load(stage, OUTPUT_MODELS[stage])` for every stage and target, as in
+[issue-160.md](issue-160.md).
+
+원본 re-hash: for each `data/ulsan/fetch.json` source, `hashlib.sha256(Path(s["path"]).read_bytes()).hexdigest()`
+was compared with `s["source_hash"]`.
+
+Budget: `read_ledger(Path("data/_shared/llm-budget.jsonl"))` counted by `kind`
+and by reservation `purpose`, and `Budget(path).committed()`.
+
+Privacy scan over `records.json` `records[*]`, fields `merchant`, `purpose`,
+and `department`:
+
+```python
+{
+    "phone": r"0\d{1,2}[-. ]?\d{3,4}[-. ]?\d{4}",
+    "card": r"\d{4}[- ]?\d{4}[- ]?\d{4}[- ]?\d{4}",
+    "resident_number": r"\d{6}-?[1-4]\d{6}",
+    "email": r"[\w.+-]+@[\w-]+\.[\w.]+",
+    "name_title": r"[가-힣]{2,3}\s?(?:팀장|주무관|과장|국장|계장|주사|님)(?![가-힣])",
+    "masked": r"[가-힣][○*Ｏ◯0O][가-힣]|[○*]{2}",
+}
+```
+
+### Remaining limits
+
+- The map has one marker.  3,266 records wait for the model-based
+  classification, and 73 restaurant records have no address evidence.  Both are
+  outside this issue.
+- 622 target 원본 are unresolved (above).  Their records are not in the 장부
+  until header mappings are resolved.
+- The source `path` values in the seven Ulsan `fetch.json` files are absolute
+  paths on the collecting PC (`C:\Users\<user>\deliciousmap-raw\…`).  The user
+  directory there is the developer's personal name.  The Gwangju `fetch.json`
+  paths use the directory `pc`, which is not a name.  The paths are not
+  published to `dist`, and the privacy scan above covered only `records.json`.
+  On 2026-09-15 the user decided to keep the paths as they are and only record
+  them here.  They are already in the published `develop` history.  Making them
+  relative to `--raw-root` would alter every `fetch.json` digest and require
+  regenerating every downstream stage.
