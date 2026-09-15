@@ -14,11 +14,13 @@
 
 from __future__ import annotations
 
+import json
 import re
 import urllib.parse
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import date
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from deliciousmap import boards
@@ -279,9 +281,66 @@ class ListingBoard:
         self.filtered = 0
         # 지금 읽고 있는 목록 쪽. 상세가 없는 게시판이 출처 주소에 쓴다.
         self.page = 1
+        self._checkpoint: Path | None = None
+        self._start_page = 1
+
+    def set_checkpoint(self, path: Path) -> None:
+        """중단한 목록 순회를 다음 쪽부터 이어 갈 자리.
+
+        체크포인트는 한 쪽의 모든 게시글을 소비한 뒤에만 기록한다. 따라서 첨부를
+        받다가 중단되면 그 쪽을 다시 훑어도 장부의 게시글 단위 멱등성이 보장된다.
+        주소·조회 조건도 함께 확인해 다른 게시판의 남은 상태를 재사용하지 않는다.
+        """
+        self._checkpoint = path
+        self._start_page, self.filtered = self._read_checkpoint(path)
+
+    def _read_checkpoint(self, path: Path) -> tuple[int, int]:
+        if not path.exists():
+            return 1, 0
+        try:
+            state = json.loads(path.read_text(encoding="utf-8"))
+            if state.get("url") != self.list_url or state.get("params") != self.params:
+                return 1, 0
+            page = state["next_page"]
+            filtered = state.get("filtered", 0)
+            if (
+                isinstance(page, bool)
+                or not isinstance(page, int)
+                or page < 1
+                or isinstance(filtered, bool)
+                or not isinstance(filtered, int)
+                or filtered < 0
+            ):
+                return 1, 0
+            return page, filtered
+        except (AttributeError, OSError, ValueError, TypeError, KeyError):
+            return 1, 0
+
+    def _save_checkpoint(self, next_page: int) -> None:
+        if self._checkpoint is None:
+            return
+        self._checkpoint.parent.mkdir(parents=True, exist_ok=True)
+        self._checkpoint.write_text(
+            json.dumps(
+                {
+                    "filtered": self.filtered,
+                    "next_page": next_page,
+                    "params": self.params,
+                    "url": self.list_url,
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+    def _finish_checkpoint(self) -> None:
+        if self._checkpoint is not None:
+            self._checkpoint.unlink(missing_ok=True)
 
     def postings(self, skipped: boards.Skipped) -> Iterator[boards.Posting]:
-        page = 1
+        page = self._start_page
         while True:
             body = self._request(page)
             listing = listing_of(body, self.encoding, self.row_tags)
@@ -300,8 +359,13 @@ class ListingBoard:
                     yield entry.posting(())
                     continue
                 yield entry.posting(self.attachments(entry, row))
-            if page >= self.page_count(listing, decode(body, self.encoding)):
+            last_page = self.page_count(listing, decode(body, self.encoding))
+            if page >= last_page:
+                self._finish_checkpoint()
                 return
+            # The generator reaches this line only after its caller consumed every row
+            # from the page. A failure while handling a row therefore retries this page.
+            self._save_checkpoint(page + 1)
             page += 1
 
     def _request(self, page: int) -> bytes:

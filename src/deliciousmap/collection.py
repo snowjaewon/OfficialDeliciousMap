@@ -25,6 +25,9 @@ UNMEASURED = "unmeasured.jsonl"
 # 목록에서 읽은 게시일·제목의 색인. 원본과 함께 저장소 밖에 두며, 이미 받아 둔 원본에도
 # 목록만 다시 읽어 이 값을 채운다. 지우면 다음 실행이 목록에서 다시 만든다.
 LISTING = "listing.jsonl"
+# 목록 순회가 어느 쪽까지 끝났는지 남긴다. 수집 중 장애가 나도 다음 실행이 그 쪽부터
+# 이어 가며, 마지막 쪽을 끝내면 파일을 지워 완주를 표시한다.
+LISTING_PROGRESS = "listing-progress.json"
 # 다시 요청해도 달라지지 않는 사유(목록을 읽지 못함·실측하지 않은 형식)까지 경고로만 남기고
 # 다음 게시판으로 가는 도시. #132가 울산에, #152가 서울에 켰다. 그런 사유는 그 게시판이 아니라
 # 우리 스크래퍼가 틀렸다는 뜻이라 도시 공통으로 넓히지 않는다 — 울산 시청 부서장 목록처럼
@@ -160,6 +163,11 @@ def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
     done = set(collected) | set(gone)
     listed = _listed(directory)
     scraper: boards.BoardScraper = board.scraper(board, transport)
+    # 서울 계열 목록 스크래퍼처럼 재개를 지원하는 어댑터만 체크포인트를 사용한다.
+    # 기존·합성 스크래퍼는 예전 2-인자 생성 계약을 그대로 둔다.
+    set_checkpoint = getattr(scraper, "set_checkpoint", None)
+    if callable(set_checkpoint):
+        set_checkpoint(directory / LISTING_PROGRESS)
     unmeasured: list[dict[str, str]] = []
     uncollected = 0
     failure: FailureCause | None = None
@@ -230,6 +238,14 @@ def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
         # 제목·집행일을 잃지 않게 남긴다(시청 부서장 목록이 2020년 구간의 행에서 멈춘 실측).
         _remember_listing(directory, listed)
     _report_unmeasured(directory, unmeasured)
+    # 재개한 실행에서는 이전 쪽의 수를 현재 실행의 순회 수와 합쳐야 한다. 목록 색인은
+    # 페이지가 끊겨도 finally에서 보존되므로, 게시일이 대상 연도 밖인 줄을 전체 색인에서
+    # 다시 세면 실행 단위가 달라져도 같은 게시글 단위의 누계가 된다.
+    indexed_uncollected = sum(
+        not period.collects(entry.posted) for entry in _listed(directory).values()
+    )
+    if indexed_uncollected or (directory / LISTING).exists():
+        uncollected = indexed_uncollected
     return _Walked(unmeasured, uncollected, _filtered(scraper), failure)
 
 

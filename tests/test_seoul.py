@@ -1,5 +1,6 @@
 """첨부를 내려받는 서울 계열 스크래퍼의 계약. 합성 목록으로 고정한다."""
 
+import json
 from datetime import date
 from pathlib import Path
 
@@ -343,6 +344,59 @@ def test_jungnang_sends_the_listing_address_as_the_referer() -> None:
     assert attachment.referer == (
         "https://www.jungnang.go.kr/portal/bbs/list/B0000143.do?menuNo=200432"
     )
+
+
+def test_listing_resume_starts_after_the_last_completed_page(tmp_path: Path) -> None:
+    first_rows = (
+        "<tr><td>8523</td>"
+        '<td><a href="/portal/bbs/view/B0000143/167663.do">'
+        "2026년 1월 업무추진비</a></td><td>행정지원과</td><td>2026-01-10</td></tr>"
+    )
+    second_rows = (
+        "<tr><td>8522</td>"
+        '<td><a href="/portal/bbs/view/B0000143/167662.do">'
+        "2025년 12월 업무추진비</a></td><td>행정지원과</td><td>2025-12-10</td></tr>"
+    )
+    responses = {
+        ("1",): page(first_rows, 2),
+        ("2",): page(second_rows, 2),
+    }
+
+    class FailingTransport:
+        def __init__(self) -> None:
+            self.calls: list[str] = []
+
+        def fetch(self, url: str, params: dict[str, str], headers: dict[str, str]) -> bytes:
+            current = params["pageIndex"]
+            self.calls.append(current)
+            if current == "2":
+                raise RuntimeError("temporary listing failure")
+            return responses[(current,)].encode()
+
+    checkpoint = tmp_path / "listing-progress.json"
+    first = JungnangBoard(board(JUNGNANG, JungnangBoard), FailingTransport())
+    first.set_checkpoint(checkpoint)
+    iterator = first.postings(never)
+    assert next(iterator).post_id == "167663"
+    with pytest.raises(boards.BoardUnavailable):
+        next(iterator)
+    assert json.loads(checkpoint.read_text(encoding="utf-8"))["next_page"] == 2
+
+    class ResumingTransport:
+        def __init__(self) -> None:
+            self.calls: list[str] = []
+
+        def fetch(self, url: str, params: dict[str, str], headers: dict[str, str]) -> bytes:
+            current = params["pageIndex"]
+            self.calls.append(current)
+            return responses[(current,)].encode()
+
+    transport = ResumingTransport()
+    resumed = JungnangBoard(board(JUNGNANG, JungnangBoard), transport)
+    resumed.set_checkpoint(checkpoint)
+    assert [item.post_id for item in resumed.postings(never)] == ["167662"]
+    assert transport.calls == ["2"]
+    assert not checkpoint.exists()
 
 
 def test_portal_detail_board_opens_the_post() -> None:
