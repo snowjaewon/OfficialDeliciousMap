@@ -174,9 +174,10 @@ PowerShell: Get-Content .env | ForEach-Object { if ($_ -match '^(\w+)=(.*)$') { 
 나머지는 `준비 중`으로 남겨 미수집 도시를 열 수 있는 것처럼 보이지 않게 한다. 화면은
 `markers.json`을 먼저 받아 지도와 식당 순위 목록을 함께 보인다. 데스크톱은 지도 오른쪽 패널,
 폭 720px 이하는 지도 위에서 끌어올리는 시트(접힘·중간·펼침)다. 목록은 식당명 검색과
-20+ / 10~19 / 5~9 / 1~4 방문 횟수 필터의 결과를 방문 횟수 순으로 50곳씩 그리고, 전체 결과와
-현재 지도 영역 결과 수를 따로 센다. 목록 항목과 마커는 같은 상세(주소·최근 방문일·방문 기관·
-합계 금액·폐업·좌표 출처·네이버 지도 연결)를 열며 닫기로 목록에 돌아간다. 마커 색과 범례는
+20+ / 10~19 / 5~9 / 1~4 방문 횟수 필터, 업종 갈래 필터의 결과를 방문 횟수 순으로 50곳씩 그리고, 전체 결과와
+현재 지도 영역 결과 수를 따로 센다. 업종 필터는 그 도시 마커가 속한 갈래만 버튼으로 낸다.
+목록 항목과 마커는 같은 상세(주소·최근 방문일·방문 기관·
+합계 금액·폐업·업종 원문·좌표 출처·네이버 지도 연결)를 열며 닫기로 목록에 돌아간다. 마커 색과 범례는
 방문 구간을 따른다. `records.json`은 장부 탭을
 처음 열 때만 받으며 비식당·판단 보류·지오코딩 실패 레코드도 상태와 사유를 함께 표시한다.
 한 번에 100건씩 그려 긴 장부의 첫 목록 렌더링을 제한한다.
@@ -228,8 +229,8 @@ docs/specs/header-mapping-fallback.md#제출-시점-기준)). 사람이 원본�
 
 | 파일 | 내용 |
 | --- | --- |
-| `markers.json` | `schema_version`(8), `city`, `org`, `markers` |
-| `records.json` | `schema_version`(8), `city`, `org`, `records` |
+| `markers.json` | `schema_version`(11), `city`, `org`, `markers` |
+| `records.json` | `schema_version`(10), `city`, `org`, `records` |
 
 마커 하나는 `business_id`, 확정 상호 `merchant`, `visit_count`(묶인 레코드 수), `latitude`,
 `longitude`, `closed`, `coordinate_source`, `address`와 묶인 레코드의 요약인
@@ -240,6 +241,9 @@ docs/specs/header-mapping-fallback.md#제출-시점-기준)). 사람이 원본�
 그 판정이 사람 확인이면 확인한 후보의 제공자, 아니면 결과 좌표와 일치하는 후보의 제공자다.
 여러 제공자의 근거가 같은 좌표로 겹치면 이름 순으로 하나를 밝힌다. `address`는 같은 근거의 주소다.
 업소 확인은 상호·지점·주소가 일치한 후보만 채택하므로 확정 마커에는 언제나 주소가 있다.
+`category`는 같은 근거의 후보에 그 제공자가 붙인 업종 원문이고 모르면 `미상`이다
+([업종 조회](docs/geocoding.md#업종-조회)). `category_group`은 화면 필터가 쓰는 갈래
+(한식·중식·일식·양식·분식·카페·주점·기타·미상)이며 규칙은 `category.group`에 있다.
 폐업으로 확인된 마커도 파일에서 빼지 않는다.
 
 장부 레코드 하나는 `record_id`, `spent_on`, `organization`, `department`, `merchant`, `purpose`,
