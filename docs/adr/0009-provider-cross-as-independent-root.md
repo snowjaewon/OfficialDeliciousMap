@@ -52,4 +52,6 @@ status: accepted
   `conflicting_evidence`로 남는다.
 - 다른 도시는 `address_prefixes`를 실측해 적기 전까지 제공자 합의로 채택하지 않는다. 비워 둔
   것이 곧 "채택 0건"이며 사유에 남는다.
-- 상호·지점은 같고 주소 문자열만 다른 2,683건은 이 결정 밖이다. 주소 정규화 확대는 별도 결정이다.
+- 상호·지점은 같고 주소 문자열만 다른 2,683건은 이 결정 밖이다. 쉼표·괄호 동명·층호를 뗀 비교로
+  합의가 1,014건까지 느는 것을 재어 [#167](https://github.com/snowjaewon/OfficialDeliciousMap/issues/167)로
+  분리했다.
