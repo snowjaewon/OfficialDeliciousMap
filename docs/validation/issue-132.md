@@ -582,6 +582,7 @@ and `department`:
   directory there is the developer's personal name.  The Gwangju `fetch.json`
   paths use the directory `pc`, which is not a name.  The paths are not
   published to `dist`, and the privacy scan above covered only `records.json`.
-  Whether to make the recorded paths relative to `--raw-root` is left open.  The
-  change would alter every `fetch.json` digest and so require regenerating
-  every downstream stage.
+  On 2026-09-15 the user decided to keep the paths as they are and only record
+  them here.  They are already in the published `develop` history.  Making them
+  relative to `--raw-root` would alter every `fetch.json` digest and require
+  regenerating every downstream stage.
