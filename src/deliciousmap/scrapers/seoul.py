@@ -14,13 +14,11 @@
 
 from __future__ import annotations
 
-import json
 import re
 import urllib.parse
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from datetime import date
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 from deliciousmap import boards
@@ -281,66 +279,18 @@ class ListingBoard:
         self.filtered = 0
         # 지금 읽고 있는 목록 쪽. 상세가 없는 게시판이 출처 주소에 쓴다.
         self.page = 1
-        self._checkpoint: Path | None = None
-        self._start_page = 1
+        # 첫 쪽과 쪽을 끝낼 때마다 알릴 곳. 수집이 `resume`으로 정한다(`boards.ResumesListing`).
+        self._first_page = 1
+        self._settle: Callable[[int], None] = lambda page: None
 
-    def set_checkpoint(self, path: Path) -> None:
-        """중단한 목록 순회를 다음 쪽부터 이어 갈 자리.
-
-        체크포인트는 한 쪽의 모든 게시글을 소비한 뒤에만 기록한다. 따라서 첨부를
-        받다가 중단되면 그 쪽을 다시 훑어도 장부의 게시글 단위 멱등성이 보장된다.
-        주소·조회 조건도 함께 확인해 다른 게시판의 남은 상태를 재사용하지 않는다.
-        """
-        self._checkpoint = path
-        self._start_page, self.filtered = self._read_checkpoint(path)
-
-    def _read_checkpoint(self, path: Path) -> tuple[int, int]:
-        if not path.exists():
-            return 1, 0
-        try:
-            state = json.loads(path.read_text(encoding="utf-8"))
-            if state.get("url") != self.list_url or state.get("params") != self.params:
-                return 1, 0
-            page = state["next_page"]
-            filtered = state.get("filtered", 0)
-            if (
-                isinstance(page, bool)
-                or not isinstance(page, int)
-                or page < 1
-                or isinstance(filtered, bool)
-                or not isinstance(filtered, int)
-                or filtered < 0
-            ):
-                return 1, 0
-            return page, filtered
-        except (AttributeError, OSError, ValueError, TypeError, KeyError):
-            return 1, 0
-
-    def _save_checkpoint(self, next_page: int) -> None:
-        if self._checkpoint is None:
-            return
-        self._checkpoint.parent.mkdir(parents=True, exist_ok=True)
-        self._checkpoint.write_text(
-            json.dumps(
-                {
-                    "filtered": self.filtered,
-                    "next_page": next_page,
-                    "params": self.params,
-                    "url": self.list_url,
-                },
-                ensure_ascii=False,
-                sort_keys=True,
-            )
-            + "\n",
-            encoding="utf-8",
-        )
-
-    def _finish_checkpoint(self) -> None:
-        if self._checkpoint is not None:
-            self._checkpoint.unlink(missing_ok=True)
+    def resume(self, page: int, filtered: int, settle: Callable[[int], None]) -> None:
+        """앞선 실행이 끝낸 쪽 다음부터 훑는다. 그 실행이 걸러 낸 수도 이어서 센다."""
+        self._first_page = page
+        self.filtered = filtered
+        self._settle = settle
 
     def postings(self, skipped: boards.Skipped) -> Iterator[boards.Posting]:
-        page = self._start_page
+        page = self._first_page
         while True:
             body = self._request(page)
             listing = listing_of(body, self.encoding, self.row_tags)
@@ -359,13 +309,11 @@ class ListingBoard:
                     yield entry.posting(())
                     continue
                 yield entry.posting(self.attachments(entry, row))
-            last_page = self.page_count(listing, decode(body, self.encoding))
-            if page >= last_page:
-                self._finish_checkpoint()
+            if page >= self.page_count(listing, decode(body, self.encoding)):
                 return
-            # The generator reaches this line only after its caller consumed every row
-            # from the page. A failure while handling a row therefore retries this page.
-            self._save_checkpoint(page + 1)
+            # 이 줄에는 호출자가 이 쪽의 마지막 게시글까지 처리한 뒤에야 온다. 그 게시글의
+            # 첨부를 받다가 끊기면 이 쪽을 끝냈다고 알리지 않았으므로 다음 실행이 이 쪽부터 잇는다.
+            self._settle(page + 1)
             page += 1
 
     def _request(self, page: int) -> bytes:
