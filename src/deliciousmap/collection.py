@@ -25,6 +25,9 @@ UNMEASURED = "unmeasured.jsonl"
 # 목록에서 읽은 게시일·제목의 색인. 원본과 함께 저장소 밖에 두며, 이미 받아 둔 원본에도
 # 목록만 다시 읽어 이 값을 채운다. 지우면 다음 실행이 목록에서 다시 만든다.
 LISTING = "listing.jsonl"
+# 목록 순회가 어느 쪽까지 끝났는지의 기록(#154). 원본과 함께 저장소 밖에 둔다. 순회가 끊기면
+# 다음 실행이 그 쪽부터 잇고, 끝까지 훑으면 지운다. 지우면 다음 실행이 1쪽부터 훑는다.
+LISTING_PROGRESS = "listing-progress.json"
 # 다시 요청해도 달라지지 않는 사유(목록을 읽지 못함·실측하지 않은 형식)까지 경고로만 남기고
 # 다음 게시판으로 가는 도시. #132가 울산에, #152가 서울에 켰다. 그런 사유는 그 게시판이 아니라
 # 우리 스크래퍼가 틀렸다는 뜻이라 도시 공통으로 넓히지 않는다 — 울산 시청 부서장 목록처럼
@@ -168,6 +171,22 @@ def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
         """본문을 열지 않고 넘길 게시글. 아래 루프가 같은 판정을 다시 쓰므로 여기 한 곳에 둔다."""
         return post_id in done or not period.collects(posted)
 
+    def settle(next_page: int) -> None:
+        """넘긴 쪽을 디스크에 남긴다. 프로세스가 통째로 죽으면 아래 `finally`도 돌지 않으므로
+        이어 갈 실행이 셀 목록 색인을 먼저 쓰고, 그다음에 어느 쪽부터 이을지를 쓴다.
+
+        사람이 봐야 하는 첨부를 만난 뒤로는 쪽을 넘겼다고 쓰지 않는다. 그 목록은 끝에 한 번에
+        알리고 기록하지 않으므로, 넘겼다고 쓰면 이어 간 실행이 그 첨부를 다시 보지 않는다.
+        """
+        _remember_listing(directory, listed)
+        if not unmeasured:
+            _remember_progress(directory, board, next_page, _filtered(scraper))
+
+    resumed = False
+    if isinstance(scraper, boards.ResumesListing):
+        first_page, filtered = _progress(directory, board)
+        resumed = first_page > 1
+        scraper.resume(first_page, filtered, settle)
     try:
         for posting in scraper.postings(skip):
             if posting.posted is not None or posting.title:
@@ -217,6 +236,8 @@ def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
                 continue
             # 게시글을 끝낸 뒤에만 기록한다. 중간에 멈추면 그 게시글은 다시 수집한다.
             _remember(directory, posting, stored, lost, empty, locked, stray)
+        # 끝까지 훑었다. 다음 실행은 새로 올라온 게시글을 보도록 1쪽부터 훑는다.
+        (directory / LISTING_PROGRESS).unlink(missing_ok=True)
     except boards.UnsupportedOriginal:
         raise AdapterFailure(FailureCause.UNSUPPORTED_FORMAT) from None
     except boards.UnreadableBoard:
@@ -230,7 +251,44 @@ def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
         # 제목·집행일을 잃지 않게 남긴다(시청 부서장 목록이 2020년 구간의 행에서 멈춘 실측).
         _remember_listing(directory, listed)
     _report_unmeasured(directory, unmeasured)
+    if resumed:
+        # 이어 간 실행은 앞선 실행이 넘긴 쪽을 다시 읽지 않는다. 그 쪽의 게시글은 목록 색인에
+        # 남아 있으므로 색인에서 같은 판정(끝내지 않았고 기간 밖)으로 세면 1쪽부터 훑은 실행과
+        # 같은 게시글 단위가 된다. 처음부터 훑은 실행은 전과 같이 이번에 본 게시글만 센다.
+        # `skip`은 끝낸 게시글도 참이라 쓰지 않는다 — 위 루프도 끝낸 게시글을 먼저 거른 뒤 센다.
+        uncollected = sum(
+            post_id not in done and not period.collects(entry.posted)
+            for post_id, entry in listed.items()
+        )
     return _Walked(unmeasured, uncollected, _filtered(scraper), failure)
+
+
+def _progress(directory: Path, board: Board) -> tuple[int, int]:
+    """이어 갈 쪽과 그때까지 걸러 낸 수. 기록이 없거나 다른 목록의 것이면 1쪽부터 훑는다.
+
+    목록 색인이 없어도 1쪽부터다. 이어 간 실행은 넘긴 쪽의 게시글을 색인에서 센다.
+    """
+    path = directory / LISTING_PROGRESS
+    if not path.exists() or not (directory / LISTING).exists():
+        return 1, 0
+    try:
+        entry = json.loads(path.read_text(encoding="utf-8"))
+        page, filtered = entry["next_page"], entry["filtered"]
+        valid = entry["url"] == board.url and _whole(page) and page > 1 and _whole(filtered)
+    except (ValueError, KeyError, TypeError):
+        return 1, 0
+    return (page, filtered) if valid else (1, 0)
+
+
+def _whole(value: object) -> bool:
+    """0 이상의 정수인지. JSON의 `true`는 파이썬에서 1과 같으므로 따로 뺀다."""
+    return isinstance(value, int) and not isinstance(value, bool) and value >= 0
+
+
+def _remember_progress(directory: Path, board: Board, next_page: int, filtered: int) -> None:
+    """목록 주소를 함께 남긴다. 레지스트리가 게시판 주소를 바꾸면 남은 기록을 쓰지 않는다."""
+    entry = {"filtered": filtered, "next_page": next_page, "url": board.url}
+    write_text(directory / LISTING_PROGRESS, json.dumps(entry, sort_keys=True) + "\n")
 
 
 def _filtered(scraper: boards.BoardScraper) -> int:

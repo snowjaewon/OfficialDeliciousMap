@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import re
 import urllib.parse
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from datetime import date
 from typing import TYPE_CHECKING
@@ -279,9 +279,18 @@ class ListingBoard:
         self.filtered = 0
         # 지금 읽고 있는 목록 쪽. 상세가 없는 게시판이 출처 주소에 쓴다.
         self.page = 1
+        # 첫 쪽과 쪽을 끝낼 때마다 알릴 곳. 수집이 `resume`으로 정한다(`boards.ResumesListing`).
+        self._first_page = 1
+        self._settle: Callable[[int], None] = lambda page: None
+
+    def resume(self, page: int, filtered: int, settle: Callable[[int], None]) -> None:
+        """앞선 실행이 끝낸 쪽 다음부터 훑는다. 그 실행이 걸러 낸 수도 이어서 센다."""
+        self._first_page = page
+        self.filtered = filtered
+        self._settle = settle
 
     def postings(self, skipped: boards.Skipped) -> Iterator[boards.Posting]:
-        page = 1
+        page = self._first_page
         while True:
             body = self._request(page)
             listing = listing_of(body, self.encoding, self.row_tags)
@@ -302,6 +311,9 @@ class ListingBoard:
                 yield entry.posting(self.attachments(entry, row))
             if page >= self.page_count(listing, decode(body, self.encoding)):
                 return
+            # 이 줄에는 호출자가 이 쪽의 마지막 게시글까지 처리한 뒤에야 온다. 그 게시글의
+            # 첨부를 받다가 끊기면 이 쪽을 끝냈다고 알리지 않았으므로 다음 실행이 이 쪽부터 잇는다.
+            self._settle(page + 1)
             page += 1
 
     def _request(self, page: int) -> bytes:

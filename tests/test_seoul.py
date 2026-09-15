@@ -1,5 +1,6 @@
 """첨부를 내려받는 서울 계열 스크래퍼의 계약. 합성 목록으로 고정한다."""
 
+import json
 from datetime import date
 from pathlib import Path
 
@@ -8,6 +9,7 @@ import pytest
 from deliciousmap import boards
 from deliciousmap.collection import collect
 from deliciousmap.paths import Paths
+from deliciousmap.pipeline import AdapterFailure, FailureCause
 from deliciousmap.registry import CITIES, Board, select_target
 from deliciousmap.scrapers.seoul import (
     BbsNoBoard,
@@ -343,6 +345,177 @@ def test_jungnang_sends_the_listing_address_as_the_referer() -> None:
     assert attachment.referer == (
         "https://www.jungnang.go.kr/portal/bbs/list/B0000143.do?menuNo=200432"
     )
+
+
+def jungnang_row(post_id: str, title: str, posted: str) -> str:
+    """중랑 목록 한 줄. 첨부 링크를 목록에 싣는다(2026-09-14 실측)."""
+    return (
+        f"<tr><td>{post_id}</td>"
+        f'<td><a href="/portal/bbs/view/B0000143/{post_id}.do">{title}</a></td>'
+        f"<td>행정지원과</td><td>{post_id}.pdf</td>"
+        f'<td><a href="/portal/cmm/fms/FileDown.do?atchFileId=FILE_{post_id}&amp;fileSn=1">'
+        f"내려받기</a></td><td>{posted}</td></tr>"
+    )
+
+
+# 두 쪽짜리 중랑 목록. 대상 연도 게시글 하나와 그 밖의 게시글 둘이 두 쪽에 흩어져 있다.
+JUNGNANG_PAGES = {
+    "1": page(
+        jungnang_row("167663", "2026년 1월 업무추진비", "2026-02-10")
+        + jungnang_row("167001", "2025년 12월 업무추진비", "2025-12-20"),
+        2,
+    ),
+    "2": page(jungnang_row("166000", "2025년 6월 업무추진비", "2025-07-10"), 2),
+}
+
+
+class PagedJungnang:
+    """쪽 번호로 중랑 목록을 돌려주고 첨부는 PDF로 준다. `down`의 쪽은 끊긴 것처럼 실패한다."""
+
+    def __init__(
+        self,
+        pages: dict[str, str],
+        down: frozenset[str] = frozenset(),
+        original: bytes = b"%PDF-1.4 body",
+    ) -> None:
+        self.pages = pages
+        self.down = down
+        self.original = original
+        self.listed: list[str] = []
+
+    def fetch(self, url: str, params: dict[str, str], headers: dict[str, str]) -> bytes:
+        if "FileDown.do" in url:
+            return self.original
+        current = params["pageIndex"]
+        self.listed.append(current)
+        if current in self.down:
+            # #141에서 실측한 끊김 모양이다.
+            raise TimeoutError("The read operation timed out")
+        return self.pages[current].encode()
+
+
+def test_listing_resumes_at_the_page_it_is_given() -> None:
+    transport = PagedJungnang(JUNGNANG_PAGES)
+    scraper = JungnangBoard(board(JUNGNANG, JungnangBoard), transport)
+    scraper.resume(2, 3, lambda page: None)
+    assert [item.post_id for item in scraper.postings(always)] == ["166000"]
+    assert transport.listed == ["2"]
+    # 앞선 실행이 걸러 낸 수를 이어서 센다.
+    assert scraper.filtered == 3
+
+
+def test_listing_settles_a_page_only_after_its_rows_are_consumed() -> None:
+    settled: list[int] = []
+    scraper = JungnangBoard(board(JUNGNANG, JungnangBoard), PagedJungnang(JUNGNANG_PAGES))
+    scraper.resume(1, 0, settled.append)
+    walk = scraper.postings(always)
+    next(walk)
+    next(walk)
+    # 1쪽 마지막 게시글을 호출자가 아직 처리하고 있을 수 있으니 그 쪽을 끝냈다고 하지 않는다.
+    assert settled == []
+    assert next(walk).post_id == "166000"
+    assert settled == [2]
+    assert list(walk) == []
+    # 마지막 쪽은 다음 쪽이 없다. 순회를 마쳤다는 것은 제너레이터가 끝났다는 것으로 안다.
+    assert settled == [2]
+
+
+def test_an_interrupted_jungnang_walk_resumes_where_it_stopped(tmp_path: Path) -> None:
+    """#154: 목록이 도중에 끊기면 다음 실행은 끊긴 쪽부터 잇는다. 두 실행이 센 게시글을 합쳐
+    1쪽부터 끝까지 훑은 실행과 같은 게시글 단위의 수를 낸다."""
+    target = select_target(CITIES, "seoul", "seoul-jungnang")
+    paths = Paths(Path.cwd(), tmp_path / "raw", tmp_path / "data", tmp_path / "out")
+    first = collect(target, paths, PagedJungnang(JUNGNANG_PAGES, down=frozenset({"2"})))
+    assert first.empty_reason == "collection failures: seoul-jungnang/expenses=service-unavailable"
+    assert first.uncollected_postings == 1
+
+    resumed = PagedJungnang(JUNGNANG_PAGES)
+    second = collect(target, paths, resumed)
+    assert resumed.listed == ["2"]
+    assert second.empty_reason is None
+    assert second.uncollected_postings == 2
+    assert [item.path.name for item in second.sources] == ["167663-1.pdf"]
+    assert [(item.posted, item.title) for item in second.sources] == [
+        (date(2026, 2, 10), "2026년 1월 업무추진비")
+    ]
+
+    # 끝까지 훑은 뒤의 실행은 다시 1쪽부터 훑고 같은 수를 낸다.
+    again = PagedJungnang(JUNGNANG_PAGES)
+    third = collect(target, paths, again)
+    assert again.listed == ["1", "2"]
+    assert third.uncollected_postings == 2
+
+
+def test_a_jungnang_walk_keeps_the_pages_it_passed_before_asking_the_next(tmp_path: Path) -> None:
+    """메모리 부족으로 프로세스가 통째로 죽으면 `finally`도 돌지 않는다. 이어 갈 실행이 넘긴
+    쪽의 게시글을 목록 색인에서 세므로, 다음 쪽을 묻기 전에 색인이 디스크에 있어야 한다."""
+    target = select_target(CITIES, "seoul", "seoul-jungnang")
+    paths = Paths(Path.cwd(), tmp_path / "raw", tmp_path / "data", tmp_path / "out")
+    index = paths.board_dir(target, "seoul-jungnang", "expenses") / "listing.jsonl"
+    indexed: list[str] = []
+
+    class Watching(PagedJungnang):
+        def fetch(self, url: str, params: dict[str, str], headers: dict[str, str]) -> bytes:
+            if params.get("pageIndex") == "2":
+                lines = index.read_text(encoding="utf-8") if index.exists() else ""
+                indexed.extend(json.loads(line)["post_id"] for line in lines.splitlines())
+            return super().fetch(url, params, headers)
+
+    collect(target, paths, Watching(JUNGNANG_PAGES))
+    assert indexed == ["167001", "167663"]
+
+
+def test_a_resumed_walk_still_reports_an_original_it_could_not_accept(tmp_path: Path) -> None:
+    """사람이 봐야 하는 첨부는 끝에 한 번에 알린다. 그 첨부가 있는 쪽을 넘긴 것으로 기록하면
+    이어 간 실행이 그 첨부를 다시 보지 않아, 서울이 받아들이지 않은 형식이 성공으로 숨는다."""
+    target = select_target(CITIES, "seoul", "seoul-jungnang")
+    paths = Paths(Path.cwd(), tmp_path / "raw", tmp_path / "data", tmp_path / "out")
+    # Referer 없는 중랑 첨부가 주는 것과 같은 오류 화면. PDF 게시판의 원본이 아니다.
+    screen = b"<!DOCTYPE html><html><body>error</body></html>"
+    with pytest.raises(AdapterFailure):
+        collect(target, paths, PagedJungnang(JUNGNANG_PAGES, frozenset({"2"}), screen))
+    with pytest.raises(AdapterFailure) as raised:
+        collect(target, paths, PagedJungnang(JUNGNANG_PAGES, original=screen))
+    assert raised.value.cause is FailureCause.UNSUPPORTED_FORMAT
+
+
+@pytest.mark.parametrize(
+    "recorded",
+    [
+        '{"filtered": 0, "next_page": 2, "url": "https://example.invalid/other"}',
+        '{"filtered": 0, "next_page": 1, "url": "' + JUNGNANG + '"}',
+        '{"filtered": -1, "next_page": 2, "url": "' + JUNGNANG + '"}',
+        '{"filtered": true, "next_page": 2, "url": "' + JUNGNANG + '"}',
+        '{"next_page": 2, "url": "' + JUNGNANG + '"}',
+        '{"filtered": 0, "next_page": 2',
+    ],
+)
+def test_a_walk_starts_over_when_the_progress_record_is_not_this_listings(
+    tmp_path: Path, recorded: str
+) -> None:
+    target = select_target(CITIES, "seoul", "seoul-jungnang")
+    paths = Paths(Path.cwd(), tmp_path / "raw", tmp_path / "data", tmp_path / "out")
+    directory = paths.board_dir(target, "seoul-jungnang", "expenses")
+    directory.mkdir(parents=True)
+    (directory / "listing.jsonl").write_text("", encoding="utf-8")
+    (directory / "listing-progress.json").write_text(recorded, encoding="utf-8")
+    transport = PagedJungnang(JUNGNANG_PAGES)
+    collect(target, paths, transport)
+    assert transport.listed == ["1", "2"]
+
+
+def test_a_walk_starts_over_when_the_listing_index_is_gone(tmp_path: Path) -> None:
+    """이어 간 실행은 넘긴 쪽의 게시글을 색인에서 센다. 색인이 없으면 셀 근거가 없으므로
+    이어 가지 않는다 — 이어 가면 받지 않은 게시글이 조용히 적게 나온다."""
+    target = select_target(CITIES, "seoul", "seoul-jungnang")
+    paths = Paths(Path.cwd(), tmp_path / "raw", tmp_path / "data", tmp_path / "out")
+    collect(target, paths, PagedJungnang(JUNGNANG_PAGES, down=frozenset({"2"})))
+    directory = paths.board_dir(target, "seoul-jungnang", "expenses")
+    (directory / "listing.jsonl").unlink()
+    transport = PagedJungnang(JUNGNANG_PAGES)
+    output = collect(target, paths, transport)
+    assert transport.listed == ["1", "2"]
+    assert output.uncollected_postings == 2
 
 
 def test_portal_detail_board_opens_the_post() -> None:

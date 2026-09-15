@@ -211,6 +211,19 @@ class FiltersRows(Protocol):
     filtered: int
 
 
+@runtime_checkable
+class ResumesListing(Protocol):
+    """목록을 쪽 단위로 이어 훑을 수 있는 게시판(#154).
+
+    중랑 목록 853쪽은 원본을 함께 받는 실행에서 한 번도 끝까지 가지 못했다. 끊길 때마다
+    1쪽부터 다시 훑지 않도록 수집이 앞선 실행이 끝낸 쪽을 알려 준다. 게시판은 한 쪽의 게시글을
+    호출자가 모두 처리한 뒤, 다음 쪽을 묻기 전에 `settle`로 그 다음 쪽 번호를 알린다. 기록은
+    수집이 한다 — 스크래퍼는 저장하지 않는다.
+    """
+
+    def resume(self, page: int, filtered: int, settle: Callable[[int], None]) -> None: ...
+
+
 class Document(HTMLParser):
     """앵커의 주소·표시 문자열과 본문 텍스트만 남긴다. 요소 구조에는 기대지 않는다."""
 
