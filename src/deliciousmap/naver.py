@@ -3,9 +3,15 @@
 import json
 import os
 from collections.abc import Mapping
+from contextlib import suppress
 from dataclasses import dataclass, field
 
-from deliciousmap.contracts import PlaceCandidate, ProviderCandidates
+from deliciousmap.contracts import (
+    PlaceCandidate,
+    ProviderCandidates,
+    ProviderCategories,
+    SourceCategory,
+)
 from deliciousmap.identity import digest
 from deliciousmap.places import in_korea, plain, split_branch
 from deliciousmap.transport import MAX_RESPONSE_BYTES, HttpTransport, Transport
@@ -43,25 +49,47 @@ class NaverPlaceSearch:
         self.credentials = credentials
         self.transport = transport
         self.limit = limit
+        # 이 실행에서 받은 응답의 업종. 방금 조회한 요청을 업종 때문에 다시 보내지 않는다.
+        self._answered: dict[str, ProviderCategories] = {}
 
     def search(self, query: str) -> ProviderCandidates:
         """제공자 오류를 안전한 코드로 바꾼다. 요청 맥락의 도시는 질의에 넣지 않는다."""
         try:
-            body = self.transport.fetch(
-                SEARCH_URL,
-                {"query": query, "display": str(self.limit), "start": "1"},
-                {
-                    KEY_ID_HEADER: self.credentials.key_id,
-                    KEY_HEADER: self.credentials.key,
-                    "Accept": "application/json",
-                },
-            )
+            body = self._fetch(query)
         except Exception:
             return ProviderCandidates(status="error", error="unavailable")
         try:
-            return ProviderCandidates(status="ok", candidates=_interpret(body))
+            found = ProviderCandidates(status="ok", candidates=_interpret(body))
         except (ValueError, TypeError, LookupError, UnicodeDecodeError):
             return ProviderCandidates(status="error", error="invalid_response")
+        # 업종을 읽지 못해도 후보 조회는 그대로다. 그 업종은 필요할 때 다시 묻는다.
+        with suppress(ValueError, TypeError, LookupError, UnicodeDecodeError):
+            self._answered[query] = ProviderCategories(status="ok", categories=_categories(body))
+        return found
+
+    def categories(self, query: str) -> ProviderCategories:
+        """같은 요청의 `category`를 후보 출처별로 읽는다. 업종이 빈 후보는 싣지 않는다."""
+        if query in self._answered:
+            return self._answered[query]
+        try:
+            body = self._fetch(query)
+        except Exception:
+            return ProviderCategories(status="error", error="unavailable")
+        try:
+            return ProviderCategories(status="ok", categories=_categories(body))
+        except (ValueError, TypeError, LookupError, UnicodeDecodeError):
+            return ProviderCategories(status="error", error="invalid_response")
+
+    def _fetch(self, query: str) -> bytes:
+        return self.transport.fetch(
+            SEARCH_URL,
+            {"query": query, "display": str(self.limit), "start": "1"},
+            {
+                KEY_ID_HEADER: self.credentials.key_id,
+                KEY_HEADER: self.credentials.key,
+                "Accept": "application/json",
+            },
+        )
 
 
 def from_environment(
@@ -83,13 +111,29 @@ def from_environment(
     return NaverPlaceSearch(Credentials(key_id, key), transport or HttpTransport())
 
 
-def _interpret(body: bytes) -> tuple[PlaceCandidate, ...]:
+def _items(body: bytes) -> list[object]:
     if len(body) > MAX_RESPONSE_BYTES:
         raise ValueError("oversized lookup response")
     items = json.loads(body.decode("utf-8"))["items"]
     if not isinstance(items, list):
         raise TypeError("lookup response items must be a list")
-    return tuple(_candidate(item) for item in items)
+    return items
+
+
+def _interpret(body: bytes) -> tuple[PlaceCandidate, ...]:
+    return tuple(_candidate(item) for item in _items(body))
+
+
+def _categories(body: bytes) -> tuple[SourceCategory, ...]:
+    """후보 출처는 `_candidate`와 같은 규칙으로 만든다. 그래야 확정한 후보와 맞춰 볼 수 있다."""
+    found = []
+    for item in _items(body):
+        source = _candidate(item).source
+        # 객체가 아닌 항목은 `_candidate`가 이미 거부했다.
+        category = plain(str(item.get("category") or "")) if isinstance(item, dict) else ""
+        if category:
+            found.append(SourceCategory(source_id=source.source_id, category=category))
+    return tuple(found)
 
 
 def _candidate(item: object) -> PlaceCandidate:

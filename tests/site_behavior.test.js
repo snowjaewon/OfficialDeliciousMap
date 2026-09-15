@@ -16,6 +16,7 @@ const {
   renderRestaurantList,
   selectMarker,
   setupInstallGuide,
+  setupCategoryFilters,
   setupListSheet,
   setupVisitFilters,
   start,
@@ -227,7 +228,7 @@ function fakeWindow() {
   };
 }
 
-// markers.json v9의 마커. 방문 요약 값은 합성값이다.
+// markers.json v11의 마커. 방문 요약 값과 업종은 합성값이다.
 const summary = {
   address: "합성로 1",
   last_visited_on: "2026-01-02",
@@ -235,10 +236,10 @@ const summary = {
   organizations: ["test-org"],
 };
 const markers = [
-  { ...summary, merchant: "해뜰 식당", visit_count: 23, latitude: 37.5, longitude: 127.0 },
-  { ...summary, merchant: "바다횟집", visit_count: 14, latitude: 35.1, longitude: 129.1 },
-  { ...summary, merchant: "한밭 빵집", visit_count: 7, latitude: 36.3, longitude: 127.4 },
-  { ...summary, merchant: "골목 카페", visit_count: 2, latitude: 37.7, longitude: 127.3 },
+  { ...summary, merchant: "해뜰 식당", visit_count: 23, latitude: 37.5, longitude: 127.0, category: "음식점>한식", category_group: "한식" },
+  { ...summary, merchant: "바다횟집", visit_count: 14, latitude: 35.1, longitude: 129.1, category: "한식>해물,생선요리", category_group: "한식" },
+  { ...summary, merchant: "한밭 빵집", visit_count: 7, latitude: 36.3, longitude: 127.4, category: "미상", category_group: "미상" },
+  { ...summary, merchant: "골목 카페", visit_count: 2, latitude: 37.7, longitude: 127.3, category: "카페,디저트>카페", category_group: "카페" },
 ];
 
 const SEOUL_BOUNDS = { south: 37.41, west: 126.73, north: 37.72, east: 127.27 };
@@ -257,6 +258,41 @@ test("several visit bands can be selected together, and an empty selection means
     [markers[0], markers[2]],
   );
   assert.deepEqual(filterMarkers(markers, "", new Set()), markers);
+});
+
+test("category groups narrow the result together with search and visit bands", () => {
+  assert.deepEqual(filterMarkers(markers, "", "all", new Set(["한식"])), [markers[0], markers[1]]);
+  // 업종을 모르는 마커도 `미상`으로 골라 볼 수 있다. 다른 갈래에 섞이지 않는다.
+  assert.deepEqual(filterMarkers(markers, "", "all", new Set(["미상", "카페"])), [markers[2], markers[3]]);
+  assert.deepEqual(filterMarkers(markers, "", new Set(["10"]), new Set(["한식"])), [markers[1]]);
+  assert.deepEqual(filterMarkers(markers, "해뜰", "all", new Set(["한식"])), [markers[0]]);
+  assert.deepEqual(filterMarkers(markers, "해뜰", "all", new Set(["카페"])), []);
+  assert.deepEqual(filterMarkers(markers, "", "all", new Set()), markers);
+});
+
+test("category filter buttons toggle independently and mark the empty state as all", () => {
+  const buttons = ["all", "한식", "카페", "미상"].map((group) => {
+    const button = new FakeElement("button");
+    button.dataset.category = group;
+    return button;
+  });
+  const documentObject = {
+    querySelectorAll: (selector) => (selector === "[data-category]" ? buttons : []),
+  };
+  let changes = 0;
+  const selected = setupCategoryFilters(documentObject, () => {
+    changes += 1;
+  });
+
+  assert.deepEqual(buttons.map((button) => button.attributes["aria-pressed"]), ["true", "false", "false", "false"]);
+  buttons[1].click();
+  buttons[3].click();
+  assert.deepEqual([...selected], ["한식", "미상"]);
+  assert.deepEqual(buttons.map((button) => button.attributes["aria-pressed"]), ["false", "true", "false", "true"]);
+  buttons[0].click();
+  assert.deepEqual([...selected], []);
+  assert.equal(buttons[0].attributes["aria-pressed"], "true");
+  assert.equal(changes, 3);
 });
 
 test("visit filter buttons toggle independently and mark the empty state as all", () => {
@@ -777,6 +813,8 @@ test("a selected restaurant shows where its coordinate came from", async () => {
   assert.ok(lines.includes("폐업 확인"));
   assert.ok(lines.includes("좌표 출처: 인허가 자료"));
   assert.ok(lines.includes("합성로 1"));
+  // 필터는 갈래로 거르고, 상세는 제공자가 붙인 원문을 그대로 보인다.
+  assert.ok(lines.includes("업종: 한식>해물,생선요리"));
 });
 
 test("the record view explains why an unmapped record missed the map", () => {

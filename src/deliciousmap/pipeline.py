@@ -4,7 +4,16 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Protocol
 
-from deliciousmap import classify, comparison, headermap, lookup, restoration, site, submission
+from deliciousmap import (
+    category,
+    classify,
+    comparison,
+    headermap,
+    lookup,
+    restoration,
+    site,
+    submission,
+)
 from deliciousmap.budget import Budget
 from deliciousmap.contracts import (
     BuildInput,
@@ -89,6 +98,8 @@ class ExecutionContext:
     # 구성된 헤더 매핑·비식당 판별 모델. 없으면 캐시만 쓰고 나머지는 미해결·판단 보류로 남긴다.
     header_mapper: headermap.HeaderMapper | None = None
     classifier: classify.Classifier | None = None
+    # 구성된 업종 조회. 비어 있으면 캐시에 쌓인 업종만 쓰고 나머지 마커는 `미상`으로 남긴다.
+    category_sources: tuple[category.CategorySource, ...] = ()
 
 
 class Adapters(Protocol):
@@ -284,14 +295,21 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
                             classified.decisions,
                             geocoded.results,
                         ),
+                        categories=category.published(store.category_cache(), geocoded.results),
                     ),
                     context,
                 )
         case _:
             raise ValueError("unknown stage")
     store.save(stage, result, retry_failed=context.retry_failed)
-    if isinstance(result, GeocodeOutput) and any(
-        item.reason == "lookup_error" for item in result.results
-    ):
-        raise AdapterFailure(FailureCause.LOOKUP_FAILED)
+    if isinstance(result, GeocodeOutput):
+        # 판정을 저장한 뒤 확정 업소의 업종만 조회한다. 업종은 판정·판정 키를 바꾸지 않는다.
+        category_failed = category.resolve(
+            store.category_cache(),
+            result.results,
+            context.category_sources,
+            retry_failed=context.retry_failed,
+        )
+        if category_failed or any(item.reason == "lookup_error" for item in result.results):
+            raise AdapterFailure(FailureCause.LOOKUP_FAILED)
     return result

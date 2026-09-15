@@ -96,41 +96,50 @@
     return values;
   }
 
-  function filterMarkers(markers, query, visitBands) {
+  // 업종 갈래는 build가 정한다(`category.group`). 비어 있는 선택은 전체다.
+  function filterMarkers(markers, query, visitBands, categoryGroups = new Set()) {
     const normalizedQuery = normalizeSearch(query);
     const selected = selectedVisitBands(visitBands);
     return markers.filter(
       (marker) =>
         (selected.length === 0 || selected.some((band) => VISIT_BANDS[band](marker.visit_count))) &&
+        (categoryGroups.size === 0 || categoryGroups.has(marker.category_group)) &&
         normalizeSearch(marker.merchant).includes(normalizedQuery),
     );
   }
 
-  function setupVisitFilters(documentObject, onChange = () => {}) {
+  // 여러 값을 함께 고르는 필터 버튼. `전체`는 선택을 비우고, 빈 선택을 `전체`로 표시한다.
+  function setupToggleFilters(documentObject, key, onChange) {
     const selected = new Set();
-    const buttons = [...documentObject.querySelectorAll("[data-visits]")];
+    const buttons = [...documentObject.querySelectorAll(`[data-${key}]`)];
 
     function syncButtons() {
       for (const button of buttons) {
-        button.setAttribute(
-          "aria-pressed",
-          String(button.dataset.visits === "all" ? selected.size === 0 : selected.has(button.dataset.visits)),
-        );
+        const value = button.dataset[key];
+        button.setAttribute("aria-pressed", String(value === "all" ? selected.size === 0 : selected.has(value)));
       }
     }
 
     for (const button of buttons) {
       button.addEventListener("click", (event) => {
-        const band = button.dataset.visits;
-        if (band === "all") selected.clear();
-        else if (selected.has(band)) selected.delete(band);
-        else selected.add(band);
+        const value = button.dataset[key];
+        if (value === "all") selected.clear();
+        else if (selected.has(value)) selected.delete(value);
+        else selected.add(value);
         syncButtons();
         onChange(event);
       });
     }
     syncButtons();
     return selected;
+  }
+
+  function setupVisitFilters(documentObject, onChange = () => {}) {
+    return setupToggleFilters(documentObject, "visits", onChange);
+  }
+
+  function setupCategoryFilters(documentObject, onChange = () => {}) {
+    return setupToggleFilters(documentObject, "category", onChange);
   }
 
   function visitBand(count) {
@@ -506,6 +515,8 @@
       );
     }
     children.push(
+      // 필터는 갈래로 거르지만 상세는 제공자가 붙인 원문을 그대로 보인다.
+      textElement(documentObject, "p", "category", `업종: ${marker.category}`),
       textElement(
         documentObject,
         "p",
@@ -924,7 +935,7 @@
 
     function applyFilters() {
       // 검색·필터 결과와 집계는 지도가 없어도 도시 전체를 대상으로 먼저 반영한다.
-      filtered = filterMarkers(allMarkers, search.value, selectedBands);
+      filtered = filterMarkers(allMarkers, search.value, selectedBands, selectedCategories);
       renderRestaurantList(documentObject, filtered, selectMarkerFromPage);
       // 조건을 바꾸면 보고 있던 상세 대신 바뀐 목록을 보인다.
       showRestaurantList(documentObject);
@@ -958,11 +969,13 @@
       applyFilters();
       void recordMetricAfterPaint(windowObject, "filter-result", startedAt);
     });
-    const selectedBands = setupVisitFilters(documentObject, (event) => {
+    function onFilterChange(event) {
       const startedAt = interactionStartedAt(windowObject, event);
       applyFilters();
       void recordMetricAfterPaint(windowObject, "filter-result", startedAt);
-    });
+    }
+    const selectedBands = setupVisitFilters(documentObject, onFilterChange);
+    const selectedCategories = setupCategoryFilters(documentObject, onFilterChange);
     // 목록은 지도를 기다리지 않는다. 지도가 늦거나 실패해도 식당을 둘러볼 수 있다.
     applyFilters();
 
@@ -1042,6 +1055,7 @@
     renderRestaurantList,
     selectMarker,
     setupInstallGuide,
+    setupCategoryFilters,
     setupListSheet,
     setupVisitFilters,
     start,

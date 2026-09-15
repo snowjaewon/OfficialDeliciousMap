@@ -5,10 +5,17 @@ import json
 import math
 import os
 from collections.abc import Mapping
+from contextlib import suppress
+from typing import Literal
 
 from pyproj import Transformer
 
-from deliciousmap.contracts import PlaceCandidate, ProviderCandidates
+from deliciousmap.contracts import (
+    PlaceCandidate,
+    ProviderCandidates,
+    ProviderCategories,
+    SourceCategory,
+)
 from deliciousmap.places import in_korea, plain, split_branch
 from deliciousmap.transport import MAX_RESPONSE_BYTES, HttpTransport, Transport
 
@@ -29,6 +36,8 @@ RESULT_LIMIT = 100
 SUCCESS_CODE = "0"
 # 좌표정보는 보정계수 없는 Bessel 중부원점TM이다. 위경도는 제공하지 않는다.
 COORDINATE_REFERENCE = "EPSG:5174"
+# 업태구분명. 업소 확인에는 쓰지 않고 표시용 업종으로만 읽는다(#96).
+CATEGORY_FIELD = "BZSTAT_SE_NM"
 
 
 class ServiceError(Exception):
@@ -49,32 +58,73 @@ class FoodLicenseSearch:
         self._key = key
         self.transport = transport
         self.limit = limit
+        # 이 실행에서 받은 응답의 업종. 방금 조회한 요청을 업종 때문에 다시 보내지 않는다.
+        self._answered: dict[str, ProviderCategories] = {}
 
     def search(self, query: str) -> ProviderCandidates:
         """업종마다 한 쪽씩 조회한다. 한 업종이라도 실패하면 조회 전체를 실패로 남긴다."""
+        try:
+            candidates, rows = self._ask(query)
+        except _Failure as failure:
+            return ProviderCandidates(status="error", error=failure.code)
+        # 업종을 읽지 못해도 후보 조회는 그대로다. 그 업종은 필요할 때 다시 묻는다.
+        with suppress(ValueError, TypeError, LookupError):
+            self._answered[query] = ProviderCategories(status="ok", categories=_categories(rows))
+        return ProviderCandidates(status="ok", candidates=candidates)
+
+    def categories(self, query: str) -> ProviderCategories:
+        """같은 요청의 업태구분명을 후보 출처별로 읽는다. 업태구분명이 빈 행은 싣지 않는다."""
+        if query in self._answered:
+            return self._answered[query]
+        try:
+            _, rows = self._ask(query)
+            return ProviderCategories(status="ok", categories=_categories(rows))
+        except _Failure as failure:
+            return ProviderCategories(status="error", error=failure.code)
+        except (ValueError, TypeError, LookupError):
+            return ProviderCategories(status="error", error="invalid_response")
+
+    def _ask(
+        self, query: str
+    ) -> tuple[tuple[PlaceCandidate, ...], tuple[tuple[str, list[object]], ...]]:
+        """업종마다 받은 행과 그 후보. 업종(표시용) 해석은 여기서 하지 않는다."""
         candidates: list[PlaceCandidate] = []
+        answered: list[tuple[str, list[object]]] = []
         for service in SERVICES:
             try:
-                body = self.transport.fetch(
-                    f"{BASE_URL}/{service}/info",
-                    {
-                        "serviceKey": self._key,
-                        "pageNo": "1",
-                        "numOfRows": str(self.limit),
-                        "returnType": "json",
-                        "cond[BPLC_NM::LIKE]": query,
-                    },
-                    {"Accept": "application/json"},
-                )
+                body = self._fetch(service, query)
             except Exception:
-                return ProviderCandidates(status="error", error="unavailable")
+                raise _Failure("unavailable") from None
             try:
-                candidates.extend(_interpret(body, service))
+                rows = _rows(body)
+                candidates.extend(_candidate(row, service) for row in rows)
             except ServiceError:
-                return ProviderCandidates(status="error", error="unavailable")
+                raise _Failure("unavailable") from None
             except (ValueError, TypeError, LookupError, UnicodeDecodeError):
-                return ProviderCandidates(status="error", error="invalid_response")
-        return ProviderCandidates(status="ok", candidates=tuple(candidates))
+                raise _Failure("invalid_response") from None
+            answered.append((service, rows))
+        return tuple(candidates), tuple(answered)
+
+    def _fetch(self, service: str, query: str) -> bytes:
+        return self.transport.fetch(
+            f"{BASE_URL}/{service}/info",
+            {
+                "serviceKey": self._key,
+                "pageNo": "1",
+                "numOfRows": str(self.limit),
+                "returnType": "json",
+                "cond[BPLC_NM::LIKE]": query,
+            },
+            {"Accept": "application/json"},
+        )
+
+
+class _Failure(Exception):
+    """조회 한 번의 안전한 실패 코드. 원문·상태 코드는 담지 않는다."""
+
+    def __init__(self, code: Literal["unavailable", "invalid_response"]) -> None:
+        self.code: Literal["unavailable", "invalid_response"] = code
+        super().__init__(code)
 
 
 def from_environment(
@@ -88,7 +138,7 @@ def from_environment(
     return FoodLicenseSearch(key, transport or HttpTransport())
 
 
-def _interpret(body: bytes, service: str) -> tuple[PlaceCandidate, ...]:
+def _rows(body: bytes) -> list[object]:
     if len(body) > MAX_RESPONSE_BYTES:
         raise ValueError("oversized lookup response")
     response = json.loads(body.decode("utf-8"))["response"]
@@ -103,7 +153,20 @@ def _interpret(body: bytes, service: str) -> tuple[PlaceCandidate, ...]:
         rows = [rows]
     if not isinstance(rows, list):
         raise TypeError("lookup response items must be a list")
-    return tuple(_candidate(row, service) for row in rows)
+    return rows
+
+
+def _categories(answered: tuple[tuple[str, list[object]], ...]) -> tuple[SourceCategory, ...]:
+    """후보 출처는 `_candidate`와 같은 규칙으로 만든다. 그래야 확정한 후보와 맞춰 볼 수 있다."""
+    found = []
+    for service, rows in answered:
+        for row in rows:
+            source = _candidate(row, service).source
+            # 객체가 아닌 행은 `_candidate`가 이미 거부했다.
+            category = plain(str(row.get(CATEGORY_FIELD) or "")) if isinstance(row, dict) else ""
+            if category:
+                found.append(SourceCategory(source_id=source.source_id, category=category))
+    return tuple(found)
 
 
 def _candidate(row: object, service: str) -> PlaceCandidate:

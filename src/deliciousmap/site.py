@@ -11,7 +11,7 @@ from importlib.resources import files
 from pathlib import Path
 from typing import Literal
 
-from deliciousmap import merchants, period
+from deliciousmap import category, merchants, period
 from deliciousmap.contracts import (
     BuildInput,
     ClassificationStatus,
@@ -20,7 +20,6 @@ from deliciousmap.contracts import (
     GeocodeReason,
     GeocodeResult,
     MarkerFile,
-    Provider,
     PublishedMarker,
     PublishedRecord,
     Record,
@@ -31,6 +30,7 @@ from deliciousmap.contracts import (
     UnnamedCompanions,
     UnresolvedReason,
 )
+from deliciousmap.identity import coordinate_origin
 from deliciousmap.registry import CITIES, City, HoldReason, Organization, Target
 from deliciousmap.storage import write_bytes, write_text
 
@@ -202,9 +202,10 @@ def _marker_file(target: Target, value: BuildInput) -> MarkerFile:
     markers = []
     for candidate in value.candidates:
         # 묶인 레코드는 같은 좌표를 공유하므로 첫 레코드의 근거로 출처와 주소를 밝힌다.
-        source, address = _coordinate_origin(geocodes[candidate.record_ids[0]])
+        source, address = coordinate_origin(geocodes[candidate.record_ids[0]])
         visits = [records[record_id] for record_id in candidate.record_ids]
         priced = [visit.amount_krw for visit in visits if visit.amount_krw is not None]
+        described = value.categories.get(candidate.business_id, category.UNKNOWN)
         markers.append(
             PublishedMarker(
                 business_id=candidate.business_id,
@@ -213,8 +214,10 @@ def _marker_file(target: Target, value: BuildInput) -> MarkerFile:
                 latitude=candidate.latitude,
                 longitude=candidate.longitude,
                 closed=closures[candidate.business_id].status == "closed",
-                coordinate_source=source,
+                coordinate_source=source.provider,
                 address=address,
+                category=described,
+                category_group=category.group(described),
                 last_visited_on=max(visit.spent_on for visit in visits),
                 total_amount_krw=sum(priced, Decimal(0)),
                 unpriced_visit_count=len(visits) - len(priced),
@@ -239,26 +242,6 @@ def _record_file(target: Target, value: BuildInput) -> RecordFile:
             for record in value.records
         ),
     )
-
-
-def _coordinate_origin(result: GeocodeResult) -> tuple[Provider, str]:
-    """좌표를 준 제공자와 그 근거의 주소. 사람이 확인한 건은 확인한 후보와 주소가 정본이다.
-
-    업소 확인은 상호·지점·주소가 일치한 후보만 채택하므로(`identity.decide_identity`) 주소 없는
-    후보는 좌표의 근거가 될 수 없다.
-    """
-    if result.reason == "human_confirmed" and result.confirmation is not None:
-        return result.confirmation.candidate_source.provider, result.confirmation.address
-    # 여러 제공자의 근거가 같은 좌표로 겹치면 제공자 이름 순으로 하나를 밝힌다.
-    origins = sorted(
-        (candidate.source.provider, candidate.address)
-        for candidate in result.lookup.candidates
-        if (candidate.latitude, candidate.longitude) == (result.latitude, result.longitude)
-        and candidate.address is not None
-    )
-    if not origins:
-        raise ValueError("a confirmed coordinate must come from one of its candidates")
-    return origins[0]
 
 
 def _published_record(
@@ -294,11 +277,12 @@ def write_site_shell(
     map_key: MapKey,
     statuses: tuple[CollectionStatus, ...],
     scope: SourceScope,
+    groups: tuple[str, ...],
 ) -> tuple[Path, ...]:
     """Write shared assets, the city landing, and one city entry page."""
     written: list[Path] = []
     city_page = city_directory / "index.html"
-    write_text(city_page, _city_page(city, map_key, statuses, scope))
+    write_text(city_page, _city_page(city, map_key, statuses, scope, groups))
     written.append(city_page)
 
     # 진입 페이지를 먼저 쓰고 랜딩을 만들어, 이번 실행의 도시도 링크 대상이 되게 한다.
@@ -397,6 +381,27 @@ def _visit_filters() -> str:
             f'            <button type="button" aria-pressed="false" data-visits="{key}">'
             f"{label}</button>"
             for key, label, _ in VISIT_BAND_LABELS
+        ),
+    ]
+    return "\n".join(buttons)
+
+
+def category_groups(value: BuildInput) -> tuple[str, ...]:
+    """이 도시의 마커가 속한 업종 갈래. 마커가 없는 갈래의 버튼은 내지 않는다."""
+    present = {
+        category.group(value.categories.get(item.business_id, category.UNKNOWN))
+        for item in value.candidates
+    }
+    return tuple(name for name in category.GROUP_ORDER if name in present)
+
+
+def _category_filters(groups: tuple[str, ...]) -> str:
+    buttons = [
+        '            <button type="button" aria-pressed="true" data-category="all">전체</button>',
+        *(
+            f'            <button type="button" aria-pressed="false" data-category="{label}">'
+            f"{label}</button>"
+            for label in map(escape, groups)
         ),
     ]
     return "\n".join(buttons)
@@ -637,7 +642,11 @@ def _unmapped_record_line(tally: SubmissionTally) -> str:
 
 
 def _city_page(
-    city: City, map_key: MapKey, statuses: tuple[CollectionStatus, ...], scope: SourceScope
+    city: City,
+    map_key: MapKey,
+    statuses: tuple[CollectionStatus, ...],
+    scope: SourceScope,
+    groups: tuple[str, ...],
 ) -> str:
     city_name = escape(city.name)
     scope_lines = (
@@ -700,6 +709,9 @@ def _city_page(
             </label>
             <fieldset class="visit-filters"><legend class="sr-only">방문 횟수</legend>
 {_visit_filters()}
+            </fieldset>
+            <fieldset class="visit-filters category-filters"><legend class="sr-only">업종</legend>
+{_category_filters(groups)}
             </fieldset>
             <p class="result-count" aria-live="polite">
               <strong data-total-count>0</strong>곳 전체 ·

@@ -144,6 +144,13 @@ def test_local_and_naver_supplied_facts_reach_the_same_business_and_marker(
     supplied, searched = markers(local)["markers"], markers(remote)["markers"]
     assert [marker.pop("coordinate_source") for marker in supplied] == ["local"]
     assert [marker.pop("coordinate_source") for marker in searched] == ["naver"]
+    # 업종은 조회로 찾은 후보만 안다. 담당자가 준 후보는 다시 물을 조회가 없다.
+    assert [(marker.pop("category"), marker.pop("category_group")) for marker in supplied] == [
+        ("미상", "미상")
+    ]
+    assert [(marker.pop("category"), marker.pop("category_group")) for marker in searched] == [
+        ("음식점>한식", "한식")
+    ]
     assert supplied == searched
 
 
