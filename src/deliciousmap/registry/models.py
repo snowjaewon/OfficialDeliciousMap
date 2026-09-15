@@ -39,12 +39,31 @@ class Board:
 
 
 @dataclass(frozen=True)
+class Hall:
+    """기관이 스스로 밝힌 소재지의 좌표(청사).
+
+    같은 상호가 도시 안 여러 곳에 있을 때 고르는 기준점이다. 그 기관이 쓴 돈은 청사에서 가까운
+    곳에 몰린다는 사실 하나에 기대며, 그 이상을 뜻하지 않는다([ADR-0010](
+    ../../../docs/adr/0010-adopt-single-provider-in-city.md)). 실측한 기관에만 적는다.
+    """
+
+    latitude: float
+    longitude: float
+
+    def __post_init__(self) -> None:
+        if not -90 <= self.latitude <= 90 or not -180 <= self.longitude <= 180:
+            raise ValueError("invalid hall coordinate")
+
+
+@dataclass(frozen=True)
 class Organization:
     slug: str
     name: str
     boards: tuple[Board, ...] = ()
     # 사유를 달고 이번 수집에서 미룬 기관. 상호의 판단 보류와 다른 상태다.
     hold_reason: HoldReason | None = None
+    # 청사 좌표. 비워 두면 그 기관의 레코드는 도시 안 여러 곳 가운데 하나를 고르지 않는다.
+    hall: Hall | None = None
 
     def __post_init__(self) -> None:
         if self.hold_reason is not None and self.hold_reason not in get_args(HoldReason):
@@ -71,6 +90,18 @@ class City:
     name: str
     map_bounds: MapBounds
     organizations: tuple[Organization, ...] = ()
+    # 도시 안으로 보는 후보 주소의 접두. 비워 두면 그 도시는 독립 근거 없이 업소를 확정하지
+    # 않는다. 실측한 도시에만 적는다.
+    address_prefixes: tuple[str, ...] = ()
+
+    @property
+    def halls(self) -> dict[str, tuple[float, float]]:
+        """기관 슬러그별 청사 좌표. 판정은 레코드가 적은 기관으로 이 표에서 찾아 쓴다."""
+        return {
+            org.slug: (org.hall.latitude, org.hall.longitude)
+            for org in self.organizations
+            if org.hall is not None
+        }
 
 
 @dataclass(frozen=True)

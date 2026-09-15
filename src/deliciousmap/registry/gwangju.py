@@ -1,4 +1,4 @@
-from deliciousmap.registry.models import Board, City, MapBounds, Organization
+from deliciousmap.registry.models import Board, City, Hall, MapBounds, Organization
 from deliciousmap.scrapers.gwangju import GwangjuCityBoard
 from deliciousmap.scrapers.gwangju_district import GwangjuDistrictBoard
 from deliciousmap.scrapers.gwangju_gwangsan import GwangsanInfoOpenBoard
@@ -36,6 +36,16 @@ GWANGSAN_EXPENSES = (
 )
 GWANGSAN_NAME = "광산구청"
 
+# 2026-09-15 네이버 지역검색 실측으로 받은 청사 좌표. 질의는 기관 이름이며(`광주광역시청`,
+# `광주광역시 북구청` …) 응답이 밝힌 도로명주소가 그 기관이 푸터에 적은 소재지와 같은 것만 쓴다.
+# 같은 상호가 도시 안 여러 곳에 있을 때 고르는 기준점일 뿐 기관의 경계가 아니다(ADR-0010).
+CITY_HALL = Hall(35.160032, 126.8513378)  # 서구 내방로 111
+GWANGSAN_HALL = Hall(35.1395083, 126.7936834)  # 광산구 광산로29번길 15
+SEO_HALL = Hall(35.1519689, 126.890272)  # 서구 경열로 33
+BUK_HALL = Hall(35.1740599, 126.911963)  # 북구 우치로 77
+NAM_HALL = Hall(35.1330038, 126.902402)  # 남구 봉선로 1
+DONG_HALL = Hall(35.1460818, 126.9232859)  # 동구 서남로 1
+
 # 통합에 따른 도시 이름·경계·기관 범위는 이 이슈의 범위가 아니어서 그대로 두고 근거만 남긴다.
 # `map_bounds`는 통합 전 광주광역시 경계이며 통합특별시를 담지 못한다.
 CITY = City(
@@ -47,11 +57,13 @@ CITY = City(
             "gwangju-city",
             CITY_HALL_NAME,
             (Board("expenses", CITY_HALL_EXPENSES, GwangjuCityBoard),),
+            hall=CITY_HALL,
         ),
         Organization(
             "gwangju-gwangsan",
             GWANGSAN_NAME,
             (Board("expenses", GWANGSAN_EXPENSES, GwangsanInfoOpenBoard),),
+            hall=GWANGSAN_HALL,
         ),
         Organization(
             "gwangju-seo",
@@ -62,16 +74,19 @@ CITY = City(
                 Board("expenses-council", SEO_COUNCIL, SeoguExpenseBoard),
                 Board("expenses-department", SEO_DEPARTMENT, SeoguExpenseBoard),
             ),
+            hall=SEO_HALL,
         ),
         Organization(
             "gwangju-buk",
             BUK_NAME,
             (Board("expenses", BUK_EXPENSES, GwangjuDistrictBoard),),
+            hall=BUK_HALL,
         ),
         Organization(
             "gwangju-nam",
             NAM_NAME,
             (Board("expenses", NAM_EXPENSES, GwangjuDistrictBoard),),
+            hall=NAM_HALL,
         ),
         Organization(
             "gwangju-dong",
@@ -81,6 +96,10 @@ CITY = City(
                 Board("expenses-director", DONG_DIRECTOR, GwangjuDistrictBoard),
                 Board("expenses-department", DONG_DEPARTMENT, GwangjuDistrictBoard),
             ),
+            hall=DONG_HALL,
         ),
     ),
+    # 후보 주소가 통합특별시 안일 때만 독립 근거 없이 업소를 확정한다(ADR-0009·ADR-0010).
+    # `map_bounds`는 통합 전 경계라 함평·해남 같은 통합 지역을 담지 못하므로 주소 접두로 본다.
+    address_prefixes=("전남광주통합특별시",),
 )

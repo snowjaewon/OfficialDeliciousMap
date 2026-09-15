@@ -242,7 +242,8 @@ def test_candidates_without_confirming_evidence_stay_unresolved(
     result = geocoded(context)
     assert result["lookup"]["status"] == "ok"
     assert len(result["lookup"]["candidates"]) == 1
-    assert result["reason"] == "missing_address"
+    # 근거 없이 제공자 하나의 후보뿐이면 주소 부재가 아니라 근거 부족이다(ADR-0009).
+    assert result["reason"] == "insufficient_evidence"
     assert result["business_id"] is None
     for stage in ("closure", "build"):
         assert run_cli(context, stage) == 0

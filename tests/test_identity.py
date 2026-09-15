@@ -90,6 +90,37 @@ def test_the_record_values_the_decision_reads_still_change_the_key() -> None:
     assert key(synthetic_record(merchant="다른 식당")) != key(synthetic_record())
 
 
+def test_what_the_registry_tells_the_decision_changes_the_key() -> None:
+    """도시 주소 접두와 기관 청사는 레코드의 칸이 아니지만 판정이 읽는 값이다(ADR-0005·ADR-0010).
+
+    둘을 고치면 어디를 도시 안으로 보고 여러 곳 중 어디를 고를지가 달라지므로, 그 도시의
+    판정만 다시 쌓여야 한다. 키에 담지 않으면 옛 답이 그대로 재사용된다.
+    """
+    plain = key(synthetic_record())
+    assert (
+        lookup_key(
+            synthetic_record(),
+            candidates(),
+            None,
+            None,
+            DEPENDENCY_KEY,
+            address_prefixes=("부산",),
+        )
+        != plain
+    )
+    assert (
+        lookup_key(
+            synthetic_record(),
+            candidates(),
+            None,
+            None,
+            DEPENDENCY_KEY,
+            hall=(35.1, 129.1),
+        )
+        != plain
+    )
+
+
 def test_the_scope_the_lookup_answered_for_still_changes_the_key() -> None:
     """기관·원본은 레코드 조각에서 빠졌을 뿐 조회의 범위로 키에 남는다."""
     assert key(synthetic_record(), candidates(organization="other-org")) != key(synthetic_record())

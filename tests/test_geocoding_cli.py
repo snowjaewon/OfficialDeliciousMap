@@ -43,21 +43,24 @@ def synthetic_record(**changes: object) -> Record:
     )
 
 
-def prepare(tmp_path: Path, org: str | None = None) -> ExecutionContext:
+def prepare(
+    tmp_path: Path, org: str | None = None, records: tuple[Record, ...] = (synthetic_record(),)
+) -> ExecutionContext:
     context = context_at(tmp_path)
     if org is not None:
         context = replace(context, target=Target(context.target.city, org))
     store = ArtifactStore(context.paths, context.target)
-    store.save("parse", ParseOutput(records=(synthetic_record(),)))
+    store.save("parse", ParseOutput(records=records))
     store.save(
         "classify",
         ClassifyOutput(
-            decisions=(
+            decisions=tuple(
                 Classification(
-                    record_id="r1",
+                    record_id=record.record_id,
                     status="restaurant",
                     evidence="합성 분류",
-                ),
+                )
+                for record in records
             )
         ),
     )
@@ -449,7 +452,8 @@ def test_failed_results_are_reused_until_explicit_retry_or_changed_evidence(tmp_
 @pytest.mark.parametrize(
     "case,reason",
     [
-        ("no_facts", "missing_address"),
+        # 근거를 적지 않은 레코드는 후보 하나의 주소로 확정하지 않는다(ADR-0009).
+        ("no_facts", "insufficient_evidence"),
         ("no_address", "missing_address"),
         ("no_branch", "unknown_branch"),
         ("conflict", "conflicting_evidence"),
@@ -735,8 +739,8 @@ def test_merchant_scoped_confirmation_maps_every_record_without_address_evidence
     save_input(context, first, second)
     assert run_cli(context, "geocode") == 0
     assert [item["reason"] for item in payload(context, "geocode")["results"]] == [
-        "missing_address",
-        "missing_address",
+        "insufficient_evidence",
+        "insufficient_evidence",
     ]
 
     write_text(

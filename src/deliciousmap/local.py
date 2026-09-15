@@ -24,7 +24,12 @@ from deliciousmap.contracts import (
     ParseInput,
     ParseOutput,
 )
-from deliciousmap.identity import decide_identity, lookup_key, reconcile_coordinates
+from deliciousmap.identity import (
+    carried_coordinates,
+    decide_identity,
+    lookup_key,
+    reconcile_coordinates,
+)
 from deliciousmap.pipeline import AdapterFailure, ExecutionContext, FailureCause
 from deliciousmap.site import (
     SourceScope,
@@ -80,8 +85,21 @@ class LocalAdapters:
             lookup = lookups[record.record_id]
             confirmation = confirmations.get(record.record_id)
             restored = restorations.get(record.record_id)
-            key = lookup_key(record, lookup, confirmation, restored, value.dependency_key)
+            hall = value.halls.get(record.organization)
+            key = lookup_key(
+                record,
+                lookup,
+                confirmation,
+                restored,
+                value.dependency_key,
+                address_prefixes=value.address_prefixes,
+                hall=hall,
+            )
             cached = previous.get(key)
+            # 합쳐진 판정은 다른 레코드의 업소·좌표를 받아 적은 값이라 상대가 달라지면 낡는다.
+            # 이력에서 그대로 꺼내지 않고 다시 매긴 뒤 이번 실행의 결과로 다시 합친다(ADR-0010).
+            if cached is not None and carried_coordinates(cached):
+                cached = None
             if cached is not None and (cached.status == "success" or not value.retry_failed):
                 results.append(cached)
             else:
@@ -92,6 +110,8 @@ class LocalAdapters:
                         confirmation,
                         restored,
                         dependency_key=value.dependency_key,
+                        address_prefixes=value.address_prefixes,
+                        hall=hall,
                     )
                 )
         return GeocodeOutput(results=reconcile_coordinates(tuple(results)))

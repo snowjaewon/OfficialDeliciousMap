@@ -30,9 +30,15 @@ from tests.test_naver_lookup_cli import (
 )
 
 SERVICE_KEY = "합성-인허가-서비스키"
-# 중부원점TM(EPSG:5174) 좌표 한 쌍과 그 WGS84 변환 결과. 네이버 좌표와 미터 단위로 어긋난다.
-LICENSE_X, LICENSE_Y = "391413.5", "179897.3"
-LATITUDE, LONGITUDE = 35.09999996577751, 129.0999995838682
+# 중부원점TM(EPSG:5174) 좌표 한 쌍과 그 WGS84 변환 결과. 네이버 좌표(35.1, 129.1)에서 약 300 m
+# 북쪽이라 허용 오차 200 m 밖이다. 오차 안의 좌표는 아래 NEARBY_X, NEARBY_Y다.
+LICENSE_X, LICENSE_Y = "391413.5", "180197.3"
+LATITUDE, LONGITUDE = 35.10270223741562, 129.10006886326784
+# 같은 pyproj·PROJ라도 플랫폼 수학 라이브러리에 따라 변환값의 마지막 자리(1 ULP)가 다르다.
+# Windows는 위 값, Linux CI는 위도 끝자리가 3이다. 1e-9도는 약 0.1 mm라 좌표 비교는 이 오차로 본다.
+COORDINATE_TOLERANCE = 1e-9
+# 네이버 좌표에서 수 cm 떨어진 인허가 좌표. 같은 건물의 변환 오차 수준이다.
+NEARBY_X, NEARBY_Y = "391413.5", "179897.3"
 
 
 @pytest.fixture
@@ -96,7 +102,9 @@ def test_license_candidates_convert_coordinates_and_reach_the_marker(
     assert run_cli(context, "geocode", licenses=transport) == 0
     result = geocoded(context)
     assert result["status"] == "success"
-    assert (result["latitude"], result["longitude"]) == (LATITUDE, LONGITUDE)
+    assert (result["latitude"], result["longitude"]) == pytest.approx(
+        (LATITUDE, LONGITUDE), abs=COORDINATE_TOLERANCE
+    )
     assert result["confirmed_merchant"] == "같은 식당"
     assert sources(context) == ["license", "license"]
     query = result["lookup"]["queries"][0]
@@ -111,7 +119,9 @@ def test_license_candidates_convert_coordinates_and_reach_the_marker(
 
     for stage in ("closure", "build"):
         assert run_cli(context, stage) == 0
-    assert markers(context)["markers"][0]["latitude"] == LATITUDE
+    assert markers(context)["markers"][0]["latitude"] == pytest.approx(
+        LATITUDE, abs=COORDINATE_TOLERANCE
+    )
     assert markers(context)["markers"][0]["visit_count"] == 1
     assert payload(context, "build")["marker_count"] == 1
 
@@ -153,6 +163,9 @@ def test_local_and_license_supplied_facts_reach_the_same_business_and_marker(
     assert [(marker.pop("category"), marker.pop("category_group")) for marker in searched] == [
         ("한식", "한식")
     ]
+    # 담당자가 준 좌표는 원값 그대로, 조회한 좌표는 pyproj 변환값이라 마지막 자리가 다를 수 있다.
+    for key in ("latitude", "longitude"):
+        assert supplied[0].pop(key) == pytest.approx(searched[0].pop(key), abs=COORDINATE_TOLERANCE)
     assert supplied == searched
 
 
@@ -167,7 +180,9 @@ def test_license_coordinates_complete_a_naver_candidate_without_usable_ones(
     assert run_cli(context, "geocode", licenses=licenses, naver=naver) == 0
     result = geocoded(context)
     assert result["status"] == "success"
-    assert (result["latitude"], result["longitude"]) == (LATITUDE, LONGITUDE)
+    assert (result["latitude"], result["longitude"]) == pytest.approx(
+        (LATITUDE, LONGITUDE), abs=COORDINATE_TOLERANCE
+    )
     assert sources(context) == ["naver", "license"]
     # 일치·충돌 근거는 출처별로 보존한다.
     assert [item["provider"] for item in result["lookup"]["queries"]] == ["naver", "license"]
@@ -176,6 +191,23 @@ def test_license_coordinates_complete_a_naver_candidate_without_usable_ones(
     for stage in ("closure", "build"):
         assert run_cli(context, stage) == 0
     assert payload(context, "build")["marker_count"] == 1
+
+
+def test_license_coordinates_within_the_tolerance_agree_and_naver_coordinates_win(
+    tmp_path: Path, licensed: None, searched: None
+) -> None:
+    """변환 오차 수준으로 어긋난 두 좌표는 같은 업소다. 마커는 원값인 네이버 좌표를 쓴다."""
+    context = prepare(tmp_path)
+    save_input(context, evidence_only())
+    naver = FakeTransport(naver_body(matching_place()))
+    licenses = FakeLicenseTransport(
+        license_body(license_item("같은 식당 부산점", ROAD_ADDRESS, x=NEARBY_X, y=NEARBY_Y))
+    )
+    assert run_cli(context, "geocode", licenses=licenses, naver=naver) == 0
+    result = geocoded(context)
+    assert result["reason"] == "matched"
+    assert (result["latitude"], result["longitude"]) == (35.1, 129.1)
+    assert result["evidence"] == "name-branch-address-agreement license+naver"
 
 
 def test_conflicting_provider_coordinates_wait_for_a_scoped_confirmation(

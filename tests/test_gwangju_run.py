@@ -170,7 +170,7 @@ def test_run_builds_a_city_page_whose_ledger_keeps_unmapped_records(
     geocoded = json.loads(
         (tmp_path / DATA / "gwangju" / "geocode.json").read_text(encoding="utf-8")
     )
-    assert [item["reason"] for item in geocoded["payload"]["results"]] == ["missing_address"]
+    assert [item["reason"] for item in geocoded["payload"]["results"]] == ["insufficient_evidence"]
     published = json.loads(
         (tmp_path / "출력" / "gwangju" / "records.json").read_text(encoding="utf-8")
     )

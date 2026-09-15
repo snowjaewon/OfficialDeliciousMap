@@ -30,7 +30,7 @@ from deliciousmap.contracts import (
     UnnamedCompanions,
     UnresolvedReason,
 )
-from deliciousmap.identity import coordinate_origin
+from deliciousmap.identity import coordinate_origin, coordinate_owner
 from deliciousmap.registry import CITIES, City, HoldReason, Organization, Target
 from deliciousmap.storage import write_bytes, write_text
 
@@ -201,8 +201,10 @@ def _marker_file(target: Target, value: BuildInput) -> MarkerFile:
     records = {item.record_id: item for item in value.records}
     markers = []
     for candidate in value.candidates:
-        # 묶인 레코드는 같은 좌표를 공유하므로 첫 레코드의 근거로 출처와 주소를 밝힌다.
-        source, address = coordinate_origin(geocodes[candidate.record_ids[0]])
+        # 묶인 레코드는 같은 좌표를 공유한다. 그 좌표를 스스로 낸 레코드가 출처와 주소를 밝힌다.
+        source, address = coordinate_origin(
+            coordinate_owner([geocodes[record_id] for record_id in candidate.record_ids])
+        )
         visits = [records[record_id] for record_id in candidate.record_ids]
         priced = [visit.amount_krw for visit in visits if visit.amount_krw is not None]
         described = value.categories.get(candidate.business_id, category.UNKNOWN)
