@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from deliciousmap.contracts import GeocodeResult, ProviderCategories
-from deliciousmap.identity import coordinate_origin, digest
+from deliciousmap.identity import coordinate_origin, coordinate_owner, digest
 from deliciousmap.storage import LookupCache
 
 POLICY_VERSION = "category-1"
@@ -96,26 +96,27 @@ class Request:
 
 
 def requests(results: Iterable[GeocodeResult]) -> dict[str, Request | None]:
-    """업소마다 첫 레코드의 근거로 업종 조회를 정한다. 마커가 출처·주소를 밝히는 규칙과 같다.
+    """업소마다 그 좌표를 낸 레코드의 근거로 업종 조회를 정한다. 마커가 출처를 밝히는 규칙과 같다.
 
     담당자가 준비한 후보처럼 조회로 찾지 않은 후보는 다시 물을 요청이 없어 `None`이다.
     """
-    found: dict[str, Request | None] = {}
+    grouped: dict[str, list[GeocodeResult]] = {}
     for result in results:
-        if result.status != "success" or result.business_id is None:
-            continue
-        if result.business_id in found:
-            continue
-        source, _ = coordinate_origin(result)
+        if result.status == "success" and result.business_id is not None:
+            grouped.setdefault(result.business_id, []).append(result)
+    found: dict[str, Request | None] = {}
+    for business, members in grouped.items():
+        owner = coordinate_owner(members)
+        source, _ = coordinate_origin(owner)
         query = next(
             (
                 item
-                for item in result.lookup.queries
+                for item in owner.lookup.queries
                 if item.provider == source.provider and item.status == "ok"
             ),
             None,
         )
-        found[result.business_id] = (
+        found[business] = (
             None
             if query is None
             else Request(source.provider, query.interpretation, query.request, source.source_id)

@@ -1,4 +1,8 @@
-"""제공자 합의(ProviderCross)로 독립 근거 없이 업소를 확정하는 경로를 공개 CLI로 관찰한다."""
+"""제공자 합의(ProviderCross)로 독립 근거 없이 업소를 확정하는 경로를 공개 CLI로 관찰한다.
+
+identity-5부터는 제공자 하나만으로도 채택하므로(ADR-0010, `tests/test_single_provider_cli.py`)
+여기서는 둘이 겹쳤을 때의 근거 표기와, 도시 밖·다른 상호처럼 채택하지 않는 자리를 본다.
+"""
 
 from copy import deepcopy
 from dataclasses import replace
@@ -90,9 +94,13 @@ def test_agreement_outside_the_city_is_not_evidence_for_this_record(tmp_path: Pa
 
 
 def test_agreement_on_a_different_name_is_not_evidence_for_this_record(tmp_path: Path) -> None:
-    """'나룻배'의 후보로 두 제공자가 '나룻배식당'에 합의해도 레코드의 상호가 아니다."""
+    """두 제공자가 합의해도 레코드의 상호와 겹치지 않는 이름이면 이 레코드의 업소가 아니다.
+
+    identity-5의 상호 포함 일치는 `나룻배`→`나룻배식당`처럼 앞뒤에 그대로 붙는 표기까지
+    같은 업소로 본다. 겹치는 곳이 없는 이름은 제공자가 몇이든 근거가 되지 못한다.
+    """
     context = in_city(tmp_path, CITY_PREFIX)
-    other = {"merchant": "같은 식당 횟집"}
+    other = {"merchant": "다른 횟집"}
     save_input(
         context,
         cross_lookup(candidate("naver", NAVER, **other), candidate("license", NEARBY, **other)),
@@ -127,12 +135,17 @@ def test_two_agreed_places_for_one_name_are_a_conflict(tmp_path: Path) -> None:
     assert result(context)["reason"] == "conflicting_evidence"
 
 
-def test_one_provider_alone_is_insufficient_evidence(tmp_path: Path) -> None:
-    """후보 하나가 스스로 밝힌 주소는 근거가 아니다. 사유는 주소 부재가 아니라 근거 부족이다."""
+def test_one_provider_alone_is_adopted_since_identity_5(tmp_path: Path) -> None:
+    """제공자 하나뿐이어도 도시 안에서 상호가 맞으면 채택한다. #64의 기준을 뒤집은 결정이다.
+
+    근거가 겹치지 않았다는 사실은 사라지지 않고 `single-provider`로 남는다(ADR-0010).
+    """
     context = in_city(tmp_path, CITY_PREFIX)
     save_input(context, cross_lookup(candidate("naver", NAVER)))
     assert run_cli(context, "geocode") == 0
-    assert result(context)["reason"] == "insufficient_evidence"
+    found = result(context)
+    assert found["reason"] == "matched"
+    assert found["evidence"] == "single-provider naver"
 
 
 def test_a_city_without_address_prefixes_never_adopts_by_agreement(tmp_path: Path) -> None:

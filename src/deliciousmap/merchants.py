@@ -16,6 +16,10 @@
 적용하는 일은 다른 사람 검토 입력과 규칙이 같아 `restoration.divide`가 한다. 규칙이 바뀌면 나뉜
 이름도 보류 사유도 달라지므로 parse와 geocode의 의존성이 이 값을 함께 읽는다.
 
+상호 포함 일치(`inclusion_overlap`)는 두 표기가 같은 업소의 이름인지만 가른다. 조회도 가르기도
+하지 않아 여기 두 버전 중 어느 것도 읽지 않고, 좌표 판정만이 그 답을 읽으므로 규칙이 바뀌면
+`identity.POLICY_VERSION`을 올린다(ADR-0010).
+
 `TAIL_VERSION`은 꼬리말 규칙의 버전이다. 비식당 판별이 꼬리말을 뗀 이름을 읽으므로 classify의
 의존성이 이 값을 읽고, classify 산출물을 선행으로 읽는 단계가 함께 낡는다(#147). 좌표 판정도 그
 이름을 근거와 대조하지만 이력 키는 `identity.POLICY_VERSION`이 맡으므로, 꼬리말 규칙을 바꾸면
@@ -23,6 +27,7 @@
 """
 
 import re
+import unicodedata
 from collections.abc import Iterable
 from dataclasses import dataclass
 from decimal import Decimal
@@ -42,6 +47,51 @@ _TAIL = re.compile(r"(?:\s*외\s*(?P<count>\d+)\s*(?:개소|곳|명|개)?|\s+외
 # 숫자 사이의 쉼표는 천단위 구분이라 가르지 않는다 — `낙지촌 96,000원 / 엠지(MG)블루 17,500`은
 # 슬래시로만 갈린다. `및`은 앞뒤가 공백일 때만 구분자로 본다.
 SEPARATOR = re.compile(r"(?<!\d),(?!\d)|/|&|\s및\s")
+
+# 상호 포함 일치가 요구하는 최소 겹침 글자 수. 2자 접두·접미는 같은 업소의 근거가 되지 못한다 —
+# `본가`는 도시 안 `죽본가`·`고기본가`를 모두 가리키고 `합성`은 상호의 절반이 아니라 낱말 하나다.
+INCLUSION_MINIMUM = 3
+
+# 뼈대를 만들며 떼는 표기. 원본과 제공자가 같은 업소를 두고 갈리는 자리다(2026-09-15 광주 실측).
+# 괄호 안은 지점·업종 설명이라 이름이 아니고, 법인 표기는 상호 앞뒤 어디에나 붙는다.
+_PARENTHESIZED = re.compile(r"[(（\[【].*?[)）\]】]")
+_CORPORATE = re.compile(r"㈜|주식회사|유한회사|합자회사")
+# 뼈대에 남기는 글자. 띄어쓰기·가운뎃점·붙임표 같은 기호는 표기마다 달라 이름의 글자가 아니다.
+_NOT_A_LETTER = re.compile(r"[^0-9a-z가-힣ㄱ-ㆎ]+")
+
+
+def bare_name(merchant: str) -> str:
+    """상호를 견줄 뼈대 표기. 꼬리말·괄호 안·법인 표기·공백·기호를 뗀 글자만 남긴다.
+
+    이름을 줄이지 않고 표기만 지운다. 남은 글자는 순서까지 원본 그대로다.
+    """
+    value = unicodedata.normalize("NFC", read(merchant).named).casefold()
+    value = _PARENTHESIZED.sub("", value)
+    value = _CORPORATE.sub("", value)
+    return _NOT_A_LETTER.sub("", value)
+
+
+def inclusion_overlap(first: str, second: str) -> int:
+    """상호 포함 일치로 겹친 글자 수. 같은 업소로 보지 않는 표기 짝은 0이다.
+
+    겹침이 긴 후보를 먼저 고르는 자리(`identity`)가 이 길이를 읽는다.
+    """
+    left, right = bare_name(first), bare_name(second)
+    if not left or not right:
+        return 0
+    if left == right:
+        return len(left)
+    short, long = sorted((left, right), key=len)
+    if len(short) < INCLUSION_MINIMUM:
+        return 0
+    # 앞이나 뒤에 그대로 붙은 것만 같은 업소로 본다. 중간 겹침(`강가`→`건강가정지원센터`)은
+    # 다른 업소의 이름 안에 우연히 든 글자다.
+    return len(short) if long.startswith(short) or long.endswith(short) else 0
+
+
+def name_inclusion(first: str, second: str) -> bool:
+    """두 상호 표기가 같은 업소의 이름인가. 뼈대가 같거나 한쪽이 다른 쪽의 앞·뒤에 붙는다."""
+    return inclusion_overlap(first, second) > 0
 
 
 @dataclass(frozen=True)

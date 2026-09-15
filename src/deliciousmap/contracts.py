@@ -1213,8 +1213,10 @@ class GeocodeInput(Contract):
     restorations: tuple[RestoredName, ...] = ()
     previous: tuple[GeocodeResult, ...] = ()
     retry_failed: bool = False
-    # 제공자 합의가 도시 안으로 보는 후보 주소의 접두(레지스트리 `City.address_prefixes`).
+    # 도시 안으로 보는 후보 주소의 접두(레지스트리 `City.address_prefixes`).
     address_prefixes: tuple[Text, ...] = ()
+    # 기관 슬러그별 청사 좌표(레지스트리 `City.halls`). 레코드가 적은 기관으로 찾아 쓴다.
+    halls: dict[Text, tuple[float, float]] = Field(default_factory=dict)
 
 
 class GeocodeOutput(Contract):

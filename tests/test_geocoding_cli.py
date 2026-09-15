@@ -43,21 +43,24 @@ def synthetic_record(**changes: object) -> Record:
     )
 
 
-def prepare(tmp_path: Path, org: str | None = None) -> ExecutionContext:
+def prepare(
+    tmp_path: Path, org: str | None = None, records: tuple[Record, ...] = (synthetic_record(),)
+) -> ExecutionContext:
     context = context_at(tmp_path)
     if org is not None:
         context = replace(context, target=Target(context.target.city, org))
     store = ArtifactStore(context.paths, context.target)
-    store.save("parse", ParseOutput(records=(synthetic_record(),)))
+    store.save("parse", ParseOutput(records=records))
     store.save(
         "classify",
         ClassifyOutput(
-            decisions=(
+            decisions=tuple(
                 Classification(
-                    record_id="r1",
+                    record_id=record.record_id,
                     status="restaurant",
                     evidence="합성 분류",
-                ),
+                )
+                for record in records
             )
         ),
     )

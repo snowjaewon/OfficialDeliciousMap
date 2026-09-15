@@ -741,6 +741,7 @@ class ArtifactStore:
             )
             by_id = {record.record_id: record for record in records}
             dependency_key = self.geocode_dependency_key()
+            halls = self.target.city.halls
             for item in output.results:
                 record = by_id[item.record_id]
                 if item.merchant != record.merchant or item.lookup.scope != self.scope(record):
@@ -754,6 +755,7 @@ class ArtifactStore:
                     item.restoration,
                     item.dependency_key,
                     address_prefixes=self.target.city.address_prefixes,
+                    hall=halls.get(record.organization),
                 ):
                     raise ValueError("geocode dependency mismatch")
         elif isinstance(output, ClosureOutput):
