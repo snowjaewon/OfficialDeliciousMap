@@ -11,11 +11,19 @@
 (2026-09-15 사용자 결정). `classify.jsonl`·`geocode.jsonl`의 사람 입력이 지금까지 PR 검토로
 승인된 것과 같은 관례다.
 
-그래서 [폴백 정책](../specs/header-mapping-fallback.md) 59줄이 적은
-"사람이 원본과 전수로 대조해 … `confirmed_by`를 채운 원본만 원본 결함 확정이다"와 이번 기록
-사이에는 간극이 있다. 15줄의 `confirmed_by`는
-`sihun0927-sketch (PR 검토, #62·#99 기록 전재)`로, 무엇을 근거로 채웠는지를 값 자체에 적었다.
-정책 문구를 이 관례에 맞출지는 이 이슈 밖의 별도 제안 사항이다.
+그래서 이번 기록은 저장소가 적어 둔 문구를 **글자 그대로는 지키지 못한다.** 같은 요구가 세
+곳에 있다.
+
+- [폴백 정책](../specs/header-mapping-fallback.md) 59줄 — "사람이 원본과 전수로 대조해 …
+  `confirmed_by`를 채운 원본만 원본 결함 확정이다"
+- `CONTEXT.md`의 `원본 결함 확정` — "사람이 원본과 전수로 대조해 확정한 원본. … 대조가 없으면
+  사유가 같아도 미해결이다"
+- `SourceReview.confirmed_by`의 주석(`src/deliciousmap/contracts.py`) — "원본과 전수로 대조한
+  사람. 코드 훑기만 끝났으면 비워 둔다"
+
+15줄의 `confirmed_by`를 `sihun0927-sketch (PR 검토, #62·#99 기록 전재)`로 적어 무엇을 근거로
+채웠는지를 값 자체에 남겼다. 세 문구를 이 관례에 맞출지는 이 이슈의 제외 범위이며 별도 제안
+사항이다. 그때까지 **커밋된 데이터와 커밋된 문구는 서로 어긋난 채로 남는다.**
 
 원본 자체는 raw-root(`../deliciousmap-raw/gwangju/`)에 15개 모두 있다. 열지 않은 것은 사용자
 결정이며, 파일이 없어서가 아니다.
@@ -66,8 +74,9 @@
 - 광산 `1592-1`은 16행 가운데 앞 11행의 합만 `계`에 적혀 있다(#99 실측).
 - 나머지 합계 불일치 셋은 원본의 `계`가 그 표의 지출 합과 다르다는 것까지만 적었다.
 
-**어긋난 줄은 없다.** 15줄의 `candidates`와 결함 행은 모두 `parse.json`의 원본별 보고와 같아
-고칠 줄이 없었다. 다만 이 일치는 코드가 낸 값끼리의 일치이지 원본과의 일치가 아니다.
+**어긋난 줄은 없다.** 15줄의 `candidates`·`rows`·`finding`·`organization`을 `parse.json`의
+원본별 보고와 `fetch.json`의 기관과 맞춰 보았고 고칠 줄이 없었다. 다만 이 일치는 코드가 낸
+값끼리의 일치이지 원본과의 일치가 아니다.
 
 ## 대조 대상이 아닌 미해결 9개
 
@@ -92,6 +101,13 @@
 가리키면 실행을 세운다(`storage._validate_source_reviews`). 15줄이 그 검사를 지나는지 보려고
 [#106](issue-106.md)의 선례대로 `data/`를 임시 폴더에 복사해 그쪽에서만 돌렸다.
 
+**이 검사가 보는 것은 둘뿐이다** — 가리킨 원본이 이번 보고에서도 미해결인지, 그리고
+`candidates`가 보고와 같은지다. `rows`·`finding`·`organization`은 읽지 않으므로 종료 코드 0이
+그 셋까지 보증하지 않는다. 그 셋은 위 "줄마다 무엇이 달라졌나" 절처럼 `parse.json`·`fetch.json`과
+따로 맞춰 보았다.
+
+양쪽 공통(저장소 루트):
+
 ```text
 uv run python -m deliciousmap parse --city gwangju --data-root <임시>/data-check
 ```
@@ -109,6 +125,8 @@ uv run python -m deliciousmap parse --city gwangju --data-root <임시>/data-che
 
 같은 임시 폴더에서 `build`를 두 번 돌려 대조 전후를 비교했다. 지도 SDK 키는 화면 문구와
 무관하므로 검증용 값을 넣었고, 출력도 임시 폴더로 보냈다.
+
+양쪽 공통(저장소 루트):
 
 ```text
 uv run python -m deliciousmap build --city gwangju --data-root <임시>/data-check --output-root <임시>/dist-check
@@ -160,7 +178,10 @@ gitleaks는 `gitleaks detect -c .gitleaks.toml`로 돌렸고 268개 커밋에서
 ## 남은 제한
 
 - **사람이 원본을 열어 대조하지는 않았다.** 근거는 코드 전수 훑기(#62·#99)의 전재와 PR 검토다.
-  폴백 정책 59줄의 문구와 이 관례의 간극은 그대로 남는다.
+  폴백 정책 59줄·`CONTEXT.md`·`SourceReview` 주석의 문구와 이 관례의 간극은 그대로 남는다.
+- **`confirmed_by`가 적은 `PR 검토`는 아직 일어나지 않은 일이다.** 값은 커밋 시점에 들어갔고
+  검토는 이 PR에서 이루어진다. AGENTS.md는 승인 0·셀프 머지를 허용하므로, 아무도 보지 않고
+  머지하면 15줄이 적은 근거가 글자 그대로 거짓이 된다. 이 PR은 사람이 읽고 머지해야 한다.
 - 다섯 구 6줄의 `evidence`에는 금액이 없다. 시청 9줄과 자세함이 다르다.
 - 이 PR은 미해결 24개를 줄이지 않는다. 15개가 원본 결함 확정으로 갈릴 뿐이고, 남은 9개는
   #112·#113과 이 이슈 밖 4개다.
