@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import math
 import unicodedata
 from collections.abc import Sequence
 
@@ -11,6 +12,7 @@ from deliciousmap.contracts import (
     CandidateSource,
     ConfirmedPlace,
     GeocodeResult,
+    PlaceCandidate,
     Record,
     RestoredName,
 )
@@ -18,7 +20,16 @@ from deliciousmap.contracts import (
 # identity-2: 업소 확인이 상호 범위를 선언할 수 있게 됐다(#64).
 # identity-3: 이름 없는 동행 업소의 꼬리말(`외 N`)을 뗀 이름을 근거와 대조하고(#127),
 # 합쳐 적은 상호를 사람이 확인하지 않은 레코드를 전용 사유로 보류한다(#117).
-POLICY_VERSION = "identity-3"
+# identity-4: 독립 근거가 없어도 네이버·인허가가 도시 안에서 같은 상호·지점·주소를 가리키면
+# 제공자 합의(ProviderCross)로 채택하고, 제공자 좌표 차이는 200 m까지 허용한다(ADR-0009).
+POLICY_VERSION = "identity-4"
+
+# 서로 다른 제공자가 같은 업소로 겹쳤을 때 허용하는 좌표 차이. 인허가 좌표는 중부원점TM을
+# 변환한 값이라 같은 건물도 수 m~수십 m 어긋난다(광주 실측 최대 166 m, ADR-0009).
+COORDINATE_TOLERANCE_M = 200
+# 겹친 좌표 가운데 마커에 쓰는 순서. 네이버는 WGS84 원값이라 변환 오차가 없다.
+COORDINATE_PREFERENCE = ("naver", "local", "license")
+EARTH_RADIUS_M = 6_371_000
 
 # 판정 키가 레코드에서 값으로 담는 칸. `decide_identity`가 레코드의 값으로 읽는 것이 이 둘뿐이다 —
 # `record_id`는 판정을 그 지출에 묶고, `merchant`는 확정 복원명이 없을 때 근거와 맞춰 볼 이름의
@@ -72,12 +83,16 @@ def lookup_key(
     confirmation: ConfirmedPlace | None,
     restoration: RestoredName | None,
     dependency_key: str,
+    *,
+    address_prefixes: tuple[str, ...] = (),
 ) -> str:
     return digest(
         {
             "policy": POLICY_VERSION,
             "record": record.model_dump(mode="json", include=set(KEYED_RECORD_FIELDS)),
             "held_as_merged": held_as_merged(record),
+            # 제공자 합의가 도시 안으로 보는 접두. 판정이 읽는 값이므로 키에 담는다(ADR-0005).
+            "address_prefixes": list(address_prefixes),
             "dependencies": dependency_key,
             "lookup": lookup.model_dump(mode="json"),
             "confirmation": confirmation.model_dump(mode="json") if confirmation else None,
@@ -93,12 +108,20 @@ def decide_identity(
     restoration: RestoredName | None = None,
     *,
     dependency_key: str,
+    address_prefixes: tuple[str, ...] = (),
 ) -> GeocodeResult:
-    """Require independent name, branch and address facts; never infer missing context."""
+    """독립 근거(IndependentRoot)나 제공자 합의(ProviderCross)로만 확정한다. 추측하지 않는다."""
     common = {
         "record_id": record.record_id,
         "merchant": record.merchant,
-        "lookup_key": lookup_key(record, lookup, confirmation, restoration, dependency_key),
+        "lookup_key": lookup_key(
+            record,
+            lookup,
+            confirmation,
+            restoration,
+            dependency_key,
+            address_prefixes=address_prefixes,
+        ),
         "dependency_key": dependency_key,
         "lookup": lookup,
         "confirmation": confirmation,
@@ -142,8 +165,22 @@ def decide_identity(
                 == place_identity(confirmation.merchant, confirmation.branch, confirmation.address)
             )
         ]
+    elif not facts:
+        # 담당자가 독립 근거를 적지 않은 레코드. 후보 하나가 스스로 밝힌 주소는 근거가 아니지만,
+        # 서로 다른 두 제공자가 도시 안에서 같은 업소를 가리키면 근거가 겹친 것으로 본다.
+        agreed = provider_cross(lookup.candidates, expected_name, address_prefixes)
+        if not agreed:
+            return unresolved("insufficient_evidence")
+        if len(agreed) != 1:
+            return unresolved("conflicting_evidence")
+        expected: tuple[str, str, str] | None = next(iter(agreed))
+        matches = [
+            candidate
+            for candidate in lookup.candidates
+            if (place_identity(candidate.merchant, candidate.branch, candidate.address) == expected)
+        ]
     else:
-        if not facts or any(fact.address is None for fact in facts):
+        if any(fact.address is None for fact in facts):
             return unresolved("missing_address")
         candidate_references = {candidate.source.reference for candidate in lookup.candidates}
         if all(fact.source in candidate_references for fact in facts):
@@ -169,17 +206,22 @@ def decide_identity(
     providers = [candidate.source.provider for candidate in matches]
     if len(providers) != len(set(providers)):
         return unresolved("ambiguous")
-    # 서로 다른 제공자가 같은 업소를 가리키면 근거가 겹친 것이다. 좌표가 어긋나면 충돌이다.
-    coordinates = {
-        (candidate.latitude, candidate.longitude)
+    # 서로 다른 제공자가 같은 업소를 가리키면 근거가 겹친 것이다. 좌표가 허용 오차 밖이면 충돌이다.
+    located = [
+        candidate
         for candidate in matches
         if candidate.latitude is not None and candidate.longitude is not None
-    }
-    if len(coordinates) > 1:
-        return unresolved("conflicting_evidence")
-    if not coordinates:
+    ]
+    if not located:
         return unresolved("missing_coordinates")
-    latitude, longitude = next(iter(coordinates))
+    if any(
+        distance_m(first, second) > COORDINATE_TOLERANCE_M
+        for index, first in enumerate(located)
+        for second in located[index + 1 :]
+    ):
+        return unresolved("conflicting_evidence")
+    chosen = min(located, key=lambda item: _coordinate_rank(item.source.provider))
+    latitude, longitude = chosen.latitude, chosen.longitude
     candidate = matches[0]
     return GeocodeResult.model_validate(
         {
@@ -202,21 +244,65 @@ def decide_identity(
             "confirmed_merchant": candidate.merchant,
             "latitude": latitude,
             "longitude": longitude,
-            "evidence": _evidence(confirmation, restoration, providers),
+            "evidence": _evidence(confirmation, restoration, providers, cross=not facts),
         }
     )
+
+
+def provider_cross(
+    candidates: Sequence[PlaceCandidate], expected_name: str, address_prefixes: tuple[str, ...]
+) -> set[tuple[str, str, str]]:
+    """제공자 합의(ProviderCross): 서로 다른 제공자 둘 이상이 레코드의 상호와 같은 이름으로
+    같은 지점·주소를 가리키고 그 주소가 도시 안인 업소들. 접두가 없는 도시는 합의가 없다."""
+    prefixes = [normalized(prefix) for prefix in address_prefixes]
+    providers: dict[tuple[str, str, str], set[str]] = {}
+    for candidate in candidates:
+        identity = place_identity(candidate.merchant, candidate.branch, candidate.address)
+        if identity is None or identity[0] != normalized(expected_name):
+            continue
+        if not any(identity[2].startswith(prefix) for prefix in prefixes):
+            continue
+        providers.setdefault(identity, set()).add(candidate.source.provider)
+    return {identity for identity, found in providers.items() if len(found) >= 2}
+
+
+def distance_m(first: PlaceCandidate, second: PlaceCandidate) -> float:
+    """두 후보 좌표의 대원 거리(m). 좌표가 없는 후보는 부르지 않는다."""
+    assert first.latitude is not None and first.longitude is not None
+    assert second.latitude is not None and second.longitude is not None
+    lat1, lon1, lat2, lon2 = map(
+        math.radians, (first.latitude, first.longitude, second.latitude, second.longitude)
+    )
+    spread = (
+        math.sin((lat2 - lat1) / 2) ** 2
+        + math.cos(lat1) * math.cos(lat2) * math.sin((lon2 - lon1) / 2) ** 2
+    )
+    return 2 * EARTH_RADIUS_M * math.asin(math.sqrt(spread))
+
+
+def _coordinate_rank(provider: str) -> int:
+    if provider in COORDINATE_PREFERENCE:
+        return COORDINATE_PREFERENCE.index(provider)
+    return len(COORDINATE_PREFERENCE)
 
 
 def _evidence(
     confirmation: ConfirmedPlace | None,
     restoration: RestoredName | None,
     providers: Sequence[str],
+    *,
+    cross: bool,
 ) -> str:
     if confirmation is not None:
         return confirmation.evidence
-    agreement = (
-        "restored-name-branch-address-agreement" if restoration else "name-branch-address-agreement"
-    )
+    if cross:
+        agreement = "restored-name-provider-cross" if restoration else "provider-cross"
+    else:
+        agreement = (
+            "restored-name-branch-address-agreement"
+            if restoration
+            else "name-branch-address-agreement"
+        )
     if len(providers) == 1:
         return agreement
     # 여러 제공자의 근거가 겹쳐 하나의 업소를 가리키면 어느 출처가 일치했는지 함께 남긴다.

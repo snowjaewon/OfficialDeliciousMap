@@ -71,6 +71,9 @@ class City:
     name: str
     map_bounds: MapBounds
     organizations: tuple[Organization, ...] = ()
+    # 제공자 합의(ProviderCross)가 "도시 안"으로 보는 후보 주소의 접두. 비워 두면 그 도시는
+    # 제공자 합의로 업소를 확정하지 않는다. 실측한 도시에만 적는다.
+    address_prefixes: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

@@ -449,7 +449,8 @@ def test_failed_results_are_reused_until_explicit_retry_or_changed_evidence(tmp_
 @pytest.mark.parametrize(
     "case,reason",
     [
-        ("no_facts", "missing_address"),
+        # 근거를 적지 않은 레코드는 후보 하나의 주소로 확정하지 않는다(ADR-0009).
+        ("no_facts", "insufficient_evidence"),
         ("no_address", "missing_address"),
         ("no_branch", "unknown_branch"),
         ("conflict", "conflicting_evidence"),
@@ -735,8 +736,8 @@ def test_merchant_scoped_confirmation_maps_every_record_without_address_evidence
     save_input(context, first, second)
     assert run_cli(context, "geocode") == 0
     assert [item["reason"] for item in payload(context, "geocode")["results"]] == [
-        "missing_address",
-        "missing_address",
+        "insufficient_evidence",
+        "insufficient_evidence",
     ]
 
     write_text(

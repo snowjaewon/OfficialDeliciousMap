@@ -30,9 +30,12 @@ from tests.test_naver_lookup_cli import (
 )
 
 SERVICE_KEY = "합성-인허가-서비스키"
-# 중부원점TM(EPSG:5174) 좌표 한 쌍과 그 WGS84 변환 결과. 네이버 좌표와 미터 단위로 어긋난다.
-LICENSE_X, LICENSE_Y = "391413.5", "179897.3"
-LATITUDE, LONGITUDE = 35.09999996577751, 129.0999995838682
+# 중부원점TM(EPSG:5174) 좌표 한 쌍과 그 WGS84 변환 결과. 네이버 좌표(35.1, 129.1)에서 약 300 m
+# 북쪽이라 허용 오차 200 m 밖이다. 오차 안의 좌표는 아래 NEARBY_X, NEARBY_Y다.
+LICENSE_X, LICENSE_Y = "391413.5", "180197.3"
+LATITUDE, LONGITUDE = 35.10270223741562, 129.10006886326784
+# 네이버 좌표에서 수 cm 떨어진 인허가 좌표. 같은 건물의 변환 오차 수준이다.
+NEARBY_X, NEARBY_Y = "391413.5", "179897.3"
 
 
 @pytest.fixture
@@ -176,6 +179,23 @@ def test_license_coordinates_complete_a_naver_candidate_without_usable_ones(
     for stage in ("closure", "build"):
         assert run_cli(context, stage) == 0
     assert payload(context, "build")["marker_count"] == 1
+
+
+def test_license_coordinates_within_the_tolerance_agree_and_naver_coordinates_win(
+    tmp_path: Path, licensed: None, searched: None
+) -> None:
+    """변환 오차 수준으로 어긋난 두 좌표는 같은 업소다. 마커는 원값인 네이버 좌표를 쓴다."""
+    context = prepare(tmp_path)
+    save_input(context, evidence_only())
+    naver = FakeTransport(naver_body(matching_place()))
+    licenses = FakeLicenseTransport(
+        license_body(license_item("같은 식당 부산점", ROAD_ADDRESS, x=NEARBY_X, y=NEARBY_Y))
+    )
+    assert run_cli(context, "geocode", licenses=licenses, naver=naver) == 0
+    result = geocoded(context)
+    assert result["reason"] == "matched"
+    assert (result["latitude"], result["longitude"]) == (35.1, 129.1)
+    assert result["evidence"] == "name-branch-address-agreement license+naver"
 
 
 def test_conflicting_provider_coordinates_wait_for_a_scoped_confirmation(

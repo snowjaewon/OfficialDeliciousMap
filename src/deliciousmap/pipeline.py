@@ -249,6 +249,7 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
                     restorations=restorations,
                     previous=store.previous_geocodes(),
                     retry_failed=context.retry_failed,
+                    address_prefixes=context.target.city.address_prefixes,
                 ),
                 context,
             )

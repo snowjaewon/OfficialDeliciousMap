@@ -753,6 +753,7 @@ class ArtifactStore:
                     item.confirmation,
                     item.restoration,
                     item.dependency_key,
+                    address_prefixes=self.target.city.address_prefixes,
                 ):
                     raise ValueError("geocode dependency mismatch")
         elif isinstance(output, ClosureOutput):

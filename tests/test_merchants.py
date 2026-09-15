@@ -62,6 +62,8 @@ FROZEN = {
         "외 1": Companions("외 1", 0),
     },
 }
+# identity-4는 제공자 합의(ADR-0009)로 올랐고 꼬리말 규칙은 그대로다.
+FROZEN[("tail-1", "identity-4")] = FROZEN[("tail-1", "identity-3")]
 
 
 @pytest.mark.parametrize("merchant", sorted(TAILS))

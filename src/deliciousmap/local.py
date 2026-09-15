@@ -80,7 +80,14 @@ class LocalAdapters:
             lookup = lookups[record.record_id]
             confirmation = confirmations.get(record.record_id)
             restored = restorations.get(record.record_id)
-            key = lookup_key(record, lookup, confirmation, restored, value.dependency_key)
+            key = lookup_key(
+                record,
+                lookup,
+                confirmation,
+                restored,
+                value.dependency_key,
+                address_prefixes=value.address_prefixes,
+            )
             cached = previous.get(key)
             if cached is not None and (cached.status == "success" or not value.retry_failed):
                 results.append(cached)
@@ -92,6 +99,7 @@ class LocalAdapters:
                         confirmation,
                         restored,
                         dependency_key=value.dependency_key,
+                        address_prefixes=value.address_prefixes,
                     )
                 )
         return GeocodeOutput(results=reconcile_coordinates(tuple(results)))
