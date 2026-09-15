@@ -1,1 +1,1 @@
-record_id,spent_on,organization,department,merchant,purpose,amount_krw,source_hash,source_location,repeats
+record_id,spent_on,organization,department,merchant,purpose,amount_krw,source_hash,source_location,repeats,expense_id,expense_amount_krw
