@@ -125,13 +125,16 @@ record_id,spent_on,organization,department,merchant,purpose,amount_krw,source_ha
 244d095fd9a344a8-sheet1-R8,2026-01-20,gwangju-seo,,개인(성명 비공개),보건소 직원 경조사,50000,244d095fd9a344a826015f5cb2dc26d571766ba0dc4b25b33e74c796daaaddfa,sheet1:R8,,,
 244d095fd9a344a8-sheet1-R9,2026-01-22,gwangju-seo,,동진계절음식점,상반기 인사이동에 따른 국별 현안업무 논의,485000,244d095fd9a344a826015f5cb2dc26d571766ba0dc4b25b33e74c796daaaddfa,sheet1:R9,,,
 244d095fd9a344a8-sheet1-R10,2026-02-03,gwangju-seo,,마천루,의약업무 관련 의료기관 관계자 업무 간담회,224000,244d095fd9a344a826015f5cb2dc26d571766ba0dc4b25b33e74c796daaaddfa,sheet1:R10,,,
-244d095fd9a344a8-sheet1-R11,2026-02-09,gwangju-seo,,신청담한우/오인절미브런치카페,설 연휴 응급의료 및 재난의료 관련 의료기관 간담회,144000,244d095fd9a344a826015f5cb2dc26d571766ba0dc4b25b33e74c796daaaddfa,sheet1:R11,,,
+244d095fd9a344a8-sheet1-R11#1,2026-02-09,gwangju-seo,,신청담한우,설 연휴 응급의료 및 재난의료 관련 의료기관 간담회,,244d095fd9a344a826015f5cb2dc26d571766ba0dc4b25b33e74c796daaaddfa,sheet1:R11,,244d095fd9a344a8-sheet1-R11,144000
+244d095fd9a344a8-sheet1-R11#2,2026-02-09,gwangju-seo,,오인절미브런치카페,설 연휴 응급의료 및 재난의료 관련 의료기관 간담회,,244d095fd9a344a826015f5cb2dc26d571766ba0dc4b25b33e74c796daaaddfa,sheet1:R11,,244d095fd9a344a8-sheet1-R11,144000
 244d095fd9a344a8-sheet1-R12,2026-02-11,gwangju-seo,,민족감자탕,의약업무 관련 의료기관 관계자 업무 간담회,81000,244d095fd9a344a826015f5cb2dc26d571766ba0dc4b25b33e74c796daaaddfa,sheet1:R12,,,
 244d095fd9a344a8-sheet1-R13,2026-02-13,gwangju-seo,,마천루,설 연휴 응급의료 및 재난의료 관련 의료기관 간담회,105000,244d095fd9a344a826015f5cb2dc26d571766ba0dc4b25b33e74c796daaaddfa,sheet1:R13,,,
 244d095fd9a344a8-sheet1-R14,2026-02-24,gwangju-seo,,옥과한우촌,헌혈 및 장기기증 희망 등록행사 운영 관련 관계자 간담회,56000,244d095fd9a344a826015f5cb2dc26d571766ba0dc4b25b33e74c796daaaddfa,sheet1:R14,,,
-244d095fd9a344a8-sheet1-R15,2026-02-25,gwangju-seo,,홍아네/카페올가,2026년 찾아가는 건강캠프 운영 관련 부서 간담회,246300,244d095fd9a344a826015f5cb2dc26d571766ba0dc4b25b33e74c796daaaddfa,sheet1:R15,,,
+244d095fd9a344a8-sheet1-R15#1,2026-02-25,gwangju-seo,,홍아네,2026년 찾아가는 건강캠프 운영 관련 부서 간담회,,244d095fd9a344a826015f5cb2dc26d571766ba0dc4b25b33e74c796daaaddfa,sheet1:R15,,244d095fd9a344a8-sheet1-R15,246300
+244d095fd9a344a8-sheet1-R15#2,2026-02-25,gwangju-seo,,카페올가,2026년 찾아가는 건강캠프 운영 관련 부서 간담회,,244d095fd9a344a826015f5cb2dc26d571766ba0dc4b25b33e74c796daaaddfa,sheet1:R15,,244d095fd9a344a8-sheet1-R15,246300
 244d095fd9a344a8-sheet1-R16,2026-02-26,gwangju-seo,,신청담한우,헌혈 및 장기기증 희망 등록행사 운영 관련 관계자 간담회,102000,244d095fd9a344a826015f5cb2dc26d571766ba0dc4b25b33e74c796daaaddfa,sheet1:R16,,,
-244d095fd9a344a8-sheet1-R17,2026-03-10,gwangju-seo,,낙지마을/메가MGC커피,찾아가는 통합건강캠프 운영 관련 관계자 간담회,142500,244d095fd9a344a826015f5cb2dc26d571766ba0dc4b25b33e74c796daaaddfa,sheet1:R17,,,
+244d095fd9a344a8-sheet1-R17#1,2026-03-10,gwangju-seo,,낙지마을,찾아가는 통합건강캠프 운영 관련 관계자 간담회,,244d095fd9a344a826015f5cb2dc26d571766ba0dc4b25b33e74c796daaaddfa,sheet1:R17,,244d095fd9a344a8-sheet1-R17,142500
+244d095fd9a344a8-sheet1-R17#2,2026-03-10,gwangju-seo,,메가MGC커피,찾아가는 통합건강캠프 운영 관련 관계자 간담회,,244d095fd9a344a826015f5cb2dc26d571766ba0dc4b25b33e74c796daaaddfa,sheet1:R17,,244d095fd9a344a8-sheet1-R17,142500
 244d095fd9a344a8-sheet1-R18,2026-03-13,gwangju-seo,,한우촌식당,유덕동 다목적센터 건립 관련 관계자 간담회,70000,244d095fd9a344a826015f5cb2dc26d571766ba0dc4b25b33e74c796daaaddfa,sheet1:R18,,,
 9bc350bf54a9fb11-sheet1-R4,2026-01-02,gwangju-seo,,고담,민관협력사업 추진을 위한 관계자 간담회,488000,9bc350bf54a9fb11f8e27be7d67b282347564f2595d0f0faf7282b4419f293af,sheet1:R4,,,
 9bc350bf54a9fb11-sheet1-R5,2026-01-07,gwangju-seo,,빠키카세,신중년 일자리센터 운영 지원을 위한 관계자 시책 간담회,161000,9bc350bf54a9fb11f8e27be7d67b282347564f2595d0f0faf7282b4419f293af,sheet1:R5,,,
@@ -195,7 +198,8 @@ record_id,spent_on,organization,department,merchant,purpose,amount_krw,source_ha
 1e44d518f85f9e79-sheet1-R28,2026-03-20,gwangju-seo,,양푼갈비찜,안전보안관 활동추진 방안논의 등을 위한 관계자 간담회,250000,1e44d518f85f9e794624380778457283b067f3855a7fcb8813934d0911f6d1eb,sheet1:R28,,,
 1e44d518f85f9e79-sheet1-R29,2026-03-24,gwangju-seo,,지글지글,건설공사장 안전점검 방안논의 등을 위한 관계자 간담회,210000,1e44d518f85f9e794624380778457283b067f3855a7fcb8813934d0911f6d1eb,sheet1:R29,,,
 1e44d518f85f9e79-sheet1-R30,2026-03-27,gwangju-seo,,바다장어,지역방재단 예찰 활동 점검 등에 따른 향후 관리 방안 논의,191000,1e44d518f85f9e794624380778457283b067f3855a7fcb8813934d0911f6d1eb,sheet1:R30,,,
-1e44d518f85f9e79-sheet1-R31,2026-03-30,gwangju-seo,,"심청담한우,오인절미",재해위험 시설 및 인명피해지역 등의 안전관리 체계 구축 추진 방향 논의,404500,1e44d518f85f9e794624380778457283b067f3855a7fcb8813934d0911f6d1eb,sheet1:R31,,,
+1e44d518f85f9e79-sheet1-R31#1,2026-03-30,gwangju-seo,,심청담한우,재해위험 시설 및 인명피해지역 등의 안전관리 체계 구축 추진 방향 논의,,1e44d518f85f9e794624380778457283b067f3855a7fcb8813934d0911f6d1eb,sheet1:R31,,1e44d518f85f9e79-sheet1-R31,404500
+1e44d518f85f9e79-sheet1-R31#2,2026-03-30,gwangju-seo,,오인절미,재해위험 시설 및 인명피해지역 등의 안전관리 체계 구축 추진 방향 논의,,1e44d518f85f9e794624380778457283b067f3855a7fcb8813934d0911f6d1eb,sheet1:R31,,1e44d518f85f9e79-sheet1-R31,404500
 1e44d518f85f9e79-sheet1-R32,2026-03-31,gwangju-seo,,갈무리,건축법 위반행위 예방을 위한 예찰활동 추진 방향 등 논의를 위한 관계자 간담회,155000,1e44d518f85f9e794624380778457283b067f3855a7fcb8813934d0911f6d1eb,sheet1:R32,,,
 1e44d518f85f9e79-sheet2-R2,2026-01-12,gwangju-seo,,한우촌,각종 재난상황 발생시 대처방향 등 주요현안 업무 추진을 위해 고생한 직원 격려,291000,1e44d518f85f9e794624380778457283b067f3855a7fcb8813934d0911f6d1eb,sheet2:R2,,,
 1e44d518f85f9e79-sheet2-R3,2026-01-19,gwangju-seo,,예향계절한정식,안전도시국 주요 현안업무 추진에 따른 직원들과 업무연찬 간담회,160000,1e44d518f85f9e794624380778457283b067f3855a7fcb8813934d0911f6d1eb,sheet2:R3,,,
@@ -321,7 +325,8 @@ ed582b540985e942-sheet1-R5,2026-01-07,gwangju-seo,주민자치과,뜰안에,주�
 ed582b540985e942-sheet1-R6,2026-01-07,gwangju-seo,주민자치과,오일내 금호점,2026년 마을공동체 네트워크 강화를 위한 마을공동체 관계자 간담회,111000,ed582b540985e942dd2a3ad4c08b0017b0aa1e36f97022fc01781d8ce4ddd835,sheet1:R6,,,
 ed582b540985e942-sheet1-R7,2026-01-09,gwangju-seo,주민자치과,한정식 고담,주민자치협의회 구성 완료에 따른 임원진 오찬 간담회,450000,ed582b540985e942dd2a3ad4c08b0017b0aa1e36f97022fc01781d8ce4ddd835,sheet1:R7,,,
 ed582b540985e942-sheet1-R8,2026-01-09,gwangju-seo,주민자치과,정인초밥,서구마을합창단 행사준비 등 추진방향 논의를 위한 관계자 간담회,67000,ed582b540985e942dd2a3ad4c08b0017b0aa1e36f97022fc01781d8ce4ddd835,sheet1:R8,,,
-ed582b540985e942-sheet1-R9,2026-01-12,gwangju-seo,주민자치과,"농성골, 노바토로스터스",동 중심 생활정부 운영 방향 관계자 협의 간담회,84000,ed582b540985e942dd2a3ad4c08b0017b0aa1e36f97022fc01781d8ce4ddd835,sheet1:R9,,,
+ed582b540985e942-sheet1-R9#1,2026-01-12,gwangju-seo,주민자치과,농성골,동 중심 생활정부 운영 방향 관계자 협의 간담회,,ed582b540985e942dd2a3ad4c08b0017b0aa1e36f97022fc01781d8ce4ddd835,sheet1:R9,,ed582b540985e942-sheet1-R9,84000
+ed582b540985e942-sheet1-R9#2,2026-01-12,gwangju-seo,주민자치과,노바토로스터스,동 중심 생활정부 운영 방향 관계자 협의 간담회,,ed582b540985e942dd2a3ad4c08b0017b0aa1e36f97022fc01781d8ce4ddd835,sheet1:R9,,ed582b540985e942-sheet1-R9,84000
 ed582b540985e942-sheet1-R10,2026-01-13,gwangju-seo,주민자치과,"가매, 라이크앤",서구아카데미 행사 추진을 위한 관계자 오찬간담회,391500,ed582b540985e942dd2a3ad4c08b0017b0aa1e36f97022fc01781d8ce4ddd835,sheet1:R10,,,
 ed582b540985e942-sheet1-R11,2026-01-14,gwangju-seo,주민자치과,농성골,함께서구 행복학교 운영 관련 현장 의견 수렴을 위한 관계자 간담회,96000,ed582b540985e942dd2a3ad4c08b0017b0aa1e36f97022fc01781d8ce4ddd835,sheet1:R11,,,
 ed582b540985e942-sheet1-R12,2026-01-15,gwangju-seo,주민자치과,"뜰안에, 서구자활 청춘발산",동 중심 생활정부 고도화를 위한 신규 동장 간담회,101800,ed582b540985e942dd2a3ad4c08b0017b0aa1e36f97022fc01781d8ce4ddd835,sheet1:R12,,,
@@ -358,7 +363,8 @@ ed582b540985e942-sheet1-R39,2026-03-31,gwangju-seo,주민자치과,미꾸미락 
 5c6f1685da93ed76-sheet1-R5,2026-01-12,gwangju-seo,,회뜨는마을,지역문화예술인 활동 지원 방안 논의,409000,5c6f1685da93ed76f5072e7a63d5c52a4a490a5e3f1f17e7715c41bb844be135,sheet1:R5,,,
 5c6f1685da93ed76-sheet1-R6,2026-01-15,gwangju-seo,,(주)해동활어,소통테마길 조성 사업 논의를 위한 관계자 간담회,142000,5c6f1685da93ed76f5072e7a63d5c52a4a490a5e3f1f17e7715c41bb844be135,sheet1:R6,,,
 5c6f1685da93ed76-sheet1-R7,2026-01-22,gwangju-seo,,(주)해동활어,반려동물 친화정책 발굴 및 추진방안 논의,100000,5c6f1685da93ed76f5072e7a63d5c52a4a490a5e3f1f17e7715c41bb844be135,sheet1:R7,,,
-5c6f1685da93ed76-sheet1-R8,2026-02-02,gwangju-seo,,"풍암동 두번째집, 스타벅스 풍암호수공원점",지역사회 문화예술 사절단 서구여성합창단 운영방안 논의,463900,5c6f1685da93ed76f5072e7a63d5c52a4a490a5e3f1f17e7715c41bb844be135,sheet1:R8,,,
+5c6f1685da93ed76-sheet1-R8#1,2026-02-02,gwangju-seo,,풍암동 두번째집,지역사회 문화예술 사절단 서구여성합창단 운영방안 논의,,5c6f1685da93ed76f5072e7a63d5c52a4a490a5e3f1f17e7715c41bb844be135,sheet1:R8,,5c6f1685da93ed76-sheet1-R8,463900
+5c6f1685da93ed76-sheet1-R8#2,2026-02-02,gwangju-seo,,스타벅스 풍암호수공원점,지역사회 문화예술 사절단 서구여성합창단 운영방안 논의,,5c6f1685da93ed76f5072e7a63d5c52a4a490a5e3f1f17e7715c41bb844be135,sheet1:R8,,5c6f1685da93ed76-sheet1-R8,463900
 5c6f1685da93ed76-sheet1-R9,2026-02-04,gwangju-seo,,동진계절음식,골목상권 활성화 방안 논의,200000,5c6f1685da93ed76f5072e7a63d5c52a4a490a5e3f1f17e7715c41bb844be135,sheet1:R9,,,
 5c6f1685da93ed76-sheet1-R10,2026-02-05,gwangju-seo,,백년미가 유촌점,골목상권 우수정책 성과 공유 및 발전방안 모색 등,910000,5c6f1685da93ed76f5072e7a63d5c52a4a490a5e3f1f17e7715c41bb844be135,sheet1:R10,,,
 5c6f1685da93ed76-sheet1-R11,2026-02-09,gwangju-seo,,오마니덕,문화경제국 현안사업 추진 논의,90000,5c6f1685da93ed76f5072e7a63d5c52a4a490a5e3f1f17e7715c41bb844be135,sheet1:R11,,,
@@ -366,7 +372,8 @@ ed582b540985e942-sheet1-R39,2026-03-31,gwangju-seo,주민자치과,미꾸미락 
 5c6f1685da93ed76-sheet1-R13,2026-02-19,gwangju-seo,,시골농장,제11회 광주서창억새축제 기본계획 수립 등 추진방안 논의,106000,5c6f1685da93ed76f5072e7a63d5c52a4a490a5e3f1f17e7715c41bb844be135,sheet1:R13,,,
 5c6f1685da93ed76-sheet1-R14,2026-02-23,gwangju-seo,,신청담한우,생활체육 활동지원 및 활성화 방안 논의 등,302000,5c6f1685da93ed76f5072e7a63d5c52a4a490a5e3f1f17e7715c41bb844be135,sheet1:R14,,,
 5c6f1685da93ed76-sheet1-R15,2026-02-26,gwangju-seo,,이헌한우 두번째이야기,골목상권 활성화 방안 논의를 위한 관계자 간담회,432000,5c6f1685da93ed76f5072e7a63d5c52a4a490a5e3f1f17e7715c41bb844be135,sheet1:R15,,,
-5c6f1685da93ed76-sheet1-R16,2026-02-27,gwangju-seo,,"신청담한우, 오인절미브런치카페",서구 장애인생활체육 활동지원 및 활성화 방안 논의,435200,5c6f1685da93ed76f5072e7a63d5c52a4a490a5e3f1f17e7715c41bb844be135,sheet1:R16,,,
+5c6f1685da93ed76-sheet1-R16#1,2026-02-27,gwangju-seo,,신청담한우,서구 장애인생활체육 활동지원 및 활성화 방안 논의,,5c6f1685da93ed76f5072e7a63d5c52a4a490a5e3f1f17e7715c41bb844be135,sheet1:R16,,5c6f1685da93ed76-sheet1-R16,435200
+5c6f1685da93ed76-sheet1-R16#2,2026-02-27,gwangju-seo,,오인절미브런치카페,서구 장애인생활체육 활동지원 및 활성화 방안 논의,,5c6f1685da93ed76f5072e7a63d5c52a4a490a5e3f1f17e7715c41bb844be135,sheet1:R16,,5c6f1685da93ed76-sheet1-R16,435200
 5c6f1685da93ed76-sheet1-R17,2026-03-03,gwangju-seo,,신청담한우,독서문화 활성화 프로그램 운영 논의를 위한 관계자 간담회,285500,5c6f1685da93ed76f5072e7a63d5c52a4a490a5e3f1f17e7715c41bb844be135,sheet1:R17,,,
 5c6f1685da93ed76-sheet1-R18,2026-03-09,gwangju-seo,,라이크앤,빛고을국악전수관 운영 활성화 방안 논의,134100,5c6f1685da93ed76f5072e7a63d5c52a4a490a5e3f1f17e7715c41bb844be135,sheet1:R18,,,
 5c6f1685da93ed76-sheet1-R19,2026-03-18,gwangju-seo,,이헌한우 두번째이야기,반려동물 친화정책 추진방안 논의,68000,5c6f1685da93ed76f5072e7a63d5c52a4a490a5e3f1f17e7715c41bb844be135,sheet1:R19,,,
@@ -425,7 +432,8 @@ b1b278fef019845f-sheet1-R17,2026-05-08,gwangju-seo,,한정식 고담,작은도�
 b1b278fef019845f-sheet1-R18,2026-05-12,gwangju-seo,,토종골생태탕,서빛마루문예회관 기획공연 등 관련 논의를 위한 관계자 간담회,88000,b1b278fef019845f500bb5fce6e363901b89ece2f59840d22cdd5cd6f6f97658,sheet1:R18,,,
 b1b278fef019845f-sheet1-R19,2026-05-14,gwangju-seo,,임마중추어탕,서창한옥문화관 운영 등 관광 활성화 방안 논의,207000,b1b278fef019845f500bb5fce6e363901b89ece2f59840d22cdd5cd6f6f97658,sheet1:R19,,,
 b1b278fef019845f-sheet1-R20,2026-05-19,gwangju-seo,,청해진,상록별빛학교 등 도서관 프로그램 추진 논의를 위한 관계자 간담회,230000,b1b278fef019845f500bb5fce6e363901b89ece2f59840d22cdd5cd6f6f97658,sheet1:R20,,,
-b1b278fef019845f-sheet1-R21,2026-05-20,gwangju-seo,,"창억떡집 중흥본점, 베비에르 풍암본점",2026년 광주RISE사업 연계 추진 등 관련 논의를 위한 간담회 다과 구입,87100,b1b278fef019845f500bb5fce6e363901b89ece2f59840d22cdd5cd6f6f97658,sheet1:R21,,,
+b1b278fef019845f-sheet1-R21#1,2026-05-20,gwangju-seo,,창억떡집 중흥본점,2026년 광주RISE사업 연계 추진 등 관련 논의를 위한 간담회 다과 구입,,b1b278fef019845f500bb5fce6e363901b89ece2f59840d22cdd5cd6f6f97658,sheet1:R21,,b1b278fef019845f-sheet1-R21,87100
+b1b278fef019845f-sheet1-R21#2,2026-05-20,gwangju-seo,,베비에르 풍암본점,2026년 광주RISE사업 연계 추진 등 관련 논의를 위한 간담회 다과 구입,,b1b278fef019845f500bb5fce6e363901b89ece2f59840d22cdd5cd6f6f97658,sheet1:R21,,b1b278fef019845f-sheet1-R21,87100
 b1b278fef019845f-sheet1-R22,2026-05-27,gwangju-seo,,다원명가,2026년 서창 만드리 풍년제 추진 논의 등,97000,b1b278fef019845f500bb5fce6e363901b89ece2f59840d22cdd5cd6f6f97658,sheet1:R22,,,
 b1b278fef019845f-sheet1-R23,2026-05-29,gwangju-seo,,연화식당,자율상권구역 지정 관련 상권활성화 방안 논의,190000,b1b278fef019845f500bb5fce6e363901b89ece2f59840d22cdd5cd6f6f97658,sheet1:R23,,,
 b1b278fef019845f-sheet1-R24,2026-06-01,gwangju-seo,,하해가(미푸드시스템(주)),서구청장배 생활체육대회 추진 논의를 위한 관계자 간담회,141500,b1b278fef019845f500bb5fce6e363901b89ece2f59840d22cdd5cd6f6f97658,sheet1:R24,,,
@@ -600,10 +608,13 @@ fcd10a13ff86d129-sheet1-R21,2026-06-24,gwangju-seo,,월출식당,찾아가는 �
 3cd9fc86b0994b12-sheet1-R18,2026-05-11,gwangju-seo,주민자치과,연탄길,자원봉사센터 및 자생단체 임원진 간담회,450000,3cd9fc86b0994b1284c1fcaef9d1f475684528ab0083410b663e4bd101500222,sheet1:R18,,,
 3cd9fc86b0994b12-sheet1-R19,2026-05-15,gwangju-seo,주민자치과,정인초밥,마을공동체공모사업 추진 및 BI동아리 발굴 등 직원 노고 격려 간담회,75000,3cd9fc86b0994b1284c1fcaef9d1f475684528ab0083410b663e4bd101500222,sheet1:R19,,,
 3cd9fc86b0994b12-sheet1-R20,2026-05-26,gwangju-seo,주민자치과,(유)아웃백스테이크,마을합창단 운영 활성화 관련 주요 관계자 간담회,318800,3cd9fc86b0994b1284c1fcaef9d1f475684528ab0083410b663e4bd101500222,sheet1:R20,,,
-3cd9fc86b0994b12-sheet1-R21,2026-06-02,gwangju-seo,주민자치과,"나주곰탕, 커피코너",선거업무 추진 직원 노고 격려 간담회,57000,3cd9fc86b0994b1284c1fcaef9d1f475684528ab0083410b663e4bd101500222,sheet1:R21,,,
-3cd9fc86b0994b12-sheet1-R22,2026-06-05,gwangju-seo,주민자치과,"명품계절음식점, 커피코너",365 민원실 운영 직원 노고 격려 간담회,53000,3cd9fc86b0994b1284c1fcaef9d1f475684528ab0083410b663e4bd101500222,sheet1:R22,,,
+3cd9fc86b0994b12-sheet1-R21#1,2026-06-02,gwangju-seo,주민자치과,나주곰탕,선거업무 추진 직원 노고 격려 간담회,,3cd9fc86b0994b1284c1fcaef9d1f475684528ab0083410b663e4bd101500222,sheet1:R21,,3cd9fc86b0994b12-sheet1-R21,57000
+3cd9fc86b0994b12-sheet1-R21#2,2026-06-02,gwangju-seo,주민자치과,커피코너,선거업무 추진 직원 노고 격려 간담회,,3cd9fc86b0994b1284c1fcaef9d1f475684528ab0083410b663e4bd101500222,sheet1:R21,,3cd9fc86b0994b12-sheet1-R21,57000
+3cd9fc86b0994b12-sheet1-R22#1,2026-06-05,gwangju-seo,주민자치과,명품계절음식점,365 민원실 운영 직원 노고 격려 간담회,,3cd9fc86b0994b1284c1fcaef9d1f475684528ab0083410b663e4bd101500222,sheet1:R22,,3cd9fc86b0994b12-sheet1-R22,53000
+3cd9fc86b0994b12-sheet1-R22#2,2026-06-05,gwangju-seo,주민자치과,커피코너,365 민원실 운영 직원 노고 격려 간담회,,3cd9fc86b0994b1284c1fcaef9d1f475684528ab0083410b663e4bd101500222,sheet1:R22,,3cd9fc86b0994b12-sheet1-R22,53000
 3cd9fc86b0994b12-sheet1-R23,2026-06-08,gwangju-seo,주민자치과,회뜨는마을,주민자치위원 교육 추진 논의를 위한 관계자 간담회,243000,3cd9fc86b0994b1284c1fcaef9d1f475684528ab0083410b663e4bd101500222,sheet1:R23,,,
-3cd9fc86b0994b12-sheet1-R24,2026-06-12,gwangju-seo,주민자치과,"명품계절음식점, 커피코너",주민자치과 신규 직원 노고 격려 오찬 간담회,121000,3cd9fc86b0994b1284c1fcaef9d1f475684528ab0083410b663e4bd101500222,sheet1:R24,,,
+3cd9fc86b0994b12-sheet1-R24#1,2026-06-12,gwangju-seo,주민자치과,명품계절음식점,주민자치과 신규 직원 노고 격려 오찬 간담회,,3cd9fc86b0994b1284c1fcaef9d1f475684528ab0083410b663e4bd101500222,sheet1:R24,,3cd9fc86b0994b12-sheet1-R24,121000
+3cd9fc86b0994b12-sheet1-R24#2,2026-06-12,gwangju-seo,주민자치과,커피코너,주민자치과 신규 직원 노고 격려 오찬 간담회,,3cd9fc86b0994b1284c1fcaef9d1f475684528ab0083410b663e4bd101500222,sheet1:R24,,3cd9fc86b0994b12-sheet1-R24,121000
 3cd9fc86b0994b12-sheet1-R25,2026-06-12,gwangju-seo,주민자치과,참이맛뼈다귀,마륵근린공원 시설 관리 및 현장 소통을 위한 관계자 간담회,59000,3cd9fc86b0994b1284c1fcaef9d1f475684528ab0083410b663e4bd101500222,sheet1:R25,,,
 3cd9fc86b0994b12-sheet1-R26,2026-06-15,gwangju-seo,주민자치과,본참치(상무),통장단 현안논의 등 임원진 간담회,125000,3cd9fc86b0994b1284c1fcaef9d1f475684528ab0083410b663e4bd101500222,sheet1:R26,,,
 3cd9fc86b0994b12-sheet1-R27,2026-06-16,gwangju-seo,주민자치과,스시록현,주민자치위원 역량강화 교육 운영 관계자 간담회,68000,3cd9fc86b0994b1284c1fcaef9d1f475684528ab0083410b663e4bd101500222,sheet1:R27,,,
@@ -734,11 +745,13 @@ a6789d4e9bfaf093-sheet1-R6,2026-02-26,gwangju-seo,,오마니덕,골목형 상점
 ccb2be17a5efec63-sheet1-R2,2026-01-22,gwangju-seo,,양벽 로스터리,유덕동 골목형상점가 상인회 차담회 개최,44000,ccb2be17a5efec633e30951e5d6a104bc6842b7dd690fdb6a7e0683adf43d3c6,sheet1:R2,,,
 ccb2be17a5efec63-sheet1-R3,2026-01-28,gwangju-seo,,오마니덕,유덕동 상인회 활성화를 위한 간담회 개최,65000,ccb2be17a5efec633e30951e5d6a104bc6842b7dd690fdb6a7e0683adf43d3c6,sheet1:R3,,,
 ccb2be17a5efec63-sheet1-R4,2026-01-30,gwangju-seo,,어란항,유덕동 상인회 활성화를 위한 간담회 개최,105000,ccb2be17a5efec633e30951e5d6a104bc6842b7dd690fdb6a7e0683adf43d3c6,sheet1:R4,,,
-ccb2be17a5efec63-sheet1-R5,2026-02-19,gwangju-seo,,"칠성골, 티 소로다",『함께서구 우뚝서구 2026!』 토크 콘서트 운영을 위한 간담회 개최,154750,ccb2be17a5efec633e30951e5d6a104bc6842b7dd690fdb6a7e0683adf43d3c6,sheet1:R5,,,
+ccb2be17a5efec63-sheet1-R5#1,2026-02-19,gwangju-seo,,칠성골,『함께서구 우뚝서구 2026!』 토크 콘서트 운영을 위한 간담회 개최,,ccb2be17a5efec633e30951e5d6a104bc6842b7dd690fdb6a7e0683adf43d3c6,sheet1:R5,,ccb2be17a5efec63-sheet1-R5,154750
+ccb2be17a5efec63-sheet1-R5#2,2026-02-19,gwangju-seo,,티 소로다,『함께서구 우뚝서구 2026!』 토크 콘서트 운영을 위한 간담회 개최,,ccb2be17a5efec633e30951e5d6a104bc6842b7dd690fdb6a7e0683adf43d3c6,sheet1:R5,,ccb2be17a5efec63-sheet1-R5,154750
 ccb2be17a5efec63-sheet1-R6,2026-03-10,gwangju-seo,,소동파,유덕필 합창단 오찬간담회 개최,119000,ccb2be17a5efec633e30951e5d6a104bc6842b7dd690fdb6a7e0683adf43d3c6,sheet1:R6,,,
 ccb2be17a5efec63-sheet1-R7,2026-03-16,gwangju-seo,,청출어람,유덕동 아파트 협의회 오찬간담회 개최,162000,ccb2be17a5efec633e30951e5d6a104bc6842b7dd690fdb6a7e0683adf43d3c6,sheet1:R7,,,
 8557af8df27cce31-sheet1-R5,2026-01-08,gwangju-seo,,상무초밥,보건의료질서 확립 유공자 표창 준비 간담회,67600,8557af8df27cce310828920055d037eca339615a9e7e841fffadc4447cabda9b,sheet1:R5,,,
-8557af8df27cce31-sheet1-R6,2026-01-15,gwangju-seo,,"신청담한우, 오인절미브런치카페",상반기 인사이동 관련 업무 논의 간담회,317000,8557af8df27cce310828920055d037eca339615a9e7e841fffadc4447cabda9b,sheet1:R6,,,
+8557af8df27cce31-sheet1-R6#1,2026-01-15,gwangju-seo,,신청담한우,상반기 인사이동 관련 업무 논의 간담회,,8557af8df27cce310828920055d037eca339615a9e7e841fffadc4447cabda9b,sheet1:R6,,8557af8df27cce31-sheet1-R6,317000
+8557af8df27cce31-sheet1-R6#2,2026-01-15,gwangju-seo,,오인절미브런치카페,상반기 인사이동 관련 업무 논의 간담회,,8557af8df27cce310828920055d037eca339615a9e7e841fffadc4447cabda9b,sheet1:R6,,8557af8df27cce31-sheet1-R6,317000
 8557af8df27cce31-sheet1-R7,2026-01-28,gwangju-seo,,라이크앤,의약관리팀 현안업무 논의 간담회,206500,8557af8df27cce310828920055d037eca339615a9e7e841fffadc4447cabda9b,sheet1:R7,,,
 8557af8df27cce31-sheet1-R8,2026-01-30,gwangju-seo,,루키초밥,생명의료지원팀 현안업무 논의 간담회,129000,8557af8df27cce310828920055d037eca339615a9e7e841fffadc4447cabda9b,sheet1:R8,,,
 9862e5bbbee6e6f1-sheet1-R2,2026-01-14,gwangju-seo,,낮에는밥 밤에는고기,공모사업 계획 및 주민자치활성화 방안 논의,140000,9862e5bbbee6e6f163f27037b3263cca486b3eb659efcb54482654fa527949ba,sheet1:R2,,,
@@ -982,7 +995,8 @@ c17d214c2d64f3a2-sheet1-R3,2026-06-24,gwangju-seo,,왕뼈사랑 봉선점,광천
 2be4f103e2ada63e-sheet1-R5,2026-04-27,gwangju-seo,,베스킨라빈스 돌고개역점,보건행정과 직원 노고 격려 간담회,76000,2be4f103e2ada63e37dbd62952bb538354b61fdf446c9af5c3b025a4f9f0d7a4,sheet1:R5,,,
 2be4f103e2ada63e-sheet1-R6,2026-05-04,gwangju-seo,,라이크앤,보건행정과 현안업무 논의 간담회,152500,2be4f103e2ada63e37dbd62952bb538354b61fdf446c9af5c3b025a4f9f0d7a4,sheet1:R6,,,
 2be4f103e2ada63e-sheet1-R7,2026-05-08,gwangju-seo,,소동파,보건행정과 현안업무 논의 간담회,73000,2be4f103e2ada63e37dbd62952bb538354b61fdf446c9af5c3b025a4f9f0d7a4,sheet1:R7,,,
-2be4f103e2ada63e-sheet1-R8,2026-06-12,gwangju-seo,,"루키초밥 농성점, bhc농성점",보건행정과 직원 노고 격려 간담회,160000,2be4f103e2ada63e37dbd62952bb538354b61fdf446c9af5c3b025a4f9f0d7a4,sheet1:R8,,,
+2be4f103e2ada63e-sheet1-R8#1,2026-06-12,gwangju-seo,,루키초밥 농성점,보건행정과 직원 노고 격려 간담회,,2be4f103e2ada63e37dbd62952bb538354b61fdf446c9af5c3b025a4f9f0d7a4,sheet1:R8,,2be4f103e2ada63e-sheet1-R8,160000
+2be4f103e2ada63e-sheet1-R8#2,2026-06-12,gwangju-seo,,bhc농성점,보건행정과 직원 노고 격려 간담회,,2be4f103e2ada63e37dbd62952bb538354b61fdf446c9af5c3b025a4f9f0d7a4,sheet1:R8,,2be4f103e2ada63e-sheet1-R8,160000
 6feef2e7efd1ea4a-sheet1-R2,2026-04-02,gwangju-seo,,남노명가,금호1동 주민자치 사업 추진 방향 논의를 위한 간담회 개최 비용 지급,220000,6feef2e7efd1ea4ab785711147497a62309cfbd11372bbbc87b0ba8e372b41ec,sheet1:R2,,,
 6feef2e7efd1ea4a-sheet1-R3,2026-04-22,gwangju-seo,,회뜨는마을,금호1동 학교장 간담회 개최 비용 지급,176000,6feef2e7efd1ea4ab785711147497a62309cfbd11372bbbc87b0ba8e372b41ec,sheet1:R3,,,
 6feef2e7efd1ea4a-sheet1-R4,2026-04-28,gwangju-seo,,회뜨는마을,금호1동 마을동아리 활성화 방안 논의를 위한 간담회 개최 비용 지급,66000,6feef2e7efd1ea4ab785711147497a62309cfbd11372bbbc87b0ba8e372b41ec,sheet1:R4,,,
@@ -1048,7 +1062,8 @@ bbd86a3cc055c10b-sheet1-R26,2026-05-07,gwangju-seo,,일품대패금호점,대외
 bbd86a3cc055c10b-sheet1-R27,2026-05-14,gwangju-seo,,금호왕돈까스,대외협력 업무 추진 정책 논의를 위한 관계자 간담회,22800,bbd86a3cc055c10b9fe39536918adf10876a903a8df5db8c6a21527c88579161,sheet1:R27,,,
 bbd86a3cc055c10b-sheet1-R28,2026-05-15,gwangju-seo,,포항물회,펀온워크 회의 개최 관련 논의 관계자 간담회,88000,bbd86a3cc055c10b9fe39536918adf10876a903a8df5db8c6a21527c88579161,sheet1:R28,,,
 bbd86a3cc055c10b-sheet1-R29,2026-05-15,gwangju-seo,,벌크커피 금호매월점,대외협력 업무 추진 정책 논의를 위한 관계자 간담회,24100,bbd86a3cc055c10b9fe39536918adf10876a903a8df5db8c6a21527c88579161,sheet1:R29,,,
-bbd86a3cc055c10b-sheet1-R30,2026-05-20,gwangju-seo,,"여간좋은날, 커피매그넙",구정 정책 논의 관계자 간담회,122300,bbd86a3cc055c10b9fe39536918adf10876a903a8df5db8c6a21527c88579161,sheet1:R30,,,
+bbd86a3cc055c10b-sheet1-R30#1,2026-05-20,gwangju-seo,,여간좋은날,구정 정책 논의 관계자 간담회,,bbd86a3cc055c10b9fe39536918adf10876a903a8df5db8c6a21527c88579161,sheet1:R30,,bbd86a3cc055c10b-sheet1-R30,122300
+bbd86a3cc055c10b-sheet1-R30#2,2026-05-20,gwangju-seo,,커피매그넙,구정 정책 논의 관계자 간담회,,bbd86a3cc055c10b9fe39536918adf10876a903a8df5db8c6a21527c88579161,sheet1:R30,,bbd86a3cc055c10b-sheet1-R30,122300
 bbd86a3cc055c10b-sheet1-R31,2026-05-20,gwangju-seo,,다복식당 상무점,대외협력 업무 추진 정책 논의를 위한 관계자 간담회,26000,bbd86a3cc055c10b9fe39536918adf10876a903a8df5db8c6a21527c88579161,sheet1:R31,,,
 bbd86a3cc055c10b-sheet1-R32,2026-05-28,gwangju-seo,,신청담한우,지방보조금관리위원회 운영 방향 논의 관계자 간담회,91000,bbd86a3cc055c10b9fe39536918adf10876a903a8df5db8c6a21527c88579161,sheet1:R32,,,
 bbd86a3cc055c10b-sheet1-R33,2026-05-28,gwangju-seo,,25시,대외협력 업무 추진 정책 논의를 위한 관계자 간담회,20000,bbd86a3cc055c10b9fe39536918adf10876a903a8df5db8c6a21527c88579161,sheet1:R33,,,
@@ -1058,7 +1073,8 @@ bbd86a3cc055c10b-sheet1-R36,2026-06-02,gwangju-seo,,사계절,대외협력 업�
 bbd86a3cc055c10b-sheet1-R37,2026-06-04,gwangju-seo,,건강,대외협력 업무 추진 정책 논의를 위한 관계자 간담회,48000,bbd86a3cc055c10b9fe39536918adf10876a903a8df5db8c6a21527c88579161,sheet1:R37,,,
 bbd86a3cc055c10b-sheet1-R38,2026-06-04,gwangju-seo,,하마네아구찜상무점,하반기 구정 주요 현안사업 보고회 개최 논의 관계자 간담회,63500,bbd86a3cc055c10b9fe39536918adf10876a903a8df5db8c6a21527c88579161,sheet1:R38,,,
 bbd86a3cc055c10b-sheet1-R39,2026-06-05,gwangju-seo,,신청담한우,경제총조사 추진 관련 논의 관계자 간담회,162000,bbd86a3cc055c10b9fe39536918adf10876a903a8df5db8c6a21527c88579161,sheet1:R39,,,
-bbd86a3cc055c10b-sheet1-R40,2026-06-15,gwangju-seo,,"신청담한우, 오인절미브런치카페",전남광주통합특별시 출범에 따른 구정 정책 논의 관계자 간담회,178500,bbd86a3cc055c10b9fe39536918adf10876a903a8df5db8c6a21527c88579161,sheet1:R40,,,
+bbd86a3cc055c10b-sheet1-R40#1,2026-06-15,gwangju-seo,,신청담한우,전남광주통합특별시 출범에 따른 구정 정책 논의 관계자 간담회,,bbd86a3cc055c10b9fe39536918adf10876a903a8df5db8c6a21527c88579161,sheet1:R40,,bbd86a3cc055c10b-sheet1-R40,178500
+bbd86a3cc055c10b-sheet1-R40#2,2026-06-15,gwangju-seo,,오인절미브런치카페,전남광주통합특별시 출범에 따른 구정 정책 논의 관계자 간담회,,bbd86a3cc055c10b9fe39536918adf10876a903a8df5db8c6a21527c88579161,sheet1:R40,,bbd86a3cc055c10b-sheet1-R40,178500
 bbd86a3cc055c10b-sheet1-R41,2026-06-15,gwangju-seo,,목포갯벌낙지,미래혁신위원회 운영 방향 논의 관계자 간담회,216000,bbd86a3cc055c10b9fe39536918adf10876a903a8df5db8c6a21527c88579161,sheet1:R41,,,
 bbd86a3cc055c10b-sheet1-R42,2026-06-17,gwangju-seo,,삼남매,대외렵혁 업무 추진 정책 논의를 위한 관계자 간담회,42000,bbd86a3cc055c10b9fe39536918adf10876a903a8df5db8c6a21527c88579161,sheet1:R42,,,
 bbd86a3cc055c10b-sheet1-R43,2026-06-19,gwangju-seo,,우성오리탕,대외협력 업무 추진 정책 논의를 위한 관계자 간담회,33000,bbd86a3cc055c10b9fe39536918adf10876a903a8df5db8c6a21527c88579161,sheet1:R43,,,
@@ -1120,15 +1136,18 @@ f9cc0530ad2b0850-sheet1-R8,2026-06-22,gwangju-seo,,카페 빛 베이커리,현�
 310409522e317bc3-sheet1-R9,2026-06-25,gwangju-seo,,이헌한우두번째이야기,2026년 함께하는 생활권「영웅을 위한 함께 음악회」평가 환류를 위한 간담회 개최 비용 지급,296000,310409522e317bc30d0b03e69120e137cfb703cca9ce6472afee422eb27b351c,sheet1:R9,,,
 4926c749fbd52ae1-sheet1-R2,2026-04-01,gwangju-seo,,참치데이,화정4동 자생단체와의 간담회 개최,84000,4926c749fbd52ae1f791b4c0161a8c523c2410f9139c35b80c0f1d8c7f69e7ad,sheet1:R2,,,
 4926c749fbd52ae1-sheet1-R3,2026-04-16,gwangju-seo,,오가네숯불갈비,골목형상점가 활성화를 위한 상인회와의 간담회 개최,98000,4926c749fbd52ae1f791b4c0161a8c523c2410f9139c35b80c0f1d8c7f69e7ad,sheet1:R3,,,
-4926c749fbd52ae1-sheet1-R4,2026-04-21,gwangju-seo,,명성가/봉봉커피,행복한생활권 연계동 소통을 위한 소통회의 식사비 지급,109000,4926c749fbd52ae1f791b4c0161a8c523c2410f9139c35b80c0f1d8c7f69e7ad,sheet1:R4,,,
+4926c749fbd52ae1-sheet1-R4#1,2026-04-21,gwangju-seo,,명성가,행복한생활권 연계동 소통을 위한 소통회의 식사비 지급,,4926c749fbd52ae1f791b4c0161a8c523c2410f9139c35b80c0f1d8c7f69e7ad,sheet1:R4,,4926c749fbd52ae1-sheet1-R4,109000
+4926c749fbd52ae1-sheet1-R4#2,2026-04-21,gwangju-seo,,봉봉커피,행복한생활권 연계동 소통을 위한 소통회의 식사비 지급,,4926c749fbd52ae1f791b4c0161a8c523c2410f9139c35b80c0f1d8c7f69e7ad,sheet1:R4,,4926c749fbd52ae1-sheet1-R4,109000
 4926c749fbd52ae1-sheet1-R5,2026-04-22,gwangju-seo,,봉봉커피,법무보호복지공단과의 간담회 개최,27500,4926c749fbd52ae1f791b4c0161a8c523c2410f9139c35b80c0f1d8c7f69e7ad,sheet1:R5,,,
 4926c749fbd52ae1-sheet1-R6,2026-05-08,gwangju-seo,,라테라스 염주점,화정4동 보장협의체 임원진과의 간담회 개최,94500,4926c749fbd52ae1f791b4c0161a8c523c2410f9139c35b80c0f1d8c7f69e7ad,sheet1:R6,,,
 4926c749fbd52ae1-sheet1-R7,2026-05-29,gwangju-seo,,아우룸,화사마을 자연역사 피크닉 원데이클래스 추진 회의 개최,69600,4926c749fbd52ae1f791b4c0161a8c523c2410f9139c35b80c0f1d8c7f69e7ad,sheet1:R7,,,
 4926c749fbd52ae1-sheet1-R8,2026-06-04,gwangju-seo,,화사루,2026년 우리 동네 골 N 지원사업 논의를 위한 상인회와의 간담회 개최,70000,4926c749fbd52ae1f791b4c0161a8c523c2410f9139c35b80c0f1d8c7f69e7ad,sheet1:R8,,,
-4926c749fbd52ae1-sheet1-R9,2026-06-11,gwangju-seo,,"압구정화로구이, 이디야 염주포스코점",화정4동 자생단체와의 간담회 개최,239600,4926c749fbd52ae1f791b4c0161a8c523c2410f9139c35b80c0f1d8c7f69e7ad,sheet1:R9,,,
+4926c749fbd52ae1-sheet1-R9#1,2026-06-11,gwangju-seo,,압구정화로구이,화정4동 자생단체와의 간담회 개최,,4926c749fbd52ae1f791b4c0161a8c523c2410f9139c35b80c0f1d8c7f69e7ad,sheet1:R9,,4926c749fbd52ae1-sheet1-R9,239600
+4926c749fbd52ae1-sheet1-R9#2,2026-06-11,gwangju-seo,,이디야 염주포스코점,화정4동 자생단체와의 간담회 개최,,4926c749fbd52ae1f791b4c0161a8c523c2410f9139c35b80c0f1d8c7f69e7ad,sheet1:R9,,4926c749fbd52ae1-sheet1-R9,239600
 4926c749fbd52ae1-sheet1-R10,2026-06-18,gwangju-seo,,솔향,작은도서관 활성화 논의를 위한 간담회 개최,24000,4926c749fbd52ae1f791b4c0161a8c523c2410f9139c35b80c0f1d8c7f69e7ad,sheet1:R10,,,
 ab554514dd2cb652-sheet1-R2,2026-01-06,gwangju-seo,화정1동,임마중추어탕,2026년 신년인사 및 화정1동 자생단체 간담회 개최 비용 지급,132000,ab554514dd2cb65244ca1b8e4f09c1d8142ebe76bb6c7dee5c2ea6042a0d1fb6,sheet1:R2,,,
-ab554514dd2cb652-sheet1-R3,2026-01-09,gwangju-seo,화정1동,초심식육식당/파리바게뜨,화정1동 보장협의체 간담회 개최 비용 지급,96800,ab554514dd2cb65244ca1b8e4f09c1d8142ebe76bb6c7dee5c2ea6042a0d1fb6,sheet1:R3,,,
+ab554514dd2cb652-sheet1-R3#1,2026-01-09,gwangju-seo,화정1동,초심식육식당,화정1동 보장협의체 간담회 개최 비용 지급,,ab554514dd2cb65244ca1b8e4f09c1d8142ebe76bb6c7dee5c2ea6042a0d1fb6,sheet1:R3,,ab554514dd2cb652-sheet1-R3,96800
+ab554514dd2cb652-sheet1-R3#2,2026-01-09,gwangju-seo,화정1동,파리바게뜨,화정1동 보장협의체 간담회 개최 비용 지급,,ab554514dd2cb65244ca1b8e4f09c1d8142ebe76bb6c7dee5c2ea6042a0d1fb6,sheet1:R3,,ab554514dd2cb652-sheet1-R3,96800
 ab554514dd2cb652-sheet1-R4,2026-01-23,gwangju-seo,화정1동,맛자랑꼬마김밥,서구 마을합창 페스티벌 연습에 따른 함께그린합창단 간식 구입 비용 지급,96000,ab554514dd2cb65244ca1b8e4f09c1d8142ebe76bb6c7dee5c2ea6042a0d1fb6,sheet1:R4,,,
 ab554514dd2cb652-sheet1-R5,2026-01-26,gwangju-seo,화정1동,양반숯불닭구이,화정1동 자율방재단 간담회 개최 비용 지급,331000,ab554514dd2cb65244ca1b8e4f09c1d8142ebe76bb6c7dee5c2ea6042a0d1fb6,sheet1:R5,,,
 ab554514dd2cb652-sheet1-R6,2026-01-28,gwangju-seo,화정1동,임마중추어탕,화정1동 함께그린합창단 간담회 개최 비용 지급,66000,ab554514dd2cb65244ca1b8e4f09c1d8142ebe76bb6c7dee5c2ea6042a0d1fb6,sheet1:R6,,,
@@ -1140,7 +1159,8 @@ ab554514dd2cb652-sheet1-R11,2026-02-12,gwangju-seo,화정1동,우리동네식육
 ab554514dd2cb652-sheet1-R12,2026-02-20,gwangju-seo,화정1동,임마중추어탕,화정1동 착한가게 후원자 간담회 개최 비용 지급,55000,ab554514dd2cb65244ca1b8e4f09c1d8142ebe76bb6c7dee5c2ea6042a0d1fb6,sheet1:R12,,,
 ab554514dd2cb652-sheet1-R13,2026-03-12,gwangju-seo,화정1동,초심식육식당,화정1동 신규 착한가게 발굴 및 활성화 관련 간담회 개최 비용 지급,40000,ab554514dd2cb65244ca1b8e4f09c1d8142ebe76bb6c7dee5c2ea6042a0d1fb6,sheet1:R13,,,
 ab554514dd2cb652-sheet1-R14,2026-03-20,gwangju-seo,화정1동,임마중추어탕,화정1동 자생단체장 간담회 개최 비용 지급,240000,ab554514dd2cb65244ca1b8e4f09c1d8142ebe76bb6c7dee5c2ea6042a0d1fb6,sheet1:R14,,,
-ab554514dd2cb652-sheet1-R15,2026-05-22,gwangju-seo,화정1동,임마중추어탕/꽃담은플라워카페,살기좋은 생활권 권역 간담회 개최비용 지급,134800,ab554514dd2cb65244ca1b8e4f09c1d8142ebe76bb6c7dee5c2ea6042a0d1fb6,sheet1:R15,,,
+ab554514dd2cb652-sheet1-R15#1,2026-05-22,gwangju-seo,화정1동,임마중추어탕,살기좋은 생활권 권역 간담회 개최비용 지급,,ab554514dd2cb65244ca1b8e4f09c1d8142ebe76bb6c7dee5c2ea6042a0d1fb6,sheet1:R15,,ab554514dd2cb652-sheet1-R15,134800
+ab554514dd2cb652-sheet1-R15#2,2026-05-22,gwangju-seo,화정1동,꽃담은플라워카페,살기좋은 생활권 권역 간담회 개최비용 지급,,ab554514dd2cb65244ca1b8e4f09c1d8142ebe76bb6c7dee5c2ea6042a0d1fb6,sheet1:R15,,ab554514dd2cb652-sheet1-R15,134800
 ab554514dd2cb652-sheet1-R16,2026-06-02,gwangju-seo,화정1동,고향골,화정1동 청소년지도협의회 간담회 개최 비용 지급,104000,ab554514dd2cb65244ca1b8e4f09c1d8142ebe76bb6c7dee5c2ea6042a0d1fb6,sheet1:R16,,,
 ab554514dd2cb652-sheet1-R17,2026-06-09,gwangju-seo,화정1동,초심식육식당,화정1동 보장협의체 간담회 개최 비용 지급,40000,ab554514dd2cb65244ca1b8e4f09c1d8142ebe76bb6c7dee5c2ea6042a0d1fb6,sheet1:R17,,,
 ab554514dd2cb652-sheet1-R18,2026-06-19,gwangju-seo,화정1동,임마중추어탕,제3회 우리동네 썸머풀캉스 행사 추진 및 씨앗통장 전달식 일정 논의,123000,ab554514dd2cb65244ca1b8e4f09c1d8142ebe76bb6c7dee5c2ea6042a0d1fb6,sheet1:R18,,,
@@ -1150,12 +1170,15 @@ ab554514dd2cb652-sheet1-R18,2026-06-19,gwangju-seo,화정1동,임마중추어탕
 7f8eede7fd6b75f3-sheet1-R5,2026-04-14,gwangju-seo,,섬진강추어탕,유덕동 올키즈존 확대 업무 협약식 및 오찬간담회 개최,216000,7f8eede7fd6b75f3291ab5ef8d6ddf79320692af360b0ec002c2b39b933d39a3,sheet1:R5,,,
 7f8eede7fd6b75f3-sheet1-R6,2026-04-15,gwangju-seo,,뚜레쥬르 버들마을점,유덕동 상인회 차담회 개최,30400,7f8eede7fd6b75f3291ab5ef8d6ddf79320692af360b0ec002c2b39b933d39a3,sheet1:R6,,,
 7f8eede7fd6b75f3-sheet1-R7,2026-04-16,gwangju-seo,,어란항,2026년 유덕동 학교협력관제 운영을 위한 오찬간담회 개최,147000,7f8eede7fd6b75f3291ab5ef8d6ddf79320692af360b0ec002c2b39b933d39a3,sheet1:R7,,,
-7f8eede7fd6b75f3-sheet1-R8,2026-04-28,gwangju-seo,,"홍제등갈비오겹살, 벌크커피",유촌동상인회 오찬간담회 및 차담회 개최,120700,7f8eede7fd6b75f3291ab5ef8d6ddf79320692af360b0ec002c2b39b933d39a3,sheet1:R8,,,
+7f8eede7fd6b75f3-sheet1-R8#1,2026-04-28,gwangju-seo,,홍제등갈비오겹살,유촌동상인회 오찬간담회 및 차담회 개최,,7f8eede7fd6b75f3291ab5ef8d6ddf79320692af360b0ec002c2b39b933d39a3,sheet1:R8,,7f8eede7fd6b75f3-sheet1-R8,120700
+7f8eede7fd6b75f3-sheet1-R8#2,2026-04-28,gwangju-seo,,벌크커피,유촌동상인회 오찬간담회 및 차담회 개최,,7f8eede7fd6b75f3291ab5ef8d6ddf79320692af360b0ec002c2b39b933d39a3,sheet1:R8,,7f8eede7fd6b75f3-sheet1-R8,120700
 7f8eede7fd6b75f3-sheet1-R9,2026-05-07,gwangju-seo,,뚜레쥬르 버들마을점,유덕동 제2기 주민자치회 구성을 위한 차담회 개최,14200,7f8eede7fd6b75f3291ab5ef8d6ddf79320692af360b0ec002c2b39b933d39a3,sheet1:R9,,,
 7f8eede7fd6b75f3-sheet1-R10,2026-05-08,gwangju-seo,,피자스쿨,유덕필 합창단 간담회 개최,106600,7f8eede7fd6b75f3291ab5ef8d6ddf79320692af360b0ec002c2b39b933d39a3,sheet1:R10,,,
 7f8eede7fd6b75f3-sheet1-R11,2026-05-26,gwangju-seo,,텐퍼센트커피,제9회 전국동시지방선거 추진에 따른 노고 격려를 위한 간식 구입,44100,7f8eede7fd6b75f3291ab5ef8d6ddf79320692af360b0ec002c2b39b933d39a3,sheet1:R11,,,
-7f8eede7fd6b75f3-sheet1-R12,2026-06-05,gwangju-seo,,"섬진강추어탕, 티 소로다",유덕동 주민자치회 오찬 간담회 개최,88200,7f8eede7fd6b75f3291ab5ef8d6ddf79320692af360b0ec002c2b39b933d39a3,sheet1:R12,,,
-7f8eede7fd6b75f3-sheet1-R13,2026-06-19,gwangju-seo,,"섬진강추어탕, 양벽 로스터리",유덕동 자율방재단 오찬 간담회 개최,101970,7f8eede7fd6b75f3291ab5ef8d6ddf79320692af360b0ec002c2b39b933d39a3,sheet1:R13,,,
+7f8eede7fd6b75f3-sheet1-R12#1,2026-06-05,gwangju-seo,,섬진강추어탕,유덕동 주민자치회 오찬 간담회 개최,,7f8eede7fd6b75f3291ab5ef8d6ddf79320692af360b0ec002c2b39b933d39a3,sheet1:R12,,7f8eede7fd6b75f3-sheet1-R12,88200
+7f8eede7fd6b75f3-sheet1-R12#2,2026-06-05,gwangju-seo,,티 소로다,유덕동 주민자치회 오찬 간담회 개최,,7f8eede7fd6b75f3291ab5ef8d6ddf79320692af360b0ec002c2b39b933d39a3,sheet1:R12,,7f8eede7fd6b75f3-sheet1-R12,88200
+7f8eede7fd6b75f3-sheet1-R13#1,2026-06-19,gwangju-seo,,섬진강추어탕,유덕동 자율방재단 오찬 간담회 개최,,7f8eede7fd6b75f3291ab5ef8d6ddf79320692af360b0ec002c2b39b933d39a3,sheet1:R13,,7f8eede7fd6b75f3-sheet1-R13,101970
+7f8eede7fd6b75f3-sheet1-R13#2,2026-06-19,gwangju-seo,,양벽 로스터리,유덕동 자율방재단 오찬 간담회 개최,,7f8eede7fd6b75f3291ab5ef8d6ddf79320692af360b0ec002c2b39b933d39a3,sheet1:R13,,7f8eede7fd6b75f3-sheet1-R13,101970
 cc25b3573159b8c2-sheet1-R2,2026-04-23,gwangju-seo,,테이트모던,현안업무 추진에 따른 맞춤형 복지팀 직원 노고 격려,121200,cc25b3573159b8c2a01f47bf39166bd7e0912d6bf73e17e204ae9481ed71153c,sheet1:R2,,,
 cc25b3573159b8c2-sheet1-R3,2026-05-27,gwangju-seo,,레파스 베이커스,전 직원 선거사무 노고 격려,114700,cc25b3573159b8c2a01f47bf39166bd7e0912d6bf73e17e204ae9481ed71153c,sheet1:R3,,,
 cc25b3573159b8c2-sheet1-R4,2026-05-28,gwangju-seo,,주식회사 베비에르,서창만드리 공연단 주민 격려,80000,cc25b3573159b8c2a01f47bf39166bd7e0912d6bf73e17e204ae9481ed71153c,sheet1:R4,,,
@@ -1174,7 +1197,8 @@ a3377940364271f3-sheet1-R4,2026-06-16,gwangju-seo,,비타민마트,부서운영�
 14bdcd7ac61acbf6-sheet1-R4,2026-04-17,gwangju-seo,,우영,열린 문화 플랫폼 '도시 락(樂)'추진 관련 기자간담회,127000,14bdcd7ac61acbf677bafffc37ec2bdce02401995fe326d80092e1a6742c3aa9,sheet1:R4,,,
 14bdcd7ac61acbf6-sheet1-R5,2026-04-28,gwangju-seo,,파이프롬헤븐,고유가 피해지원금 관련 기자간담회,108600,14bdcd7ac61acbf677bafffc37ec2bdce02401995fe326d80092e1a6742c3aa9,sheet1:R5,,,
 14bdcd7ac61acbf6-sheet1-R6,2026-05-21,gwangju-seo,,쌍교숯불갈비,제9회 전국동시지방선거 관련 기자간담회,423000,14bdcd7ac61acbf677bafffc37ec2bdce02401995fe326d80092e1a6742c3aa9,sheet1:R6,,,
-14bdcd7ac61acbf6-sheet1-R7,2026-05-26,gwangju-seo,,"복호두, 유달리",민원실 보안 강화 관련 기자간담회,209500,14bdcd7ac61acbf677bafffc37ec2bdce02401995fe326d80092e1a6742c3aa9,sheet1:R7,,,
+14bdcd7ac61acbf6-sheet1-R7#1,2026-05-26,gwangju-seo,,복호두,민원실 보안 강화 관련 기자간담회,,14bdcd7ac61acbf677bafffc37ec2bdce02401995fe326d80092e1a6742c3aa9,sheet1:R7,,14bdcd7ac61acbf6-sheet1-R7,209500
+14bdcd7ac61acbf6-sheet1-R7#2,2026-05-26,gwangju-seo,,유달리,민원실 보안 강화 관련 기자간담회,,14bdcd7ac61acbf677bafffc37ec2bdce02401995fe326d80092e1a6742c3aa9,sheet1:R7,,14bdcd7ac61acbf6-sheet1-R7,209500
 14bdcd7ac61acbf6-sheet1-R8,2026-05-28,gwangju-seo,,구수숯불갈비,지역현안 공약 건의 관련 기자간담회,280000,14bdcd7ac61acbf677bafffc37ec2bdce02401995fe326d80092e1a6742c3aa9,sheet1:R8,,,
 14bdcd7ac61acbf6-sheet1-R9,2026-06-04,gwangju-seo,,주식회사더리틀키리,우리동네 골목맛집 신규 지정 관련 기자간담회,112000,14bdcd7ac61acbf677bafffc37ec2bdce02401995fe326d80092e1a6742c3aa9,sheet1:R9,,,
 14bdcd7ac61acbf6-sheet1-R10,2026-06-10,gwangju-seo,,미네 by oboeru,폭염 취약계층 여름나기 지원사업 관련 기자간담회,162000,14bdcd7ac61acbf677bafffc37ec2bdce02401995fe326d80092e1a6742c3aa9,sheet1:R10,,,
