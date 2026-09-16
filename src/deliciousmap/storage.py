@@ -516,18 +516,42 @@ class LookupCache:
 
     레코드마다 파일을 다시 파싱하면 읽기 비용이 레코드 수 곱하기 캐시 줄 수가 된다. 캐시가
     커질수록 적중뿐인 재실행이 더 느려진다. 이 사전은 그 읽기를 레코드 수 더하기 캐시 줄 수로
-    낮춘다. **쓰기는 그대로다.** 미스마다 `append_cache_entries()`가 파일을 다시 읽으므로
-    새 상호가 많은 실행에서는 미스 수 곱하기 캐시 줄 수가 남는다.
+    낮춘다.
 
-    실행 중 새로 얻은 조회는 파일과 사전 양쪽에 남긴다. 같은 요청이 뒤에 또 나와도 다시 묻지
-    않는다. 대신 실행이 도는 동안 다른 세션이 같은 파일에 쓴 항목은 이 사전에 들어오지 않는다.
-    그 경우 이어 쓰기가 같은 revision을 만나 `cannot overwrite cache history`로 멈춘다.
+    쓰기도 같다. 새로 얻은 조회는 캐시 옆 보류 파일(`<이름>.pending.jsonl`)에 한 줄씩 덧붙이고,
+    `with` 블록을 닫을 때 한 번만 정렬해 캐시에 합친다. 조회마다 캐시를 통째로 다시 쓰면 쓰기가
+    조회 수의 제곱으로 늘고 파일 교체가 다른 프로세스의 읽기와 부딪힌다(#181). 닫지 못하고
+    끊긴 실행의 보류 파일은 다음 실행이 시작할 때 먼저 합친다. 반쯤 쓴 끝 줄은 그 조회를
+    다시 하면 되므로 버린다.
+
+    실행 중 새로 얻은 조회는 보류 파일과 사전 양쪽에 남긴다. 같은 요청이 뒤에 또 나와도 다시
+    묻지 않는다. 대신 실행이 도는 동안 다른 세션이 같은 캐시에 쓴 항목은 이 사전에 들어오지
+    않는다. 그 경우 합치기가 같은 revision을 만나 `cannot overwrite cache history`로 멈춘다.
     조용히 덮지는 않는다.
     """
 
     def __init__(self, path: Path) -> None:
         self.path = path
+        self.pending = path.with_name(f"{path.stem}.pending{path.suffix}")
+        self.settle()
         self._latest = latest_valid(read_cache(path))
+
+    def __enter__(self) -> "LookupCache":
+        return self
+
+    def __exit__(self, *_: object) -> None:
+        self.settle()
+
+    def settle(self) -> None:
+        """보류 파일을 캐시에 합치고 지운다. 합치기 전에 끊겨도 다시 합치면 같은 결과다."""
+        if not self.pending.exists():
+            return
+        # 바이트로 먼저 가른다. 쓰다 끊긴 줄은 한글 한 글자 중간에서 끝날 수도 있다.
+        lines = self.pending.read_bytes().split(b"\n")
+        # 마지막 줄바꿈 뒤는 비었거나, 쓰다 끊긴 줄이다.
+        entries = tuple(CacheEntry.model_validate_json(line) for line in lines[:-1])
+        append_cache_entries(self.path, entries)
+        self.pending.unlink()
 
     def cached_candidates(self, key: str) -> CacheEntry | None:
         """그 키의 유효한 최신 항목. 적중 자체는 업소 확정이 아니다."""
@@ -552,7 +576,8 @@ class LookupCache:
             evidence=evidence,
             value=value,
         )
-        append_cache(self.path, entry)
+        with self.pending.open("ab") as stream:
+            stream.write(_jsonl((entry,)).encode("utf-8"))
         self._latest[key] = entry
         return entry.revision
 

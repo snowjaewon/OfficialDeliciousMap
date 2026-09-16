@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from deliciousmap.contracts import Record, RecordOrigin
+from deliciousmap.contracts import CacheEntry, ProviderCandidates, Record, RecordOrigin
 from deliciousmap.storage import read_records, write_records
 
 
@@ -286,3 +286,62 @@ def test_a_slow_host_gets_its_own_request_interval() -> None:
     transport = HttpTransport(interval=0.2, host_intervals={"www.jungnang.go.kr": 1.5})
     assert transport.interval_for("https://www.jungnang.go.kr/portal/bbs/list.do") == 1.5
     assert transport.interval_for("https://www.songpa.go.kr/www/list.do") == 0.2
+
+
+def test_lookup_cache_does_not_rewrite_the_cache_per_lookup(tmp_path: Path) -> None:
+    """조회 한 건이 캐시 파일을 다시 쓰지 않는다. 쌓인 조회는 실행을 닫을 때 한 번 합친다(#181)."""
+    from deliciousmap.storage import LookupCache, append_cache_entries, read_cache
+
+    path = tmp_path / "geocode-lookup-v1.jsonl"
+    settled = _lookup_entry("m" * 64)
+    append_cache_entries(path, (settled,))
+    committed = path.read_bytes()
+    with LookupCache(path) as cache:
+        for letter in "zab":
+            cache.remember_candidates(letter * 64, ProviderCandidates(status="ok"), "synthetic")
+        assert path.read_bytes() == committed
+        assert cache.cached_candidates("z" * 64) is not None
+    assert [entry.key for entry in read_cache(path)] == [k * 64 for k in "abmz"]
+    assert not (tmp_path / "geocode-lookup-v1.pending.jsonl").exists()
+
+
+def test_lookup_cache_keeps_lookups_of_an_interrupted_run(tmp_path: Path) -> None:
+    """닫지 못하고 끊긴 실행의 조회도 다음 실행이 이어받는다. 반쯤 쓴 끝 줄만 버린다."""
+    from deliciousmap.storage import LookupCache, read_cache
+
+    path = tmp_path / "geocode-lookup-v1.jsonl"
+    interrupted = LookupCache(path)
+    for letter in "ba":
+        interrupted.remember_candidates(letter * 64, ProviderCandidates(status="ok"), "synthetic")
+    pending = tmp_path / "geocode-lookup-v1.pending.jsonl"
+    # 프로세스가 줄을 쓰다 죽은 모양이다.
+    with pending.open("ab") as stream:
+        stream.write(b'{"evidence": "synth')
+    resumed = LookupCache(path)
+    assert resumed.cached_candidates("a" * 64) is not None
+    assert resumed.cached_candidates("b" * 64) is not None
+    assert [entry.key for entry in read_cache(path)] == ["a" * 64, "b" * 64]
+    assert not pending.exists()
+
+
+def test_lookup_cache_rejects_a_damaged_line_before_the_end_of_the_journal(
+    tmp_path: Path,
+) -> None:
+    from deliciousmap.storage import LookupCache
+
+    path = tmp_path / "geocode-lookup-v1.jsonl"
+    pending = tmp_path / "geocode-lookup-v1.pending.jsonl"
+    pending.write_bytes(b"not json\n")
+    with pytest.raises(ValueError):
+        LookupCache(path)
+    assert pending.exists()
+
+
+def _lookup_entry(key: str) -> CacheEntry:
+    return CacheEntry(
+        key=key,
+        revision=1,
+        valid=True,
+        evidence="synthetic",
+        value=ProviderCandidates(status="ok").model_dump(mode="json"),
+    )
