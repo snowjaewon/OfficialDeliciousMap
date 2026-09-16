@@ -432,7 +432,7 @@ def write_artifact(path: Path, contents: Sequence[str]) -> None:
         stale.unlink()
 
 
-def _missing(path: Path) -> FileNotFoundError:
+def _missing_artifact(path: Path) -> FileNotFoundError:
     # 실패 진단이 종류와 경로를 알릴 수 있도록 errno와 파일 이름을 채운다.
     return FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), str(path))
 
@@ -442,7 +442,7 @@ def artifact_digest(path: Path) -> str:
     parts = numbered_parts(path)
     if not parts:
         # 있어야 하는 선행 산출물이다. 없는 것을 빈 해시로 덮으면 낡음 검사가 그대로 통과한다.
-        raise _missing(path)
+        raise _missing_artifact(path)
     digest = hashlib.sha256()
     for part in parts:
         digest.update(part.read_bytes())
@@ -453,7 +453,7 @@ def read_artifact(path: Path, field: str | None) -> dict[str, Any]:
     """조각을 번호 순으로 이어 읽는다. 봉투 머리가 다른 조각은 섞인 것이므로 거부한다."""
     parts = numbered_parts(path)
     if not parts:
-        raise _missing(path)
+        raise _missing_artifact(path)
     envelopes: list[dict[str, Any]] = [
         json.loads(part.read_text(encoding="utf-8")) for part in parts
     ]

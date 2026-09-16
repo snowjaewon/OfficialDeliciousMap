@@ -125,6 +125,21 @@ def test_io_error_path_outside_known_roots_is_not_reported(tmp_path: Path) -> No
     )
 
 
+def test_request_url_carried_as_a_file_name_is_not_reported(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from urllib.error import HTTPError
+
+    context = context_at(tmp_path)
+    # CLI처럼 저장소에서 실행한다. 상대 경로로 읽힌 URL이 저장소 아래로 해석되면 안 된다.
+    context.paths.repository.mkdir()
+    monkeypatch.chdir(context.paths.repository)
+    # HTTPError는 OSError이고 filename에 질의 문자열이 든 요청 URL을 담는다.
+    url = "https://openapi.example.invalid/search?query=SECRET상호&key=SECRET"
+    reported = failure_of(context, HTTPError(url, 500, "SECRET", None, None))
+    assert reported == "fetch city=seoul org=* cause=io-error error=HTTPError"
+
+
 @pytest.mark.parametrize(
     ("error", "expected"),
     [

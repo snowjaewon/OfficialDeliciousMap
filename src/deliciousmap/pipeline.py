@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
 from typing import Protocol
+from urllib.parse import urlsplit
 
 from deliciousmap import (
     category,
@@ -82,7 +83,6 @@ class PipelineFailure(Exception):
         self.stage = stage
         self.target = target
         self.cause = cause
-        self.diagnosis = diagnosis
         message = f"{stage} city={target.city.slug} org={target.org or '*'} cause={cause.value}"
         super().__init__(f"{message} {diagnosis}" if diagnosis else message)
 
@@ -92,22 +92,28 @@ def diagnose(error: BaseException, paths: Paths) -> str:
 
     안전하다고 보는 것은 코드가 정한 값뿐이다: 예외 클래스 이름, `errno`의 기호 이름,
     그리고 저장소·데이터·원본·출력 루트 아래로 확인된 실패 경로의 루트 상대 경로.
+    원본 첨부 이름은 이미 커밋되는 수집 산출물에 실리므로 원본 루트 아래 경로도 남긴다.
     예외 메시지(`str(error)`, `strerror`, `KeyError`의 키)는 원본 내용·비밀값·제공자 응답
-    본문을 담을 수 있으므로 어떤 경우에도 남기지 않는다. 알려진 루트 밖의 경로도 남기지 않는다.
+    본문을 담을 수 있으므로 어떤 경우에도 남기지 않는다. 알려진 루트 밖의 경로와 URL도
+    남기지 않는다.
     """
     parts = [f"error={type(error).__name__}"]
     if isinstance(error, OSError):
         if isinstance(error.errno, int) and error.errno in errno.errorcode:
             parts.append(f"errno={errno.errorcode[error.errno]}")
         for key, name in (("path", error.filename), ("path2", error.filename2)):
-            located = _located(name, paths)
-            if located:
-                parts.append(f"{key}={located}")
+            relative = _root_relative(name, paths)
+            if relative:
+                parts.append(f"{key}={relative}")
     return " ".join(parts)
 
 
-def _located(name: object, paths: Paths) -> str | None:
+def _root_relative(name: object, paths: Paths) -> str | None:
     if not isinstance(name, str | os.PathLike):
+        return None
+    # `HTTPError`는 filename에 요청 URL(질의 문자열 포함)을 담는다. 상대 경로로 읽히지 않게
+    # 스킴이 있는 이름은 버린다. 한 글자 스킴은 Windows 드라이브 문자다.
+    if len(urlsplit(os.fspath(name)).scheme) > 1:
         return None
     try:
         path = Path(name).resolve()
