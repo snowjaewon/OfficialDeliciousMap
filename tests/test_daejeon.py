@@ -8,6 +8,7 @@ import pytest
 
 from deliciousmap import boards
 from deliciousmap.collection import collect
+from deliciousmap.contracts import FetchOutput
 from deliciousmap.paths import Paths
 from deliciousmap.registry import CITIES, Board, select_target
 from deliciousmap.scrapers.daejeon import ArticleBoard, BbsBoard, DptBoard, ZipBbsBoard
@@ -308,6 +309,7 @@ def test_bbs_board_refuses_an_unusable_attachment_identifier() -> None:
 
 # 동구 article 계열.
 DONG_LIST = "https://www.donggu.go.kr/dg/kor/article/senior"
+DONG_MAYOR = "https://www.donggu.go.kr/dg/kor/article/secretBusiness"
 
 
 def article_item(seq: str, title: str, posted: str, writer: str) -> str:
@@ -421,18 +423,17 @@ def test_article_board_refuses_a_listing_without_a_last_page() -> None:
         list(ArticleBoard(board(DONG_LIST, ArticleBoard), transport).postings(never))
 
 
-def test_dong_collection_records_the_filtered_council_postings(tmp_path: Path) -> None:
-    """`--org daejeon-dong` 수집이 원본을 받고, 걸러 낸 의회 글 수를 장부에 남긴다."""
+def dong_transport(mayor_listing: str) -> FakeTransport:
+    """동구 두 게시판. 5급 이상 게시판에 원본 하나와 의회 글 하나가 있다."""
     first, second = "de96e330e35f471348650497d8c0070d", "9a9db098b587ee18b321c826f3707a49"
     workbook = BytesIO()
     with zipfile.ZipFile(workbook, "w") as archive:
         archive.writestr("[Content_Types].xml", "<Types/>")
         archive.writestr("xl/workbook.xml", "<workbook/>")
-    mayor = "https://www.donggu.go.kr/dg/kor/article/secretBusiness"
-    transport = FakeTransport(
+    return FakeTransport(
         dict(
             [
-                response(mayor, {"pageIndex": "1"}, article_listing()),
+                response(DONG_MAYOR, {"pageIndex": "1"}, mayor_listing),
                 response(
                     DONG_LIST,
                     {"pageIndex": "1"},
@@ -455,16 +456,37 @@ def test_dong_collection_records_the_filtered_council_postings(tmp_path: Path) -
             ]
         )
     )
-    output = collect(
+
+
+def collect_dong(tmp_path: Path, transport: FakeTransport) -> FetchOutput:
+    return collect(
         select_target(CITIES, "daejeon", "daejeon-dong"),
         Paths(Path.cwd(), tmp_path / "raw", tmp_path / "data", tmp_path / "output"),
         transport,
     )
+
+
+def test_dong_collection_records_the_filtered_council_postings(tmp_path: Path) -> None:
+    """`--org daejeon-dong` 수집이 원본을 받고, 걸러 낸 의회 글 수를 장부에 남긴다."""
+    output = collect_dong(tmp_path, dong_transport(article_listing()))
     assert [(item.board, item.container) for item in output.sources] == [
         ("expenses-director", "ooxml")
     ]
     assert output.filtered_postings == 1
     assert output.empty_reason is None
+
+
+def test_daejeon_collection_keeps_going_past_an_unreadable_board(tmp_path: Path) -> None:
+    """중구 과장급 291쪽은 기관 서버가 행 중간에 오류 화면을 끼워 목록이 닫히지 않는다.
+
+    대상 기간 밖 옛 글 때문에 기관 전체를 실패로 두지 않고, 그 게시판을 장부 경고로 남긴 채
+    다음 게시판을 받는다(2026-09-17 사용자 결정).
+    """
+    unreadable = "<html><body><div class='notice_list'><ul></ul></div></body></html>"
+    output = collect_dong(tmp_path, dong_transport(unreadable))
+    assert [item.board for item in output.sources] == ["expenses-director"]
+    assert output.empty_reason is not None
+    assert "daejeon-dong/expenses-mayor=adapter-failed" in output.empty_reason
 
 
 # 대덕구 dpt 계열.
