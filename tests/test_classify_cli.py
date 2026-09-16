@@ -5,7 +5,9 @@ from pathlib import Path
 
 import pytest
 
+from deliciousmap import gemini
 from deliciousmap.storage import write_text
+from deliciousmap.transport import REQUEST_TIMEOUT, HttpTransport
 from tests.gwangju import FakeModel, header_answer, sheet_a, workbook
 from tests.test_parse_cli import (
     DATA,
@@ -24,6 +26,8 @@ SHEET = sheet_a(
     ("2026-01-08", "모호한 상호", "협의", 2.0, 20000.0),
 )
 VERDICTS = {"합성 식당": "restaurant", "합성 마트": "non_restaurant", "모호한 상호": "pending"}
+# 2026-09-16 울산 실측: 상호 40개(classify.BATCH_SIZE) 한 묶음의 응답에 걸린 시간.
+MEASURED_BATCH_SECONDS = 10.4
 
 
 def parsed(root: Path) -> None:
@@ -235,3 +239,19 @@ def test_a_confirmed_restored_name_wins_over_the_cut_name(tmp_path: Path, config
     assert run(tmp_path, "classify", model) == 0
     assert "합성카페 본점" in asked(model)
     assert "합성카페" not in asked(model)
+
+
+def test_model_requests_wait_longer_than_a_board_fetch(configured: None) -> None:
+    """상호 40개 한 묶음은 10.4초 걸렸다(2026-09-16 울산 실측). 게시판 기본 대기로는 매번 끊긴다.
+
+    상수끼리 견주면 값을 낮춰도 통과하므로 실측의 몇 배인지를 초 단위로 못 박는다.
+    """
+    models = gemini.models_from_environment()
+
+    assert models is not None
+    assert REQUEST_TIMEOUT < MEASURED_BATCH_SECONDS
+    for model in (models.comparator, models.header_mapper, models.classifier):
+        transport = model.transport
+        assert isinstance(transport, HttpTransport)
+        # 실측의 다섯 배는 기다린다. 제공자가 느려진 날에도 판별을 통째로 잃지 않는다.
+        assert transport.timeout >= 5 * MEASURED_BATCH_SECONDS
