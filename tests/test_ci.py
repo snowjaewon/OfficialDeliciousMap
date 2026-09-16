@@ -388,3 +388,20 @@ def test_a_city_with_only_collection_artifacts_is_not_buildable(tmp_path: Path) 
 
     buildable = publish.buildable_cities(tmp_path, REGISTRY)
     assert [city.slug for city in buildable] == ["gwangju"]
+
+
+def test_check_data_rejects_an_organization_geocode_with_nothing_to_cite(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    write_geocode_artifact(
+        tmp_path / "gwangju" / "orgs" / "gwangju-buk" / "geocode.json",
+        "gwangju",
+        "gwangju-buk",
+        [placed("record-1", 35.1, "provider-cross license+naver")],
+    )
+    refined(tmp_path, "gwangju/closure.json")
+
+    assert main(["check-data", "--data-root", str(tmp_path)], cities=(gwangju.CITY,)) == 1
+    assert capsys.readouterr().err.splitlines() == [
+        "check-data: organization geocode without city geocode: gwangju/gwangju-buk",
+    ]

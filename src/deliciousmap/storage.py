@@ -724,13 +724,13 @@ class ArtifactStore:
             result["tail_policy"] = merchants.TAIL_VERSION
         if stage == "parse":
             result["merchants"] = file_digest(self.paths.manual(self.target, "merchants"))
-        if stage == "geocode" and self.target.org is not None:
-            # 기관 판정은 도시 판정의 인용이다. 도시 판정이 바뀌면 기관 산출물도 낡는다.
-            result["city_geocode"] = artifact_digest(self.city().directory / "geocode.json")
-        elif stage == "geocode":
-            result["candidates"] = file_digest(self.directory / "geocode-input.json")
-            result["lookups"] = file_digest(self.directory / LOOKUP_CACHE)
         if stage == "geocode":
+            if self.target.org is None:
+                result["candidates"] = file_digest(self.directory / "geocode-input.json")
+                result["lookups"] = file_digest(self.directory / LOOKUP_CACHE)
+            else:
+                # 기관 판정은 도시 판정의 인용이다. 도시 판정이 바뀌면 기관 산출물도 낡는다.
+                result["city_geocode"] = artifact_digest(self.city().directory / "geocode.json")
             result["confirmations"] = file_digest(self.paths.manual(self.target, "geocode"))
             result["policy"] = identity.POLICY_VERSION
         if stage == "build":

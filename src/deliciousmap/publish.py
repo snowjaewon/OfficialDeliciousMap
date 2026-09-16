@@ -201,10 +201,9 @@ def classification_consistency_problems(
 ) -> tuple[str, ...]:
     """도시·기관 판정이 같은 입력과 코드의 결과인지 확인한다.
 
-    기관 산출물은 도시 산출물의 부분집합이어야 한다. 지오코딩 결과는 기관 범위가
-    판정 키에 들어가므로 조회 키가 다를 수 있지만, 식당 판정은 도시·기관 실행이
-    같은 레코드에 대해 같은 결과를 내야 한다. 기관 파일이 아직 없는 대상은 수집만
-    끝난 도시일 수 있으므로 비교하지 않는다.
+    기관 산출물은 도시 산출물의 부분집합이어야 하고, 식당 판정은 도시·기관 실행이
+    같은 레코드에 대해 같은 결과를 내야 한다. 지오코딩은 `geocode_consistency_problems`가
+    따로 본다. 기관 파일이 아직 없는 대상은 수집만 끝난 도시일 수 있으므로 비교하지 않는다.
     """
     problems: list[str] = []
     for city in cities:
@@ -250,6 +249,14 @@ def geocode_consistency_problems(data_root: Path, cities: tuple[City, ...]) -> t
     for city in cities:
         city_path = data_root / city.slug / "geocode.json"
         if not numbered_parts(city_path):
+            # 기관 판정은 도시 판정의 인용이다. 인용할 도시 판정 없이 기관 판정만 있으면 알린다.
+            problems += [
+                f"organization geocode without city geocode: {city.slug}/{organization.slug}"
+                for organization in city.organizations
+                if numbered_parts(
+                    data_root / city.slug / "orgs" / organization.slug / "geocode.json"
+                )
+            ]
             continue
         city_results, error = _read_geocode_results(city_path)
         if error is not None:
