@@ -14,6 +14,7 @@ from typing import Any
 
 from deliciousmap import identity, merchants, period, restoration
 from deliciousmap.contracts import (
+    REVIEW_EVIDENCE_FIELDS,
     BuildOutput,
     CacheEntry,
     CandidateFile,
@@ -121,6 +122,21 @@ def read_reviews[T: Contract](path: Path, model: type[T]) -> tuple[T, ...]:
         return ()
     return tuple(
         model.model_validate_json(line) for line in path.read_text(encoding="utf-8").splitlines()
+    )
+
+
+def review_digest(path: Path, model: type[Contract]) -> str:
+    """사람 검토 입력이 산출물 의존성 키에 담기는 값. 판정이 읽는 필드만 정렬해 묶는다(#190).
+
+    줄 순서·근거 문구·참조는 판정을 바꾸지 않으므로 키도 바꾸지 않는다. 빼는 필드는
+    `REVIEW_EVIDENCE_FIELDS`뿐이고 나머지는 모델에 늘어나는 대로 키에 들어간다. `normalized()`
+    같은 적용 규칙이 바뀌는 것은 이 키가 아니라 각 정책 버전이 잡는다(ADR-0005).
+    """
+    return identity.digest(
+        sorted(
+            identity.canonical(item.model_dump(mode="json", exclude=set(REVIEW_EVIDENCE_FIELDS)))
+            for item in read_reviews(path, model)
+        )
     )
 
 
@@ -720,10 +736,14 @@ class ArtifactStore:
     def _dependencies(self, stage: str) -> dict[str, str]:
         result = {name: artifact_digest(self.directory / name) for name in DEPENDENCIES[stage]}
         if stage == "classify":
-            result["manual"] = file_digest(self.paths.manual(self.target, "classify"))
+            result["manual"] = review_digest(
+                self.paths.manual(self.target, "classify"), ManualCorrection
+            )
             result["tail_policy"] = merchants.TAIL_VERSION
         if stage == "parse":
-            result["merchants"] = file_digest(self.paths.manual(self.target, "merchants"))
+            result["merchants"] = review_digest(
+                self.paths.manual(self.target, "merchants"), MerchantReview
+            )
         if stage == "geocode":
             if self.target.org is None:
                 result["candidates"] = file_digest(self.directory / "geocode-input.json")
@@ -731,14 +751,18 @@ class ArtifactStore:
             else:
                 # 기관 판정은 도시 판정의 인용이다. 도시 판정이 바뀌면 기관 산출물도 낡는다.
                 result["city_geocode"] = artifact_digest(self.city().directory / "geocode.json")
-            result["confirmations"] = file_digest(self.paths.manual(self.target, "geocode"))
+            result["confirmations"] = review_digest(
+                self.paths.manual(self.target, "geocode"), IdentityConfirmation
+            )
             result["policy"] = identity.POLICY_VERSION
         if stage == "build":
             result["categories"] = file_digest(self.directory / CATEGORY_CACHE)
         if stage in {"parse", "geocode"}:
             result["merchant_policy"] = merchants.POLICY_VERSION
         if stage in {"classify", "geocode"}:
-            result["restorations"] = file_digest(self.paths.manual(self.target, "restore"))
+            result["restorations"] = review_digest(
+                self.paths.manual(self.target, "restore"), NameRestoration
+            )
             result["restoration_policy"] = restoration.POLICY_VERSION
         return result
 

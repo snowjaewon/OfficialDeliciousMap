@@ -73,15 +73,13 @@ def place_identity(
     return normalized(merchant), normalized(branch), normalized(address)
 
 
+def canonical(value: object) -> str:
+    """키에 넣는 값의 한 가지 직렬화. 칸 순서·공백이 달라도 같은 값은 같은 글자가 된다."""
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+
 def digest(value: object) -> str:
-    return hashlib.sha256(
-        json.dumps(
-            value,
-            ensure_ascii=False,
-            sort_keys=True,
-            separators=(",", ":"),
-        ).encode("utf-8")
-    ).hexdigest()
+    return hashlib.sha256(canonical(value).encode("utf-8")).hexdigest()
 
 
 def lookup_key(
