@@ -168,6 +168,19 @@ def restaurant_records(
     return tuple(record for record in records if record.record_id in included)
 
 
+def cite_city_geocode(city: GeocodeOutput, records: tuple[Record, ...]) -> GeocodeOutput:
+    """기관 레코드의 판정을 도시 판정에서 그대로 옮긴다(#183).
+
+    기관이 따로 판정하면 조회 캐시를 다른 시각에 채우고 업소 합치기도 기관 레코드만 보므로
+    같은 레코드가 도시와 다른 좌표·근거를 갖는다. 사이트는 도시 산출물로 빌드하므로 도시를
+    기준으로 삼는다. 도시 판정에 없는 레코드는 기관이 혼자 정하지 않고 거부한다.
+    """
+    decided = {item.record_id: item for item in city.results}
+    if any(record.record_id not in decided for record in records):
+        raise ValueError("organization record missing from city geocode; rerun city geocode")
+    return GeocodeOutput(results=tuple(decided[record.record_id] for record in records))
+
+
 def marker_candidates(
     records: tuple[Record, ...], decisions: tuple[Classification, ...], geocodes: GeocodeOutput
 ) -> tuple[MarkerCandidate, ...]:
@@ -273,6 +286,13 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
                     restorations=restoration.resolve(parsed.records, store.restorations()),
                 ),
                 context,
+            )
+        case "geocode" if context.target.org is not None:
+            parsed = store.load("parse", ParseOutput)
+            classified = store.load("classify", ClassifyOutput)
+            result = cite_city_geocode(
+                store.city().load("geocode", GeocodeOutput),
+                restaurant_records(parsed.records, classified.decisions),
             )
         case "geocode":
             parsed = store.load("parse", ParseOutput)

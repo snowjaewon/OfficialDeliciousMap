@@ -11,7 +11,7 @@ from typing import Any
 
 from deliciousmap import site
 from deliciousmap.registry import City
-from deliciousmap.storage import SIZE_LIMIT, write_text
+from deliciousmap.storage import SIZE_LIMIT, numbered_parts, read_artifact, write_text
 
 # 도시가 아닌 정제 산출물 디렉터리: 도시 무관 캐시와 사람 보정(README "저장 형식").
 SHARED_DIRECTORIES = frozenset({"_shared", "manual"})
@@ -238,6 +238,67 @@ def classification_consistency_problems(
                         f"{city.slug}/{organization.slug}/{record_id}"
                     )
     return tuple(problems)
+
+
+def geocode_consistency_problems(data_root: Path, cities: tuple[City, ...]) -> tuple[str, ...]:
+    """기관 지오코딩이 도시 판정을 그대로 인용했는지 확인한다(#183).
+
+    사이트는 도시 산출물로 빌드하므로 기관이 같은 레코드를 다르게 판정하면 어느 쪽이
+    옳은지 산출물만으로 가릴 수 없다. 갈린 레코드마다 대상을, 기관마다 건수를 낸다.
+    """
+    problems: list[str] = []
+    for city in cities:
+        city_path = data_root / city.slug / "geocode.json"
+        if not numbered_parts(city_path):
+            continue
+        city_results, error = _read_geocode_results(city_path)
+        if error is not None:
+            problems.append(error)
+            continue
+        assert city_results is not None
+        for organization in city.organizations:
+            org_path = data_root / city.slug / "orgs" / organization.slug / "geocode.json"
+            if not numbered_parts(org_path):
+                continue
+            org_results, error = _read_geocode_results(org_path)
+            if error is not None:
+                problems.append(error)
+                continue
+            assert org_results is not None
+            target = f"{city.slug}/{organization.slug}"
+            diverged = 0
+            for record_id in sorted(org_results):
+                city_result = city_results.get(record_id)
+                if city_result is None:
+                    problems.append(
+                        f"organization geocode record not in city: {target}/{record_id}"
+                    )
+                elif city_result != org_results[record_id]:
+                    problems.append(f"city/organization geocode mismatch: {target}/{record_id}")
+                else:
+                    continue
+                diverged += 1
+            if diverged:
+                problems.append(f"city/organization geocode mismatches: {target} {diverged}")
+    return tuple(problems)
+
+
+def _read_geocode_results(
+    path: Path,
+) -> tuple[dict[str, dict[str, Any]] | None, str | None]:
+    """조각으로 나뉠 수 있는 geocode 봉투를 읽어 비교용 record_id 사전으로 만든다."""
+    relative = path.as_posix()
+    try:
+        results = read_artifact(path, "results")["payload"]["results"]
+        found: dict[str, dict[str, Any]] = {}
+        for result in results:
+            record_id = result["record_id"]
+            if record_id in found:
+                return None, f"duplicate geocode record: {relative}/{record_id}"
+            found[record_id] = result
+        return found, None
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        return None, f"malformed geocode artifact: {relative} ({exc})"
 
 
 def _read_classification_decisions(

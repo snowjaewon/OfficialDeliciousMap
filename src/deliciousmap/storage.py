@@ -614,6 +614,10 @@ class ArtifactStore:
         self.target = target
         self.directory = paths.city_dir(target)
 
+    def city(self) -> "ArtifactStore":
+        """같은 도시 전체를 대상으로 하는 저장소. 기관 실행이 도시 판정을 인용할 때 읽는다."""
+        return ArtifactStore(self.paths, Target(self.target.city))
+
     def save(self, stage: str, output: Contract, *, retry_failed: bool = False) -> None:
         output = OUTPUT_MODELS[stage].model_validate(output)
         self._validate(output)
@@ -720,9 +724,13 @@ class ArtifactStore:
             result["tail_policy"] = merchants.TAIL_VERSION
         if stage == "parse":
             result["merchants"] = file_digest(self.paths.manual(self.target, "merchants"))
-        if stage == "geocode":
+        if stage == "geocode" and self.target.org is not None:
+            # 기관 판정은 도시 판정의 인용이다. 도시 판정이 바뀌면 기관 산출물도 낡는다.
+            result["city_geocode"] = artifact_digest(self.city().directory / "geocode.json")
+        elif stage == "geocode":
             result["candidates"] = file_digest(self.directory / "geocode-input.json")
             result["lookups"] = file_digest(self.directory / LOOKUP_CACHE)
+        if stage == "geocode":
             result["confirmations"] = file_digest(self.paths.manual(self.target, "geocode"))
             result["policy"] = identity.POLICY_VERSION
         if stage == "build":
