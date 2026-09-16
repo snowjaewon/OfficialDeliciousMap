@@ -405,10 +405,12 @@ def test_a_review_reference_cannot_carry_a_whole_original(
 ) -> None:
     context = prepare(tmp_path)
     save_input(context, truncated_lookup())
+    classify_records(context)
+    # classify 산출물이 있은 뒤 복원 파일에 잘못된 줄이 들어온다. 의존성 키가 그 파일을
+    # 모델로 읽으므로(#190) 선행 산출물을 여는 순간 거부된다.
     entry = restore_entry()
     entry["references"][0]["detail"] = "가" * 501
     save_restorations(context, entry)
-    classify_records(context)
     assert run_cli(context, "geocode") == 1
     assert "cause=invalid-artifact" in capsys.readouterr().err
     assert not (context.paths.city_dir(context.target) / "geocode.json").exists()

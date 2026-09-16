@@ -278,6 +278,12 @@ class HeaderMap(Contract):
         return self
 
 
+# 사람 검토 입력(`data/manual/<city>/` 네 파일)에서 판정이 읽지 않는 근거 필드. 산출물 의존성
+# 키는 이 필드를 뺀 나머지를 담으므로(#190) 근거 문구·참조만 고친 편집은 산출물을 낡게 하지
+# 않는다. 검토 모델에 근거 필드가 늘면 여기에 더한다 — 빠뜨리면 근거 편집에도 산출물이 낡는다.
+REVIEW_EVIDENCE_FIELDS: frozenset[str] = frozenset({"evidence", "references"})
+
+
 class ManualCorrection(Contract):
     schema_version: Literal[1] = 1
     city: Text
