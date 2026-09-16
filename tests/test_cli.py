@@ -46,11 +46,14 @@ def test_originals_cannot_be_stored_inside_repository(
 
 
 def test_cli_injection_executes_the_selected_organization(tmp_path: Path) -> None:
+    from deliciousmap.pipeline import execute
     from tests.fakes import SyntheticAdapters
     from tests.test_pipeline import context_at
 
     context = context_at(tmp_path)
     adapters = SyntheticAdapters()
+    # 기관 지오코딩은 도시 판정을 인용하므로 도시 실행이 먼저다(#183).
+    execute("run", context, adapters)
     assert (
         main(
             [
