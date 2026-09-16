@@ -36,6 +36,11 @@ OUTPUT_PRICE_VARIABLE = "GEMINI_OUTPUT_USD_PER_MTOK"
 PRICE_UNIT = Decimal(1_000_000)
 # 3.x는 thinking_budget 대신 thinkingLevel로 사고 토큰을 끈다.
 THINKING_LEVEL = "minimal"
+# 모델 응답을 기다리는 시간. 게시판 조회 기본값(`transport.REQUEST_TIMEOUT` 10초)으로는
+# 상호 40개 한 묶음이 매번 끊겨 울산 판별 108회가 통째로 `unavailable`로 남았다
+# (2026-09-16 실측 10.4초, #171). 재시도가 없고 끊긴 호출의 예약은 정산되지 않아 한도를
+# 그대로 먹으므로, 실측에 바짝 붙이지 않고 제공자가 느려진 날까지 견딜 여유를 둔다.
+MODEL_REQUEST_TIMEOUT = 120.0
 
 # 프롬프트·응답 스키마가 바뀌면 올린다. 제안 캐시는 이 버전을 구별한다.
 PROMPT_VERSION = "restoration-compare-1"
@@ -333,7 +338,7 @@ def models_from_environment(
     settings = settings_from_environment(environ)
     if settings is None:
         return None
-    client = transport or HttpTransport()
+    client = transport or HttpTransport(timeout=MODEL_REQUEST_TIMEOUT)
     return Models(
         GeminiComparator(settings, client),
         GeminiHeaderMapper(settings, client),
