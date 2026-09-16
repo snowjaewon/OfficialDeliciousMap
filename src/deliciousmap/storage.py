@@ -134,12 +134,7 @@ def review_digest(path: Path, model: type[Contract]) -> str:
     """
     return identity.digest(
         sorted(
-            json.dumps(
-                item.model_dump(mode="json", exclude=set(REVIEW_EVIDENCE_FIELDS)),
-                ensure_ascii=False,
-                sort_keys=True,
-                separators=(",", ":"),
-            )
+            identity.canonical(item.model_dump(mode="json", exclude=set(REVIEW_EVIDENCE_FIELDS)))
             for item in read_reviews(path, model)
         )
     )

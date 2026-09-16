@@ -75,7 +75,7 @@ geocode.json은 그 실패보다 먼저 저장되므로 closure·build는 새 ge
 | restore.jsonl | 6 | 바뀜 | 같음 | classify 통과 |
 | geocode.jsonl | 33 | 바뀜 | 같음 | geocode 통과 |
 
-옛 키였다면 네 경우 모두 `stale artifact`로 parse 또는 classify부터 다시 돌아야 했다(2절의 시 단위 합계
+옛 키였다면 네 경우 모두 `stale artifact`로 그 파일을 읽는 단계(parse·classify·geocode)부터 다시 돌아야 했다(2절의 시 단위 합계
 약 6분, 구 5개까지 약 10분). 판정 필드를 바꾼 줄이 낡음을 내는 것은 `tests/test_review_dependency_key.py`가
 합성 데이터로 고정한다.
 

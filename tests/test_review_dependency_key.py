@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+from typing import NamedTuple
 
 import pytest
 
@@ -32,9 +33,17 @@ SCOPE = {
 REFERENCE = {"kind": "other", "source": "synthetic", "detail": "synthetic detail"}
 SOURCE = {"provider": "naver", "source_id": "1", "reference": "https://example.invalid/1"}
 
-# manual 파일 이름 → (그 파일을 키에 담는 단계, 산출물 모델, 검토 모델, 줄 두 개, 판정 필드 변경)
-CASES: dict[str, tuple[str, type[Contract], type[Contract], list[dict], dict]] = {
-    "merchants": (
+
+class Case(NamedTuple):
+    stage: str  # 그 파일을 키에 담는 단계
+    output: type[Contract]  # 그 단계의 산출물 모델
+    model: type[Contract]  # 검토 모델
+    entries: list[dict]  # 줄 두 개
+    change: dict  # 판정 필드 하나의 변경
+
+
+CASES: dict[str, Case] = {
+    "merchants": Case(
         "parse",
         ParseOutput,
         MerchantReview,
@@ -49,7 +58,7 @@ CASES: dict[str, tuple[str, type[Contract], type[Contract], list[dict], dict]] =
         ],
         {"merchants": ["가", "라"]},
     ),
-    "classify": (
+    "classify": Case(
         "classify",
         ClassifyOutput,
         ManualCorrection,
@@ -64,7 +73,7 @@ CASES: dict[str, tuple[str, type[Contract], type[Contract], list[dict], dict]] =
         ],
         {"status": "non_restaurant"},
     ),
-    "restore": (
+    "restore": Case(
         "classify",
         ClassifyOutput,
         NameRestoration,
@@ -84,7 +93,7 @@ CASES: dict[str, tuple[str, type[Contract], type[Contract], list[dict], dict]] =
         ],
         {"restored_merchant": "바뀐 복원 상호"},
     ),
-    "geocode": (
+    "geocode": Case(
         "geocode",
         GeocodeOutput,
         IdentityConfirmation,
@@ -145,48 +154,55 @@ def save_lines(context: ExecutionContext, name: str, entries: list[dict]) -> Non
 
 def run_with(tmp_path: Path, name: str) -> tuple[ExecutionContext, ArtifactStore]:
     context = context_at(tmp_path)
-    save_lines(context, name, CASES[name][3])
+    save_lines(context, name, CASES[name].entries)
     execute("run", context, SyntheticAdapters())
     return context, ArtifactStore(context.paths, context.target)
 
 
-def with_evidence_changed(entry: dict, model: type[Contract]) -> dict:
-    changed = entry | {"evidence": entry["evidence"] + " (문구 보강)"}
-    if "references" in model.model_fields:
-        changed["references"] = [REFERENCE]
-    return changed
-
-
 @pytest.mark.parametrize("name", CASES)
-def test_evidence_and_references_edits_do_not_stale_the_artifact(tmp_path: Path, name: str) -> None:
-    stage, output, model, entries, _ = CASES[name]
+def test_an_evidence_edit_does_not_stale_the_artifact(tmp_path: Path, name: str) -> None:
+    case = CASES[name]
     context, store = run_with(tmp_path, name)
-    save_lines(context, name, [with_evidence_changed(entry, model) for entry in entries])
-    store.load(stage, output)
+    save_lines(
+        context,
+        name,
+        [entry | {"evidence": entry["evidence"] + " (문구 보강)"} for entry in case.entries],
+    )
+    store.load(case.stage, case.output)
+
+
+@pytest.mark.parametrize(
+    "name", [name for name, case in CASES.items() if "references" in case.model.model_fields]
+)
+def test_an_added_reference_does_not_stale_the_artifact(tmp_path: Path, name: str) -> None:
+    case = CASES[name]
+    context, store = run_with(tmp_path, name)
+    save_lines(context, name, [entry | {"references": [REFERENCE]} for entry in case.entries])
+    store.load(case.stage, case.output)
 
 
 @pytest.mark.parametrize("name", CASES)
 def test_reordered_lines_do_not_stale_the_artifact(tmp_path: Path, name: str) -> None:
-    stage, output, _, entries, _ = CASES[name]
+    case = CASES[name]
     context, store = run_with(tmp_path, name)
-    save_lines(context, name, list(reversed(entries)))
-    store.load(stage, output)
+    save_lines(context, name, list(reversed(case.entries)))
+    store.load(case.stage, case.output)
 
 
 @pytest.mark.parametrize("name", CASES)
 def test_a_changed_decision_field_stales_the_artifact(tmp_path: Path, name: str) -> None:
-    stage, output, _, entries, change = CASES[name]
+    case = CASES[name]
     context, store = run_with(tmp_path, name)
-    save_lines(context, name, [entries[0] | change, entries[1]])
+    save_lines(context, name, [case.entries[0] | case.change, case.entries[1]])
     with pytest.raises(ValueError, match="stale artifact"):
-        store.load(stage, output)
+        store.load(case.stage, case.output)
 
 
 def test_restorations_stale_geocode_as_well_as_classify(tmp_path: Path) -> None:
     """복원명은 classify와 geocode가 함께 읽으므로 두 산출물이 같은 키를 검사한다."""
-    _, _, _, entries, change = CASES["restore"]
+    case = CASES["restore"]
     context, store = run_with(tmp_path, "restore")
-    save_lines(context, "restore", [entries[0] | change, entries[1]])
+    save_lines(context, "restore", [case.entries[0] | case.change, case.entries[1]])
     with pytest.raises(ValueError, match="stale artifact"):
         store.load("geocode", GeocodeOutput)
 
@@ -208,14 +224,17 @@ def test_review_digest_treats_a_missing_file_and_an_empty_file_alike(tmp_path: P
     write_text(path, "")
     assert review_digest(path, NameRestoration) == absent
     # 판정 줄이 생기면 키가 바뀐다. 근거 필드만 다른 두 파일은 같은 키다.
-    save = lambda evidence: write_text(  # noqa: E731
-        path,
-        json.dumps(
-            {"scope": SCOPE, "restored_merchant": "복원 상호", "evidence": evidence},
-            ensure_ascii=False,
+
+    def save(evidence: str) -> None:
+        write_text(
+            path,
+            json.dumps(
+                {"scope": SCOPE, "restored_merchant": "복원 상호", "evidence": evidence},
+                ensure_ascii=False,
+            )
+            + "\n",
         )
-        + "\n",
-    )
+
     save("e1")
     first = review_digest(path, NameRestoration)
     assert first != absent

@@ -361,7 +361,8 @@ license_transport=...)`로 외부 응답만 대신한다. 게시판 요청도 �
 classify 이후에는 선행 산출물의 SHA-256도 `dependencies`에 기록해 이전 입력의 판정을 재사용하지 못하게 한다.
 `data/manual/<city>/`의 검토 파일 4종(`merchants`·`classify`·`restore`·`geocode`)은 파일 해시가 아니라
 근거 필드(`evidence`·`references`)를 뺀 판정 필드의 정렬 해시로 들어간다([ADR-0005](docs/adr/0005-key-only-what-the-decision-reads.md), #190).
-레코드나 검토의 판정 필드를 바꾸면 그 파일을 읽는 단계(`merchants`는 parse, 나머지는 classify)부터 후속 단계를 다시 실행한다.
+레코드나 검토의 판정 필드를 바꾸면 그 파일을 읽는 단계(`merchants`는 parse, `classify`·`restore`는 classify,
+`geocode`는 geocode)부터 후속 단계를 다시 실행한다.
 근거 문구·참조·줄 순서만 고친 편집은 재실행이 필요 없다.
 
 build는 `records.csv`, `parse.json`, `classify.json`, `geocode-input.json`, `geocode.json`,
