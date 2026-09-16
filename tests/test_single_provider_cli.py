@@ -10,11 +10,11 @@ import json
 from dataclasses import replace
 from pathlib import Path
 
-from deliciousmap.contracts import Record
+from deliciousmap.contracts import Classification, ClassifyOutput, ParseOutput, Record
 from deliciousmap.identity import distance_m
 from deliciousmap.pipeline import ExecutionContext
 from deliciousmap.registry import Hall, Target
-from deliciousmap.storage import write_text
+from deliciousmap.storage import ArtifactStore, write_text
 from tests.test_geocoding_cli import (
     confirmation_file,
     lookup,
@@ -80,6 +80,15 @@ def unsupported(record_id: str, *candidates: dict) -> dict:
 
 def result(context: ExecutionContext) -> dict:
     return payload(context, "geocode")["results"][0]
+
+
+def decided(records: tuple[Record, ...]) -> ClassifyOutput:
+    return ClassifyOutput(
+        decisions=tuple(
+            Classification(record_id=item.record_id, status="restaurant", evidence="합성 분류")
+            for item in records
+        )
+    )
 
 
 def hall_distance(coordinates: tuple[float, float]) -> int:
@@ -284,6 +293,49 @@ def test_two_records_adopted_from_different_providers_share_one_marker(tmp_path:
     for stage in ("closure", "build"):
         assert run_cli(context, stage) == 0
     assert payload(context, "build")["marker_count"] == 1
+
+
+def test_an_organization_marker_merged_into_another_organizations_record_still_builds(
+    tmp_path: Path,
+) -> None:
+    """도시 판정을 인용한 기관에는 합쳐진 좌표를 스스로 낸 레코드가 없을 수 있다(#183).
+
+    좌표의 출처·주소와 업종 조회는 그 좌표를 낸 레코드가 밝히므로 도시 판정에서 같은 업소의
+    다른 기관 레코드를 찾아 쓴다.
+    """
+    records = (
+        synthetic_record(organization="other-org"),
+        synthetic_record(record_id="r2", merchant="같은 식당 상무점", source_location="sheet1:R3"),
+    )
+    context = in_city(tmp_path, CITY_PREFIX, hall=HALL, records=(records[1],))
+    organizations = (
+        *context.target.city.organizations,
+        replace(context.target.city.organizations[0], slug="other-org"),
+    )
+    city = replace(context.target.city, organizations=organizations)
+    context = replace(context, target=Target(city))
+    store = ArtifactStore(context.paths, context.target)
+    store.save("parse", ParseOutput(records=records))
+    store.save("classify", decided(records))
+    elsewhere = unsupported("r1", candidate("naver", NAVER))
+    elsewhere["scope"]["organization"] = "other-org"
+    save_input(
+        context,
+        elsewhere,
+        unsupported("r2", candidate("license", NEARBY, merchant="같은 식당 상무점")),
+    )
+    assert run_cli(context, "geocode") == 0
+    assert payload(context, "geocode")["results"][1]["evidence"].endswith("merged-into naver")
+
+    organization = replace(context, target=Target(city, "test-org"))
+    store = ArtifactStore(organization.paths, organization.target)
+    store.save("parse", ParseOutput(records=(records[1],)))
+    store.save("classify", decided((records[1],)))
+    for stage in ("geocode", "closure", "build"):
+        assert run_cli(organization, stage) == 0
+    marker = published(organization, "markers.json")["markers"][0]
+    assert (marker["latitude"], marker["longitude"]) == NAVER
+    assert marker["coordinate_source"] == "naver"
 
 
 def test_a_chain_of_nearby_places_does_not_become_one_marker(tmp_path: Path) -> None:

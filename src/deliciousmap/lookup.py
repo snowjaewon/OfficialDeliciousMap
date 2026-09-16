@@ -52,29 +52,31 @@ def resolve(
     if not providers:
         return supplied
     # 조회 캐시는 여기서 한 번만 읽는다. 레코드 루프가 파일을 다시 파싱하지 않는다.
-    cache = store.lookup_cache()
-    restored = {item.record_id: item.restored_merchant for item in restorations}
-    resolved = []
-    for record, prepared in zip(records, supplied, strict=True):
-        recorded_failure = prepared.status == "error" and prepared.error != "not_supplied"
-        if prepared.candidates or recorded_failure:
-            resolved.append(prepared)
-            continue
-        # 확정 복원명이 있으면 그 이름을, 없으면 꼬리말을 뗀 첫 업소의 이름을 조회한다.
-        # 사람 확인이 규칙보다 앞선다. 도시·기관 맥락은 질의에 넣지 않는다.
-        query = merchants.chosen_name(record.merchant, restored.get(record.record_id))
-        # 사람이 이미 업소별로 본 지출은 나누어 조회할 것이 없다. 확인이 없는 표기만 더 조회한다.
-        resolved.append(
-            _merge_provider_lookups(
-                cache,
-                prepared,
-                query,
-                providers,
-                retry_failed=retry_failed,
-                probe=record.expense is None,
+    # 블록을 닫을 때 이번 실행의 조회를 캐시에 한 번 합친다. 예외로 끊겨도 합친다.
+    with store.lookup_cache() as cache:
+        restored = {item.record_id: item.restored_merchant for item in restorations}
+        resolved = []
+        for record, prepared in zip(records, supplied, strict=True):
+            recorded_failure = prepared.status == "error" and prepared.error != "not_supplied"
+            if prepared.candidates or recorded_failure:
+                resolved.append(prepared)
+                continue
+            # 확정 복원명이 있으면 그 이름을, 없으면 꼬리말을 뗀 첫 업소의 이름을 조회한다.
+            # 사람 확인이 규칙보다 앞선다. 도시·기관 맥락은 질의에 넣지 않는다.
+            query = merchants.chosen_name(record.merchant, restored.get(record.record_id))
+            # 사람이 이미 업소별로 본 지출은 나누어 조회할 것이 없다.
+            # 확인이 없는 표기만 더 조회한다.
+            resolved.append(
+                _merge_provider_lookups(
+                    cache,
+                    prepared,
+                    query,
+                    providers,
+                    retry_failed=retry_failed,
+                    probe=record.expense is None,
+                )
             )
-        )
-    return tuple(resolved)
+        return tuple(resolved)
 
 
 def _merge_provider_lookups(

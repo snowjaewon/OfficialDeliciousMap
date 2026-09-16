@@ -46,11 +46,14 @@ def test_originals_cannot_be_stored_inside_repository(
 
 
 def test_cli_injection_executes_the_selected_organization(tmp_path: Path) -> None:
+    from deliciousmap.pipeline import execute
     from tests.fakes import SyntheticAdapters
     from tests.test_pipeline import context_at
 
     context = context_at(tmp_path)
     adapters = SyntheticAdapters()
+    # 기관 지오코딩은 도시 판정을 인용하므로 도시 실행이 먼저다(#183).
+    execute("run", context, adapters)
     assert (
         main(
             [
@@ -90,4 +93,8 @@ def test_stages_with_missing_refined_inputs_report_io_error(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     assert main([stage, "--city", "seoul", "--data-root", str(tmp_path)]) == 1
-    assert "cause=io-error" in capsys.readouterr().err
+    # 사유 코드만으로는 무엇이 없는지 모른다. 종류와 루트 상대 경로를 함께 알린다.
+    assert (
+        "cause=io-error error=FileNotFoundError errno=ENOENT path=data-root/seoul/"
+        in capsys.readouterr().err
+    )

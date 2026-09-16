@@ -7,7 +7,8 @@ f5a6cbc884a93978-table1-R3,2026-04-17,ulsan-namgu,건축허가과,"염서방식�
 f5a6cbc884a93978-table1-R4,2026-04-24,ulsan-namgu,건축허가과,신홍어마을,직원 노고격려 만찬 제공,233000,f5a6cbc884a93978ae6f240830fac5fa777fee93cf40f4501f05d8e1f89930b6,table1:R4,,,
 f5a6cbc884a93978-table1-R5,2026-05-15,ulsan-namgu,건축허가과,구첩식당,직원 노고격려 만찬 제공,544000,f5a6cbc884a93978ae6f240830fac5fa777fee93cf40f4501f05d8e1f89930b6,table1:R5,,,
 f5a6cbc884a93978-table1-R6,2026-05-27,ulsan-namgu,건축허가과,고집센그집갈비탕 울산야음점,2026년 우수기 민간건설공사 시공ㆍ감리 실태 점검에 따른 점검관 오찬 제공,50000,f5a6cbc884a93978ae6f240830fac5fa777fee93cf40f4501f05d8e1f89930b6,table1:R6,,,
-f5a6cbc884a93978-table1-R7,2026-05-28,ulsan-namgu,건축허가과,"롬브, 원조남산 민물추어탕",2026년 우수기 민간건설공사 시공ㆍ감리 실태 점검에 따른 점검관 오찬 제공,54600,f5a6cbc884a93978ae6f240830fac5fa777fee93cf40f4501f05d8e1f89930b6,table1:R7,,,
+f5a6cbc884a93978-table1-R7#1,2026-05-28,ulsan-namgu,건축허가과,롬브,2026년 우수기 민간건설공사 시공ㆍ감리 실태 점검에 따른 점검관 오찬 제공,,f5a6cbc884a93978ae6f240830fac5fa777fee93cf40f4501f05d8e1f89930b6,table1:R7,,f5a6cbc884a93978-table1-R7,54600
+f5a6cbc884a93978-table1-R7#2,2026-05-28,ulsan-namgu,건축허가과,원조남산 민물추어탕,2026년 우수기 민간건설공사 시공ㆍ감리 실태 점검에 따른 점검관 오찬 제공,,f5a6cbc884a93978ae6f240830fac5fa777fee93cf40f4501f05d8e1f89930b6,table1:R7,,f5a6cbc884a93978-table1-R7,54600
 116b614e978728d0-table1-R2,2026-05-15,ulsan-namgu,일자리청년과,마루 외,직원 격려 오찬 제공 (5. 4.자 인사이동),94500,116b614e978728d0c72a8c9596b4ce1b8c0ff6563f51705ad50d93b2687df299,table1:R2,,,
 116b614e978728d0-table1-R3,2026-05-21,ulsan-namgu,일자리청년과,경복궁,신중년 경력형 일자리사업 관련 간담회 참석자 오찬 제공,351000,116b614e978728d0c72a8c9596b4ce1b8c0ff6563f51705ad50d93b2687df299,table1:R3,,,
 fa0c7b9d87860405-table1-R2,2026-04-02,ulsan-namgu,일자리청년과,더만족 울산삼산점,"청년정책협의체 임원진, 신규 위원 간담회 참석자 만찬 제공",200.000,fa0c7b9d87860405a7e5c4b8aa7c6c6493687218b00d750d0fc8344a8fde5ac8,table1:R2,,,
@@ -18,10 +19,12 @@ fa0c7b9d87860405-table1-R6,2026-04-17,ulsan-namgu,일자리청년과,염서방�
 fa0c7b9d87860405-table1-R7,2026-04-29,ulsan-namgu,일자리청년과,갈매기구이,청년모임활동 간담회 참여자 만찬 제공,349000,fa0c7b9d87860405a7e5c4b8aa7c6c6493687218b00d750d0fc8344a8fde5ac8,table1:R7,,,
 fa0c7b9d87860405-table1-R8,2026-04-30,ulsan-namgu,일자리청년과,위클리스푼 외,직원 격려 오찬제공 (일자리 공시제),126000,fa0c7b9d87860405a7e5c4b8aa7c6c6493687218b00d750d0fc8344a8fde5ac8,table1:R8,,,
 5deec25ca192dbaa-table1-R2,2026-03-03,ulsan-namgu,건축허가과,팡팡할인마트,2026년 제1회 건축위원회 개최에 따른 간식 구입,77800,5deec25ca192dbaa1e1bf4e06c1135ed5065da20eea3cbcd6fff2b776db251e9,table1:R2,,,
-5deec25ca192dbaa-table1-R3,2026-03-25,ulsan-namgu,건축허가과,"고집센그집갈비탕 울산야음점, 투썸플레이스 울산선암호수공원점",2026년 해빙기 대비 민간건설공사 시공ㆍ감리 실태 안전점검에 따른 점검관 오찬 제공,72300,5deec25ca192dbaa1e1bf4e06c1135ed5065da20eea3cbcd6fff2b776db251e9,table1:R3,,,
+5deec25ca192dbaa-table1-R3#1,2026-03-25,ulsan-namgu,건축허가과,고집센그집갈비탕 울산야음점,2026년 해빙기 대비 민간건설공사 시공ㆍ감리 실태 안전점검에 따른 점검관 오찬 제공,,5deec25ca192dbaa1e1bf4e06c1135ed5065da20eea3cbcd6fff2b776db251e9,table1:R3,,5deec25ca192dbaa-table1-R3,72300
+5deec25ca192dbaa-table1-R3#2,2026-03-25,ulsan-namgu,건축허가과,투썸플레이스 울산선암호수공원점,2026년 해빙기 대비 민간건설공사 시공ㆍ감리 실태 안전점검에 따른 점검관 오찬 제공,,5deec25ca192dbaa1e1bf4e06c1135ed5065da20eea3cbcd6fff2b776db251e9,table1:R3,,5deec25ca192dbaa-table1-R3,72300
 5deec25ca192dbaa-table1-R4,2026-03-26,ulsan-namgu,건축허가과,"속초명가 울산무거본점, 오피스커피",2026년 해빙기 민간건설공사 시공ㆍ감리 실태 점검에 따른 점검관 오찬 제공,63500,5deec25ca192dbaa1e1bf4e06c1135ed5065da20eea3cbcd6fff2b776db251e9,table1:R4,,,
 5deec25ca192dbaa-table1-R5,2026-03-30,ulsan-namgu,건축허가과,앞산큰골집 달동점,주택건설공사 총괄감리원 면접에 따른 면접위원 등 관계자 오찬 제공,112000,5deec25ca192dbaa1e1bf4e06c1135ed5065da20eea3cbcd6fff2b776db251e9,table1:R5,,,
-f4903aa5a7f3113e-table1-R2,2026-02-11,ulsan-namgu,건축허가과,"미가횟집, 카페한",건축행정지원사업 활성화 관련 간담회 참석자 오찬 제공,174000,f4903aa5a7f3113e15abecca791664ef901f14e60546bb540196ff98aac3c329,table1:R2,,,
+f4903aa5a7f3113e-table1-R2#1,2026-02-11,ulsan-namgu,건축허가과,미가횟집,건축행정지원사업 활성화 관련 간담회 참석자 오찬 제공,,f4903aa5a7f3113e15abecca791664ef901f14e60546bb540196ff98aac3c329,table1:R2,,f4903aa5a7f3113e-table1-R2,174000
+f4903aa5a7f3113e-table1-R2#2,2026-02-11,ulsan-namgu,건축허가과,카페한,건축행정지원사업 활성화 관련 간담회 참석자 오찬 제공,,f4903aa5a7f3113e15abecca791664ef901f14e60546bb540196ff98aac3c329,table1:R2,,f4903aa5a7f3113e-table1-R2,174000
 6e05ecf9de76e927-table1-R2,2026-01-08,ulsan-namgu,건축허가과,온니떡,직원 격려용 간식 구입,240000,6e05ecf9de76e9271c96259d685ef6bca543a12d2ddeabefbfde4bce299baf62,table1:R2,,,
 6e05ecf9de76e927-table1-R3,2026-01-12,ulsan-namgu,건축허가과,㈜언양불고기,직원 노고격려 오찬 제공,732000,6e05ecf9de76e9271c96259d685ef6bca543a12d2ddeabefbfde4bce299baf62,table1:R3,,,
 6e05ecf9de76e927-table1-R4,2026-01-28,ulsan-namgu,건축허가과,숯불에닭 울산삼산점,직원 노고격려 만찬 제공,220000,6e05ecf9de76e9271c96259d685ef6bca543a12d2ddeabefbfde4bce299baf62,table1:R4,,,

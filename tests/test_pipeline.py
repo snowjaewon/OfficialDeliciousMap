@@ -75,9 +75,87 @@ def test_stage_failure_stops_run_without_exposing_exception_contents(
     setattr(adapters, stage, fail)
     with pytest.raises(PipelineFailure) as failure:
         execute("run", context, adapters)
-    assert str(failure.value) == f"{stage} city=seoul org=* cause=adapter-failed"
+    assert str(failure.value) == f"{stage} city=seoul org=* cause=adapter-failed error=RuntimeError"
     assert adapters.calls == list(STAGES[: STAGES.index(stage)])
     assert not (context.paths.city_dir(context.target) / f"{stage}.json").exists()
+
+
+def failure_of(context: ExecutionContext, error: BaseException) -> str:
+    from deliciousmap.pipeline import PipelineFailure
+
+    adapters = SyntheticAdapters()
+
+    def fail(*args: object) -> object:
+        raise error
+
+    adapters.fetch = fail  # type: ignore[method-assign]
+    with pytest.raises(PipelineFailure) as failure:
+        execute("fetch", context, adapters)
+    return str(failure.value)
+
+
+def test_io_error_names_its_kind_and_repository_relative_paths(tmp_path: Path) -> None:
+    context = context_at(tmp_path)
+    city = context.paths.data_root / "seoul"
+    error = PermissionError(
+        13, "SECRET 원본 내용", str(city / "tmpx58471ne"), None, str(city / "geocode.jsonl")
+    )
+    assert failure_of(context, error) == (
+        "fetch city=seoul org=* cause=io-error error=PermissionError errno=EACCES"
+        " path=data/seoul/tmpx58471ne path2=data/seoul/geocode.jsonl"
+    )
+
+
+def test_io_error_paths_under_other_roots_are_labelled_by_root(tmp_path: Path) -> None:
+    context = context_at(tmp_path)
+    raw = context.paths.raw_root / "seoul" / "기관" / "원본.xlsx"
+    built = context.paths.output_root / "seoul" / "index.html"
+    error = FileNotFoundError(2, "SECRET", str(raw), None, str(built))
+    assert failure_of(context, error).endswith(
+        "cause=io-error error=FileNotFoundError errno=ENOENT"
+        " path=raw-root/seoul/기관/원본.xlsx path2=output-root/seoul/index.html"
+    )
+
+
+def test_io_error_path_outside_known_roots_is_not_reported(tmp_path: Path) -> None:
+    context = context_at(tmp_path)
+    error = FileNotFoundError(2, "SECRET", str(tmp_path / "SECRET-home" / "file"))
+    assert failure_of(context, error) == (
+        "fetch city=seoul org=* cause=io-error error=FileNotFoundError errno=ENOENT"
+    )
+
+
+def test_request_url_carried_as_a_file_name_is_not_reported(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from urllib.error import HTTPError
+
+    context = context_at(tmp_path)
+    # CLI처럼 저장소에서 실행한다. 상대 경로로 읽힌 URL이 저장소 아래로 해석되면 안 된다.
+    context.paths.repository.mkdir()
+    monkeypatch.chdir(context.paths.repository)
+    # HTTPError는 OSError이고 filename에 질의 문자열이 든 요청 URL을 담는다.
+    url = "https://openapi.example.invalid/search?query=SECRET상호&key=SECRET"
+    reported = failure_of(context, HTTPError(url, 500, "SECRET", None, None))
+    assert reported == "fetch city=seoul org=* cause=io-error error=HTTPError"
+
+
+@pytest.mark.parametrize(
+    ("error", "expected"),
+    [
+        (ValueError("SECRET 원본 행"), "cause=invalid-artifact error=ValueError"),
+        (KeyError("SECRET 상호"), "cause=invalid-artifact error=KeyError"),
+        (TypeError("SECRET"), "cause=invalid-artifact error=TypeError"),
+        (RuntimeError("SECRET provider body"), "cause=adapter-failed error=RuntimeError"),
+        (OSError("SECRET without errno"), "cause=io-error error=OSError"),
+    ],
+)
+def test_failure_names_only_the_exception_kind_never_its_message(
+    tmp_path: Path, error: Exception, expected: str
+) -> None:
+    reported = failure_of(context_at(tmp_path), error)
+    assert reported == f"fetch city=seoul org=* {expected}"
+    assert "SECRET" not in reported
 
 
 @pytest.mark.parametrize(

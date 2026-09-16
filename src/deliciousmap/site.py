@@ -202,9 +202,9 @@ def _marker_file(target: Target, value: BuildInput) -> MarkerFile:
     markers = []
     for candidate in value.candidates:
         # 묶인 레코드는 같은 좌표를 공유한다. 그 좌표를 스스로 낸 레코드가 출처와 주소를 밝힌다.
-        source, address = coordinate_origin(
-            coordinate_owner([geocodes[record_id] for record_id in candidate.record_ids])
-        )
+        members = [geocodes[record_id] for record_id in candidate.record_ids]
+        members += [item for item in value.peers if item.business_id == candidate.business_id]
+        source, address = coordinate_origin(coordinate_owner(members))
         visits = [records[record_id] for record_id in candidate.record_ids]
         priced = [visit.amount_krw for visit in visits if visit.amount_krw is not None]
         described = value.categories.get(candidate.business_id, category.UNKNOWN)

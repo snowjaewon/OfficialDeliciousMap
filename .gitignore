@@ -11,6 +11,8 @@ dist/
 data/*/history/
 # 공통 예산 집행 잠금. 실행 중에만 존재한다
 data/_shared/*.lock
+# 조회 캐시에 아직 합치지 않은 이번 실행의 조회. 다음 실행이 캐시에 합친다(#181)
+data/*/*.pending.jsonl
 # 실기기 확인 때 사용자가 넘기는 화면 캡처. 개인 기기 화면이라 공개 저장소에 올리지 않는다
 screenshot-user/
 

@@ -121,8 +121,11 @@ def test_unknown_map_key_parameter_is_rejected_without_echoing_the_key(
 def test_organization_build_writes_data_without_touching_the_city_shell(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    city = prepare(tmp_path)
+    save_input(city, lookup())
+    # 기관 판정은 도시 판정을 인용한다(#183).
+    assert run_cli(city, "geocode") == 0
     context = prepare(tmp_path, org="test-org")
-    save_input(context, lookup())
     for stage in ("geocode", "closure"):
         assert run_cli(context, stage) == 0
     monkeypatch.delenv("NAVER_MAP_CLIENT_ID")

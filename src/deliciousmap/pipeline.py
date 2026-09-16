@@ -1,8 +1,12 @@
 """Stage orchestration. All service operations cross the Adapters boundary."""
 
+import errno
+import os
 from dataclasses import dataclass
 from enum import StrEnum
+from pathlib import Path
 from typing import Protocol
+from urllib.parse import urlsplit
 
 from deliciousmap import (
     category,
@@ -27,6 +31,7 @@ from deliciousmap.contracts import (
     FetchOutput,
     GeocodeInput,
     GeocodeOutput,
+    GeocodeResult,
     HeaderMapInput,
     HeaderMapOutput,
     MarkerCandidate,
@@ -73,13 +78,58 @@ class AdapterFailure(Exception):
 
 
 class PipelineFailure(Exception):
-    def __init__(self, stage: str, target: Target, cause: FailureCause) -> None:
+    def __init__(
+        self, stage: str, target: Target, cause: FailureCause, diagnosis: str = ""
+    ) -> None:
         self.stage = stage
         self.target = target
         self.cause = cause
-        super().__init__(
-            f"{stage} city={target.city.slug} org={target.org or '*'} cause={cause.value}"
-        )
+        message = f"{stage} city={target.city.slug} org={target.org or '*'} cause={cause.value}"
+        super().__init__(f"{message} {diagnosis}" if diagnosis else message)
+
+
+def diagnose(error: BaseException, paths: Paths) -> str:
+    """사유 코드로 접힌 예외에서 출력해도 안전한 진단만 뽑는다.
+
+    안전하다고 보는 것은 코드가 정한 값뿐이다: 예외 클래스 이름, `errno`의 기호 이름,
+    그리고 저장소·데이터·원본·출력 루트 아래로 확인된 실패 경로의 루트 상대 경로.
+    원본 첨부 이름은 이미 커밋되는 수집 산출물에 실리므로 원본 루트 아래 경로도 남긴다.
+    예외 메시지(`str(error)`, `strerror`, `KeyError`의 키)는 원본 내용·비밀값·제공자 응답
+    본문을 담을 수 있으므로 어떤 경우에도 남기지 않는다. 알려진 루트 밖의 경로와 URL도
+    남기지 않는다.
+    """
+    parts = [f"error={type(error).__name__}"]
+    if isinstance(error, OSError):
+        if isinstance(error.errno, int) and error.errno in errno.errorcode:
+            parts.append(f"errno={errno.errorcode[error.errno]}")
+        for key, name in (("path", error.filename), ("path2", error.filename2)):
+            relative = _root_relative(name, paths)
+            if relative:
+                parts.append(f"{key}={relative}")
+    return " ".join(parts)
+
+
+def _root_relative(name: object, paths: Paths) -> str | None:
+    if not isinstance(name, str | os.PathLike):
+        return None
+    # `HTTPError`는 filename에 요청 URL(질의 문자열 포함)을 담는다. 상대 경로로 읽히지 않게
+    # 스킴이 있는 이름은 버린다. 한 글자 스킴은 Windows 드라이브 문자다.
+    if len(urlsplit(os.fspath(name)).scheme) > 1:
+        return None
+    try:
+        path = Path(name).resolve()
+    except (OSError, ValueError, TypeError):
+        return None
+    for label, root in (
+        ("", paths.repository),
+        ("data-root/", paths.data_root),
+        ("raw-root/", paths.raw_root),
+        ("output-root/", paths.output_root),
+    ):
+        base = root.resolve()
+        if path.is_relative_to(base):
+            return label + path.relative_to(base).as_posix()
+    return None
 
 
 @dataclass(frozen=True)
@@ -117,6 +167,37 @@ def restaurant_records(
 ) -> tuple[Record, ...]:
     included = {item.record_id for item in decisions if item.status == "restaurant"}
     return tuple(record for record in records if record.record_id in included)
+
+
+def cite_city_geocode(
+    city: tuple[GeocodeResult, ...], records: tuple[Record, ...]
+) -> GeocodeOutput:
+    """기관 레코드의 판정을 도시 판정에서 그대로 옮긴다(#183).
+
+    기관이 따로 판정하면 조회 캐시를 다른 시각에 채우고 업소 합치기도 기관 레코드만 보므로
+    같은 레코드가 도시와 다른 좌표·근거를 갖는다. 사이트는 도시 산출물로 빌드하므로 도시를
+    기준으로 삼는다. 도시 판정에 없는 레코드는 기관이 혼자 정하지 않고 거부한다.
+    """
+    decided = {item.record_id: item for item in city}
+    if any(record.record_id not in decided for record in records):
+        raise ValueError("organization record missing from city geocode; rerun city geocode")
+    return GeocodeOutput(results=tuple(decided[record.record_id] for record in records))
+
+
+def coordinate_peers(
+    city: tuple[GeocodeResult, ...], results: tuple[GeocodeResult, ...]
+) -> tuple[GeocodeResult, ...]:
+    """기관 판정의 업소를 도시에서 함께 이루는 다른 기관의 레코드(#183).
+
+    도시 판정은 기관을 가로질러 업소를 합치므로 합쳐진 좌표를 낸 레코드가 기관 밖에 있을 수
+    있다. 좌표의 출처·주소와 업종 조회는 그 레코드가 밝히므로 함께 넘긴다. 도시 실행은 `city`를
+    비워 넘기므로 없다.
+    """
+    own = {item.record_id for item in results}
+    businesses = {item.business_id for item in results if item.business_id is not None}
+    return tuple(
+        item for item in city if item.business_id in businesses and item.record_id not in own
+    )
 
 
 def marker_candidates(
@@ -168,18 +249,27 @@ def execute(
             ) from None
         except restoration.ConflictingReview:
             raise PipelineFailure(stage, context.target, FailureCause.CONFLICTING_REVIEW) from None
-        except (ValueError, TypeError, KeyError):
-            raise PipelineFailure(stage, context.target, FailureCause.INVALID_ARTIFACT) from None
-        except OSError:
-            raise PipelineFailure(stage, context.target, FailureCause.IO_ERROR) from None
-        except Exception:
-            raise PipelineFailure(stage, context.target, FailureCause.ADAPTER_FAILED) from None
+        except Exception as exc:
+            # 원인은 연결하지 않는다. 진단은 `diagnose`가 고른 안전한 값만 싣는다.
+            raise PipelineFailure(
+                stage, context.target, _folded_cause(exc), diagnose(exc, context.paths)
+            ) from None
     return result
+
+
+def _folded_cause(error: Exception) -> FailureCause:
+    if isinstance(error, ValueError | TypeError | KeyError):
+        return FailureCause.INVALID_ARTIFACT
+    if isinstance(error, OSError):
+        return FailureCause.IO_ERROR
+    return FailureCause.ADAPTER_FAILED
 
 
 def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> StageOutput:
     store = ArtifactStore(context.paths, context.target)
     result: StageOutput
+    # 기관 실행이 인용하는 도시 판정. 한 단계에서 한 번만 읽는다. 도시 실행에는 비어 있다.
+    city: tuple[GeocodeResult, ...] = ()
     match stage:
         case "fetch":
             result = adapters.fetch(FetchInput(context.target), context)
@@ -217,6 +307,14 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
                     restorations=restoration.resolve(parsed.records, store.restorations()),
                 ),
                 context,
+            )
+        case "geocode" if context.target.org is not None:
+            parsed = store.load("parse", ParseOutput)
+            classified = store.load("classify", ClassifyOutput)
+            city = store.city().load("geocode", GeocodeOutput).results
+            result = cite_city_geocode(
+                city,
+                restaurant_records(parsed.records, classified.decisions),
             )
         case "geocode":
             parsed = store.load("parse", ParseOutput)
@@ -280,6 +378,9 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
                 )
             else:
                 closed = store.load("closure", ClosureOutput)
+                if context.target.org is not None:
+                    city = store.city().load("geocode", GeocodeOutput).results
+                peers = coordinate_peers(city, geocoded.results)
                 result = adapters.build(
                     BuildInput(
                         records=parsed.records,
@@ -297,7 +398,10 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
                             classified.decisions,
                             geocoded.results,
                         ),
-                        categories=category.published(store.category_cache(), geocoded.results),
+                        categories=category.published(
+                            store.category_cache(), (*geocoded.results, *peers)
+                        ),
+                        peers=peers,
                     ),
                     context,
                 )
@@ -306,12 +410,15 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
     store.save(stage, result, retry_failed=context.retry_failed)
     if isinstance(result, GeocodeOutput):
         # 판정을 저장한 뒤 확정 업소의 업종만 조회한다. 업종은 판정·판정 키를 바꾸지 않는다.
-        category_failed = category.resolve(
-            store.category_cache(),
-            result.results,
-            context.category_sources,
-            retry_failed=context.retry_failed,
-        )
+        with store.category_cache() as category_lookups:
+            category_failed = category.resolve(
+                category_lookups,
+                (*result.results, *coordinate_peers(city, result.results)),
+                context.category_sources,
+                retry_failed=context.retry_failed,
+            )
+        # 기관 실행의 `lookup_error`는 인용한 도시 판정의 것이다. 기관을 다시 돌려도 풀리지 않고
+        # 도시 geocode를 `--retry-failed`로 다시 돌려야 풀린다.
         if category_failed or any(item.reason == "lookup_error" for item in result.results):
             raise AdapterFailure(FailureCause.LOOKUP_FAILED)
     return result
