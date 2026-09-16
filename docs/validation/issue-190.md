@@ -83,3 +83,35 @@ geocode.json은 그 실패보다 먼저 저장되므로 closure·build는 새 ge
 
 `uv run ruff check .`, `uv run ruff format --check .`, `uv run mypy src`, `uv run pytest`, `git diff --check`를
 같은 작업 트리에서 실행해 모두 통과했다(`uv run pytest -q`: 932 passed).
+
+## 6. 울산 — 재실행 대신 봉투의 키만 옮겼다
+
+CI(`.github/workflows/ci.yml`)는 등록된 도시 전부의 `build`를 돌리므로, 옛 키 형식의 울산 산출물이
+`build city=ulsan cause=invalid-artifact`로 PR을 막았다(run 35148340256). 이 PC에는 울산 원본이 없고
+`data/ulsan/fetch.json`의 원본 경로가 담당자 PC의 절대 경로라 울산 parse는 돌지 않는다.
+
+그래서 울산 시·구 6개 × parse·classify·geocode·closure·build의 산출물 37개 파일(geocode 조각 포함)을
+**판정 재계산 없이** 다시 썼다: 봉투의 `payload`를 그대로 모델로 읽어 `ArtifactStore.save`에 넘겨
+`dependencies`만 현재 코드가 계산하게 했다. 이것이 재실행과 같은 결과인 근거는 두 가지다.
+
+- 다시 쓰기 전에 35개 산출물(조각 제외) 전부가 **옛 키 식으로 낡지 않았다** — 저장된 `dependencies`가
+  파일 통째 SHA-256으로 다시 계산한 값과 키 하나까지 같았다. 즉 산출물을 낸 뒤 레코드·manual 파일·선행
+  산출물이 바뀌지 않았다.
+- 3절의 광주 재실행이 같은 입력에서 어댑터가 같은 payload를 내는 것을 33개 파일로 보였다.
+
+다시 쓴 뒤 37개 파일 모두 `payload`·`schema_version`이 기준 커밋과 같고 `dependencies`의 manual 키 4종과
+그 연쇄(`parse.json`·`classify.json`·`geocode.json`·`closure.json`·`city_geocode`)만 다르다. `records.csv`·
+조회 이력·조회 캐시·업종 캐시에는 변경이 없다(`git status --short data/ulsan`이 봉투 37개만 든다).
+`build.json`의 `record_count` / `marker_count`:
+
+| 대상 | 다시 쓴 뒤 (= 기준 커밋) |
+| --- | --- |
+| ulsan(시) | 3,554 / 773 |
+| ulsan-bukgu | 59 / 19 |
+| ulsan-city | 3,195 / 659 |
+| ulsan-donggu | 33 / 11 |
+| ulsan-junggu | 198 / 65 |
+| ulsan-namgu | 69 / 39 |
+| ulsan-ulju | 0 / 0 |
+
+이 절은 사용자 결정(2026-09-17, "키만 옮겨 머지")에 따른 것이다. 울산 담당자에게 PR에서 리뷰를 요청했다.
