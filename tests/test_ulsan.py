@@ -8,6 +8,8 @@ import pytest
 
 from deliciousmap import boards
 from deliciousmap.collection import collect
+from deliciousmap.contracts import PlaceCandidate
+from deliciousmap.identity import city_places
 from deliciousmap.paths import Paths
 from deliciousmap.pipeline import AdapterFailure, FailureCause
 from deliciousmap.registry import CITIES, Board, select_target
@@ -65,6 +67,49 @@ def test_ulsan_registry_declares_six_nonempty_organizations() -> None:
     ]
     assert all(item.boards for item in target.organizations)
     assert select_target(CITIES, "ulsan", "ulsan-ulju").organizations[0].slug == "ulsan-ulju"
+
+
+def test_ulsan_registry_declares_measured_city_prefix_and_halls() -> None:
+    city = select_target(CITIES, "ulsan", None).city
+
+    assert city.address_prefixes == ("울산광역시",)
+    assert city.halls == {
+        "ulsan-city": (35.5394772, 129.3112994),
+        "ulsan-junggu": (35.5694499, 129.3327),
+        "ulsan-namgu": (35.5437979, 129.330109),
+        "ulsan-donggu": (35.5048439, 129.416632),
+        "ulsan-bukgu": (35.5827089, 129.361313),
+        "ulsan-ulju": (35.5220885, 129.2422294),
+    }
+
+
+def test_ulsan_city_prefix_accepts_ulsan_candidates_only() -> None:
+    """선언한 접두가 실제 판정에 쓰이는지 본다. 접두는 레지스트리에서 읽는다."""
+    city = select_target(CITIES, "ulsan", None).city
+
+    def candidate(address: str) -> PlaceCandidate:
+        return PlaceCandidate(
+            merchant="합성 식당",
+            branch="본점",
+            address=address,
+            latitude=35.54,
+            longitude=129.31,
+            source={
+                "provider": "naver",
+                "source_id": address,
+                "reference": "https://example.invalid",
+            },
+        )
+
+    places = city_places(
+        [candidate("울산광역시 남구 중앙로 201"), candidate("서울특별시 중구 세종대로 1")],
+        "합성 식당",
+        city.address_prefixes,
+    )
+
+    assert [[item.address for item in place] for place in places] == [
+        ["울산광역시 남구 중앙로 201"]
+    ]
 
 
 def test_ulsan_registers_every_html_table_board_with_a_declared_mapping() -> None:

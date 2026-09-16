@@ -2,7 +2,7 @@
 
 from decimal import Decimal
 
-from deliciousmap.registry.models import Board, City, DeclaredTable, MapBounds, Organization
+from deliciousmap.registry.models import Board, City, DeclaredTable, Hall, MapBounds, Organization
 from deliciousmap.scrapers.ulsan import (
     BukguBoard,
     CityMarketBoard,
@@ -65,6 +65,16 @@ ULJU_DEPUTY = "https://www.ulju.ulsan.kr/ulju/bbs/list.do?ptIdx=117&mId=02160401
 ULJU_DIRECTOR = "https://www.ulju.ulsan.kr/ulju/bbs/list.do?ptIdx=117&mId=0216040200"
 ULJU_DEPARTMENT = "https://www.ulju.ulsan.kr/ulju/bbs/list.do?ptIdx=117&mId=0216040300"
 
+# 2026-09-16 네이버 지역검색 실측으로 받은 청사 좌표. 질의는 기관 이름이며(`울산광역시청`,
+# `울산 남구청` …) 응답이 밝힌 도로명주소가 그 기관이 누리집에 적은 소재지와 같은 것만 쓴다.
+# 같은 상호가 도시 안 여러 곳에 있을 때 고르는 기준점일 뿐 기관의 경계가 아니다(ADR-0010).
+CITY_HALL = Hall(35.5394772, 129.3112994)  # 남구 중앙로 201
+JUNGGU_HALL = Hall(35.5694499, 129.3327)  # 중구 단장골길 1
+NAMGU_HALL = Hall(35.5437979, 129.330109)  # 남구 돋질로 233
+DONGGU_HALL = Hall(35.5048439, 129.416632)  # 동구 봉수로 155
+BUKGU_HALL = Hall(35.5827089, 129.361313)  # 북구 산업로 1010
+ULJU_HALL = Hall(35.5220885, 129.2422294)  # 울주군 청량읍 군청로 1
+
 CITY = City(
     "ulsan",
     "울산",
@@ -81,6 +91,7 @@ CITY = City(
                 Board("expenses-director", CITY_DIRECTOR, CityTransferBoard, CITY_TABLE),
                 Board("expenses-department", CITY_DEPARTMENT, CityTransferBoard, CITY_TABLE),
             ),
+            hall=CITY_HALL,
         ),
         Organization(
             "ulsan-junggu",
@@ -92,6 +103,7 @@ CITY = City(
                 Board("expenses-department", JUNGGU_DEPARTMENT, JungguBoard),
                 Board("expenses-legacy", JUNGGU_LEGACY, JungguBoard),
             ),
+            hall=JUNGGU_HALL,
         ),
         Organization(
             "ulsan-namgu",
@@ -106,6 +118,7 @@ CITY = City(
                     ("health", "healthPrmtFee"),
                 )
             ),
+            hall=NAMGU_HALL,
         ),
         Organization(
             "ulsan-donggu",
@@ -123,6 +136,7 @@ CITY = City(
                     "expenses-department", f"{DONGGU_BASE}?bbsId=BBSMSTR_000000000362", EgovBoard
                 ),
             ),
+            hall=DONGGU_HALL,
         ),
         Organization(
             "ulsan-bukgu",
@@ -134,6 +148,7 @@ CITY = City(
                     BukguBoard,
                 ),
             ),
+            hall=BUKGU_HALL,
         ),
         Organization(
             "ulsan-ulju",
@@ -143,6 +158,9 @@ CITY = City(
                 Board("expenses-director", ULJU_DIRECTOR, UljuBoard),
                 Board("expenses-department", ULJU_DEPARTMENT, UljuBoard),
             ),
+            hall=ULJU_HALL,
         ),
     ),
+    # 후보 주소가 울산광역시로 시작할 때만 독립 근거 없이 도시 안 업소로 채택한다.
+    address_prefixes=("울산광역시",),
 )
