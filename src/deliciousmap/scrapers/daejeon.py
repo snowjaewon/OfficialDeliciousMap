@@ -102,16 +102,19 @@ class BbsBoard:
                 found = next(
                     (DETAIL_CALL.search(link.onclick) for link in row.links if link.onclick), None
                 )
-                if found is None or not boards.is_identifier(found.group("id")):
+                if found is None or not boards.is_identifier(found.group("id").replace("_", "")):
                     continue
-                post_id = found.group("id")
+                ntt_id = found.group("id")
+                # 옮겨 온 옛 글은 번호에 밑줄이 있다(유성구 `ODYS_MYR_1_164`). 저장 이름에 쓰는
+                # 게시글 번호에서만 바꾸고, 본문 주소에는 게시판이 준 값을 그대로 쓴다.
+                post_id = ntt_id.replace("_", "x")
                 title = _cell(row, "subject")
                 department = _cell(row, "writer", "deptName")
                 if _is_council(title, department):
                     self.filtered += 1
                     continue
                 posted = listing.posted(_cell(row, "regDate"))
-                page_url = boards.address(self.view_url, {"nttId": post_id})
+                page_url = boards.address(self.view_url, {"nttId": ntt_id})
                 attachments = (
                     () if skipped(post_id, posted) else self._attachments(post_id, page_url)
                 )

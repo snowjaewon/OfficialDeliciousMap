@@ -172,6 +172,25 @@ def test_bbs_board_keeps_a_posting_that_declares_no_spending() -> None:
     assert [(item.post_id, item.attachments) for item in postings] == [("B3", ())]
 
 
+def test_bbs_board_keeps_a_migrated_posting_whose_number_has_underscores() -> None:
+    """유성구 2021-07 이전 글은 `ODYS_MYR_1_164` 번호다. 빠뜨리면 받지 않은 게시글 수가 준다."""
+    transport = FakeTransport(
+        dict(
+            [
+                response(
+                    JUNG_LIST,
+                    {"pageIndex": "1"},
+                    bbs_listing(
+                        bbs_row("ODYS_MYR_1_164", "2019년 1월 집행내역", "2019-02-11", "구")
+                    ),
+                )
+            ]
+        )
+    )
+    postings = list(BbsBoard(board(JUNG_LIST, BbsBoard), transport).postings(lambda *_: True))
+    assert [item.post_id for item in postings] == ["ODYSxMYRx1x164"]
+
+
 def test_bbs_board_refuses_a_listing_without_a_page_count() -> None:
     transport = FakeTransport(
         dict(
