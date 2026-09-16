@@ -7,7 +7,7 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Literal, Protocol
 
-from deliciousmap.contracts import LedgerEntry, LlmPurpose, Usage
+from deliciousmap.contracts import LedgerEntry, LlmPurpose, ReplyError, Usage
 from deliciousmap.storage import append_ledger, read_ledger
 
 # 프로젝트 전체 기간의 누적 한도. 날짜·월·도시·실행마다 초기화하지 않는다.
@@ -22,6 +22,9 @@ class Charged(Protocol):
     @property
     def usage(self) -> Usage | None: ...
 
+    @property
+    def error(self) -> ReplyError | None: ...
+
 
 class BudgetUnavailable(Exception):
     """호출하지 않는다는 결정. 안전한 사유 코드만 전달한다."""
@@ -32,33 +35,42 @@ class BudgetUnavailable(Exception):
 
 
 class Reservation:
-    """예약 한 건. 실제 사용량을 확인했을 때만 정산한다."""
+    """예약 한 건. 정산하거나 사용량 미확인으로 해제한다."""
 
     def __init__(self, path: Path, entry: LedgerEntry) -> None:
         self._path = path
         self._entry = entry
-        self.settled = False
+        self._closed = False
 
     @property
     def entry_id(self) -> str:
         return self._entry.entry_id
 
     def settle(self, amount_usd: Decimal, evidence: str) -> None:
-        """예약을 실제 사용액으로 대체한다. 사용량을 모르면 부르지 않는다."""
-        if self.settled:
-            raise ValueError("a reservation can be settled only once")
+        """예약을 실제 사용액으로 대체한다."""
+        self._close("settlement", amount_usd, evidence)
+
+    def release(self, evidence: str) -> None:
+        """응답을 받지 못한 호출의 예약을 소진액에서 해제한다."""
+        self._close("release", Decimal(0), evidence)
+
+    def _close(
+        self, kind: Literal["settlement", "release"], amount_usd: Decimal, evidence: str
+    ) -> None:
+        if self._closed:
+            raise ValueError("a reservation can be closed only once")
         append_ledger(
             self._path,
             LedgerEntry(
                 entry_id=self._entry.entry_id,
-                kind="settlement",
+                kind=kind,
                 purpose=self._entry.purpose,
                 model=self._entry.model,
                 amount_usd=amount_usd,
                 evidence=evidence,
             ),
         )
-        self.settled = True
+        self._closed = True
 
 
 class Budget:
@@ -72,17 +84,17 @@ class Budget:
         return self.path.with_suffix(".lock")
 
     def committed(self) -> Decimal:
-        """확인한 기존 사용액·정산액·진행 중 예약액의 합."""
+        """확인한 기존 사용액·정산액·종결되지 않은 예약액의 합. 해제한 예약은 세지 않는다."""
         entries = read_ledger(self.path)
         if not any(entry.kind == "prior_usage" for entry in entries):
             # 제공자의 사용량 기록으로 확인한 값이 없으면 잔액을 가정하지 않는다.
             raise BudgetUnavailable("unknown_prior_usage")
-        settled = {entry.entry_id for entry in entries if entry.kind == "settlement"}
+        closed = {entry.entry_id for entry in entries if entry.kind in {"settlement", "release"}}
         return sum(
             (
                 entry.amount_usd
                 for entry in entries
-                if entry.kind != "reservation" or entry.entry_id not in settled
+                if entry.kind != "reservation" or entry.entry_id not in closed
             ),
             Decimal(0),
         )
@@ -118,7 +130,11 @@ class Budget:
         request: Callable[[], R],
         cost: Callable[[Usage], Decimal],
     ) -> R:
-        """예약하고 호출한 뒤 알린 사용량으로 정산한다. 사용량을 모르면 예약을 그대로 둔다."""
+        """예약하고 호출한 뒤 알린 사용량으로 정산한다.
+
+        응답을 받지 못한 호출(`unavailable`)만 예약을 해제한다. 응답을 받았는데 사용량이 없거나
+        호출이 예외로 끝나면 과금됐을 수 있으므로 예약을 그대로 둔다.
+        """
         with self.reserve(entry_id, purpose, model, ceiling_usd, evidence) as reservation:
             reply = request()
             if reply.usage is not None:
@@ -126,6 +142,8 @@ class Budget:
                     cost(reply.usage),
                     f"reported usage in={reply.usage.input_tokens} out={reply.usage.output_tokens}",
                 )
+            elif reply.error == "unavailable":
+                reservation.release("usage unavailable: no response received")
         return reply
 
     @contextmanager

@@ -732,9 +732,9 @@ class LedgerEntry(Contract):
     """data/_shared/llm-budget.jsonl 한 줄. 공통 LLM 예산의 추가형 이력이며 지우지 않는다."""
 
     schema_version: Literal[1] = 1
-    # 예약과 정산을 잇는 키. 같은 요청의 두 줄은 같은 값을 쓴다.
+    # 예약과 정산·해제를 잇는 키. 같은 요청의 줄은 같은 값을 쓴다.
     entry_id: Text
-    kind: Literal["prior_usage", "reservation", "settlement"]
+    kind: Literal["prior_usage", "reservation", "settlement", "release"]
     purpose: Literal["prior_usage"] | LlmPurpose
     # 기존 사용액은 특정 모델의 것이 아니므로 비워 둔다.
     model: str | None = None
