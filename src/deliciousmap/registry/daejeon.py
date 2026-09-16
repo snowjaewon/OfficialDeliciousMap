@@ -10,6 +10,7 @@ from deliciousmap.scrapers.daejeon import ArticleBoard, BbsBoard, DptBoard, ZipB
 DONGGU = "https://www.donggu.go.kr/dg/kor/article/{code}"
 JUNGGU = "https://www.djjunggu.go.kr/bbs/BBSMSTR_{bbs}/list.do"
 SEOGU = "https://www.seogu.go.kr/bbs/BBSMSTR_{bbs}/list.do"
+YUSEONG = "https://www.yuseong.go.kr/bbs/BBSMSTR_{bbs}/list.do"
 # 대덕구는 메뉴 번호마다 목록이 따로다. `DPT02010401`~`05`가 업무추진비내역 아래 다섯 게시판이다.
 DAEDEOK = "https://www.daedeok.go.kr/dpt/dpt02/{menu}_cmmBoardList.do"
 
@@ -53,13 +54,7 @@ CITY = City(
         Organization(
             "daejeon-yuseong",
             "대전광역시 유성구",
-            (
-                Board(
-                    "expenses-mayor",
-                    "https://www.yuseong.go.kr/bbs/BBSMSTR_000000000111/list.do",
-                    BbsBoard,
-                ),
-            ),
+            (Board("expenses-mayor", YUSEONG.format(bbs="000000000111"), BbsBoard),),
         ),
         Organization(
             "daejeon-daedeok",

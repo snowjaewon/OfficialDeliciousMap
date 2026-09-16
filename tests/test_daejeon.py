@@ -1,5 +1,7 @@
 """대전 자치구 게시판의 계약. 2026-09-17 실측한 목록·본문·첨부 모양을 합성 fixture로 고정한다."""
 
+import zipfile
+from io import BytesIO
 from pathlib import Path
 
 import pytest
@@ -230,6 +232,34 @@ def test_zip_board_opens_the_posting_from_a_button_and_takes_one_archive() -> No
     )
 
 
+def jung_detail_response(detail: str) -> FakeTransport:
+    return FakeTransport(
+        dict(
+            [
+                response(
+                    JUNG_LIST,
+                    {"pageIndex": "1"},
+                    bbs_listing(bbs_row("B4", "사용내역(2026년 8월)", "2026-09-11", "건설과")),
+                ),
+                response(JUNG_VIEW, {"nttId": "B4"}, detail),
+            ]
+        )
+    )
+
+
+def test_bbs_board_reads_the_extension_of_a_name_that_opens_with_a_bracket() -> None:
+    """크기 표기는 이름 끝의 `[…]`다. 이름 앞의 `[붙임]`에서 자르면 확장자를 잃는다."""
+    transport = jung_detail_response(bbs_detail(("FILE_1", "0", "[붙임] 집행내역(8월).xlsx")))
+    postings = list(BbsBoard(board(JUNG_LIST, BbsBoard), transport).postings(never))
+    assert [item.suffix for item in postings[0].attachments] == [".xlsx"]
+
+
+def test_bbs_board_refuses_an_unusable_attachment_identifier() -> None:
+    transport = jung_detail_response(bbs_detail(("FILE_1/../x", "0", "집행내역.xlsx")))
+    with pytest.raises(boards.UnreadableBoard):
+        list(BbsBoard(board(JUNG_LIST, BbsBoard), transport).postings(never))
+
+
 # 동구 article 계열.
 DONG_LIST = "https://www.donggu.go.kr/dg/kor/article/senior"
 
@@ -339,6 +369,52 @@ def test_article_board_refuses_a_listing_without_a_last_page() -> None:
     )
     with pytest.raises(boards.UnreadableBoard):
         list(ArticleBoard(board(DONG_LIST, ArticleBoard), transport).postings(never))
+
+
+def test_dong_collection_records_the_filtered_council_postings(tmp_path: Path) -> None:
+    """`--org daejeon-dong` 수집이 원본을 받고, 걸러 낸 의회 글 수를 장부에 남긴다."""
+    first, second = "de96e330e35f471348650497d8c0070d", "9a9db098b587ee18b321c826f3707a49"
+    workbook = BytesIO()
+    with zipfile.ZipFile(workbook, "w") as archive:
+        archive.writestr("[Content_Types].xml", "<Types/>")
+        archive.writestr("xl/workbook.xml", "<workbook/>")
+    mayor = "https://www.donggu.go.kr/dg/kor/article/secretBusiness"
+    transport = FakeTransport(
+        dict(
+            [
+                response(mayor, {"pageIndex": "1"}, article_listing()),
+                response(
+                    DONG_LIST,
+                    {"pageIndex": "1"},
+                    article_listing(
+                        article_item(
+                            "143316", "(건축과) 2026년 8월 사용내역", "2026-09-03", "건축과"
+                        ),
+                        article_item(
+                            "143379", "(의회사무국) 2026년 8월", "2026-09-10", "의회사무국"
+                        ),
+                    ),
+                ),
+                response(
+                    f"{DONG_LIST}/143316", {}, article_detail((first, second, "사용내역.xlsx"))
+                ),
+                (
+                    (f"https://www.donggu.go.kr/dg/attach/{first}/{second}", frozenset()),
+                    workbook.getvalue(),
+                ),
+            ]
+        )
+    )
+    output = collect(
+        select_target(CITIES, "daejeon", "daejeon-dong"),
+        Paths(Path.cwd(), tmp_path / "raw", tmp_path / "data", tmp_path / "output"),
+        transport,
+    )
+    assert [(item.board, item.container) for item in output.sources] == [
+        ("expenses-director", "ooxml")
+    ]
+    assert output.filtered_postings == 1
+    assert output.empty_reason is None
 
 
 # 대덕구 dpt 계열.

@@ -214,6 +214,14 @@ def posted_of(row: Row) -> date:
     return posted(row.text)
 
 
+def last_page(pages: Iterable[int]) -> int:
+    """쪽 넘김이 밝힌 마지막 쪽. 밝히지 않았으면 쪽 수를 지어내지 않고 읽을 수 없다고 알린다."""
+    found = list(pages)
+    if not found:
+        raise boards.UnreadableBoard("board listing does not declare its page count")
+    return max(found)
+
+
 def has_date(text: str) -> bool:
     return DATE_RE.search(text) is not None or SHORT_DATE_RE.search(text) is not None
 

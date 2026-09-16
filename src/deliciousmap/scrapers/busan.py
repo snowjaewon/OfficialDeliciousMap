@@ -7,7 +7,7 @@
 
 import re
 import urllib.parse
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterator
 from datetime import date
 from typing import TYPE_CHECKING
 
@@ -105,14 +105,6 @@ def rfc3_endpoint(url: str) -> tuple[str, dict[str, str], str]:
     return list_url, params, found.group(1)
 
 
-def last_page(pages: Iterable[int]) -> int:
-    """쪽 넘김이 밝힌 마지막 쪽. 밝히지 않았으면 쪽 수를 지어내지 않고 읽을 수 없다고 알린다."""
-    found = list(pages)
-    if not found:
-        raise boards.UnreadableBoard("board listing does not declare its page count")
-    return max(found)
-
-
 def listed_pages(parser: listing.TableParser, endpoint: str, parameter: str) -> Iterator[int]:
     """목록 주소를 가리키는 링크가 싣고 다니는 쪽 번호.
 
@@ -176,7 +168,7 @@ class Rfc3Board:
         실측(2026-09-14): 열한 게시판이 모두 마지막 쪽 단추에 진짜 마지막 쪽을 싣는다.
         묶는 태그는 기관마다 다르다(`div.paging-wrap2`, `div.page`).
         """
-        return last_page(listed_pages(parser, f"list.{self.site_key}", "startPage"))
+        return listing.last_page(listed_pages(parser, f"list.{self.site_key}", "startPage"))
 
     def _collects(self, title: str) -> bool:
         """섞인 게시판에서 이 게시글의 원본을 받을지. 조건이 없으면 게시판 전체가 대상이다."""
@@ -276,7 +268,9 @@ class GijangBoard:
                     row.cells[self.PURPOSE].text,
                     row.cells[self.DEPARTMENT].text,
                 )
-            if page >= last_page(listed_pages(parser, f"list.{self.site_key}", "startPage")):
+            if page >= listing.last_page(
+                listed_pages(parser, f"list.{self.site_key}", "startPage")
+            ):
                 return
             page += 1
 
@@ -461,7 +455,7 @@ def _city_page_count(parser: listing.TableParser) -> int:
                 continue
             yield from (int(value) for value in query.get("curPage", []) if value.isdigit())
 
-    return last_page(pages())
+    return listing.last_page(pages())
 
 
 def _cell(row: listing.Row, name: str) -> str:
@@ -481,7 +475,7 @@ def _title(row: listing.Row) -> str:
 
 def _script_page_count(parser: listing.TableParser) -> int:
     """연제구의 마지막 쪽. 쪽 넘김 주소가 `#`이라 쪽 수는 `goPage` 호출에만 있다."""
-    return last_page(
+    return listing.last_page(
         int(found) for link in parser.links for found in PAGE_CALL.findall(link.onclick)
     )
 

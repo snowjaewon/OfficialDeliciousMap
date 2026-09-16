@@ -27,7 +27,8 @@ DETAIL_CALL = re.compile(r"fn_search_detail\(\s*'(?P<id>[^']+)'")
 # eGov 본문의 내려받기 호출. 서구·중구·유성구 모두 `href="javascript:…"`에 싣는다.
 DOWN_CALL = re.compile(r"fn_egov_downFile\(\s*'(?P<file>[^']+)'\s*,\s*'(?P<serial>[^']+)'")
 # 첨부 이름 뒤에 붙는 크기·단추 글자(`… .pdf [197.4 KB] 다운로드`). 이름과 가르는 자리다.
-BBS_SIZE = re.compile(r"\s*\[[^\]]*\].*$")
+# 마지막 `[…]`만 본다 — 이름 앞의 `[붙임]`에서 자르면 확장자를 잃는다.
+BBS_SIZE = re.compile(r"\s*\[[^\[\]]*\][^\[\]]*$")
 # 동구 목록 주소와 게시글을 여는 호출.
 ARTICLE_LIST = re.compile(r"^/dg/kor/article/[A-Za-z]+$")
 ARTICLE_VIEW = re.compile(r"article\.view\(\s*'(?P<id>\d+)'")
@@ -276,14 +277,11 @@ class ArticleBoard:
 
 def _article_page_count(body: bytes) -> int:
     """동구의 마지막 쪽. 쪽 넘김 주소가 `?pageIndex=N`만 싣는다."""
-    pages = [
+    return listing.last_page(
         int(found.group(1))
         for href, _ in boards.read(body, listing.ENCODING).links
         if (found := ARTICLE_PAGE.fullmatch(href)) is not None
-    ]
-    if not pages:
-        raise boards.UnreadableBoard("board listing does not declare its page count")
-    return max(pages)
+    )
 
 
 class _DptTable(listing.TableParser):
@@ -351,12 +349,10 @@ class DptBoard:
                     () if skipped(post_id, posted) else self._attachments(post_id, page_url)
                 )
                 yield boards.Posting(post_id, attachments, posted, listing.title_of(row, href))
-            pages = [
+            last = listing.last_page(
                 int(value) for link in parser.links for value in DPT_PAGE.findall(link.onclick)
-            ]
-            if not pages:
-                raise boards.UnreadableBoard("board listing does not declare its page count")
-            if page >= max(pages):
+            )
+            if page >= last:
                 return
             page += 1
 
