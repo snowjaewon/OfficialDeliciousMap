@@ -1,7 +1,10 @@
 """Stage orchestration. All service operations cross the Adapters boundary."""
 
+import errno
+import os
 from dataclasses import dataclass
 from enum import StrEnum
+from pathlib import Path
 from typing import Protocol
 
 from deliciousmap import (
@@ -73,13 +76,53 @@ class AdapterFailure(Exception):
 
 
 class PipelineFailure(Exception):
-    def __init__(self, stage: str, target: Target, cause: FailureCause) -> None:
+    def __init__(
+        self, stage: str, target: Target, cause: FailureCause, diagnosis: str = ""
+    ) -> None:
         self.stage = stage
         self.target = target
         self.cause = cause
-        super().__init__(
-            f"{stage} city={target.city.slug} org={target.org or '*'} cause={cause.value}"
-        )
+        self.diagnosis = diagnosis
+        message = f"{stage} city={target.city.slug} org={target.org or '*'} cause={cause.value}"
+        super().__init__(f"{message} {diagnosis}" if diagnosis else message)
+
+
+def diagnose(error: BaseException, paths: Paths) -> str:
+    """사유 코드로 접힌 예외에서 출력해도 안전한 진단만 뽑는다.
+
+    안전하다고 보는 것은 코드가 정한 값뿐이다: 예외 클래스 이름, `errno`의 기호 이름,
+    그리고 저장소·데이터·원본·출력 루트 아래로 확인된 실패 경로의 루트 상대 경로.
+    예외 메시지(`str(error)`, `strerror`, `KeyError`의 키)는 원본 내용·비밀값·제공자 응답
+    본문을 담을 수 있으므로 어떤 경우에도 남기지 않는다. 알려진 루트 밖의 경로도 남기지 않는다.
+    """
+    parts = [f"error={type(error).__name__}"]
+    if isinstance(error, OSError):
+        if isinstance(error.errno, int) and error.errno in errno.errorcode:
+            parts.append(f"errno={errno.errorcode[error.errno]}")
+        for key, name in (("path", error.filename), ("path2", error.filename2)):
+            located = _located(name, paths)
+            if located:
+                parts.append(f"{key}={located}")
+    return " ".join(parts)
+
+
+def _located(name: object, paths: Paths) -> str | None:
+    if not isinstance(name, str | os.PathLike):
+        return None
+    try:
+        path = Path(name).resolve()
+    except (OSError, ValueError, TypeError):
+        return None
+    for label, root in (
+        ("", paths.repository),
+        ("data-root/", paths.data_root),
+        ("raw-root/", paths.raw_root),
+        ("output-root/", paths.output_root),
+    ):
+        base = root.resolve()
+        if path.is_relative_to(base):
+            return label + path.relative_to(base).as_posix()
+    return None
 
 
 @dataclass(frozen=True)
@@ -168,13 +211,20 @@ def execute(
             ) from None
         except restoration.ConflictingReview:
             raise PipelineFailure(stage, context.target, FailureCause.CONFLICTING_REVIEW) from None
-        except (ValueError, TypeError, KeyError):
-            raise PipelineFailure(stage, context.target, FailureCause.INVALID_ARTIFACT) from None
-        except OSError:
-            raise PipelineFailure(stage, context.target, FailureCause.IO_ERROR) from None
-        except Exception:
-            raise PipelineFailure(stage, context.target, FailureCause.ADAPTER_FAILED) from None
+        except Exception as exc:
+            # 원인은 연결하지 않는다. 진단은 `diagnose`가 고른 안전한 값만 싣는다.
+            raise PipelineFailure(
+                stage, context.target, _folded_cause(exc), diagnose(exc, context.paths)
+            ) from None
     return result
+
+
+def _folded_cause(error: Exception) -> FailureCause:
+    if isinstance(error, ValueError | TypeError | KeyError):
+        return FailureCause.INVALID_ARTIFACT
+    if isinstance(error, OSError):
+        return FailureCause.IO_ERROR
+    return FailureCause.ADAPTER_FAILED
 
 
 def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> StageOutput:
