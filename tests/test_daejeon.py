@@ -232,6 +232,33 @@ def test_zip_board_opens_the_posting_from_a_button_and_takes_one_archive() -> No
     )
 
 
+def test_zip_board_filters_the_council_secretariat() -> None:
+    """서구 부서별 게시판에 `…(의회사무국)` 글이 섞인다(2026-01-06 게시 1건 실측)."""
+    transport = FakeTransport(
+        dict(
+            [
+                response(
+                    SEO_LIST,
+                    {"pageIndex": "1"},
+                    bbs_listing(
+                        bbs_row(
+                            "B5",
+                            "2025년 11월~12월 업무추진비 집행내역(의회사무국)",
+                            "2026-01-06",
+                            "의회사무국",
+                            button=True,
+                        )
+                    ),
+                )
+            ]
+        )
+    )
+    scraper = ZipBbsBoard(board(SEO_LIST, ZipBbsBoard), transport)
+    assert list(scraper.postings(never)) == []
+    assert isinstance(scraper, boards.FiltersRows)
+    assert scraper.filtered == 1
+
+
 def jung_detail_response(detail: str) -> FakeTransport:
     return FakeTransport(
         dict(
@@ -338,7 +365,11 @@ def test_article_board_reads_the_list_items_and_the_attachments() -> None:
 
 
 def test_article_board_filters_the_council_secretariat() -> None:
-    """5급 이상 게시판에 구의회 사무국 글이 섞인다. 집행기관이 아니라 걸러 내고 센다."""
+    """5급 이상 게시판에 구의회 사무국 글이 섞인다. 집행기관이 아니라 걸러 내고 센다.
+
+    작성자 칸은 `의회사무국`·`동구 의회사무국`·`대전 동구의회`로 적히고, 옛 글은 사람 이름만
+    적고 제목에만 `(의회사무국)`을 밝힌다(목록 전체 실측).
+    """
     transport = FakeTransport(
         dict(
             [
@@ -347,11 +378,11 @@ def test_article_board_filters_the_council_secretariat() -> None:
                     {"pageIndex": "1"},
                     article_listing(
                         article_item(
-                            "143379",
-                            "(의회사무국) 2026년 8월 과장급 이상 사용내역",
-                            "2026-09-10",
-                            "의회사무국",
-                        )
+                            "1", "(의회사무국) 2026년 8월 사용내역", "2026-09-10", "의회사무국"
+                        ),
+                        article_item("2", "2021년 2월 사용내역", "2021-03-02", "동구 의회사무국"),
+                        article_item("3", "2021년 3월 사용내역", "2021-04-02", "대전 동구의회"),
+                        article_item("4", "(의회사무국) 2021년 2월 사용내역", "2021-03-02", "담당"),
                     ),
                 )
             ]
@@ -360,7 +391,7 @@ def test_article_board_filters_the_council_secretariat() -> None:
     scraper = ArticleBoard(board(DONG_LIST, ArticleBoard), transport)
     assert list(scraper.postings(never)) == []
     assert isinstance(scraper, boards.FiltersRows)
-    assert scraper.filtered == 1
+    assert scraper.filtered == 4
 
 
 def test_article_board_refuses_a_listing_without_a_last_page() -> None:

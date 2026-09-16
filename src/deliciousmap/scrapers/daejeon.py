@@ -44,6 +44,16 @@ DPT_PAGE = re.compile(r"fn_link_page\(\s*(\d+)\s*\)")
 DPT_BINARY = re.compile(r"^/board/binary/DPT_\d+/(?P<id>\d+)(?P<suffix>\.[A-Za-z0-9]{1,8})$")
 
 
+# 구의회 글을 가르는 글자. 구청 게시판에 의회 사무국 집행내역이 섞이고(동구·서구 실측), 작성자는
+# `의회사무국`·`동구 의회사무국`·`대전 동구의회`로, 옛 글은 사람 이름과 제목의 `(의회사무국)`으로만
+# 밝힌다. 의회는 구청 집행기관이 아니라서 걸러 내고 센다(`boards.FiltersRows`).
+COUNCIL = "의회"
+
+
+def _is_council(*texts: str) -> bool:
+    return any(COUNCIL in text for text in texts)
+
+
 def _cell(row: listing.Row, *names: str) -> str:
     for cell in row.cells:
         if cell.classes.intersection(names):
@@ -76,6 +86,8 @@ class BbsBoard:
             raise ValueError("board url must name an eGov bbs listing")
         self.view_url = urllib.parse.urljoin(self.list_url, "view.do")
         self.transport = transport
+        # 걸러 낸 구의회 글 수. 서구 부서별 게시판에서 실측했고 같은 계열이라 함께 센다.
+        self.filtered = 0
 
     def postings(self, skipped: boards.Skipped) -> Iterator[boards.Posting]:
         page = 1
@@ -93,18 +105,17 @@ class BbsBoard:
                 if found is None or not boards.is_identifier(found.group("id")):
                     continue
                 post_id = found.group("id")
+                title = _cell(row, "subject")
+                department = _cell(row, "writer", "deptName")
+                if _is_council(title, department):
+                    self.filtered += 1
+                    continue
                 posted = listing.posted(_cell(row, "regDate"))
                 page_url = boards.address(self.view_url, {"nttId": post_id})
                 attachments = (
                     () if skipped(post_id, posted) else self._attachments(post_id, page_url)
                 )
-                yield boards.Posting(
-                    post_id,
-                    attachments,
-                    posted,
-                    _cell(row, "subject"),
-                    _cell(row, "writer", "deptName"),
-                )
+                yield boards.Posting(post_id, attachments, posted, title, department)
             if page >= listing.page_count(parser):
                 return
             page += 1
@@ -211,12 +222,10 @@ class _ArticleList(HTMLParser):
 class ArticleBoard:
     """동구 article 게시판. 목록은 표가 아니라 `<li>`이고 본문 주소는 `<목록>/<번호>`다.
 
-    5급 이상 게시판에 구의회 사무국 글이 섞인다(실측 2026-09-17 1쪽 10건 중 2건). 의회는
-    구청 집행기관이 아니라서 작성 부서로 걸러 내고 센다.
+    5급 이상 게시판에 구의회 사무국 글이 섞인다(실측 2026-09-17 1쪽 10건 중 2건).
     """
 
     published_suffixes = PUBLISHED_SUFFIXES
-    filtered_departments = frozenset({"의회사무국"})
 
     def __init__(self, board: "Board", transport: Transport) -> None:
         self.list_url, self.params = boards.endpoint(board.url)
@@ -243,7 +252,7 @@ class ArticleBoard:
                 post_id = item.get("id", "")
                 if not boards.is_identifier(post_id):
                     continue
-                if item.get("writer", "") in self.filtered_departments:
+                if _is_council(item.get("subject", ""), item.get("writer", "")):
                     self.filtered += 1
                     continue
                 posted = listing.posted(item.get("date", ""))
