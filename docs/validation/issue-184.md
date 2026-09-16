@@ -1,0 +1,212 @@
+# 울산 합쳐 적은 상호 121표기를 판정하고 좌표를 채운다 (#184)
+
+2026-09-16 실행. [#128](issue-128.md)이 광주에서 확정한 판정 주체·형식
+([실행 결정](https://github.com/snowjaewon/OfficialDeliciousMap/issues/128#issuecomment-5691705687))을
+울산에 그대로 적용한 기록이다. 판정 주체는 **에이전트 초안·사람 PR 검토**이며, 규칙(구분자 split)이
+업소를 확정하지 않았다. 초안은 조회 캐시의 조각 후보만 읽었고 **초안을 위한 새 지역검색·인허가 조회는
+0회**다.
+
+#128과 달리 이 이슈는 `parse`에서 멈추지 않고 `classify → geocode → closure → build`까지 도시와
+6개 기관을 모두 다시 냈다.
+
+## 1. 대상 — 148건 / 121표기, 고정 목록 그대로
+
+기준은 이슈의 [고정 목록](https://github.com/snowjaewon/OfficialDeliciousMap/issues/184#issuecomment-5698751786)
+(`develop` fbd0a51, `data/ulsan/geocode.json` + `geocode.002.json` 2,557건의 `reason == merged_merchant`)이다.
+이 브랜치의 분기점이 같은 커밋이다.
+
+```text
+uv run python -c "import json,glob; r=sum((json.load(open(f,encoding='utf-8'))['payload']['results'] for f in ['data/ulsan/geocode.json']+sorted(glob.glob('data/ulsan/geocode.0*.json'))),[]); m=[x for x in r if x['reason']=='merged_merchant']; print(len(r), len(m), len({x['merchant'] for x in m}))"
+```
+
+분기점에서 `2557 148 121`, 재실행 후 `2642 21 21`이다.
+
+## 2. 등급 — 조각 후보를 어떻게 읽었는가
+
+#128 2절과 같은 방법이다. 표기마다 `merchants.parts`로 조각을 내고(합계 245개), 조각마다
+`lookup.request_key`로 지역검색(`naver-local-1`, limit 5)·인허가(`food-license-2`, limit 100)의 캐시
+키를 계산해 `data/ulsan/geocode-lookup-v1.jsonl`에서 후보를 읽었다. 245조각 × 2제공자와 표기 전체
+조회의 키가 모두 캐시에 있었다(미스 0).
+
+- **울산 소재**: 후보 주소가 `registry/ulsan.py`의 `address_prefixes`(`울산광역시`)로 시작하는 것.
+- **정확 일치**: `merchants.bare_name`이 글자까지 같음. **포함 일치**: `merchants.name_inclusion`.
+- 등급 정의는 #128 실행 결정과 같다. 이 문서의 "울산"은 위 접두의 뜻이다.
+
+| 등급 | 정의 | 초안 표기 | 초안 레코드 | 보류 표기 | 보류 레코드 |
+| --- | --- | --- | --- | --- | --- |
+| A | 조각 모두 울산 정확 일치, 표기 전체 조회 0건 | 70 | 94 | 0 | 0 |
+| B | 조각 모두 울산 후보 있음, 일부는 포함 일치 | 15 | 17 | 6 | 6 |
+| C | 조각 하나만 울산 후보 있음 | 15 | 16 | 1 | 1 |
+| D | 어느 조각도 울산 후보 없음 | 0 | 0 | 10 | 10 |
+| E | 표기 전체 조회에 후보 있음 | 0 | 0 | 4 | 4 |
+| 합계 | | **100** | **127** | **21** | **21** |
+
+울산에는 천단위 쉼표 표기가 없다(0표기). B 초안 가운데 2표기는 한 조각이 울산 후보는 있으나 정확도
+포함도 아니다(`디비디비딥, BCD커피`의 `BCD커피`, `함야집 및 다모디`의 `함야집`). #128과 같이 `evidence`에
+`울산 후보 N건이나 상호가 다름`으로 적었고 그 조각에는 `references`가 없다. `함야집`은 같은 목록의
+`함양집`(초안 3표기·보류 1표기)의 오기로 읽히지만, 이름 고치기는 `restore.jsonl`의 일이라 원문대로 두었다. PR
+검토에서 확인할 자리다.
+
+## 3. 초안 규칙
+
+#128 3절과 같다. 다른 점만 적는다.
+
+- **조각 이름은 원문 그대로**(앞뒤 공백만 정리). `㈜`·`(주)`·`주식회사`·괄호·지점명을 남긴다
+  (`진미불고기(주)`, `주식회사 사오식탁`, `한우마을 사회적협동조합`). 이름 고치기는 `restore.jsonl`의 일이다.
+- **2자 이하 조각**은 그 조각에 정확 일치 울산 후보가 있을 때만 초안(12표기: `두다`·`소통`·`향전`×2·`마당`·
+  `해송`·`빵심`·`꿈틀`·`롬브`·`메오`·`모리`·`우돈`), 없으면 보류(7표기).
+- **조각 셋 이상**인 초안 표기는 2개다(`어나더맘보, 문수순메밀, 전통찻집담소` A,
+  `포화영베트남쌀국수2호점, 한우마을 사회적협동조합, 울산중구시니어클럽 해울이카페` C). 지출 하나가 레코드
+  셋으로 갈린다.
+- **손으로 고친 표기는 없다.** 모든 줄이 `merchants.parts`의 조각 그대로다.
+- **`evidence`** 틀은 #128과 같고 이슈 번호만 `#184`, 지역은 `울산`이다.
+- **`references`**: 조각마다 울산 후보 1건. 정확 일치를 먼저, 없으면 포함 일치를 쓰고 인허가를 지역검색보다
+  앞세웠다. 참조 수는 2건 82줄 · 1건 17줄 · 3건 1줄이다.
+- 줄 순서는 등급 A → B → C, 등급 안에서는 고정 목록 순서다. 커밋도 등급별로 나눴다.
+
+## 4. 보류 — 21표기 / 21레코드
+
+`MerchantReview.merchants`는 1개 이상 필수라 판정하지 못한 표기는 파일에 쓰지 않았다. 21건은 모두
+`ulsan-city` 원본이며 재실행 후에도 `merged_merchant`로 남는다.
+
+| 사유 | 표기 | 레코드 |
+| --- | --- | --- |
+| 어느 조각도 울산 후보 없음(D) | 10 | 10 |
+| 2자 조각, 후보 없음 | 7 | 7 |
+| 표기 전체 조회에 후보 있음(E) | 4 | 4 |
+| 합계 | **21** | **21** |
+
+| 표기 | 등급 | 사유 | 비고 |
+| --- | --- | --- | --- |
+| `coffeemeal(강남교회), 구희락복국` | D | 어느 조각도 울산 후보 없음 | 두 조각 모두 후보 0건 |
+| `㈜광화문아띠/설가온` | D | 어느 조각도 울산 후보 없음 | 두 조각 모두 후보 0건. 법인 표기가 붙은 서울 업소로 읽힌다 |
+| `㈜언양불고기/주식회사 오디엔` | D | 어느 조각도 울산 후보 없음 | 두 조각 모두 후보 0건. 법인명 조각 |
+| `맥선생,카페비일상` | D | 어느 조각도 울산 후보 없음 | 두 조각 모두 후보 0건 |
+| `삼부자갈비, Joe's Table` | D | 어느 조각도 울산 후보 없음 | 두 조각 모두 후보 0건 |
+| `청오디피케이, 푸라닭` | D | 어느 조각도 울산 후보 없음 | `청오디피케이`는 법인명으로 읽힌다 |
+| `컨퍼런스하우스달개비 정동점, 커피바 오하` | D | 어느 조각도 울산 후보 없음 | 서울 정동 업소로 읽힌다 |
+| `폴바셋 광화문점, 우아라` | D | 어느 조각도 울산 후보 없음 | 서울 업소로 읽힌다 |
+| `한화푸드테크㈜도원스타일서울역점, 한화커넥트㈜` | D | 어느 조각도 울산 후보 없음 | 서울 업소·법인명 |
+| `현대 모터스튜디오 마이클 어반팜 테이블, 테라로사` | D | 어느 조각도 울산 후보 없음 | 두 조각 모두 후보 0건 |
+| `교촌, 베스킨라빈스` | B | 2자 조각, 후보 없음 | 조각 `교촌`에 정확 일치 후보가 없다 |
+| `라오, 탐앤탐스` | B | 2자 조각, 후보 없음 | 조각 `라오`에 정확 일치 후보가 없다 |
+| `와사/언양기와집불고기, 작괘원림` | B | 2자 조각, 후보 없음 | 조각 `와사`에 정확 일치 후보가 없다 |
+| `용궁횟집, 투썸` | B | 2자 조각, 후보 없음 | 조각 `투썸`에 정확 일치 후보가 없다 |
+| `점심엔 한우국밥, 피플` | B | 2자 조각, 후보 없음 | 조각 `피플`에 정확 일치 후보가 없다 |
+| `함양집, 피플` | B | 2자 조각, 후보 없음 | 위와 같다 |
+| `안목, 투썸플레이스` | C | 2자 조각, 후보 없음 | 조각 `안목`에 후보가 없다 |
+| `본죽,본비빔밥` | E | 표기 전체 조회에 후보 5건 | 서울 `본죽&비빔밥` 지점만 있다. 한 업소 표기로 읽힌다 |
+| `이삭토스트&커피` | E | 표기 전체 조회에 후보 13건 | 울산 후보 1건을 포함한다. 한 업소 표기로 읽힌다 |
+| `장충동왕족발&고기국수` | E | 표기 전체 조회에 후보 3건 | 대전 `장충동왕족발&고기국수`만 있다. 한 업소 표기로 읽힌다 |
+| `프라임한우/동해도한한(주)` | E | 표기 전체 조회에 후보 1건 | 서울 `프라임한우`가 잡혔다 |
+
+E의 앞 세 표기는 사람이 `{"merchants": ["이삭토스트&커피"]}`처럼 한 업소 줄로 올릴 후보다. 실행 결정이
+E를 보류로 두었으므로 초안에 넣지 않았다.
+
+## 5. 재실행 — 도시와 6개 기관
+
+저장소 루트, Git Bash. `.env`를 읽는 작은 실행기로 `cli.main`을 불렀다. `classify`만 `GEMINI_*`를
+싣고, `geocode`·`closure`·`build`는 `GEMINI_*`를 뺐다. `--raw-root C:/Users/설재원/deliciousmap-raw`.
+
+```text
+parse    --city ulsan  → --org 6개
+classify --city ulsan  → --org 6개
+geocode  --city ulsan  → closure → build
+geocode  --org 6개     → closure → build   (기관 geocode는 도시 판정을 인용, #183)
+```
+
+`fetch`·`headermap`은 다시 돌리지 않았다. 외부 호출은 Gemini 분류 2회(USD 0.0113, 장부
+`data/_shared/llm-budget.jsonl` 누계 0.9966 → 1.0079)와 도시 `geocode`의 업종 조회 52줄
+(`category-lookup-v1.jsonl` 741 → 793줄)이다. 후보 조회 캐시(`geocode-lookup-v1.jsonl` 2,403줄)는
+줄 수가 그대로다 — 갈린 조각 이름은 #117의 조각 조회로 이미 캐시에 있었다.
+
+### parse — 지출 127건이 레코드 256건으로
+
+재실행 전(fbd0a51)과 후의 `data/ulsan/records.csv`를 `record_id`로 대조했다.
+
+| 항목 | 재실행 전 | 재실행 후 |
+| --- | --- | --- |
+| 레코드 | 3,425 | **3,554** |
+| 갈린 지출 | 0 | **127** |
+| 갈린 레코드(`amount_krw` 빈 값) | 0 | **256** (2조각 125지출 · 3조각 2지출) |
+| 그 밖의 레코드 | 3,425 | 3,298 — 재실행 전 값과 **글자까지 같다** |
+| 지출 총액(`merchants.expense_total` 규칙) | 718,722,130 | **718,722,130** |
+
+갈린 레코드의 원본 기관은 `ulsan-city` 248 · `ulsan-namgu` 6 · `ulsan-bukgu` 2다.
+
+### classify
+
+갈린 256레코드는 식당 212 · 판단 보류 43(23개 이름) · 비식당 1(`한우마을 사회적협동조합`)이다. 도시 식당
+판정은 2,557건에서 2,642건이 됐다(+85 = 212 − 127).
+
+### geocode·build
+
+| 항목 | 재실행 전 | 재실행 후 |
+| --- | --- | --- |
+| geocode 레코드 | 2,557 | 2,642 |
+| `matched` | 1,978 | **2,173** |
+| `merged_merchant` | 148 | **21** |
+| `insufficient_evidence` | 311 | 323 |
+| `no_candidates` | 101 | 106 |
+| `conflicting_evidence` · `human_confirmed` | 18 · 1 | 18 · 1 |
+| `data/ulsan/build.json` `marker_count` | 722 | **773** |
+
+- 갈린 212레코드는 `matched` 195 · `insufficient_evidence` 12 · `no_candidates` 5다.
+- 갈리지 않은 레코드의 판정(상태·사유·업소·좌표)은 바뀐 것이 0건이다.
+- 남은 `merged_merchant` 21건은 4절의 보류 21표기와 같고 모두 `ulsan-city` 레코드다.
+
+기관 `build.json`의 `marker_count`(재실행 전 fbd0a51 → 후)는 `ulsan-city` 610 → 659 · `ulsan-namgu`
+34 → 39 · `ulsan-bukgu` 18 → 19 · `ulsan-junggu` 65 → 65 · `ulsan-donggu` 11 → 11 · `ulsan-ulju` 0 → 0이다.
+
+## 6. 완료 기준 대조
+
+| 기준 | 결과 |
+| --- | --- |
+| 148건의 고유 표기 목록이 댓글로 고정돼 있다 | [고정 목록 댓글](https://github.com/snowjaewon/OfficialDeliciousMap/issues/184#issuecomment-5698751786), 121표기 |
+| 확인분이 `data/manual/ulsan/`에 있고 각 확인이 실제 조회 후보와 맞는다 | `merchants.jsonl` 100줄. 조각 후보는 캐시에서 읽었고 `references`가 그 후보다(2·3절) |
+| `marker_count`가 722에서 올라가고 남은 `merged_merchant` 건수와 사유를 적는다 | 773. 남은 21건과 사유는 4절 |
+| 도시와 6개 기관이 같은 코드·규칙 버전으로 나오고 `check-data`가 통과한다 | 7절 |
+| `pytest`·`ruff check`·`ruff format --check` 통과 | 7절 |
+
+## 7. 검증
+
+저장소 루트, Git Bash. 결과는 `0798033`(산출물 재생성 커밋) 작업 트리에서 실행한 값이다.
+
+```text
+uv run python -m deliciousmap.ci check-data --data-root data   # exit 0, gwangju·ulsan 출력
+uv run pytest                                                   # 917 passed
+uv run ruff check .                                             # All checks passed!
+uv run ruff format --check $(git ls-files '*.py' '*.md')        # 176 files already formatted
+git diff --check                                                # 출력 없음
+```
+
+`uv run ruff format --check .`는 이 PC에서 ruff가 `Expected a ruff source file`로 멈췄다. 다른 도구가 남긴
+권한 잠긴 미추적 폴더 `.pytest-tmp-180`·`.pytest-tmp-180b`를 읽지 못해서이며(os error 5), 그래서 추적
+파일을 명시해 돌렸다. 한글 파일명 `data/참고사항.md`는 셸 인용 때문에 경로 오류로 빠졌고 이 브랜치가
+바꾸지 않은 파일이다.
+
+### 세는 방법
+
+- **2절·4절**(등급·조각 245개·미스 0·보류): fbd0a51의 `geocode.json`·`geocode.002.json`에서
+  `merged_merchant` 레코드를 표기로 묶고, 조각마다 `lookup.request_key`(제공자 stub의 `provider`·
+  `interpretation`·`limit`은 `naver.py`·`licenses.py`의 상수)로 키를 만들어 `storage.read_cache` +
+  `storage.latest_valid`로 읽은 `data/ulsan/geocode-lookup-v1.jsonl`에서 찾았다. 표기 전체 조회는 레코드의
+  `lookup.queries[*].cache.key`를 그대로 읽었다. 울산 소재는 `address_prefixes`, 일치는
+  `merchants.bare_name`·`merchants.name_inclusion`으로 갈랐다. 3절의 줄·참조 수는
+  `data/manual/ulsan/merchants.jsonl`을 `json`으로 읽어 셌다.
+- **5절 parse**: `git show fbd0a51:data/ulsan/records.csv`와 현재 파일을 `csv.DictReader`로 읽어 `record_id`로
+  대조했다. 갈린 레코드는 `expense_id`가 있고 `amount_krw`가 빈 행, "글자까지 같다"는 두 판에 모두 있는
+  `record_id`의 행 사전이 같은 수, 총액은 `merchants.expense_total`과 같은 규칙(금액 없는 행은
+  `expense_amount_krw`를 `expense_id`마다 한 번)이다.
+- **5절 classify**: `data/ulsan/classify.json`의 `payload.decisions`를 위 갈린 `record_id`로 걸러 `status`를 셌다.
+- **5절 geocode**: 전후 `geocode*.json`의 `payload.results`에서 `status`·`reason`을 세고, 갈리지 않은
+  레코드는 `record_id`마다 `(status, reason, business_id, latitude)`를 비교했다. `marker_count`는 각
+  `build.json`의 `payload.marker_count`(전은 `git show fbd0a51:<경로>`)다.
+- **비용**: `deliciousmap.budget.Budget(Path('data/_shared/llm-budget.jsonl')).committed()`를 실행 전후로 읽었다.
+
+## 8. 남은 일
+
+- **보류 21표기** — 4절. E의 한 업소 후보 3표기는 사람이 한 업소 줄로 올릴 수 있다.
+- **판단 보류 43레코드** — 갈린 조각 이름을 모델이 식당인지 가르지 못했다. 사람 보정
+  (`classify.jsonl`)의 일이다.
+- 광주분(#128)과 판정 경로(#117)는 건드리지 않았다.
