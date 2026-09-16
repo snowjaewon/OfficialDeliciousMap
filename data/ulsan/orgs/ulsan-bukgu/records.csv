@@ -34,7 +34,8 @@ record_id,spent_on,organization,department,merchant,purpose,amount_krw,source_ha
 5ed4ffd0c2aad81a-table1-R3,2026-06-25,ulsan-bukgu,건설과,한씨막국수,보상업무 관계자 간담회 식사 제공,210000,5ed4ffd0c2aad81a9e93089035cf170d9de1fb2bc2eaeac108dd49771d27d455,table1:R3,,,
 5ed4ffd0c2aad81a-table1-R4,2026-06-30,ulsan-bukgu,건설과,대한돈가,하천시설 정비공사 관련 업무협의 간담회 식사 제공,300000,5ed4ffd0c2aad81a9e93089035cf170d9de1fb2bc2eaeac108dd49771d27d455,table1:R4,,,
 e5a06c714e198264-table1-R2,2026-03-05,ulsan-bukgu,공원녹지과,우리동네호두과자,연암정원 관련협의기관 방문에 따른 다과구입,42000,e5a06c714e19826430eaf753b1ad745b71cedad2fc9e72cde7e3de3c3cb39d2e,table1:R2,,,
-e5a06c714e198264-table1-R3,2026-03-05,ulsan-bukgu,공원녹지과,가온수산 및 우돈,가재골 공원 조성관련 간담회 참석자 석식 제공,274000,e5a06c714e19826430eaf753b1ad745b71cedad2fc9e72cde7e3de3c3cb39d2e,table1:R3,,,
+e5a06c714e198264-table1-R3#1,2026-03-05,ulsan-bukgu,공원녹지과,가온수산,가재골 공원 조성관련 간담회 참석자 석식 제공,,e5a06c714e19826430eaf753b1ad745b71cedad2fc9e72cde7e3de3c3cb39d2e,table1:R3,,e5a06c714e198264-table1-R3,274000
+e5a06c714e198264-table1-R3#2,2026-03-05,ulsan-bukgu,공원녹지과,우돈,가재골 공원 조성관련 간담회 참석자 석식 제공,,e5a06c714e19826430eaf753b1ad745b71cedad2fc9e72cde7e3de3c3cb39d2e,table1:R3,,e5a06c714e198264-table1-R3,274000
 e5a06c714e198264-table1-R4,2026-03-16,ulsan-bukgu,공원녹지과,돼지영농후계자,탄광골 일원 등산로 정비공사 관련 간담회 참석자 석식제공,290000,e5a06c714e19826430eaf753b1ad745b71cedad2fc9e72cde7e3de3c3cb39d2e,table1:R4,,,
 e5a06c714e198264-table1-R5,2026-03-25,ulsan-bukgu,공원녹지과,돼지영농후계자,가재골공원 준공식 관련 간담회 참석자 석식 제공,400000,e5a06c714e19826430eaf753b1ad745b71cedad2fc9e72cde7e3de3c3cb39d2e,table1:R5,,,
 ec2d04bfe309431e-table1-R2,2026-03-11,ulsan-bukgu,공원녹지과,-,공원환경국 직원 조모상 조의금 지급,50000,ec2d04bfe309431eb8c3061c13a33ce63c548fa166ef1594876856d2be56265d,table1:R2,,,

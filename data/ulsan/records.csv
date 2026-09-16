@@ -1,8 +1,10 @@
 record_id,spent_on,organization,department,merchant,purpose,amount_krw,source_hash,source_location,repeats,expense_id,expense_amount_krw
 195959ca9e26745b-table1-R2,2026-06-30,ulsan-city,,원플레이트,AI 데이터센터 산업 육성 간담회,199000,195959ca9e26745b2532c894bc332671aef4592fe92ac6ef0a5334f3fb2731d4,table1:R2,,,
-195959ca9e26745b-table1-R3,2026-06-30,ulsan-city,,"더다이닝빌라, 머머랩",지역 동향 관리 유관기관 업무협조 간담회,175000,195959ca9e26745b2532c894bc332671aef4592fe92ac6ef0a5334f3fb2731d4,table1:R3,,,
+195959ca9e26745b-table1-R3#1,2026-06-30,ulsan-city,,더다이닝빌라,지역 동향 관리 유관기관 업무협조 간담회,,195959ca9e26745b2532c894bc332671aef4592fe92ac6ef0a5334f3fb2731d4,table1:R3,,195959ca9e26745b-table1-R3,175000
+195959ca9e26745b-table1-R3#2,2026-06-30,ulsan-city,,머머랩,지역 동향 관리 유관기관 업무협조 간담회,,195959ca9e26745b2532c894bc332671aef4592fe92ac6ef0a5334f3fb2731d4,table1:R3,,195959ca9e26745b-table1-R3,175000
 8b4efc64bc767503-table1-R2,2026-06-29,ulsan-city,,해미원식당,마이스산업 육성 간담회,388000,8b4efc64bc76750307764f0391c1739da4d2d686e8a1f6a0eabcb4e2f671c115,table1:R2,,,
-8b4efc64bc767503-table1-R3,2026-06-29,ulsan-city,,"팔도낙지촌, 해당의 정원",공공보건 인프라 강화 간담회,287000,8b4efc64bc76750307764f0391c1739da4d2d686e8a1f6a0eabcb4e2f671c115,table1:R3,,,
+8b4efc64bc767503-table1-R3#1,2026-06-29,ulsan-city,,팔도낙지촌,공공보건 인프라 강화 간담회,,8b4efc64bc76750307764f0391c1739da4d2d686e8a1f6a0eabcb4e2f671c115,table1:R3,,8b4efc64bc767503-table1-R3,287000
+8b4efc64bc767503-table1-R3#2,2026-06-29,ulsan-city,,해당의 정원,공공보건 인프라 강화 간담회,,8b4efc64bc76750307764f0391c1739da4d2d686e8a1f6a0eabcb4e2f671c115,table1:R3,,8b4efc64bc767503-table1-R3,287000
 d25e585257986a6a-table1-R2,2026-06-25,ulsan-city,,상식당,수요·공급기업 상생얼라이언스 구축 간담회,310000,d25e585257986a6a96806ce5d054d7c0b1b77e23e6501c4621c56fd8c7a3ed04,table1:R2,,,
 80bab8898010e411-table1-R2,2026-06-24,ulsan-city,,노방촌,모빌리티 산업 AX 전환 간담회,313000,80bab8898010e4112d4996467359a69a069a4f51fedc12a2406ebd6b8aebfd63,table1:R2,,,
 80bab8898010e411-table1-R3,2026-06-24,ulsan-city,,금화식당,중앙부처 협력강화 간담회,484000,80bab8898010e4112d4996467359a69a069a4f51fedc12a2406ebd6b8aebfd63,table1:R3,,,
@@ -20,7 +22,8 @@ d25e585257986a6a-table1-R2,2026-06-25,ulsan-city,,상식당,수요·공급기업
 2b746266ba298ab8-table1-R3,2026-06-16,ulsan-city,,신정양곱창,장마철 산사태 발생 지역 점검 간담회,144000,2b746266ba298ab87b65922fb8e9c5a8d0d78e6cc6aa306b77f9c617c8a00190,table1:R3,,,
 5a5c419fbed3a582-table1-R2,2026-06-15,ulsan-city,,화신스토아,내방객 다과 구입,319000,5a5c419fbed3a58235ab32dc7b55fcad01be0ed801fe6c98fd43a86bd286b77b,table1:R2,,,
 5a5c419fbed3a582-table1-R3,2026-06-15,ulsan-city,,봉계숯불갈비,정부합동감사 사전 준비 간담회,479000,5a5c419fbed3a58235ab32dc7b55fcad01be0ed801fe6c98fd43a86bd286b77b,table1:R3,,,
-5a5c419fbed3a582-table1-R4,2026-06-15,ulsan-city,,"완도참전복집, 카페213",응급의료 협력체계 간담회,306000,5a5c419fbed3a58235ab32dc7b55fcad01be0ed801fe6c98fd43a86bd286b77b,table1:R4,,,
+5a5c419fbed3a582-table1-R4#1,2026-06-15,ulsan-city,,완도참전복집,응급의료 협력체계 간담회,,5a5c419fbed3a58235ab32dc7b55fcad01be0ed801fe6c98fd43a86bd286b77b,table1:R4,,5a5c419fbed3a582-table1-R4,306000
+5a5c419fbed3a582-table1-R4#2,2026-06-15,ulsan-city,,카페213,응급의료 협력체계 간담회,,5a5c419fbed3a58235ab32dc7b55fcad01be0ed801fe6c98fd43a86bd286b77b,table1:R4,,5a5c419fbed3a582-table1-R4,306000
 63e87e2db62af495-table1-R2,2026-06-12,ulsan-city,,청담,중앙부처 업무협조 강화 간담회,487000,63e87e2db62af495f65d609b485d898ef40ad694887674d05b8006517e439d63,table1:R2,,,
 63e87e2db62af495-table1-R3,2026-06-12,ulsan-city,,일품참숯암소갈비살,지역 축제 활성화 간담회,68000,63e87e2db62af495f65d609b485d898ef40ad694887674d05b8006517e439d63,table1:R3,,,
 511d8480271534c9-table1-R2,2026-06-11,ulsan-city,,워낭소리,시정 주요 현안 홍보 및 의견수렴 간담회,456000,511d8480271534c990007f4d22198caa95d2b6fc65ad8b4181361d62727001d5,table1:R2,,,
@@ -38,7 +41,8 @@ a44623ae1f2dca7c-table1-R2,2026-06-02,ulsan-city,,카이카토복,통계데이�
 a44623ae1f2dca7c-table1-R3,2026-06-02,ulsan-city,,이조장어,화학 재난 예방 간담회,210000,a44623ae1f2dca7c549016d969023f896fb37c4158f02644d44d23a2fff6e144,table1:R3,,,
 a44623ae1f2dca7c-table1-R4,2026-06-02,ulsan-city,,과일소풍,투표 업무 추진 직원 격려 간식 제공,250000,a44623ae1f2dca7c549016d969023f896fb37c4158f02644d44d23a2fff6e144,table1:R4,,,
 a44623ae1f2dca7c-table1-R5,2026-06-02,ulsan-city,,-,경조금 지급,100000,a44623ae1f2dca7c549016d969023f896fb37c4158f02644d44d23a2fff6e144,table1:R5,,,
-dc55a1246c93d096-table1-R2,2026-06-01,ulsan-city,,"연미정식당, 드림카페",중앙·지방 행정체계 안정화 간담회,480000,dc55a1246c93d096dc92a81dd85c4d2088935312b686ebe10c4aa8b5582fd624,table1:R2,,,
+dc55a1246c93d096-table1-R2#1,2026-06-01,ulsan-city,,연미정식당,중앙·지방 행정체계 안정화 간담회,,dc55a1246c93d096dc92a81dd85c4d2088935312b686ebe10c4aa8b5582fd624,table1:R2,,dc55a1246c93d096-table1-R2,480000
+dc55a1246c93d096-table1-R2#2,2026-06-01,ulsan-city,,드림카페,중앙·지방 행정체계 안정화 간담회,,dc55a1246c93d096dc92a81dd85c4d2088935312b686ebe10c4aa8b5582fd624,table1:R2,,dc55a1246c93d096-table1-R2,480000
 28ae5b1876a6c9f5-table1-R2,2026-05-29,ulsan-city,,봉계숯불갈비,AI연관 미래 산업 생태계 조성 간담회,386000,28ae5b1876a6c9f51616549a681531004e75d5f427a92985c0e7a6943a63aad0,table1:R2,,,
 28ae5b1876a6c9f5-table1-R3,2026-05-29,ulsan-city,,키츠키,지역관광 활성화 간담회,215000,28ae5b1876a6c9f51616549a681531004e75d5f427a92985c0e7a6943a63aad0,table1:R3,,,
 28ae5b1876a6c9f5-table1-R4,2026-05-29,ulsan-city,,피자에땅,울산웨일즈 프로야구단 추진 직원 격려 간식 제공,164000,28ae5b1876a6c9f51616549a681531004e75d5f427a92985c0e7a6943a63aad0,table1:R4,,,
@@ -58,7 +62,8 @@ bfe4ea788ea7132b-table1-R3,2026-05-19,ulsan-city,,"소문, 풀무원푸드앤컬
 1328253bb39b1a48-table1-R3,2026-05-18,ulsan-city,,연미정,공유재산심의회 관계자 오찬 제공,425000,1328253bb39b1a4896dc95dc33f430137cbe2df37d2c6a34785cc5e3463886a1,table1:R3,,,
 1328253bb39b1a48-table1-R4,2026-05-18,ulsan-city,,-,경조금 지급,100000,1328253bb39b1a4896dc95dc33f430137cbe2df37d2c6a34785cc5e3463886a1,table1:R4,,,
 fdf3139a6c0141c0-table1-R2,2026-05-15,ulsan-city,,언양불고기,폐기물 안전 처리 방안 의견수렴 간담회,235000,fdf3139a6c0141c06c716a392c5cceea1836b8f04e8220b0442628600c6fdb11,table1:R2,,,
-fdf3139a6c0141c0-table1-R3,2026-05-15,ulsan-city,,"더다이닝빌라, 머머랩",사회취약계층 지원 강화 간담회,419000,fdf3139a6c0141c06c716a392c5cceea1836b8f04e8220b0442628600c6fdb11,table1:R3,,,
+fdf3139a6c0141c0-table1-R3#1,2026-05-15,ulsan-city,,더다이닝빌라,사회취약계층 지원 강화 간담회,,fdf3139a6c0141c06c716a392c5cceea1836b8f04e8220b0442628600c6fdb11,table1:R3,,fdf3139a6c0141c0-table1-R3,419000
+fdf3139a6c0141c0-table1-R3#2,2026-05-15,ulsan-city,,머머랩,사회취약계층 지원 강화 간담회,,fdf3139a6c0141c06c716a392c5cceea1836b8f04e8220b0442628600c6fdb11,table1:R3,,fdf3139a6c0141c0-table1-R3,419000
 378a54aa806507dd-table1-R2,2026-05-14,ulsan-city,,해미원식당,중동사태 지역 상공인 대응 방안 간담회,330000,378a54aa806507dd14e5f09d2282e737caff4e356ca3e64b73d74694a80fef29,table1:R2,,,
 378a54aa806507dd-table1-R3,2026-05-14,ulsan-city,,레비보,문화체육 현안업무 간담회,227000,378a54aa806507dd14e5f09d2282e737caff4e356ca3e64b73d74694a80fef29,table1:R3,,,
 a73dfa80dc24213f-table1-R2,2026-05-13,ulsan-city,,-,경조금 지급,50000,a73dfa80dc24213f210883999d35c05c0418029b32b48cf6e3d7b26252e7ba3a,table1:R2,,,
@@ -79,7 +84,8 @@ bddb3e72ac967276-table1-R3,2026-05-04,ulsan-city,,터미널식당,장애인 인�
 113382257d2cff99-table1-R2,2026-04-29,ulsan-city,,두부촌,원전사고 대처방안 의견수렴 간담회,247000,113382257d2cff997753c4ddc9e125f64bf9ccb6d127f6acfdb2dda21d3b5285,table1:R2,,,
 113382257d2cff99-table1-R3,2026-04-29,ulsan-city,,완도참전복집,부처님 오신 날 전통사찰 화재 예방 간담회,350000,113382257d2cff997753c4ddc9e125f64bf9ccb6d127f6acfdb2dda21d3b5285,table1:R3,,,
 113382257d2cff99-table1-R4,2026-04-29,ulsan-city,,소월당,민생회복 추경 사업 추진 간담회 다과 구입,300000,113382257d2cff997753c4ddc9e125f64bf9ccb6d127f6acfdb2dda21d3b5285,table1:R4,,,
-4b0c1b11dfcba091-table1-R2,2026-04-28,ulsan-city,,"연미정식당, 드림카페",국민 권익 구제 강화 간담회,443000,4b0c1b11dfcba091426dde9bea66dae1ffdb6375c3c09c83fbf85848ba643f92,table1:R2,,,
+4b0c1b11dfcba091-table1-R2#1,2026-04-28,ulsan-city,,연미정식당,국민 권익 구제 강화 간담회,,4b0c1b11dfcba091426dde9bea66dae1ffdb6375c3c09c83fbf85848ba643f92,table1:R2,,4b0c1b11dfcba091-table1-R2,443000
+4b0c1b11dfcba091-table1-R2#2,2026-04-28,ulsan-city,,드림카페,국민 권익 구제 강화 간담회,,4b0c1b11dfcba091426dde9bea66dae1ffdb6375c3c09c83fbf85848ba643f92,table1:R2,,4b0c1b11dfcba091-table1-R2,443000
 6b3a50661dd6f51a-table1-R2,2026-04-24,ulsan-city,,진성숯불생고기,중앙부처 협력강화 간담회,450000,6b3a50661dd6f51afc4e2724c9f693299af388a641a2b86ab49598b2bbcb09f9,table1:R2,,,
 6b3a50661dd6f51a-table1-R3,2026-04-24,ulsan-city,,갯바위횟집,재난취약시설 안전 강화 간담회,360000,6b3a50661dd6f51afc4e2724c9f693299af388a641a2b86ab49598b2bbcb09f9,table1:R3,,,
 9dbd77b317bf44de-table1-R2,2026-04-23,ulsan-city,,해미원식당,청년·여성 일자리 지원 간담회,287000,9dbd77b317bf44dedb0bbdc0ae8cc97d7e95c216c7524ba34380b0b7b0c29300,table1:R2,,,
@@ -125,7 +131,8 @@ e3ed6b400b47d26c-table1-R2,2026-03-26,ulsan-city,,이조장어,터널 안전점�
 96e12f0f4ac37a4b-table1-R2,2026-03-24,ulsan-city,,이조장어,지역 주택정책 의견수렴 간담회,238000,96e12f0f4ac37a4b74edd66544a86d80e9ff333b6ef54e329441919aafcfb6ad,table1:R2,,,
 96e12f0f4ac37a4b-table1-R3,2026-03-24,ulsan-city,,돌돌파스타,봄철 안전·재난 대응 강화 간담회,153000,96e12f0f4ac37a4b74edd66544a86d80e9ff333b6ef54e329441919aafcfb6ad,table1:R3,,,
 2bb5d218e40def03-table1-R2,2026-03-23,ulsan-city,,㈜언양1번가주먹떡갈비,READY KOREA 훈련 대응 간담회,223000,2bb5d218e40def03f581512506c27ef1066af8b0942b00767ac2ef88d62401a1,table1:R2,,,
-55323ecc6c1ab960-table1-R2,2026-03-20,ulsan-city,,"봉계숯불갈비, 이디야커피",상반기 재정 조기집행 간담회,446000,55323ecc6c1ab9606ca983cb3535bcb84c44b1fd4d5d8435b9a4220fab9ad3ab,table1:R2,,,
+55323ecc6c1ab960-table1-R2#1,2026-03-20,ulsan-city,,봉계숯불갈비,상반기 재정 조기집행 간담회,,55323ecc6c1ab9606ca983cb3535bcb84c44b1fd4d5d8435b9a4220fab9ad3ab,table1:R2,,55323ecc6c1ab960-table1-R2,446000
+55323ecc6c1ab960-table1-R2#2,2026-03-20,ulsan-city,,이디야커피,상반기 재정 조기집행 간담회,,55323ecc6c1ab9606ca983cb3535bcb84c44b1fd4d5d8435b9a4220fab9ad3ab,table1:R2,,55323ecc6c1ab960-table1-R2,446000
 03b006168d873dca-table1-R2,2026-03-19,ulsan-city,,부자회관,울산 광역형 비자 시범사업 간담회,399000,03b006168d873dcaab5b887d4e9bcb7dfdef7b713bd3f4e09de36bfb078e1ee3,table1:R2,,,
 791ed3d45969d21f-table1-R2,2026-03-18,ulsan-city,,부부스시,건전재정 운영 의견수렴 간담회,280000,791ed3d45969d21fef15d9d181db5b073d0c0c4db37735cb3e08c8da232942a5,table1:R2,,,
 791ed3d45969d21f-table1-R3,2026-03-18,ulsan-city,,소월당,기념품 구입,196000,791ed3d45969d21fef15d9d181db5b073d0c0c4db37735cb3e08c8da232942a5,table1:R3,,,
@@ -151,12 +158,14 @@ c56b4c8ef0b8d3f0-table1-R2,2026-03-04,ulsan-city,,함양집,사무관 소통 및
 b78beac62beeb0fd-table1-R2,2026-03-03,ulsan-city,,-,경조금 지급,250000,b78beac62beeb0fdfc6883249855043f16959b0eb12c238c2b72d447a31507d5,table1:R2,,,
 b78beac62beeb0fd-table1-R3,2026-03-03,ulsan-city,,봉계숯불갈비,시정혁신모임 활성화 간담회,345000,b78beac62beeb0fdfc6883249855043f16959b0eb12c238c2b72d447a31507d5,table1:R3,,,
 b78beac62beeb0fd-table1-R4,2026-03-03,ulsan-city,,이조장어,정월대보름 행사 안전 점검 간담회,210000,b78beac62beeb0fdfc6883249855043f16959b0eb12c238c2b72d447a31507d5,table1:R4,,,
-b1e621a23960ca9f-table1-R2,2026-02-27,ulsan-city,,"내현골추어탕, 베네또",동해안권 관광정책 개발 간담회,115000,b1e621a23960ca9fd55a75acac250a8ec5a4818c294e9a1d0f59895fce7452ba,table1:R2,,,
+b1e621a23960ca9f-table1-R2#1,2026-02-27,ulsan-city,,내현골추어탕,동해안권 관광정책 개발 간담회,,b1e621a23960ca9fd55a75acac250a8ec5a4818c294e9a1d0f59895fce7452ba,table1:R2,,b1e621a23960ca9f-table1-R2,115000
+b1e621a23960ca9f-table1-R2#2,2026-02-27,ulsan-city,,베네또,동해안권 관광정책 개발 간담회,,b1e621a23960ca9fd55a75acac250a8ec5a4818c294e9a1d0f59895fce7452ba,table1:R2,,b1e621a23960ca9f-table1-R2,115000
 717d9190f0ec695b-table1-R2,2026-02-26,ulsan-city,,달삼로72번길 바닷집,외국인투자기업 유치 행정지원 간담회,152000,717d9190f0ec695b62cb63b2fd4505aaaa2d8371f79cf8d47cef87c9cd6621e0,table1:R2,,,
 717d9190f0ec695b-table1-R3,2026-02-26,ulsan-city,,더다이닝빌라,주요기관 협력 강화 의견수렴 간담회,150000,717d9190f0ec695b62cb63b2fd4505aaaa2d8371f79cf8d47cef87c9cd6621e0,table1:R3,,,
 55e5932b15681e75-table1-R2,2026-02-25,ulsan-city,,신정양곱창,공공서비스 AI 정책 간담회,100000,55e5932b15681e7504a7eadb8562630fbdc70879ece1b3ee8f0aace9dae4ef5a,table1:R2,,,
 43f8e3e35582bd7e-table1-R2,2026-02-24,ulsan-city,,부부스시,주요 도시정책 의견수렴 간담회,210000,43f8e3e35582bd7e474fae9eb6a71829c02fc30c5097f7f147b48e6e1d263e51,table1:R2,,,
-40525a48d149039e-table1-R2,2026-02-23,ulsan-city,,"장어광장, 해당의정원",주민친화 자치경찰·치안정책 간담회,149000,40525a48d149039e336206b075d1e3f19736e9d5a08d85ca6bbb7e7bbe564b02,table1:R2,,,
+40525a48d149039e-table1-R2#1,2026-02-23,ulsan-city,,장어광장,주민친화 자치경찰·치안정책 간담회,,40525a48d149039e336206b075d1e3f19736e9d5a08d85ca6bbb7e7bbe564b02,table1:R2,,40525a48d149039e-table1-R2,149000
+40525a48d149039e-table1-R2#2,2026-02-23,ulsan-city,,해당의정원,주민친화 자치경찰·치안정책 간담회,,40525a48d149039e336206b075d1e3f19736e9d5a08d85ca6bbb7e7bbe564b02,table1:R2,,40525a48d149039e-table1-R2,149000
 000c7e451dcdc92b-table1-R2,2026-02-20,ulsan-city,,화신스토아,내방객 다과 구입,497000,000c7e451dcdc92bdf908512195e5d29b3999248c656f29bc8199b472960ed48,table1:R2,,,
 000c7e451dcdc92b-table1-R3,2026-02-20,ulsan-city,,일품참숯암소갈비살,적극행정·공직문화 혁신 간담회,133000,000c7e451dcdc92bdf908512195e5d29b3999248c656f29bc8199b472960ed48,table1:R3,,,
 9993757aeb79fd2b-table1-R2,2026-02-19,ulsan-city,,-,경조금 지급,100000,9993757aeb79fd2bdd4409c98b037aa11ca6f66f6361470a6bd147902a17eb90,table1:R2,,,
@@ -165,7 +174,8 @@ b1e621a23960ca9f-table1-R2,2026-02-27,ulsan-city,,"내현골추어탕, 베네또
 0684ab1690089032-table1-R2,2026-02-13,ulsan-city,,봉계숯불갈비,2027년 국가예산 확보 사전 간담회,480000,0684ab16900890329acc05ed97c0429ed34f28ab7da0eb4784d514993de63347,table1:R2,,,
 dd5cd82c3d53a0c9-table1-R2,2026-02-12,ulsan-city,,-,경조금 지급,50000,dd5cd82c3d53a0c9c30a63c45a688ff60e9ad88270e01d9cb5e22e1de2280011,table1:R2,,,
 dd5cd82c3d53a0c9-table1-R3,2026-02-12,ulsan-city,,과일소풍,시정 주요사업 공유 및 의견수렴 차담회,210000,dd5cd82c3d53a0c9c30a63c45a688ff60e9ad88270e01d9cb5e22e1de2280011,table1:R3,,,
-dd5cd82c3d53a0c9-table1-R4,2026-02-12,ulsan-city,,"함양집, 소통",주요시책 현안사업 추진상황 간담회,235000,dd5cd82c3d53a0c9c30a63c45a688ff60e9ad88270e01d9cb5e22e1de2280011,table1:R4,,,
+dd5cd82c3d53a0c9-table1-R4#1,2026-02-12,ulsan-city,,함양집,주요시책 현안사업 추진상황 간담회,,dd5cd82c3d53a0c9c30a63c45a688ff60e9ad88270e01d9cb5e22e1de2280011,table1:R4,,dd5cd82c3d53a0c9-table1-R4,235000
+dd5cd82c3d53a0c9-table1-R4#2,2026-02-12,ulsan-city,,소통,주요시책 현안사업 추진상황 간담회,,dd5cd82c3d53a0c9c30a63c45a688ff60e9ad88270e01d9cb5e22e1de2280011,table1:R4,,dd5cd82c3d53a0c9-table1-R4,235000
 51d2003d09d1f24c-table1-R2,2026-05-14,ulsan-city,,원플레이트,주요 경제 시책 홍보 및 의견수렴 간담회,195000,51d2003d09d1f24c50e40dd53a693950f27f83d34dcc552604389bef47a960ae,table1:R2,,,
 51d2003d09d1f24c-table1-R3,2026-05-14,ulsan-city,,세명,주요 경제 시책 홍보 및 의견수렴 간담회,465000,51d2003d09d1f24c50e40dd53a693950f27f83d34dcc552604389bef47a960ae,table1:R3,,,
 51d2003d09d1f24c-table1-R4,2026-05-14,ulsan-city,,과일소풍,경제 현안 티타임 다과 구입,204000,51d2003d09d1f24c50e40dd53a693950f27f83d34dcc552604389bef47a960ae,table1:R4,,,
@@ -316,17 +326,23 @@ ef068b575e2da0f9-table1-R2,2026-06-23,ulsan-city,,팔도낙지촌,일본 나고�
 ce59baef7d0b6bdc-table1-R2,2026-06-22,ulsan-city,,일품참숯암소갈비살,경제자유구역청 현안업무 논의 후 만찬 제공(울산경제자유구역청),161000,ce59baef7d0b6bdc2b12e07f71d60e66eba42ed83295ba0904e1ef8a52696e39,table1:R2,,,
 1559a34e1bac37ff-table1-R2,2026-06-19,ulsan-city,,레비보,외국인 투자기업 유치방안 논의 후 오찬 제공(울산경제자유구역청),52000,1559a34e1bac37ff853b6114f42a349e794d9e7231ef5bcef103b586e259dfbe,table1:R2,,,
 6edf9c976c025ef8-table1-R2,2026-06-18,ulsan-city,,신정양곱창,경자구역 내 특구 간 연계 활성화 회의 후 오찬 제공(울산경제자유구역청),108000,6edf9c976c025ef8c61730b27c0a4ee00cac78f49af36a16c39b8e26579c25f3,table1:R2,,,
-d9cc93686e4ffb52-table1-R2,2026-06-17,ulsan-city,,"댓잎장어, 마당",입주기업 애로사항 현안 회의 후 오찬 제공(울산경제자유구역청),212000,d9cc93686e4ffb5217358beda45525d7aef299a79e7ac2d19d1bf364747ef5a2,table1:R2,,,
+d9cc93686e4ffb52-table1-R2#1,2026-06-17,ulsan-city,,댓잎장어,입주기업 애로사항 현안 회의 후 오찬 제공(울산경제자유구역청),,d9cc93686e4ffb5217358beda45525d7aef299a79e7ac2d19d1bf364747ef5a2,table1:R2,,d9cc93686e4ffb52-table1-R2,212000
+d9cc93686e4ffb52-table1-R2#2,2026-06-17,ulsan-city,,마당,입주기업 애로사항 현안 회의 후 오찬 제공(울산경제자유구역청),,d9cc93686e4ffb5217358beda45525d7aef299a79e7ac2d19d1bf364747ef5a2,table1:R2,,d9cc93686e4ffb52-table1-R2,212000
 b59d245718a71a57-table1-R2,2026-06-16,ulsan-city,,이조장어,경제자유구역 혁신성장지원 관련 논의 후 오찬 제공(울산경제자유구역청),56000,b59d245718a71a579c7051d570379fef271b1a0240d87f6958ef15c76df19fde,table1:R2,,,
-cecc946663865452-table1-R2,2026-06-12,ulsan-city,,"호연전복, 머머랩",해외투자유치 활성화 간담회 개최에 따른 오찬 제공(울산경제자유구역청),118000,cecc94666386545264156d2d14488cddf16862ab2e9b762253563d8db21431f8,table1:R2,,,
+cecc946663865452-table1-R2#1,2026-06-12,ulsan-city,,호연전복,해외투자유치 활성화 간담회 개최에 따른 오찬 제공(울산경제자유구역청),,cecc94666386545264156d2d14488cddf16862ab2e9b762253563d8db21431f8,table1:R2,,cecc946663865452-table1-R2,118000
+cecc946663865452-table1-R2#2,2026-06-12,ulsan-city,,머머랩,해외투자유치 활성화 간담회 개최에 따른 오찬 제공(울산경제자유구역청),,cecc94666386545264156d2d14488cddf16862ab2e9b762253563d8db21431f8,table1:R2,,cecc946663865452-table1-R2,118000
 7100ba89dd8b7516-table1-R2,2026-06-11,ulsan-city,,아구센타,경자구역 추가지정 및 확대 관련 관계자 회의 및 만찬 제공(울산경제자유구역청),78000,7100ba89dd8b75161ea8d2f7b06abfdb4492fd1684b73bda94ab1a5011b2f526,table1:R2,,,
-50d35a869dd332e8-table1-R2,2026-06-04,ulsan-city,,"장어광장, 해당의정원",외투기업 투자유치 관련 관계자 회의 및 오찬 제공(울산경제자유구역청),37000,50d35a869dd332e8d4e8dd1843666ee9be7b224e2d7e128bdf389eecf235d921,table1:R2,,,
+50d35a869dd332e8-table1-R2#1,2026-06-04,ulsan-city,,장어광장,외투기업 투자유치 관련 관계자 회의 및 오찬 제공(울산경제자유구역청),,50d35a869dd332e8d4e8dd1843666ee9be7b224e2d7e128bdf389eecf235d921,table1:R2,,50d35a869dd332e8-table1-R2,37000
+50d35a869dd332e8-table1-R2#2,2026-06-04,ulsan-city,,해당의정원,외투기업 투자유치 관련 관계자 회의 및 오찬 제공(울산경제자유구역청),,50d35a869dd332e8d4e8dd1843666ee9be7b224e2d7e128bdf389eecf235d921,table1:R2,,50d35a869dd332e8-table1-R2,37000
 05e547bf5f9a6452-table1-R2,2026-05-27,ulsan-city,,울산은하수,경제자유구역 발전방향 논의 관련 관계자 회의 및 만찬 제공(울산경제자유구역청),372000,05e547bf5f9a6452c6d5aad20584e7c680af0686fc07fb58b5edbabdc66bf1e2,table1:R2,,,
-dbe527c941e1539e-table1-R2,2026-05-26,ulsan-city,,"장어광장, 해당의정원",경제자유구역 내 AI산업 관련 업무 협의 후 참석자 오찬 제공(울산경제자유구역청),54000,dbe527c941e1539e5d22e865c4a4ac901d35b19bcc6a4f6829ede1970d05c588,table1:R2,,,
+dbe527c941e1539e-table1-R2#1,2026-05-26,ulsan-city,,장어광장,경제자유구역 내 AI산업 관련 업무 협의 후 참석자 오찬 제공(울산경제자유구역청),,dbe527c941e1539e5d22e865c4a4ac901d35b19bcc6a4f6829ede1970d05c588,table1:R2,,dbe527c941e1539e-table1-R2,54000
+dbe527c941e1539e-table1-R2#2,2026-05-26,ulsan-city,,해당의정원,경제자유구역 내 AI산업 관련 업무 협의 후 참석자 오찬 제공(울산경제자유구역청),,dbe527c941e1539e5d22e865c4a4ac901d35b19bcc6a4f6829ede1970d05c588,table1:R2,,dbe527c941e1539e-table1-R2,54000
 74529fea133e6338-table1-R2,2026-05-12,ulsan-city,,레비보,경제자유구역청 현안업무 논의 후 오찬 제공(울산경제자유구역청),52000,74529fea133e6338420bf550a9f04bb52b8f4a3333530b2314d898d070322d31,table1:R2,,,
-a61c167eaebd3149-table1-R2,2026-05-07,ulsan-city,,"어하복국, 복짜장",UFEZ-UNIST 협력체계 구축 방안 논의 후 오찬 제공(울산경제자유구역청),171000,a61c167eaebd314998e0d0cc7acd1bb4a6f09d0e85d2b10f34381c5a39ebc79c,table1:R2,,,
+a61c167eaebd3149-table1-R2#1,2026-05-07,ulsan-city,,어하복국,UFEZ-UNIST 협력체계 구축 방안 논의 후 오찬 제공(울산경제자유구역청),,a61c167eaebd314998e0d0cc7acd1bb4a6f09d0e85d2b10f34381c5a39ebc79c,table1:R2,,a61c167eaebd3149-table1-R2,171000
+a61c167eaebd3149-table1-R2#2,2026-05-07,ulsan-city,,복짜장,UFEZ-UNIST 협력체계 구축 방안 논의 후 오찬 제공(울산경제자유구역청),,a61c167eaebd314998e0d0cc7acd1bb4a6f09d0e85d2b10f34381c5a39ebc79c,table1:R2,,a61c167eaebd3149-table1-R2,171000
 ec2793147829bc24-table1-R2,2026-05-06,ulsan-city,,"오복미역공업탑점, 머머랩",경제자유구역청 현안업무 논의 후 오찬 제공(울산경제자유구역청),54000,ec2793147829bc249183ebde71847b78b4fafff1dd6b35cf231ac0dd45bb6f61,table1:R2,,,
-330455d07010822c-table1-R2,2026-04-29,ulsan-city,,"장어광장, 해당의정원",울산경제자유구역 홍보 관련 관계자 회의 및 오찬 제공(울산경제자유구역청),75000,330455d07010822c94a9bcacfe5c8504beebcb6e32990ab8862d1fa509fbd138,table1:R2,,,
+330455d07010822c-table1-R2#1,2026-04-29,ulsan-city,,장어광장,울산경제자유구역 홍보 관련 관계자 회의 및 오찬 제공(울산경제자유구역청),,330455d07010822c94a9bcacfe5c8504beebcb6e32990ab8862d1fa509fbd138,table1:R2,,330455d07010822c-table1-R2,75000
+330455d07010822c-table1-R2#2,2026-04-29,ulsan-city,,해당의정원,울산경제자유구역 홍보 관련 관계자 회의 및 오찬 제공(울산경제자유구역청),,330455d07010822c94a9bcacfe5c8504beebcb6e32990ab8862d1fa509fbd138,table1:R2,,330455d07010822c-table1-R2,75000
 0285aeae0c345827-table1-R2,2026-04-27,ulsan-city,,장어광장,경제자유구역 2차 추가 지정 업무 논의 후 오찬 제공(울산경제자유구역청),45000,0285aeae0c3458278181d2624e8d54e99884ce351da67fd93aea63d41dc11a2d,table1:R2,,,
 5943507bca54be22-table1-R2,2026-04-22,ulsan-city,,이조장어,기업애로해결추진단 현안 회의 후 오찬 제공(울산경제자유구역청),84000,5943507bca54be2273c343661b0566522f85f41d276950cc9f8f2dbb2d2739e4,table1:R2,,,
 ad204b1c3b74deae-table1-R2,2026-04-21,ulsan-city,,항구,경제자유구역 수소산업 업무 협의 후 참석자 만찬 제공(울산경제자유구역청),110000,ad204b1c3b74deae76333ceafbd5297feb27834e312248ceb6db3ff38633a71e,table1:R2,,,
@@ -336,16 +352,20 @@ d362a4b829caa76d-table1-R2,2026-04-16,ulsan-city,,신정양곱창,경제자유�
 3d74ae9f4c601b75-table1-R2,2026-04-15,ulsan-city,,개인(성명 비공개),직원 경조사비 지급,50000,3d74ae9f4c601b751e4d3d3b1bde873c84d0fb1346b43037832c3a7e912ae014,table1:R2,,,
 3d74ae9f4c601b75-table1-R3,2026-04-15,ulsan-city,,팔도낙지촌,경제자유구역 민원행정서비스 운영 활성화 회의 후 오찬 제공(울산경제자유구역청),154000,3d74ae9f4c601b751e4d3d3b1bde873c84d0fb1346b43037832c3a7e912ae014,table1:R3,,,
 5b28e5d67ffce011-table1-R2,2026-04-13,ulsan-city,,㈜신화케이푸드(구리시),경제자유구역 발전방향 관련 관계자 회의 및 오찬 제공(울산경제자유구역청),225000,5b28e5d67ffce011d26f87317f4fc37a149aa8d10f306a9ab970a582be1fade1,table1:R2,,,
-a51a7e1e6fe90df2-table1-R2,2026-04-10,ulsan-city,,"버드나무집, 카페드롭탑",경제자유구역청 현안업무 논의 후 오찬 제공(울산경제자유구역청),133000,a51a7e1e6fe90df203d426432e3547bd57d4c1f9707b6f59d0ad5536f45e129f,table1:R2,,,
+a51a7e1e6fe90df2-table1-R2#1,2026-04-10,ulsan-city,,버드나무집,경제자유구역청 현안업무 논의 후 오찬 제공(울산경제자유구역청),,a51a7e1e6fe90df203d426432e3547bd57d4c1f9707b6f59d0ad5536f45e129f,table1:R2,,a51a7e1e6fe90df2-table1-R2,133000
+a51a7e1e6fe90df2-table1-R2#2,2026-04-10,ulsan-city,,카페드롭탑,경제자유구역청 현안업무 논의 후 오찬 제공(울산경제자유구역청),,a51a7e1e6fe90df203d426432e3547bd57d4c1f9707b6f59d0ad5536f45e129f,table1:R2,,a51a7e1e6fe90df2-table1-R2,133000
 817a9158bd5c7baa-table1-R2,2026-04-08,ulsan-city,,봉계숯불갈비,경자구역 추진사업 관련 예산 확보 논의 및 오찬 제공(울산경제자유구역청),177000,817a9158bd5c7baa260543ed00e6fb9b7d56a7485fbf1d6b05ad56565e96b887,table1:R2,,,
-0d620723a1d3bbdb-table1-R2,2026-04-07,ulsan-city,,"어하복국, 복짜장",유니스트 기술창업 기업 지원 방안 논의 후 오찬 제공(울산경제자유구역청),79000,0d620723a1d3bbdb182503ee22c5d71fd72fa8c6b8b642591ef1820b8cd85524,table1:R2,,,
+0d620723a1d3bbdb-table1-R2#1,2026-04-07,ulsan-city,,어하복국,유니스트 기술창업 기업 지원 방안 논의 후 오찬 제공(울산경제자유구역청),,0d620723a1d3bbdb182503ee22c5d71fd72fa8c6b8b642591ef1820b8cd85524,table1:R2,,0d620723a1d3bbdb-table1-R2,79000
+0d620723a1d3bbdb-table1-R2#2,2026-04-07,ulsan-city,,복짜장,유니스트 기술창업 기업 지원 방안 논의 후 오찬 제공(울산경제자유구역청),,0d620723a1d3bbdb182503ee22c5d71fd72fa8c6b8b642591ef1820b8cd85524,table1:R2,,0d620723a1d3bbdb-table1-R2,79000
 156b5a0042f6c1e7-table1-R2,2026-04-06,ulsan-city,,팔도낙지촌,KTX역세권 투자유치 업무 협의 후 오찬 제공(울산경제자유구역청),94000,156b5a0042f6c1e7fc91617ea78bc1f703574bae1f6448eaed32a5e42025e17c,table1:R2,,,
 156b5a0042f6c1e7-table1-R3,2026-04-06,ulsan-city,,개인(성명 비공개),직원 경조사비 지급,50000,156b5a0042f6c1e7fc91617ea78bc1f703574bae1f6448eaed32a5e42025e17c,table1:R3,,,
 a7d4abbc4887c0ed-table1-R2,2026-04-02,ulsan-city,,평화쌈밥,해외투자유치 활성화 업무협의 후 오찬 제공(울산경제자유구역청),60000,a7d4abbc4887c0edd04613062c1ebe6670b1aaa11dbd65ccbd3159311a6495b0,table1:R2,,,
-f20fe9c5be330cd2-table1-R2,2026-04-01,ulsan-city,,"터미널식당, 르옹드하우스",울산경제자유구역청 성과평가 관련 업무협의 후 오찬 제공(울산경제자유구역청),82000,f20fe9c5be330cd28c6dc52532ae3a2be608a98c294af8983963f66fb26d0486,table1:R2,,,
+f20fe9c5be330cd2-table1-R2#1,2026-04-01,ulsan-city,,터미널식당,울산경제자유구역청 성과평가 관련 업무협의 후 오찬 제공(울산경제자유구역청),,f20fe9c5be330cd28c6dc52532ae3a2be608a98c294af8983963f66fb26d0486,table1:R2,,f20fe9c5be330cd2-table1-R2,82000
+f20fe9c5be330cd2-table1-R2#2,2026-04-01,ulsan-city,,르옹드하우스,울산경제자유구역청 성과평가 관련 업무협의 후 오찬 제공(울산경제자유구역청),,f20fe9c5be330cd28c6dc52532ae3a2be608a98c294af8983963f66fb26d0486,table1:R2,,f20fe9c5be330cd2-table1-R2,82000
 0898f30c2edaed01-table1-R2,2026-03-30,ulsan-city,,이태형의메구미(세종),경제자유구역 2차 추가 지정 및 주요 현안 업무 논의(울산경제자유구역청),90000,0898f30c2edaed01e29b8f8f0636140fc89cdcaf9b325703e25a7fbd181a4c36,table1:R2,,,
 055e995d51048eb9-table1-R2,2026-03-26,ulsan-city,,미강식당,입주기업 수출입 활성화 지원 방안 협의(울산경제자유구역청),75000,055e995d51048eb9857feffaf741e3eb70e33c111be17456e467d64025dfe2b1,table1:R2,,,
-340511c9fafe1876-table1-R2,2026-03-25,ulsan-city,,"장어광장, 해당의정원",경제자유구역 핵심전략산업코드 조정 업무 협의(울산경제자유구역청),75000,340511c9fafe18764ca940e4b246d77f9d58b625d79942280558bacba3962a7b,table1:R2,,,
+340511c9fafe1876-table1-R2#1,2026-03-25,ulsan-city,,장어광장,경제자유구역 핵심전략산업코드 조정 업무 협의(울산경제자유구역청),,340511c9fafe18764ca940e4b246d77f9d58b625d79942280558bacba3962a7b,table1:R2,,340511c9fafe1876-table1-R2,75000
+340511c9fafe1876-table1-R2#2,2026-03-25,ulsan-city,,해당의정원,경제자유구역 핵심전략산업코드 조정 업무 협의(울산경제자유구역청),,340511c9fafe18764ca940e4b246d77f9d58b625d79942280558bacba3962a7b,table1:R2,,340511c9fafe1876-table1-R2,75000
 7fae500c899d3ea0-table1-R2,2026-03-24,ulsan-city,,이조장어,울산경제자유구역 신규지구 지정 및 활성화 전략 방안 협의 후 오찬 제공(울산경제자유구역청),140000,7fae500c899d3ea064a40db772ce09c4cc909b1d23483f73f7f11e47af62e986,table1:R2,,,
 1684e8a18c502e7c-table1-R2,2026-03-23,ulsan-city,,중국성,경제자유구역 현안 업무 협의 후 만찬 제공(울산경제자유구역청),195000,1684e8a18c502e7c650ab765bf9b3b5f052a1ec5dbcd360ce3cebac5483daf24,table1:R2,,,
 1684e8a18c502e7c-table1-R3,2026-03-23,ulsan-city,,㈜신화케이푸드(구리),경제자유구역 내 기업 RE100 추진 업무 협의 후 오찬 제공(울산경제자유구역청),287000,1684e8a18c502e7c650ab765bf9b3b5f052a1ec5dbcd360ce3cebac5483daf24,table1:R3,,,
@@ -353,7 +373,8 @@ f20fe9c5be330cd2-table1-R2,2026-04-01,ulsan-city,,"터미널식당, 르옹드하
 c5ec0f29a765941e-table1-R2,2026-03-16,ulsan-city,,이조장어,기업애로해결추진단 현안 회의 후 오찬 제공(울산경제자유구역청),196000,c5ec0f29a765941e3b87c1d5907067501c44219ea22ccaabad232efaf8c4d9de,table1:R2,,,
 37aaacd8c181cf9f-table1-R2,2026-03-13,ulsan-city,,윤우나기,울산경제자유구역청 성과평가 준비 관련 업무협의 오찬간담회(울산경제자유구역청),123000,37aaacd8c181cf9f1dd4efa08496cfd1d732f745785a3d824013d3cf21ad6257,table1:R2,,,
 4fc37412b8a4313b-table1-R2,2026-03-12,ulsan-city,,주식회사 대복축산,경제자유구역 홍보전략 회의 개최 및 만찬 제공(울산경제자유구역청),132000,4fc37412b8a4313bb9a93aa7c16d7cd55d0a00a6d026f9affc23449efd30620b,table1:R2,,,
-4fc37412b8a4313b-table1-R3,2026-03-12,ulsan-city,,"장어광장, 해당의정원",투자유치 관련 업무관계자 간담회 및 오찬 제공(울산경제자유구역청),76000,4fc37412b8a4313bb9a93aa7c16d7cd55d0a00a6d026f9affc23449efd30620b,table1:R3,,,
+4fc37412b8a4313b-table1-R3#1,2026-03-12,ulsan-city,,장어광장,투자유치 관련 업무관계자 간담회 및 오찬 제공(울산경제자유구역청),,4fc37412b8a4313bb9a93aa7c16d7cd55d0a00a6d026f9affc23449efd30620b,table1:R3,,4fc37412b8a4313b-table1-R3,76000
+4fc37412b8a4313b-table1-R3#2,2026-03-12,ulsan-city,,해당의정원,투자유치 관련 업무관계자 간담회 및 오찬 제공(울산경제자유구역청),,4fc37412b8a4313bb9a93aa7c16d7cd55d0a00a6d026f9affc23449efd30620b,table1:R3,,4fc37412b8a4313b-table1-R3,76000
 8a241410de194ab7-table1-R2,2026-03-11,ulsan-city,,미강식당,산업단지 RE100 추진 간담회 개최 및 오찬 제공(울산경제자유구역청),76000,8a241410de194ab7c850f64ad72b4498ab9c7563c04ee65e412d033668445a6e,table1:R2,,,
 91554f18c32d0b5c-table1-R2,2026-03-04,ulsan-city,,신라스테이,KTX 역세권 데이터센터 유치 간담회 및 오찬 제공(울산경제자유구역청),261000,91554f18c32d0b5c19cf177fe1fcc55109f8912fde37f3b3315938d8538ae993,table1:R2,,,
 b5e0e9dbffa26873-table1-R2,2026-03-03,ulsan-city,,대가복집,경제자유구역 발전방향 논의 관련 관계자 회의 및 오찬 제공(울산경제자유구역청),132000,b5e0e9dbffa268734a388c048189be8ffdfaf9e561189a5324e30a6c8654de40,table1:R2,,,
@@ -362,7 +383,8 @@ b5e0e9dbffa26873-table1-R2,2026-03-03,ulsan-city,,대가복집,경제자유구�
 ff2415cf58d3ec82-table1-R2,2026-02-20,ulsan-city,,일품당프리미엄,경제자유구역 규제 완화 관련 오찬 간담회 개최(울산경제자유구역청),124000,ff2415cf58d3ec82ba4138b204ae4b08b69ccf2b167ac1889dc9fdbb41e3257a,table1:R2,,,
 c5bc716e070a0b11-table1-R2,2026-02-19,ulsan-city,,개인(성명 비공개),직원 경조사비 지급,100000,c5bc716e070a0b11fb7a664f9cfc9c408aee50ee3298eea9734975f16f92f08a,table1:R2,,,
 3b6657cb086300e0-table1-R2,2026-02-13,ulsan-city,,미강식당,무역지원 기관 관계자 간담회 및 오찬(울산경제자유구역청),100000,3b6657cb086300e092b434383d614ee8259d8cfe02a16700a5eeb69f88ebe849,table1:R2,,,
-063f148c989d2a22-table1-R2,2026-02-12,ulsan-city,,"해가전복솥밥전문점, 라메르판지",강동관광단지지구 현장 방문 및 관계자 업무 협의(울산경제자유구역청),179000,063f148c989d2a229bbe6d8f6c3de8cd0438d33437a2d93998a4165bf2e45330,table1:R2,,,
+063f148c989d2a22-table1-R2#1,2026-02-12,ulsan-city,,해가전복솥밥전문점,강동관광단지지구 현장 방문 및 관계자 업무 협의(울산경제자유구역청),,063f148c989d2a229bbe6d8f6c3de8cd0438d33437a2d93998a4165bf2e45330,table1:R2,,063f148c989d2a22-table1-R2,179000
+063f148c989d2a22-table1-R2#2,2026-02-12,ulsan-city,,라메르판지,강동관광단지지구 현장 방문 및 관계자 업무 협의(울산경제자유구역청),,063f148c989d2a229bbe6d8f6c3de8cd0438d33437a2d93998a4165bf2e45330,table1:R2,,063f148c989d2a22-table1-R2,179000
 fd893bae40876186-table1-R2,2026-02-11,ulsan-city,,이조장어,직원 노고 격려 및 오찬 제공(울산경제자유구역청),84000,fd893bae40876186dac1b205b48d843d34999129c11dbe7364c7ad64fcb3ebb9,table1:R2,,,
 1875a411b12bc0e2-table1-R2,2026-02-10,ulsan-city,,㈜신화케이푸드,경제자유구역기획단 방문 및 오찬 제공(울산경제자유구역청),310000,1875a411b12bc0e2fb9cbb6a227f2bd7094ce3e111d2bf6bcc6ecaf1c59833cf,table1:R2,,,
 32ec84d8bccbbed3-table1-R2,2026-02-09,ulsan-city,,마키노차야 더가우,무역투자 유치 업무 관계자 면담 및 오찬(울산경제자유구역청),98000,32ec84d8bccbbed347b4d41f5c9a582ffbe7472c596c56e43e9ae5afc6f6c55c,table1:R2,,,
@@ -412,7 +434,8 @@ e40bcaade81c4281-table1-R10,2026-06-26,ulsan-city,,가마정,2026년 상반기 �
 778a631ad1ee2ba2-table1-R3,2026-06-25,ulsan-city,,봉계숯불갈비,민간단체 업무추진 의견수렴 간담회(행정국장),467000,778a631ad1ee2ba24a09e29af881785dd801977d4ae693ed0607b3ada36f19ba,table1:R3,,,
 778a631ad1ee2ba2-table1-R4,2026-06-25,ulsan-city,,담쟁이보쌈집,국도·국지도 건설 관련 업무협의(건설주택국),138000,778a631ad1ee2ba24a09e29af881785dd801977d4ae693ed0607b3ada36f19ba,table1:R4,,,
 778a631ad1ee2ba2-table1-R5,2026-06-25,ulsan-city,,이조장어,통합돌봄 추진관련 업무협의 후 오찬 제공(복지보훈여성국),210000,778a631ad1ee2ba24a09e29af881785dd801977d4ae693ed0607b3ada36f19ba,table1:R5,,,
-7cfdae481ebe381b-table1-R2,2026-06-24,ulsan-city,,"카페리밤, 범서회관식육식당",시니어치안지킴이 사업 관련 논의 간담회 후 오찬 제공(사무국장),102000,7cfdae481ebe381b694c6a79b768a8075b63ff8fdbc94cd1013019fdafcdcd8a,table1:R2,,,
+7cfdae481ebe381b-table1-R2#1,2026-06-24,ulsan-city,,카페리밤,시니어치안지킴이 사업 관련 논의 간담회 후 오찬 제공(사무국장),,7cfdae481ebe381b694c6a79b768a8075b63ff8fdbc94cd1013019fdafcdcd8a,table1:R2,,7cfdae481ebe381b-table1-R2,102000
+7cfdae481ebe381b-table1-R2#2,2026-06-24,ulsan-city,,범서회관식육식당,시니어치안지킴이 사업 관련 논의 간담회 후 오찬 제공(사무국장),,7cfdae481ebe381b694c6a79b768a8075b63ff8fdbc94cd1013019fdafcdcd8a,table1:R2,,7cfdae481ebe381b-table1-R2,102000
 7cfdae481ebe381b-table1-R3,2026-06-24,ulsan-city,,약수가든,지역응급의료 현안 관련 업무 협의 관계자 오찬 제공(시민건강국장),256000,7cfdae481ebe381b694c6a79b768a8075b63ff8fdbc94cd1013019fdafcdcd8a,table1:R3,,,
 7cfdae481ebe381b-table1-R4,2026-06-24,ulsan-city,,소휴원,감사업무 추진 관련 업무협의 간담회 (감사관),149000,7cfdae481ebe381b694c6a79b768a8075b63ff8fdbc94cd1013019fdafcdcd8a,table1:R4,,,
 7cfdae481ebe381b-table1-R5,2026-06-24,ulsan-city,,라틴커피,커피 원두 구입(환경국장),200000,7cfdae481ebe381b694c6a79b768a8075b63ff8fdbc94cd1013019fdafcdcd8a,table1:R5,,,
@@ -425,7 +448,8 @@ e40bcaade81c4281-table1-R10,2026-06-26,ulsan-city,,가마정,2026년 상반기 �
 be3fcb868a6bfb85-table1-R2,2026-06-23,ulsan-city,,구포국수명가,이동노동자쉼터 관련 업무협의 후 관계자 오찬 제공(경제산업실장),45000,be3fcb868a6bfb85c6a9b0f93d72fe35a299abcffe68677a802676e30aef0103,table1:R2,,,
 be3fcb868a6bfb85-table1-R3,2026-06-23,ulsan-city,,무주골,교육발전특구 시범지역 운용 간담회(행정국장),158000,be3fcb868a6bfb85c6a9b0f93d72fe35a299abcffe68677a802676e30aef0103,table1:R3,,,
 be3fcb868a6bfb85-table1-R4,2026-06-23,ulsan-city,,개인(성명 비공개),조의금 지급,50000,be3fcb868a6bfb85c6a9b0f93d72fe35a299abcffe68677a802676e30aef0103,table1:R4,,,
-be3fcb868a6bfb85-table1-R5,2026-06-23,ulsan-city,,"부원식당, 아이갓에브리씽",폐플라스틱 순환경제 촉진 관련 관계자 업무협의(환경국장),171000,be3fcb868a6bfb85c6a9b0f93d72fe35a299abcffe68677a802676e30aef0103,table1:R5,,,
+be3fcb868a6bfb85-table1-R5#1,2026-06-23,ulsan-city,,부원식당,폐플라스틱 순환경제 촉진 관련 관계자 업무협의(환경국장),,be3fcb868a6bfb85c6a9b0f93d72fe35a299abcffe68677a802676e30aef0103,table1:R5,,be3fcb868a6bfb85-table1-R5,171000
+be3fcb868a6bfb85-table1-R5#2,2026-06-23,ulsan-city,,아이갓에브리씽,폐플라스틱 순환경제 촉진 관련 관계자 업무협의(환경국장),,be3fcb868a6bfb85c6a9b0f93d72fe35a299abcffe68677a802676e30aef0103,table1:R5,,be3fcb868a6bfb85-table1-R5,171000
 be3fcb868a6bfb85-table1-R6,2026-06-23,ulsan-city,,함양집,산업 AX 로드맵 수립 관련 회의 후 오찬 제공(AI수도추진본부),92000,be3fcb868a6bfb85c6a9b0f93d72fe35a299abcffe68677a802676e30aef0103,table1:R6,,,
 be3fcb868a6bfb85-table1-R7,2026-06-23,ulsan-city,,소대장 한우판매장,울산경제자유구역 기업지원 활성화 회의 및 관계자 만찬(울산경제자유구역청),203000,be3fcb868a6bfb85c6a9b0f93d72fe35a299abcffe68677a802676e30aef0103,table1:R7,,,
 be3fcb868a6bfb85-table1-R8,2026-06-23,ulsan-city,,향미정,KTX 울산역 복합특화지구 개발관련 관계자 오찬 간담회(울산경제자유구역청),350000,be3fcb868a6bfb85c6a9b0f93d72fe35a299abcffe68677a802676e30aef0103,table1:R8,,,
@@ -444,7 +468,8 @@ fb5e65ec48c36e0e-table1-R4,2026-06-19,ulsan-city,,함양집,주요 현안사업 
 fb5e65ec48c36e0e-table1-R5,2026-06-19,ulsan-city,,-,경조금 지급(행정국장),50000,fb5e65ec48c36e0e64a7380bcdda05593850ea118be0573c481f18fdfdd52924,table1:R5,,,
 fb5e65ec48c36e0e-table1-R6,2026-06-19,ulsan-city,,어비스,내방객 커피원두 구입(시민건강국),38000,fb5e65ec48c36e0e64a7380bcdda05593850ea118be0573c481f18fdfdd52924,table1:R6,,,
 fb5e65ec48c36e0e-table1-R7,2026-06-19,ulsan-city,,유쾌한낙지,신체활동 활성화 사업 업무 협의 후 오찬 제공(시민건강국장),68000,fb5e65ec48c36e0e64a7380bcdda05593850ea118be0573c481f18fdfdd52924,table1:R7,,,
-fb5e65ec48c36e0e-table1-R8,2026-06-19,ulsan-city,,"토석정, 카페숙이",하수처리시설 관련 관계자 업무협의(환경국장),240000,fb5e65ec48c36e0e64a7380bcdda05593850ea118be0573c481f18fdfdd52924,table1:R8,,,
+fb5e65ec48c36e0e-table1-R8#1,2026-06-19,ulsan-city,,토석정,하수처리시설 관련 관계자 업무협의(환경국장),,fb5e65ec48c36e0e64a7380bcdda05593850ea118be0573c481f18fdfdd52924,table1:R8,,fb5e65ec48c36e0e-table1-R8,240000
+fb5e65ec48c36e0e-table1-R8#2,2026-06-19,ulsan-city,,카페숙이,하수처리시설 관련 관계자 업무협의(환경국장),,fb5e65ec48c36e0e64a7380bcdda05593850ea118be0573c481f18fdfdd52924,table1:R8,,fb5e65ec48c36e0e-table1-R8,240000
 fb5e65ec48c36e0e-table1-R9,2026-06-19,ulsan-city,,차일품,중소기업 및 소상공인 경영안정지원 방안 논의를 위한 업무협의(기업투자국장),135000,fb5e65ec48c36e0e64a7380bcdda05593850ea118be0573c481f18fdfdd52924,table1:R9,,,
 fb5e65ec48c36e0e-table1-R10,2026-06-19,ulsan-city,,섬횟집,HTV 일반산단 2단계 조성사업 업무협의 후 만찬 제공(울산경제자유구역청),187000,fb5e65ec48c36e0e64a7380bcdda05593850ea118be0573c481f18fdfdd52924,table1:R10,,,
 fb5e65ec48c36e0e-table1-R11,2026-06-19,ulsan-city,,"스시돈, 포도나무",경제자유구역 민원행정서비스 운영 활성화 회의 및 관계자 오찬(울산경제자유구역청),150000,fb5e65ec48c36e0e64a7380bcdda05593850ea118be0573c481f18fdfdd52924,table1:R11,,,
@@ -474,7 +499,8 @@ b35943cb1ab42ef6-table1-R12,2026-06-17,ulsan-city,,레비보,경제자유구역 
 b35943cb1ab42ef6-table1-R13,2026-06-17,ulsan-city,,돈아이가,2026년 업무추진 직원 노고 격려를 위한 만찬 제공(상수도사업본부장),396000,b35943cb1ab42ef6b4686b6dc296faf2db4d858a216e4f26e259e35c6ef15941,table1:R13,,,
 b35943cb1ab42ef6-table1-R14,2026-06-17,ulsan-city,,모모야마,동구지역 블록시스템 재정비 사업에 따른 관계자 회의 후 만찬 제공(상수도사업본부장),300000,b35943cb1ab42ef6b4686b6dc296faf2db4d858a216e4f26e259e35c6ef15941,table1:R14,,,
 b35943cb1ab42ef6-table1-R15,2026-06-17,ulsan-city,,소라고래집,선암배수지 증설사업 관련 추진현황 청취 후 관계자 격려 오찬 제공(상수도사업본부장),179000,b35943cb1ab42ef6b4686b6dc296faf2db4d858a216e4f26e259e35c6ef15941,table1:R15,,,
-7df5a5cbc7f0a07d-table1-R2,2026-06-16,ulsan-city,,"함양집, 홍단커피",전입세대 지원 시책 간담회(행정국장),77000,7df5a5cbc7f0a07db6b6ea696f10b91089e4574aa5d5870315105f14e9f714a4,table1:R2,,,
+7df5a5cbc7f0a07d-table1-R2#1,2026-06-16,ulsan-city,,함양집,전입세대 지원 시책 간담회(행정국장),,7df5a5cbc7f0a07db6b6ea696f10b91089e4574aa5d5870315105f14e9f714a4,table1:R2,,7df5a5cbc7f0a07d-table1-R2,77000
+7df5a5cbc7f0a07d-table1-R2#2,2026-06-16,ulsan-city,,홍단커피,전입세대 지원 시책 간담회(행정국장),,7df5a5cbc7f0a07db6b6ea696f10b91089e4574aa5d5870315105f14e9f714a4,table1:R2,,7df5a5cbc7f0a07d-table1-R2,77000
 7df5a5cbc7f0a07d-table1-R3,2026-06-16,ulsan-city,,미강식당,자전거이용시설 정비 및 설치 관련 업무협의 후 관계자 오찬 제공(건설주택국),76000,7df5a5cbc7f0a07db6b6ea696f10b91089e4574aa5d5870315105f14e9f714a4,table1:R3,,,
 7df5a5cbc7f0a07d-table1-R4,2026-06-16,ulsan-city,,경아식당,지하터널 및 차도 환경정비 관련 업무협의(건설주택국),97000,7df5a5cbc7f0a07db6b6ea696f10b91089e4574aa5d5870315105f14e9f714a4,table1:R4,,,
 7df5a5cbc7f0a07d-table1-R5,2026-06-16,ulsan-city,,오발탄,맞춤형 환경교육 관련 관계자 업무협의(환경국장),477000,7df5a5cbc7f0a07db6b6ea696f10b91089e4574aa5d5870315105f14e9f714a4,table1:R5,,,
@@ -505,7 +531,8 @@ b3617bb3ec93ca1c-table1-R11,2026-06-11,ulsan-city,,샤랑도자연산횟집,민�
 b3617bb3ec93ca1c-table1-R12,2026-06-11,ulsan-city,,꽃사슴식당,정기위험성평가 관련 업무 협의 후 오찬 제공(시민안전실장),90000,b3617bb3ec93ca1cae531a76298a2f609ba462d16927ac7e4c4930ca16c13175,table1:R12,,,
 b3617bb3ec93ca1c-table1-R13,2026-06-11,ulsan-city,,복터진집 울산북구점,2026 희망여름 착착착 나눔캠페인 관련 업무협의 후 오찬 제공(복지보훈여성국),85000,b3617bb3ec93ca1cae531a76298a2f609ba462d16927ac7e4c4930ca16c13175,table1:R13,,,
 b3617bb3ec93ca1c-table1-R14,2026-06-11,ulsan-city,,정수장추어탕,2026년 상반기 퇴직자 격려를 위한 오찬제공(상수도사업본부장),400000,b3617bb3ec93ca1cae531a76298a2f609ba462d16927ac7e4c4930ca16c13175,table1:R14,,,
-0ad954d78ea5a132-table1-R2,2026-06-10,ulsan-city,,"이조장어, 컴포즈커피",경제산업실 직원 노고격려 오찬 제공(경제산업실장),251000,0ad954d78ea5a132c85fd8bfe330b67a8bf30845e514b724c72ddeb7b8598c4f,table1:R2,,,
+0ad954d78ea5a132-table1-R2#1,2026-06-10,ulsan-city,,이조장어,경제산업실 직원 노고격려 오찬 제공(경제산업실장),,0ad954d78ea5a132c85fd8bfe330b67a8bf30845e514b724c72ddeb7b8598c4f,table1:R2,,0ad954d78ea5a132-table1-R2,251000
+0ad954d78ea5a132-table1-R2#2,2026-06-10,ulsan-city,,컴포즈커피,경제산업실 직원 노고격려 오찬 제공(경제산업실장),,0ad954d78ea5a132c85fd8bfe330b67a8bf30845e514b724c72ddeb7b8598c4f,table1:R2,,0ad954d78ea5a132-table1-R2,251000
 0ad954d78ea5a132-table1-R3,2026-06-10,ulsan-city,,전가네,찾아가는 현장소통 간담회 관계자 오찬 제공(위원장),220000,0ad954d78ea5a132c85fd8bfe330b67a8bf30845e514b724c72ddeb7b8598c4f,table1:R3,,,
 0ad954d78ea5a132-table1-R4,2026-06-10,ulsan-city,,진주수산,공익활동 지원사업 간담회(행정국장),475000,0ad954d78ea5a132c85fd8bfe330b67a8bf30845e514b724c72ddeb7b8598c4f,table1:R4,,,
 0ad954d78ea5a132-table1-R5,2026-06-10,ulsan-city,,과일소풍,현안업무 보고 다과 구입(행정국장),200000,0ad954d78ea5a132c85fd8bfe330b67a8bf30845e514b724c72ddeb7b8598c4f,table1:R5,,,
@@ -523,12 +550,14 @@ b3617bb3ec93ca1c-table1-R14,2026-06-11,ulsan-city,,정수장추어탕,2026년 �
 79fb993c4c1d7e7a-table1-R2,2026-06-09,ulsan-city,,삼태육경회타운,하수관로공사 추진 관련 관계자 업무협의(환경국장),120000,79fb993c4c1d7e7a0b8f9be5d0fbd1b81e74648e2db1316a7fedd34ace9b32f6,table1:R2,,,
 79fb993c4c1d7e7a-table1-R3,2026-06-09,ulsan-city,,신대동마트,내방객 응대용 다과 구입(AI수도추진본부),397000,79fb993c4c1d7e7a0b8f9be5d0fbd1b81e74648e2db1316a7fedd34ace9b32f6,table1:R3,,,
 79fb993c4c1d7e7a-table1-R4,2026-06-09,ulsan-city,,청담두맷돌순두부보쌈,소상공인 디지털커머스 전문기관 운영방안 관련 업무협의(기업투자국장),250000,79fb993c4c1d7e7a0b8f9be5d0fbd1b81e74648e2db1316a7fedd34ace9b32f6,table1:R4,,,
-79fb993c4c1d7e7a-table1-R5,2026-06-09,ulsan-city,,"미강식당, 할리스",울산경제자유구역청 운영 활성화 관련 오찬 간담회(울산경제자유구역청),93000,79fb993c4c1d7e7a0b8f9be5d0fbd1b81e74648e2db1316a7fedd34ace9b32f6,table1:R5,,,
+79fb993c4c1d7e7a-table1-R5#1,2026-06-09,ulsan-city,,미강식당,울산경제자유구역청 운영 활성화 관련 오찬 간담회(울산경제자유구역청),,79fb993c4c1d7e7a0b8f9be5d0fbd1b81e74648e2db1316a7fedd34ace9b32f6,table1:R5,,79fb993c4c1d7e7a-table1-R5,93000
+79fb993c4c1d7e7a-table1-R5#2,2026-06-09,ulsan-city,,할리스,울산경제자유구역청 운영 활성화 관련 오찬 간담회(울산경제자유구역청),,79fb993c4c1d7e7a0b8f9be5d0fbd1b81e74648e2db1316a7fedd34ace9b32f6,table1:R5,,79fb993c4c1d7e7a-table1-R5,93000
 79fb993c4c1d7e7a-table1-R6,2026-06-09,ulsan-city,,일식와사비,현안업무 추진 직원 격려 오찬 제공(시민안전실장),150000,79fb993c4c1d7e7a0b8f9be5d0fbd1b81e74648e2db1316a7fedd34ace9b32f6,table1:R6,,,
 cc845a5a88a06b77-table1-R2,2026-06-08,ulsan-city,,직원,경조사비 지급,50000,cc845a5a88a06b77243110e044ce2753c4df9bd2d55bd5c566426464d557de55,table1:R2,,,
 cc845a5a88a06b77-table1-R3,2026-06-08,ulsan-city,,솔밭,현안업무 추진에 따른 중부사업소 직원격려 오찬 제공(상수도사업본부장),400000,cc845a5a88a06b77243110e044ce2753c4df9bd2d55bd5c566426464d557de55,table1:R3,,,
 26d7b4f146e846f4-table1-R2,2026-06-06,ulsan-city,,논두렁,국가유공4형제 전사자 합동추모식 관계자 오찬 제공(복지보훈여성국),96000,26d7b4f146e846f455ae27745fab7bdd20dec91355766b2af1b32a405aea5598,table1:R2,,,
-b9d7c0d62b5783ab-table1-R2,2026-06-05,ulsan-city,,"팔도낙지촌, 드림카페",일자리사업 관련 업무 협의 후 관계자 오찬 제공(경제산업실장),174000,b9d7c0d62b5783ab26f701f0025594b1847b859a5bd59e5c4dc75d70fa0058b3,table1:R2,,,
+b9d7c0d62b5783ab-table1-R2#1,2026-06-05,ulsan-city,,팔도낙지촌,일자리사업 관련 업무 협의 후 관계자 오찬 제공(경제산업실장),,b9d7c0d62b5783ab26f701f0025594b1847b859a5bd59e5c4dc75d70fa0058b3,table1:R2,,b9d7c0d62b5783ab-table1-R2,174000
+b9d7c0d62b5783ab-table1-R2#2,2026-06-05,ulsan-city,,드림카페,일자리사업 관련 업무 협의 후 관계자 오찬 제공(경제산업실장),,b9d7c0d62b5783ab26f701f0025594b1847b859a5bd59e5c4dc75d70fa0058b3,table1:R2,,b9d7c0d62b5783ab-table1-R2,174000
 b9d7c0d62b5783ab-table1-R3,2026-06-05,ulsan-city,,신선바위한우갈비정육,나눔 문화 활성화 간담회(행정국장),480000,b9d7c0d62b5783ab26f701f0025594b1847b859a5bd59e5c4dc75d70fa0058b3,table1:R3,,,
 b9d7c0d62b5783ab-table1-R4,2026-06-05,ulsan-city,,섬진강추어탕 외1,상반기 민간 자동차검사소 점검 관련 업무협의 후 오찬 제공(교통국),105000,b9d7c0d62b5783ab26f701f0025594b1847b859a5bd59e5c4dc75d70fa0058b3,table1:R4,,,
 b9d7c0d62b5783ab-table1-R5,2026-06-05,ulsan-city,,호연전복,맑은 물 확보 관련 업무협의(환경국장),76000,b9d7c0d62b5783ab26f701f0025594b1847b859a5bd59e5c4dc75d70fa0058b3,table1:R5,,,
@@ -555,7 +584,8 @@ d6cec3eae2391f34-table1-R11,2026-06-04,ulsan-city,,화덕에서 나온 고등어
 4042ae8c82168bb3-table1-R8,2026-06-02,ulsan-city,,완도참전복집,도시국 시책홍보 관련 기자단 간담회 개최 후 오찬 제공(도시국장),225000,4042ae8c82168bb3fe73a3e9de8ba8c77795b24dbb1966bb34be9015521675e6,table1:R8,,,
 4042ae8c82168bb3-table1-R9,2026-06-02,ulsan-city,,포대인,3D프린팅 협업 생태계 구축사업 관련 업무협의 후 오찬 제공(AI수도추진본부),54000,4042ae8c82168bb3fe73a3e9de8ba8c77795b24dbb1966bb34be9015521675e6,table1:R9,,,
 4042ae8c82168bb3-table1-R10,2026-06-02,ulsan-city,,오크,중소기업 경영안정자금 지원방안 논의를 위한 업무협의(기업투자국장),152000,4042ae8c82168bb3fe73a3e9de8ba8c77795b24dbb1966bb34be9015521675e6,table1:R10,,,
-4042ae8c82168bb3-table1-R11,2026-06-02,ulsan-city,,"이조장어, 카페메르",경제자유구역 제도 운영 및 개선 논의 후 관계자 오찬 제공(울산경제자유구역청),99000,4042ae8c82168bb3fe73a3e9de8ba8c77795b24dbb1966bb34be9015521675e6,table1:R11,,,
+4042ae8c82168bb3-table1-R11#1,2026-06-02,ulsan-city,,이조장어,경제자유구역 제도 운영 및 개선 논의 후 관계자 오찬 제공(울산경제자유구역청),,4042ae8c82168bb3fe73a3e9de8ba8c77795b24dbb1966bb34be9015521675e6,table1:R11,,4042ae8c82168bb3-table1-R11,99000
+4042ae8c82168bb3-table1-R11#2,2026-06-02,ulsan-city,,카페메르,경제자유구역 제도 운영 및 개선 논의 후 관계자 오찬 제공(울산경제자유구역청),,4042ae8c82168bb3fe73a3e9de8ba8c77795b24dbb1966bb34be9015521675e6,table1:R11,,4042ae8c82168bb3-table1-R11,99000
 4042ae8c82168bb3-table1-R12,2026-06-02,ulsan-city,,희락복국,재난안전예산 관련 업무 협의 후 오찬 제공(시민안전실장),90000,4042ae8c82168bb3fe73a3e9de8ba8c77795b24dbb1966bb34be9015521675e6,table1:R12,,,
 4042ae8c82168bb3-table1-R13,2026-06-02,ulsan-city,,직원,경조사비 지급,50000,4042ae8c82168bb3fe73a3e9de8ba8c77795b24dbb1966bb34be9015521675e6,table1:R13,,,
 cd4ee979ea2905e0-table1-R2,2026-06-01,ulsan-city,,280,경제현안 관련 업무협의 후 관계자 오찬 제공(경제산업실장),280000,cd4ee979ea2905e0290b32f43992e218e0a388f4b5f2dab6bab056f0169a9d36,table1:R2,,,
@@ -567,7 +597,8 @@ cd4ee979ea2905e0-table1-R7,2026-06-01,ulsan-city,,세명,KTX울산역 복합특�
 cd4ee979ea2905e0-table1-R8,2026-06-01,ulsan-city,,"스시돈, 피플",경제자유구역 내 핵심전략산업 관련 업무 협의 후 오찬 제공(울산경제자유구역청),131000,cd4ee979ea2905e0290b32f43992e218e0a388f4b5f2dab6bab056f0169a9d36,table1:R8,,,
 cd4ee979ea2905e0-table1-R9,2026-06-01,ulsan-city,,"입암손두부, 룩소르",감사 업무 관련 업무협의 간담회(감사관),159000,cd4ee979ea2905e0290b32f43992e218e0a388f4b5f2dab6bab056f0169a9d36,table1:R9,,,
 042a3c5b6166bc74-table1-R2,2026-05-29,ulsan-city,,대나무향기,범죄예방 환경개선 사업 추진 관련 현안사항 논의 간담회 후 오찬 제공(위원장),33000,042a3c5b6166bc74a03ef814dad8d155dee6c7c9b77b077d3878c2114826a361,table1:R2,,,
-042a3c5b6166bc74-table1-R3,2026-05-29,ulsan-city,,"팔도낙지촌, 드림카페",2026년 정기재물조사 실시 간담회(행정국장),290000,042a3c5b6166bc74a03ef814dad8d155dee6c7c9b77b077d3878c2114826a361,table1:R3,,,
+042a3c5b6166bc74-table1-R3#1,2026-05-29,ulsan-city,,팔도낙지촌,2026년 정기재물조사 실시 간담회(행정국장),,042a3c5b6166bc74a03ef814dad8d155dee6c7c9b77b077d3878c2114826a361,table1:R3,,042a3c5b6166bc74-table1-R3,290000
+042a3c5b6166bc74-table1-R3#2,2026-05-29,ulsan-city,,드림카페,2026년 정기재물조사 실시 간담회(행정국장),,042a3c5b6166bc74a03ef814dad8d155dee6c7c9b77b077d3878c2114826a361,table1:R3,,042a3c5b6166bc74-table1-R3,290000
 042a3c5b6166bc74-table1-R4,2026-05-29,ulsan-city,,신대동마트,내방객 응대용 다과류 구입(도시국장실),498000,042a3c5b6166bc74a03ef814dad8d155dee6c7c9b77b077d3878c2114826a361,table1:R4,,,
 042a3c5b6166bc74-table1-R5,2026-05-29,ulsan-city,,스시센동,자연주의정원 관련 관계자 업무협의 및 오찬 제공(녹지정원국장),72000,042a3c5b6166bc74a03ef814dad8d155dee6c7c9b77b077d3878c2114826a361,table1:R5,,,
 042a3c5b6166bc74-table1-R6,2026-05-29,ulsan-city,,먹토리토배기식당,감찰 관련 업무협의 오찬 제공(감사관),153000,042a3c5b6166bc74a03ef814dad8d155dee6c7c9b77b077d3878c2114826a361,table1:R6,,,
@@ -578,7 +609,8 @@ cd4ee979ea2905e0-table1-R9,2026-06-01,ulsan-city,,"입암손두부, 룩소르",�
 042a3c5b6166bc74-table1-R11,2026-05-29,ulsan-city,,레비보,교통포럼 관련 업무협의 후 오찬 제공(교통국),154000,042a3c5b6166bc74a03ef814dad8d155dee6c7c9b77b077d3878c2114826a361,table1:R11,,,
 110d93234039d548-table1-R2,2026-05-28,ulsan-city,,꿀단지,자치경찰위원회 간담회 만찬 제공,450000,110d93234039d548afc630d36ffb80bc2d86067654346bf2bdf80697f3db8c87,table1:R2,,,
 110d93234039d548-table1-R3,2026-05-28,ulsan-city,,신대동마트,국장실 내방객 응대용 다과 구입(복지보훈여성국),449000,110d93234039d548afc630d36ffb80bc2d86067654346bf2bdf80697f3db8c87,table1:R3,,,
-110d93234039d548-table1-R4,2026-05-28,ulsan-city,,"호연전복, 드림카페",청사 시설물 안전관리 강화 방안 간담회(행정국장),311000,110d93234039d548afc630d36ffb80bc2d86067654346bf2bdf80697f3db8c87,table1:R4,,,
+110d93234039d548-table1-R4#1,2026-05-28,ulsan-city,,호연전복,청사 시설물 안전관리 강화 방안 간담회(행정국장),,110d93234039d548afc630d36ffb80bc2d86067654346bf2bdf80697f3db8c87,table1:R4,,110d93234039d548-table1-R4,311000
+110d93234039d548-table1-R4#2,2026-05-28,ulsan-city,,드림카페,청사 시설물 안전관리 강화 방안 간담회(행정국장),,110d93234039d548afc630d36ffb80bc2d86067654346bf2bdf80697f3db8c87,table1:R4,,110d93234039d548-table1-R4,311000
 110d93234039d548-table1-R5,2026-05-28,ulsan-city,,"안목, 투썸플레이스",감사업무 협의 후 오찬 및 다과 제공(감사관),139000,110d93234039d548afc630d36ffb80bc2d86067654346bf2bdf80697f3db8c87,table1:R5,,,
 110d93234039d548-table1-R6,2026-05-28,ulsan-city,,목화떡집,감사관련 업무협의 관계자 간식 구입(감사관),45000,110d93234039d548afc630d36ffb80bc2d86067654346bf2bdf80697f3db8c87,table1:R6,,,
 110d93234039d548-table1-R7,2026-05-28,ulsan-city,,미강식당,안전문화운동 진흥 관련 업무 협의 후 오찬 제공(시민안전실장),125000,110d93234039d548afc630d36ffb80bc2d86067654346bf2bdf80697f3db8c87,table1:R7,,,
@@ -586,16 +618,19 @@ cd4ee979ea2905e0-table1-R9,2026-06-01,ulsan-city,,"입암손두부, 룩소르",�
 110d93234039d548-table1-R9,2026-05-28,ulsan-city,,공원불고기,테크노산단 입주기업협의회장단 업무 협의 및 만찬 제공(울산경제자유구역청),300000,110d93234039d548afc630d36ffb80bc2d86067654346bf2bdf80697f3db8c87,table1:R9,,,
 110d93234039d548-table1-R10,2026-05-28,ulsan-city,,아이갓에브리씽,국장실 내방객 응대를 위한 다과 제공(교통국),16000,110d93234039d548afc630d36ffb80bc2d86067654346bf2bdf80697f3db8c87,table1:R10,,,
 66ab910f9e9d7729-table1-R2,2026-05-27,ulsan-city,,울산원조추어탕,부산경남기자단 간담회 참석자 오찬 제공(경제산업실장),88000,66ab910f9e9d7729fd15418b0239b0df180b66b3afbd46fa8d333863f335aacd,table1:R2,,,
-66ab910f9e9d7729-table1-R3,2026-05-27,ulsan-city,,"팔도낙지촌, 드림카페",시정 주요업무 홍보 및 의견수렴 간담회(행정국장),426000,66ab910f9e9d7729fd15418b0239b0df180b66b3afbd46fa8d333863f335aacd,table1:R3,,,
+66ab910f9e9d7729-table1-R3#1,2026-05-27,ulsan-city,,팔도낙지촌,시정 주요업무 홍보 및 의견수렴 간담회(행정국장),,66ab910f9e9d7729fd15418b0239b0df180b66b3afbd46fa8d333863f335aacd,table1:R3,,66ab910f9e9d7729-table1-R3,426000
+66ab910f9e9d7729-table1-R3#2,2026-05-27,ulsan-city,,드림카페,시정 주요업무 홍보 및 의견수렴 간담회(행정국장),,66ab910f9e9d7729fd15418b0239b0df180b66b3afbd46fa8d333863f335aacd,table1:R3,,66ab910f9e9d7729-table1-R3,426000
 66ab910f9e9d7729-table1-R4,2026-05-27,ulsan-city,,수정간장게장,조사 관련 업무협의 오찬 제공(감사관),108000,66ab910f9e9d7729fd15418b0239b0df180b66b3afbd46fa8d333863f335aacd,table1:R4,,,
 66ab910f9e9d7729-table1-R5,2026-05-27,ulsan-city,,문수산상황삼계탕,현안업무 추진 직원 격려 후 오찬 제공(시민안전실장),72000,66ab910f9e9d7729fd15418b0239b0df180b66b3afbd46fa8d333863f335aacd,table1:R5,,,
 66ab910f9e9d7729-table1-R6,2026-05-27,ulsan-city,,박속낙지,수중데이터센터 실증모델 개발사업 관련 업무협의 후 만찬 제공(AI수도추진본부),124000,66ab910f9e9d7729fd15418b0239b0df180b66b3afbd46fa8d333863f335aacd,table1:R6,,,
 66ab910f9e9d7729-table1-R7,2026-05-27,ulsan-city,,"세종삼계탕, 닥터오빈",ETRI 동남권연구본부 설립 관련 업무협의 후 오찬 등 제공(AI수도추진본부),113000,66ab910f9e9d7729fd15418b0239b0df180b66b3afbd46fa8d333863f335aacd,table1:R7,,,
 66ab910f9e9d7729-table1-R8,2026-05-27,ulsan-city,,해울회전복,중소기업AI 대전환 후속사업 추진을 위한 업무협의(기업투자국장),167000,66ab910f9e9d7729fd15418b0239b0df180b66b3afbd46fa8d333863f335aacd,table1:R8,,,
-66ab910f9e9d7729-table1-R9,2026-05-27,ulsan-city,,"일품참숯암소갈비살, 향전",경제자유구역 성과평가 대비 최종점검 후 오찬 제공(울산경제자유구역청),64000,66ab910f9e9d7729fd15418b0239b0df180b66b3afbd46fa8d333863f335aacd,table1:R9,,,
+66ab910f9e9d7729-table1-R9#1,2026-05-27,ulsan-city,,일품참숯암소갈비살,경제자유구역 성과평가 대비 최종점검 후 오찬 제공(울산경제자유구역청),,66ab910f9e9d7729fd15418b0239b0df180b66b3afbd46fa8d333863f335aacd,table1:R9,,66ab910f9e9d7729-table1-R9,64000
+66ab910f9e9d7729-table1-R9#2,2026-05-27,ulsan-city,,향전,경제자유구역 성과평가 대비 최종점검 후 오찬 제공(울산경제자유구역청),,66ab910f9e9d7729fd15418b0239b0df180b66b3afbd46fa8d333863f335aacd,table1:R9,,66ab910f9e9d7729-table1-R9,64000
 66ab910f9e9d7729-table1-R10,2026-05-27,ulsan-city,,소우135,산림사업 관계자 업무협의 후 오찬 제공(녹지정원국장),104000,66ab910f9e9d7729fd15418b0239b0df180b66b3afbd46fa8d333863f335aacd,table1:R10,,,
 66ab910f9e9d7729-table1-R11,2026-05-27,ulsan-city,,봉계숯불갈비,언양읍 일원 노후상수도관 정비공사 추진현황 청취 후 관계자 격려 만찬 제공(상수도사업본부장),170000,66ab910f9e9d7729fd15418b0239b0df180b66b3afbd46fa8d333863f335aacd,table1:R11,,,
-aeb37d5694f0823d-table1-R2,2026-05-26,ulsan-city,,"연미정식당, 꿈틀",경제산업실 직원 노고격려 오찬 제공(경제산업실장),124000,aeb37d5694f0823db44a3dd1db76a28ca125977fd21da9a2865da412d8f79623,table1:R2,,,
+aeb37d5694f0823d-table1-R2#1,2026-05-26,ulsan-city,,연미정식당,경제산업실 직원 노고격려 오찬 제공(경제산업실장),,aeb37d5694f0823db44a3dd1db76a28ca125977fd21da9a2865da412d8f79623,table1:R2,,aeb37d5694f0823d-table1-R2,124000
+aeb37d5694f0823d-table1-R2#2,2026-05-26,ulsan-city,,꿈틀,경제산업실 직원 노고격려 오찬 제공(경제산업실장),,aeb37d5694f0823db44a3dd1db76a28ca125977fd21da9a2865da412d8f79623,table1:R2,,aeb37d5694f0823d-table1-R2,124000
 aeb37d5694f0823d-table1-R3,2026-05-26,ulsan-city,,봉계숯불갈비,결핵관리사업 업무추진 간담회 개최 후 만찬 제공(시민건강국장),350000,aeb37d5694f0823db44a3dd1db76a28ca125977fd21da9a2865da412d8f79623,table1:R3,,,
 aeb37d5694f0823d-table1-R4,2026-05-26,ulsan-city,,신안촌,지역건설업체 하도급 참여확대를 위한 업무협의(건설주택국),114000,aeb37d5694f0823db44a3dd1db76a28ca125977fd21da9a2865da412d8f79623,table1:R4,,,
 aeb37d5694f0823d-table1-R5,2026-05-26,ulsan-city,,아이갓에브리씽 울산광역시청점,촘촘안전망 지원사업 배분금 전달식 참석자 다과 제공(복지보훈여성국),155000,aeb37d5694f0823db44a3dd1db76a28ca125977fd21da9a2865da412d8f79623,table1:R5,,,
@@ -625,18 +660,21 @@ f7f90c9e8ac1433f-table1-R2,2026-05-25,ulsan-city,,봉계숯불갈비,고유가�
 96dc556d9dc475b0-table1-R10,2026-05-21,ulsan-city,,이조장어,경자구역 추가지정 입지전략 수립을 위한 업무 협의 후 오찬 제공(울산경제자유구역청),119000,96dc556d9dc475b00d3e414af5cfe8e9027ee482d03fa083986d43c619f015e5,table1:R10,,,
 96dc556d9dc475b0-table1-R11,2026-05-21,ulsan-city,,개인(성명 비공개),경조사비 지급,50000,96dc556d9dc475b00d3e414af5cfe8e9027ee482d03fa083986d43c619f015e5,table1:R11,,,
 96dc556d9dc475b0-table1-R12,2026-05-21,ulsan-city,,대가규합총서,회야계통 복선화사업 추진현황 청취 후 관계자 격려 만찬 제공(상수도사업본부장),139000,96dc556d9dc475b00d3e414af5cfe8e9027ee482d03fa083986d43c619f015e5,table1:R12,,,
-e05f5fc9740acec1-table1-R2,2026-05-20,ulsan-city,,"해월당와우시티점, 상안가든",시니어치안지킴이 사업확대 관련 논의 후 오찬 제공(사무국장),120000,e05f5fc9740acec1904aabcac9d2beaa34aab37b24d867e018cf067c27360f1f,table1:R2,,,
+e05f5fc9740acec1-table1-R2#1,2026-05-20,ulsan-city,,해월당와우시티점,시니어치안지킴이 사업확대 관련 논의 후 오찬 제공(사무국장),,e05f5fc9740acec1904aabcac9d2beaa34aab37b24d867e018cf067c27360f1f,table1:R2,,e05f5fc9740acec1-table1-R2,120000
+e05f5fc9740acec1-table1-R2#2,2026-05-20,ulsan-city,,상안가든,시니어치안지킴이 사업확대 관련 논의 후 오찬 제공(사무국장),,e05f5fc9740acec1904aabcac9d2beaa34aab37b24d867e018cf067c27360f1f,table1:R2,,e05f5fc9740acec1-table1-R2,120000
 e05f5fc9740acec1-table1-R3,2026-05-20,ulsan-city,,창원시 소재 장례식장,조의금 지급,50000,e05f5fc9740acec1904aabcac9d2beaa34aab37b24d867e018cf067c27360f1f,table1:R3,,,
 e05f5fc9740acec1-table1-R4,2026-05-20,ulsan-city,,해물천국,복지보훈여성국 직원 노고 격려 만찬 제공,126000,e05f5fc9740acec1904aabcac9d2beaa34aab37b24d867e018cf067c27360f1f,table1:R4,,,
 e05f5fc9740acec1-table1-R5,2026-05-20,ulsan-city,,수정간장게장,복지보훈여성국 시책홍보를 위한 중앙기자단 오찬 간담회 개최,143000,e05f5fc9740acec1904aabcac9d2beaa34aab37b24d867e018cf067c27360f1f,table1:R5,,,
-e05f5fc9740acec1-table1-R6,2026-05-20,ulsan-city,,"뱀부하우스, 빵심",시정 주요 현안 업무협의 간담회(행정국장),299000,e05f5fc9740acec1904aabcac9d2beaa34aab37b24d867e018cf067c27360f1f,table1:R6,,,
+e05f5fc9740acec1-table1-R6#1,2026-05-20,ulsan-city,,뱀부하우스,시정 주요 현안 업무협의 간담회(행정국장),,e05f5fc9740acec1904aabcac9d2beaa34aab37b24d867e018cf067c27360f1f,table1:R6,,e05f5fc9740acec1-table1-R6,299000
+e05f5fc9740acec1-table1-R6#2,2026-05-20,ulsan-city,,빵심,시정 주요 현안 업무협의 간담회(행정국장),,e05f5fc9740acec1904aabcac9d2beaa34aab37b24d867e018cf067c27360f1f,table1:R6,,e05f5fc9740acec1-table1-R6,299000
 e05f5fc9740acec1-table1-R7,2026-05-20,ulsan-city,,-,경조금 지급(행정국장),50000,e05f5fc9740acec1904aabcac9d2beaa34aab37b24d867e018cf067c27360f1f,table1:R7,,,
 e05f5fc9740acec1-table1-R8,2026-05-20,ulsan-city,,-,경조금 지급(도시국장),50000,e05f5fc9740acec1904aabcac9d2beaa34aab37b24d867e018cf067c27360f1f,table1:R8,,,
 e05f5fc9740acec1-table1-R9,2026-05-20,ulsan-city,,토석정,종량제봉투 공급안정화 노고 격려 만찬(환경국장),210000,e05f5fc9740acec1904aabcac9d2beaa34aab37b24d867e018cf067c27360f1f,table1:R9,,,
 e05f5fc9740acec1-table1-R10,2026-05-20,ulsan-city,,약천한방생오리,동남권 양자클러스터 지정 신청 관련 업무협의 후 만찬 제공(AI수도추진본부),306000,e05f5fc9740acec1904aabcac9d2beaa34aab37b24d867e018cf067c27360f1f,table1:R10,,,
 e05f5fc9740acec1-table1-R11,2026-05-20,ulsan-city,,두부촌,국립탄소중립과학관 건립 관련 업무협의 후 오찬 제공(AI수도추진본부),39000,e05f5fc9740acec1904aabcac9d2beaa34aab37b24d867e018cf067c27360f1f,table1:R11,,,
 e05f5fc9740acec1-table1-R12,2026-05-20,ulsan-city,,개인(성명 비공개),조의금 지급 건의,50000,e05f5fc9740acec1904aabcac9d2beaa34aab37b24d867e018cf067c27360f1f,table1:R12,,,
-e05f5fc9740acec1-table1-R13,2026-05-20,ulsan-city,,"토석정, 카페숙이",HTV 일반산업단지 분양 관련 업무 협의 후 오찬 제공(울산경제자유구역청),122000,e05f5fc9740acec1904aabcac9d2beaa34aab37b24d867e018cf067c27360f1f,table1:R13,,,
+e05f5fc9740acec1-table1-R13#1,2026-05-20,ulsan-city,,토석정,HTV 일반산업단지 분양 관련 업무 협의 후 오찬 제공(울산경제자유구역청),,e05f5fc9740acec1904aabcac9d2beaa34aab37b24d867e018cf067c27360f1f,table1:R13,,e05f5fc9740acec1-table1-R13,122000
+e05f5fc9740acec1-table1-R13#2,2026-05-20,ulsan-city,,카페숙이,HTV 일반산업단지 분양 관련 업무 협의 후 오찬 제공(울산경제자유구역청),,e05f5fc9740acec1904aabcac9d2beaa34aab37b24d867e018cf067c27360f1f,table1:R13,,e05f5fc9740acec1-table1-R13,122000
 e05f5fc9740acec1-table1-R14,2026-05-20,ulsan-city,,붉은우럭,26년 상반기 화물자동차 유가보조금 부정수급 합동점검 관련 업무협의 후 만찬 제공(교통국),94000,e05f5fc9740acec1904aabcac9d2beaa34aab37b24d867e018cf067c27360f1f,table1:R14,,,
 e05f5fc9740acec1-table1-R15,2026-05-20,ulsan-city,,두왕갈비탕,장미축제 행사장 현장점검 및 관계자 만찬 제공(녹지정원국장),74000,e05f5fc9740acec1904aabcac9d2beaa34aab37b24d867e018cf067c27360f1f,table1:R15,,,
 5f29f424fcc1c4a4-table1-R2,2026-05-19,ulsan-city,,도미노피자,현장활동(구급) 직원 격려 물품 구매(소방본부),93000,5f29f424fcc1c4a4b2fd1f6402bcadcc3fbd85561a82c43ae7b0257f8d16bf82,table1:R2,,,
@@ -648,16 +686,19 @@ e05f5fc9740acec1-table1-R15,2026-05-20,ulsan-city,,두왕갈비탕,장미축제 
 5f29f424fcc1c4a4-table1-R8,2026-05-19,ulsan-city,,함경면옥,현안업무 추진 직원 격려 후 오찬 제공(시민안전실장),54000,5f29f424fcc1c4a4b2fd1f6402bcadcc3fbd85561a82c43ae7b0257f8d16bf82,table1:R8,,,
 5f29f424fcc1c4a4-table1-R9,2026-05-19,ulsan-city,,-,환경국 직원 축의금 지급,50000,5f29f424fcc1c4a4b2fd1f6402bcadcc3fbd85561a82c43ae7b0257f8d16bf82,table1:R9,,,
 5f29f424fcc1c4a4-table1-R10,2026-05-19,ulsan-city,,연막창 삼산점,사회적기업 재정지원사업 추진을 위한 업무협의(기업투자국장),162000,5f29f424fcc1c4a4b2fd1f6402bcadcc3fbd85561a82c43ae7b0257f8d16bf82,table1:R10,,,
-5f29f424fcc1c4a4-table1-R11,2026-05-19,ulsan-city,,"부부스시, 두다",경제자유구역 추가지정 관련 논의 후 오찬 제공(울산경제자유구역청),235000,5f29f424fcc1c4a4b2fd1f6402bcadcc3fbd85561a82c43ae7b0257f8d16bf82,table1:R11,,,
+5f29f424fcc1c4a4-table1-R11#1,2026-05-19,ulsan-city,,부부스시,경제자유구역 추가지정 관련 논의 후 오찬 제공(울산경제자유구역청),,5f29f424fcc1c4a4b2fd1f6402bcadcc3fbd85561a82c43ae7b0257f8d16bf82,table1:R11,,5f29f424fcc1c4a4-table1-R11,235000
+5f29f424fcc1c4a4-table1-R11#2,2026-05-19,ulsan-city,,두다,경제자유구역 추가지정 관련 논의 후 오찬 제공(울산경제자유구역청),,5f29f424fcc1c4a4b2fd1f6402bcadcc3fbd85561a82c43ae7b0257f8d16bf82,table1:R11,,5f29f424fcc1c4a4-table1-R11,235000
 a23244ce22433dcc-table1-R2,2026-05-18,ulsan-city,,개인(성명 비공개),경조사비 지급,50000,a23244ce22433dcc0d2aebd07ae93efd41bc76940ea716da922a43c66b5a3594,table1:R2,,,
 a23244ce22433dcc-table1-R3,2026-05-18,ulsan-city,,드림카페,소방본부 팀별 소통 간담회 계획 보고(소방본부 상황관리 1팀),129000,a23244ce22433dcc0d2aebd07ae93efd41bc76940ea716da922a43c66b5a3594,table1:R3,,,
 a23244ce22433dcc-table1-R4,2026-05-18,ulsan-city,,신대원식당,개발제한구역 주민지원사업 업무 관계자 만찬 제공(도시국장),270000,a23244ce22433dcc0d2aebd07ae93efd41bc76940ea716da922a43c66b5a3594,table1:R4,,,
-a23244ce22433dcc-table1-R5,2026-05-18,ulsan-city,,"반달곰, 몽구도원",감사업무 추진 관련 업무협의 간담회(감사관),192000,a23244ce22433dcc0d2aebd07ae93efd41bc76940ea716da922a43c66b5a3594,table1:R5,,,
+a23244ce22433dcc-table1-R5#1,2026-05-18,ulsan-city,,반달곰,감사업무 추진 관련 업무협의 간담회(감사관),,a23244ce22433dcc0d2aebd07ae93efd41bc76940ea716da922a43c66b5a3594,table1:R5,,a23244ce22433dcc-table1-R5,192000
+a23244ce22433dcc-table1-R5#2,2026-05-18,ulsan-city,,몽구도원,감사업무 추진 관련 업무협의 간담회(감사관),,a23244ce22433dcc0d2aebd07ae93efd41bc76940ea716da922a43c66b5a3594,table1:R5,,a23244ce22433dcc-table1-R5,192000
 a23244ce22433dcc-table1-R6,2026-05-18,ulsan-city,,경북뜰,지역문화예술산업 활성화를 위한 간담회 및 만찬제공(문화관광체육국),337000,a23244ce22433dcc0d2aebd07ae93efd41bc76940ea716da922a43c66b5a3594,table1:R6,,,
 a23244ce22433dcc-table1-R7,2026-05-18,ulsan-city,,거성횟집,을지연습 관련 업무 협의 후 만찬 제공(시민안전실장),166000,a23244ce22433dcc0d2aebd07ae93efd41bc76940ea716da922a43c66b5a3594,table1:R7,,,
 a23244ce22433dcc-table1-R8,2026-05-18,ulsan-city,,송원칡냉면,AI수도추진본부 직원 격려 간담회(AI수도추진본부),86000,a23244ce22433dcc0d2aebd07ae93efd41bc76940ea716da922a43c66b5a3594,table1:R8,,,
 a23244ce22433dcc-table1-R9,2026-05-18,ulsan-city,,강남횟집,중소기업 지원 위수탁사업 운영방안 개선을 위한 업무협의(기업투자국장),366000,a23244ce22433dcc0d2aebd07ae93efd41bc76940ea716da922a43c66b5a3594,table1:R9,,,
-a23244ce22433dcc-table1-R10,2026-05-18,ulsan-city,,"호연전복, 머머랩",경제자유구역 투자유치 활성화 관련 논의 후 오찬 제공(울산경제자유구역청),194000,a23244ce22433dcc0d2aebd07ae93efd41bc76940ea716da922a43c66b5a3594,table1:R10,,,
+a23244ce22433dcc-table1-R10#1,2026-05-18,ulsan-city,,호연전복,경제자유구역 투자유치 활성화 관련 논의 후 오찬 제공(울산경제자유구역청),,a23244ce22433dcc0d2aebd07ae93efd41bc76940ea716da922a43c66b5a3594,table1:R10,,a23244ce22433dcc-table1-R10,194000
+a23244ce22433dcc-table1-R10#2,2026-05-18,ulsan-city,,머머랩,경제자유구역 투자유치 활성화 관련 논의 후 오찬 제공(울산경제자유구역청),,a23244ce22433dcc0d2aebd07ae93efd41bc76940ea716da922a43c66b5a3594,table1:R10,,a23244ce22433dcc-table1-R10,194000
 a23244ce22433dcc-table1-R11,2026-05-18,ulsan-city,,카페숙이,국장실 내방객 응대를 위한 다과 제공(교통국),14000,a23244ce22433dcc0d2aebd07ae93efd41bc76940ea716da922a43c66b5a3594,table1:R11,,,
 a23244ce22433dcc-table1-R12,2026-05-18,ulsan-city,,팔등로영덕대게,기후대응 도시숲 조성관련 관계자 업무협의 및 오찬 제공(녹지정원국장),155000,a23244ce22433dcc0d2aebd07ae93efd41bc76940ea716da922a43c66b5a3594,table1:R12,,,
 a23244ce22433dcc-table1-R13,2026-05-18,ulsan-city,,회야정수사업소,조의금 지급,50000,a23244ce22433dcc0d2aebd07ae93efd41bc76940ea716da922a43c66b5a3594,table1:R13,,,
@@ -669,7 +710,8 @@ a23244ce22433dcc-table1-R13,2026-05-18,ulsan-city,,회야정수사업소,조의�
 4f6cd63e58b1925e-table1-R7,2026-05-15,ulsan-city,,뱀부하우스,지방공무원 임용시험 간담회(행정국장),94000,4f6cd63e58b1925e6dcd07929628680d750959f6697436c1085a7be2d06cb17d,table1:R7,,,
 4f6cd63e58b1925e-table1-R8,2026-05-15,ulsan-city,,부부스시,도시관리계획 수립 관련 업무 관계자 오찬 제공(도시국장),230000,4f6cd63e58b1925e6dcd07929628680d750959f6697436c1085a7be2d06cb17d,table1:R8,,,
 4f6cd63e58b1925e-table1-R9,2026-05-15,ulsan-city,,청우횟집,오영수 문학제 행사 추진 업무협의 및 오찬제공(문화관광체육국),100000,4f6cd63e58b1925e6dcd07929628680d750959f6697436c1085a7be2d06cb17d,table1:R9,,,
-4f6cd63e58b1925e-table1-R10,2026-05-15,ulsan-city,,"명촌순두부보쌈, 정항우케익커피",환경교육센터 관계자 업무협의(환경국장),169000,4f6cd63e58b1925e6dcd07929628680d750959f6697436c1085a7be2d06cb17d,table1:R10,,,
+4f6cd63e58b1925e-table1-R10#1,2026-05-15,ulsan-city,,명촌순두부보쌈,환경교육센터 관계자 업무협의(환경국장),,4f6cd63e58b1925e6dcd07929628680d750959f6697436c1085a7be2d06cb17d,table1:R10,,4f6cd63e58b1925e-table1-R10,169000
+4f6cd63e58b1925e-table1-R10#2,2026-05-15,ulsan-city,,정항우케익커피,환경교육센터 관계자 업무협의(환경국장),,4f6cd63e58b1925e6dcd07929628680d750959f6697436c1085a7be2d06cb17d,table1:R10,,4f6cd63e58b1925e-table1-R10,169000
 4f6cd63e58b1925e-table1-R11,2026-05-15,ulsan-city,,레비보,울산경제자유구역 주요업무 홍보 관련 논의 후 오찬 제공 (울산경제자유구역청),96000,4f6cd63e58b1925e6dcd07929628680d750959f6697436c1085a7be2d06cb17d,table1:R11,,,
 4f6cd63e58b1925e-table1-R12,2026-05-15,ulsan-city,,신대원식당,경제자유구역 현안 업무 협의 후 만찬 제공(울산경제자유구역청),400000,4f6cd63e58b1925e6dcd07929628680d750959f6697436c1085a7be2d06cb17d,table1:R12,,,
 4f6cd63e58b1925e-table1-R13,2026-05-15,ulsan-city,,다운목살구이식당,유아숲체험원 운영관련 관계자 업무협의 및 오찬 제공(녹지정원국장),73000,4f6cd63e58b1925e6dcd07929628680d750959f6697436c1085a7be2d06cb17d,table1:R13,,,
@@ -687,7 +729,8 @@ a8a9d49bd57a0070-table1-R5,2026-05-13,ulsan-city,,-,경조금 지급(행정국�
 a8a9d49bd57a0070-table1-R6,2026-05-13,ulsan-city,,"신정양곱창, 빵랑자",중견관리자 양성과정 업무협의 간담회(행정국장),277000,a8a9d49bd57a007005b3b3fe5c2aeaca3306e3b388c8c29680710c39efb60b30,table1:R6,,,
 a8a9d49bd57a0070-table1-R7,2026-05-13,ulsan-city,,호연전복,버스킹 사업 관련 업무협의 및 오찬 제공(문화관광체육국),57000,a8a9d49bd57a007005b3b3fe5c2aeaca3306e3b388c8c29680710c39efb60b30,table1:R7,,,
 a8a9d49bd57a0070-table1-R8,2026-05-13,ulsan-city,,함양지리산흑돼지,ETRI 동남권연구본부 설립 관련 업무협의 후 만찬 제공(AI수도추진본부),308000,a8a9d49bd57a007005b3b3fe5c2aeaca3306e3b388c8c29680710c39efb60b30,table1:R8,,,
-a8a9d49bd57a0070-table1-R9,2026-05-13,ulsan-city,,"함양집, 소통",울산경제자유구역청 조직 운영 관련 논의 후 오찬 제공(울산경제자유구역청),107000,a8a9d49bd57a007005b3b3fe5c2aeaca3306e3b388c8c29680710c39efb60b30,table1:R9,,,
+a8a9d49bd57a0070-table1-R9#1,2026-05-13,ulsan-city,,함양집,울산경제자유구역청 조직 운영 관련 논의 후 오찬 제공(울산경제자유구역청),,a8a9d49bd57a007005b3b3fe5c2aeaca3306e3b388c8c29680710c39efb60b30,table1:R9,,a8a9d49bd57a0070-table1-R9,107000
+a8a9d49bd57a0070-table1-R9#2,2026-05-13,ulsan-city,,소통,울산경제자유구역청 조직 운영 관련 논의 후 오찬 제공(울산경제자유구역청),,a8a9d49bd57a007005b3b3fe5c2aeaca3306e3b388c8c29680710c39efb60b30,table1:R9,,a8a9d49bd57a0070-table1-R9,107000
 a8a9d49bd57a0070-table1-R10,2026-05-13,ulsan-city,,돼지영농후계자,26년도 위험물질 운송차량 정기단속 관련 업무협의 후 만찬 제공(교통국),205000,a8a9d49bd57a007005b3b3fe5c2aeaca3306e3b388c8c29680710c39efb60b30,table1:R10,,,
 c5c26fcf61c359a7-table1-R2,2026-05-12,ulsan-city,,협동조합양지마실건강체험,신체활동 활성화 사업 업무 협의 후 오찬 제공(시민건강국장),125000,c5c26fcf61c359a71cda05540a2f972f93b163a04318edfde037effd27a43407,table1:R2,,,
 c5c26fcf61c359a7-table1-R3,2026-05-12,ulsan-city,,함양집,여성단체 업무협의 관련 오찬간담회 개최(복지보훈여성국),114000,c5c26fcf61c359a71cda05540a2f972f93b163a04318edfde037effd27a43407,table1:R3,,,
@@ -698,28 +741,34 @@ c5c26fcf61c359a7-table1-R7,2026-05-12,ulsan-city,,개인(성명 비공개),경�
 c5c26fcf61c359a7-table1-R8,2026-05-12,ulsan-city,,-,환경국 직원 축의금 지급,50000,c5c26fcf61c359a71cda05540a2f972f93b163a04318edfde037effd27a43407,table1:R8,,,
 c5c26fcf61c359a7-table1-R9,2026-05-12,ulsan-city,,카페애즈원,비점오염 저감사업 관련 관계자 업무협의(환경국장),70000,c5c26fcf61c359a71cda05540a2f972f93b163a04318edfde037effd27a43407,table1:R9,,,
 c5c26fcf61c359a7-table1-R10,2026-05-12,ulsan-city,,개인(성명 비공개),조의금 지급,100000,c5c26fcf61c359a71cda05540a2f972f93b163a04318edfde037effd27a43407,table1:R10,,,
-c5c26fcf61c359a7-table1-R11,2026-05-12,ulsan-city,,"섬진강추어탕, 해당의정원",울산경제자유구역 핵심전략사업 육성 관련 논의 후 오찬 제공(울산경제자유구역청),107000,c5c26fcf61c359a71cda05540a2f972f93b163a04318edfde037effd27a43407,table1:R11,,,
+c5c26fcf61c359a7-table1-R11#1,2026-05-12,ulsan-city,,섬진강추어탕,울산경제자유구역 핵심전략사업 육성 관련 논의 후 오찬 제공(울산경제자유구역청),,c5c26fcf61c359a71cda05540a2f972f93b163a04318edfde037effd27a43407,table1:R11,,c5c26fcf61c359a7-table1-R11,107000
+c5c26fcf61c359a7-table1-R11#2,2026-05-12,ulsan-city,,해당의정원,울산경제자유구역 핵심전략사업 육성 관련 논의 후 오찬 제공(울산경제자유구역청),,c5c26fcf61c359a71cda05540a2f972f93b163a04318edfde037effd27a43407,table1:R11,,c5c26fcf61c359a7-table1-R11,107000
 c5c26fcf61c359a7-table1-R12,2026-05-12,ulsan-city,,버드로스터스,국장실 내방객 응대를 위한 원두 구입(교통국),27000,c5c26fcf61c359a71cda05540a2f972f93b163a04318edfde037effd27a43407,table1:R12,,,
-c7ed29b94643491b-table1-R2,2026-05-11,ulsan-city,,"함양집, 메쉬커피",고충민원 대응 협력 강화 간담회(행정국장),304000,c7ed29b94643491bdffcda79930a351a19b12c43a0b3c26fbe244b8160b9f30b,table1:R2,,,
+c7ed29b94643491b-table1-R2#1,2026-05-11,ulsan-city,,함양집,고충민원 대응 협력 강화 간담회(행정국장),,c7ed29b94643491bdffcda79930a351a19b12c43a0b3c26fbe244b8160b9f30b,table1:R2,,c7ed29b94643491b-table1-R2,304000
+c7ed29b94643491b-table1-R2#2,2026-05-11,ulsan-city,,메쉬커피,고충민원 대응 협력 강화 간담회(행정국장),,c7ed29b94643491bdffcda79930a351a19b12c43a0b3c26fbe244b8160b9f30b,table1:R2,,c7ed29b94643491b-table1-R2,304000
 c7ed29b94643491b-table1-R3,2026-05-11,ulsan-city,,토석정,도시국 시책홍보 관련 기자단 간담회 개최 후 오찬 제공(도시국장),258000,c7ed29b94643491bdffcda79930a351a19b12c43a0b3c26fbe244b8160b9f30b,table1:R3,,,
 c7ed29b94643491b-table1-R4,2026-05-11,ulsan-city,,고빈정,현안업무 추진 직원 격려 후 오찬 제공(시민안전실장),75000,c7ed29b94643491bdffcda79930a351a19b12c43a0b3c26fbe244b8160b9f30b,table1:R4,,,
 c7ed29b94643491b-table1-R5,2026-05-11,ulsan-city,,스시돈,AI수도추진본부 직원 격려 간담회(AI수도추진본부),79000,c7ed29b94643491bdffcda79930a351a19b12c43a0b3c26fbe244b8160b9f30b,table1:R5,,,
-c7ed29b94643491b-table1-R6,2026-05-11,ulsan-city,,"장어광장, 이디야",경제자유구역 언론협력 전략회의 참석자 오찬 제공(울산경제자유구역청),169000,c7ed29b94643491bdffcda79930a351a19b12c43a0b3c26fbe244b8160b9f30b,table1:R6,,,
+c7ed29b94643491b-table1-R6#1,2026-05-11,ulsan-city,,장어광장,경제자유구역 언론협력 전략회의 참석자 오찬 제공(울산경제자유구역청),,c7ed29b94643491bdffcda79930a351a19b12c43a0b3c26fbe244b8160b9f30b,table1:R6,,c7ed29b94643491b-table1-R6,169000
+c7ed29b94643491b-table1-R6#2,2026-05-11,ulsan-city,,이디야,경제자유구역 언론협력 전략회의 참석자 오찬 제공(울산경제자유구역청),,c7ed29b94643491bdffcda79930a351a19b12c43a0b3c26fbe244b8160b9f30b,table1:R6,,c7ed29b94643491b-table1-R6,169000
 c7ed29b94643491b-table1-R7,2026-05-11,ulsan-city,,신라촌오리,울산대공원 참여정원 조성사업 관련 관계자 업무협의 및 오찬 제공(녹지정원국장),135000,c7ed29b94643491bdffcda79930a351a19b12c43a0b3c26fbe244b8160b9f30b,table1:R7,,,
 efeb3190a9a86387-table1-R2,2026-05-09,ulsan-city,,터미널식당,태화가람 대축제 및 낙화놀이 등 현장점검 후 관계자 오찬 제공(문화환광체육국),77000,efeb3190a9a8638784dc4f7e9fcbbb6f5918384057a898c891af2f7e43b8f96e,table1:R2,,,
 30b997ca45ea50f3-table1-R2,2026-05-08,ulsan-city,,"coffeemeal(강남교회), 구희락복국",실종예방 사전등록 현장방문 사업 홍보 추진 관련 간담회 후 오찬 및 다과 제공,108000,30b997ca45ea50f32935b217a65f2f4e092ad48484a278b612bb4858eb5dfdfd,table1:R2,,,
 30b997ca45ea50f3-table1-R3,2026-05-08,ulsan-city,,경아식당,클린로드 운영 관련 업무협의(건설주택국),73000,30b997ca45ea50f32935b217a65f2f4e092ad48484a278b612bb4858eb5dfdfd,table1:R3,,,
-30b997ca45ea50f3-table1-R4,2026-05-08,ulsan-city,,"토석정, 카페숙이",직무역량강화 워크숍 사전준비 간담회(행정국장),293000,30b997ca45ea50f32935b217a65f2f4e092ad48484a278b612bb4858eb5dfdfd,table1:R4,,,
+30b997ca45ea50f3-table1-R4#1,2026-05-08,ulsan-city,,토석정,직무역량강화 워크숍 사전준비 간담회(행정국장),,30b997ca45ea50f32935b217a65f2f4e092ad48484a278b612bb4858eb5dfdfd,table1:R4,,30b997ca45ea50f3-table1-R4,293000
+30b997ca45ea50f3-table1-R4#2,2026-05-08,ulsan-city,,카페숙이,직무역량강화 워크숍 사전준비 간담회(행정국장),,30b997ca45ea50f32935b217a65f2f4e092ad48484a278b612bb4858eb5dfdfd,table1:R4,,30b997ca45ea50f3-table1-R4,293000
 30b997ca45ea50f3-table1-R5,2026-05-08,ulsan-city,,터미날팔도사철탕,북울산 역세권 개발사업 관계자 만찬 제공(도시국장),290000,30b997ca45ea50f32935b217a65f2f4e092ad48484a278b612bb4858eb5dfdfd,table1:R5,,,
 30b997ca45ea50f3-table1-R6,2026-05-08,ulsan-city,,일품참숯암소갈비살,반부패 청렴업무 추진 관련 간담회(감사관),157000,30b997ca45ea50f32935b217a65f2f4e092ad48484a278b612bb4858eb5dfdfd,table1:R6,,,
 30b997ca45ea50f3-table1-R7,2026-05-08,ulsan-city,,남산민물,울산쇠부리축제 행사 추진 후 관계자 만찬제공(문화관광체육국),157000,30b997ca45ea50f32935b217a65f2f4e092ad48484a278b612bb4858eb5dfdfd,table1:R7,,,
 30b997ca45ea50f3-table1-R8,2026-05-08,ulsan-city,,크로바한정식,태화가람 대축제 현장점검 후 관계자 오찬 제공(문화관광체육국),119000,30b997ca45ea50f32935b217a65f2f4e092ad48484a278b612bb4858eb5dfdfd,table1:R8,,,
 30b997ca45ea50f3-table1-R9,2026-05-08,ulsan-city,,윤우나기,안전문화운동 진흥 관련 업무 협의 후 오찬 제공(시민안전실장),128000,30b997ca45ea50f32935b217a65f2f4e092ad48484a278b612bb4858eb5dfdfd,table1:R9,,,
-30b997ca45ea50f3-table1-R10,2026-05-08,ulsan-city,,"부원식당, 헌터스",탄소중립지원센터 관계자 업무협의(환경국장),142000,30b997ca45ea50f32935b217a65f2f4e092ad48484a278b612bb4858eb5dfdfd,table1:R10,,,
+30b997ca45ea50f3-table1-R10#1,2026-05-08,ulsan-city,,부원식당,탄소중립지원센터 관계자 업무협의(환경국장),,30b997ca45ea50f32935b217a65f2f4e092ad48484a278b612bb4858eb5dfdfd,table1:R10,,30b997ca45ea50f3-table1-R10,142000
+30b997ca45ea50f3-table1-R10#2,2026-05-08,ulsan-city,,헌터스,탄소중립지원센터 관계자 업무협의(환경국장),,30b997ca45ea50f32935b217a65f2f4e092ad48484a278b612bb4858eb5dfdfd,table1:R10,,30b997ca45ea50f3-table1-R10,142000
 30b997ca45ea50f3-table1-R11,2026-05-08,ulsan-city,,배스킨라빈스,국가예산 주요사업 추진 관련 간담회 개최(AI수도추진본부),160000,30b997ca45ea50f32935b217a65f2f4e092ad48484a278b612bb4858eb5dfdfd,table1:R11,,,
 30b997ca45ea50f3-table1-R12,2026-05-08,ulsan-city,,터미널팔도사철탕,북울산 역세권 개발사업 관계자 만찬 제공(도시국장),290000,30b997ca45ea50f32935b217a65f2f4e092ad48484a278b612bb4858eb5dfdfd,table1:R12,,,
 69d31e1ff8df3ea9-table1-R2,2026-05-07,ulsan-city,,경제산업실장실,축의금 지급,50000,69d31e1ff8df3ea9707a694c4d5ebbcf84fdff8df69f241531fcc6194fa83787,table1:R2,,,
-69d31e1ff8df3ea9-table1-R3,2026-05-07,ulsan-city,,"팔도낙지촌, 이디야커피",고유가피해지원금 지급 관련 업무 협의 후 관계자 오찬 제공(경제산업실장),128000,69d31e1ff8df3ea9707a694c4d5ebbcf84fdff8df69f241531fcc6194fa83787,table1:R3,,,
+69d31e1ff8df3ea9-table1-R3#1,2026-05-07,ulsan-city,,팔도낙지촌,고유가피해지원금 지급 관련 업무 협의 후 관계자 오찬 제공(경제산업실장),,69d31e1ff8df3ea9707a694c4d5ebbcf84fdff8df69f241531fcc6194fa83787,table1:R3,,69d31e1ff8df3ea9-table1-R3,128000
+69d31e1ff8df3ea9-table1-R3#2,2026-05-07,ulsan-city,,이디야커피,고유가피해지원금 지급 관련 업무 협의 후 관계자 오찬 제공(경제산업실장),,69d31e1ff8df3ea9707a694c4d5ebbcf84fdff8df69f241531fcc6194fa83787,table1:R3,,69d31e1ff8df3ea9-table1-R3,128000
 69d31e1ff8df3ea9-table1-R4,2026-05-07,ulsan-city,,꽃다지,자치경찰 서포터즈 콘텐츠 제작 관련 현안사항 논의 후 오찬 및 다과 제공(위원장),78000,69d31e1ff8df3ea9707a694c4d5ebbcf84fdff8df69f241531fcc6194fa83787,table1:R4,,,
 69d31e1ff8df3ea9-table1-R5,2026-05-07,ulsan-city,,팔도낙지촌,복지보훈여성국 시책홍보를 위한 울산기자단 오찬 간담회 개최,316000,69d31e1ff8df3ea9707a694c4d5ebbcf84fdff8df69f241531fcc6194fa83787,table1:R5,,,
 69d31e1ff8df3ea9-table1-R6,2026-05-07,ulsan-city,,원조진불고기,우수제안 활용 방안 의견수렴 간담회(행정국장),356000,69d31e1ff8df3ea9707a694c4d5ebbcf84fdff8df69f241531fcc6194fa83787,table1:R6,,,
@@ -732,7 +781,8 @@ efeb3190a9a86387-table1-R2,2026-05-09,ulsan-city,,터미널식당,태화가람 �
 8a37f11134027f28-table1-R7,2026-05-06,ulsan-city,,울산밀면전문점,지역문화공연사업 활성화 업ㅁ무협의 및 오찬제공(문화관광체육국),174000,8a37f11134027f28ac9c3f88d34cb1bcf68a0469e9442e5ded91c0573c38ad0c,table1:R7,,,
 8a37f11134027f28-table1-R8,2026-05-06,ulsan-city,,구포국수,재난안전산업 관련 업무 협의 후 오찬 제공(시민안전실장),100000,8a37f11134027f28ac9c3f88d34cb1bcf68a0469e9442e5ded91c0573c38ad0c,table1:R8,,,
 8a37f11134027f28-table1-R9,2026-05-06,ulsan-city,,-,환경국 직원 부의금 지급,50000,8a37f11134027f28ac9c3f88d34cb1bcf68a0469e9442e5ded91c0573c38ad0c,table1:R9,,,
-8a37f11134027f28-table1-R10,2026-05-06,ulsan-city,,"나능이능이버섯백숙, 카페높",여천배수장 유입수로 우수토실 설치공사 관계자 업무협의(환경국장),103000,8a37f11134027f28ac9c3f88d34cb1bcf68a0469e9442e5ded91c0573c38ad0c,table1:R10,,,
+8a37f11134027f28-table1-R10#1,2026-05-06,ulsan-city,,나능이능이버섯백숙,여천배수장 유입수로 우수토실 설치공사 관계자 업무협의(환경국장),,8a37f11134027f28ac9c3f88d34cb1bcf68a0469e9442e5ded91c0573c38ad0c,table1:R10,,8a37f11134027f28-table1-R10,103000
+8a37f11134027f28-table1-R10#2,2026-05-06,ulsan-city,,카페높,여천배수장 유입수로 우수토실 설치공사 관계자 업무협의(환경국장),,8a37f11134027f28ac9c3f88d34cb1bcf68a0469e9442e5ded91c0573c38ad0c,table1:R10,,8a37f11134027f28-table1-R10,103000
 8a37f11134027f28-table1-R11,2026-05-06,ulsan-city,,카페숙이,국장실 내방객 응대를 위한 다과 제공(교통국),19000,8a37f11134027f28ac9c3f88d34cb1bcf68a0469e9442e5ded91c0573c38ad0c,table1:R11,,,
 8a37f11134027f28-table1-R12,2026-05-06,ulsan-city,,돋질로,선바위공원 실시설계 용역 관련 관계자 업무협의 및 오찬 제공(녹지정원국장),120000,8a37f11134027f28ac9c3f88d34cb1bcf68a0469e9442e5ded91c0573c38ad0c,table1:R12,,,
 8a37f11134027f28-table1-R13,2026-05-06,ulsan-city,,울산고래떡방협동조합,정부합동감사 업무협의 관계자 간식 구입(감사관),180000,8a37f11134027f28ac9c3f88d34cb1bcf68a0469e9442e5ded91c0573c38ad0c,table1:R13,,,
@@ -746,12 +796,14 @@ f922f03de128b7c1-table1-R2,2026-04-30,ulsan-city,,내현골추어탕,신재생�
 f922f03de128b7c1-table1-R3,2026-04-30,ulsan-city,,함양집,보도블럭 정비 관련 업무협의(건설주택국),84000,f922f03de128b7c1b8ca033ee028d27be25a098d1fd1bad5e202bb666e82172d,table1:R3,,,
 f922f03de128b7c1-table1-R4,2026-04-30,ulsan-city,,진호관,정책자문위원회 복지건강분과 위원회 참석자 오찬 제공(복지보훈여성국),325000,f922f03de128b7c1b8ca033ee028d27be25a098d1fd1bad5e202bb666e82172d,table1:R4,,,
 f922f03de128b7c1-table1-R5,2026-04-30,ulsan-city,,신화케이푸드,AI수도추진본부 주요 현안사업 국비 확보 관련 간담회 개최 후 만찬 제공(AI수도추진본부),279000,f922f03de128b7c1b8ca033ee028d27be25a098d1fd1bad5e202bb666e82172d,table1:R5,,,
-f922f03de128b7c1-table1-R6,2026-04-30,ulsan-city,,"모리, 수아빈",DPP 대응 플랫폼 확장 및 특화단지 실증사업 관련 업무협의 후 오찬 등 제공(AI수도추진본부),88000,f922f03de128b7c1b8ca033ee028d27be25a098d1fd1bad5e202bb666e82172d,table1:R6,,,
+f922f03de128b7c1-table1-R6#1,2026-04-30,ulsan-city,,모리,DPP 대응 플랫폼 확장 및 특화단지 실증사업 관련 업무협의 후 오찬 등 제공(AI수도추진본부),,f922f03de128b7c1b8ca033ee028d27be25a098d1fd1bad5e202bb666e82172d,table1:R6,,f922f03de128b7c1-table1-R6,88000
+f922f03de128b7c1-table1-R6#2,2026-04-30,ulsan-city,,수아빈,DPP 대응 플랫폼 확장 및 특화단지 실증사업 관련 업무협의 후 오찬 등 제공(AI수도추진본부),,f922f03de128b7c1b8ca033ee028d27be25a098d1fd1bad5e202bb666e82172d,table1:R6,,f922f03de128b7c1-table1-R6,88000
 f922f03de128b7c1-table1-R7,2026-04-30,ulsan-city,,언양진미불고기,공직자 AI실무능력 강화 간담회(행정국장),104000,f922f03de128b7c1b8ca033ee028d27be25a098d1fd1bad5e202bb666e82172d,table1:R7,,,
 f922f03de128b7c1-table1-R8,2026-04-30,ulsan-city,,이조장어,자치경찰위원회 경찰 인사이동에 따른 업무 간담회 후 오찬 제공(위원장),387000,f922f03de128b7c1b8ca033ee028d27be25a098d1fd1bad5e202bb666e82172d,table1:R8,,,
 f922f03de128b7c1-table1-R9,2026-04-30,ulsan-city,,먹거리토배기식당,정책자문위원회 환경녹지분과 현안업무 간담회(환경국장),462000,f922f03de128b7c1b8ca033ee028d27be25a098d1fd1bad5e202bb666e82172d,table1:R9,,,
 f922f03de128b7c1-table1-R10,2026-04-30,ulsan-city,,비프브라운,단위도시계획시설 결정 업무 관계자 만찬 제공(도시국장),178000,f922f03de128b7c1b8ca033ee028d27be25a098d1fd1bad5e202bb666e82172d,table1:R10,,,
-f922f03de128b7c1-table1-R11,2026-04-30,ulsan-city,,"진하고향해물탕,이디야",울산산업단지 복합문화센터 관련 업무 관계자 오찬 및 다과 제공(도시국장),100000,f922f03de128b7c1b8ca033ee028d27be25a098d1fd1bad5e202bb666e82172d,table1:R11,,,
+f922f03de128b7c1-table1-R11#1,2026-04-30,ulsan-city,,진하고향해물탕,울산산업단지 복합문화센터 관련 업무 관계자 오찬 및 다과 제공(도시국장),,f922f03de128b7c1b8ca033ee028d27be25a098d1fd1bad5e202bb666e82172d,table1:R11,,f922f03de128b7c1-table1-R11,100000
+f922f03de128b7c1-table1-R11#2,2026-04-30,ulsan-city,,이디야,울산산업단지 복합문화센터 관련 업무 관계자 오찬 및 다과 제공(도시국장),,f922f03de128b7c1b8ca033ee028d27be25a098d1fd1bad5e202bb666e82172d,table1:R11,,f922f03de128b7c1-table1-R11,100000
 f922f03de128b7c1-table1-R12,2026-04-30,ulsan-city,,일식당늙은호박,보호구역 시간제 속도제한사업 관련 업무협의 후 만찬 제공(교통국),160000,f922f03de128b7c1b8ca033ee028d27be25a098d1fd1bad5e202bb666e82172d,table1:R12,,,
 f922f03de128b7c1-table1-R13,2026-04-30,ulsan-city,,"용궁횟집, 투썸",종합감사 업무 추진 관련 업무협의 간담회(감사관),220000,f922f03de128b7c1b8ca033ee028d27be25a098d1fd1bad5e202bb666e82172d,table1:R13,,,
 f922f03de128b7c1-table1-R14,2026-04-30,ulsan-city,,큰거랑민물매운탕,사회복무요원 관련 업무 협의 후 오찬 제공(시민안전실장),66000,f922f03de128b7c1b8ca033ee028d27be25a098d1fd1bad5e202bb666e82172d,table1:R14,,,
@@ -761,14 +813,16 @@ f922f03de128b7c1-table1-R17,2026-04-30,ulsan-city,,풍경,고래수 병입 생�
 cf1df6e310590317-table1-R2,2026-04-29,ulsan-city,,더다이닝빌라,태화가람 대축제 행사 준비를 위한 업무협의 및 만찬제공(문화관광체육국),186000,cf1df6e3105903175bb18dd8031c6e1553f947ee79608e563d4c027a3f961f9b,table1:R2,,,
 cf1df6e310590317-table1-R3,2026-04-29,ulsan-city,,새울산식당 북구점,AI·로봇 교육훈련센터 구축사업 관련 업무협의 후 오찬 제공(AI수도추진본부),250000,cf1df6e3105903175bb18dd8031c6e1553f947ee79608e563d4c027a3f961f9b,table1:R3,,,
 cf1df6e310590317-table1-R4,2026-04-29,ulsan-city,,대복축산 삼산지점,주요 현안업무 홍보 및 의견수렴 간담회(행정국장),460000,cf1df6e3105903175bb18dd8031c6e1553f947ee79608e563d4c027a3f961f9b,table1:R4,,,
-cf1df6e310590317-table1-R5,2026-04-29,ulsan-city,,"쭈불당 울산시청점, 헌터스",현안업무 홍보를 위한 기자간담회 개최(환경국장),209000,cf1df6e3105903175bb18dd8031c6e1553f947ee79608e563d4c027a3f961f9b,table1:R5,,,
+cf1df6e310590317-table1-R5#1,2026-04-29,ulsan-city,,쭈불당 울산시청점,현안업무 홍보를 위한 기자간담회 개최(환경국장),,cf1df6e3105903175bb18dd8031c6e1553f947ee79608e563d4c027a3f961f9b,table1:R5,,cf1df6e310590317-table1-R5,209000
+cf1df6e310590317-table1-R5#2,2026-04-29,ulsan-city,,헌터스,현안업무 홍보를 위한 기자간담회 개최(환경국장),,cf1df6e3105903175bb18dd8031c6e1553f947ee79608e563d4c027a3f961f9b,table1:R5,,cf1df6e310590317-table1-R5,209000
 cf1df6e310590317-table1-R6,2026-04-29,ulsan-city,,철주식회사,감사민원 현장확인 및 공익제보자 보호업무 추진 업무협의 간담회(감사관),175000,cf1df6e3105903175bb18dd8031c6e1553f947ee79608e563d4c027a3f961f9b,table1:R6,,,
 cf1df6e310590317-table1-R7,2026-04-29,ulsan-city,,이조장어,지역혁신창업활성화 추진을 위한 업무협의(기업투자국장),470000,cf1df6e3105903175bb18dd8031c6e1553f947ee79608e563d4c027a3f961f9b,table1:R7,,,
 cf1df6e310590317-table1-R8,2026-04-29,ulsan-city,,정드림흑염소,가로녹지 관리 관계자 업무협의 및 오찬 제공(녹지정원국장),104000,cf1df6e3105903175bb18dd8031c6e1553f947ee79608e563d4c027a3f961f9b,table1:R8,,,
 1a667e103945533e-table1-R2,2026-04-28,ulsan-city,,야망떡집,내방객 다과류 구입(시민건강국),61000,1a667e103945533e6133ff409db88ab3b8e5f29bef8cb2343221b17d41a5afe7,table1:R2,,,
 1a667e103945533e-table1-R3,2026-04-28,ulsan-city,,원조남산민물추어탕,어린이 복합 교육놀이 공간 조성 관련 업무협의 후 오찬 제공(복지보훈여성국),66000,1a667e103945533e6133ff409db88ab3b8e5f29bef8cb2343221b17d41a5afe7,table1:R3,,,
 1a667e103945533e-table1-R4,2026-04-28,ulsan-city,,트리토리아옥교,울산시립미술관 전시현장 방문 및 관계자 만찬제공(문화관광체육국),305000,1a667e103945533e6133ff409db88ab3b8e5f29bef8cb2343221b17d41a5afe7,table1:R4,,,
-1a667e103945533e-table1-R5,2026-04-28,ulsan-city,,"스시히바나, 이디야커피",생활공감 정책 의견수렴 간담회(행정국장),388000,1a667e103945533e6133ff409db88ab3b8e5f29bef8cb2343221b17d41a5afe7,table1:R5,,,
+1a667e103945533e-table1-R5#1,2026-04-28,ulsan-city,,스시히바나,생활공감 정책 의견수렴 간담회(행정국장),,1a667e103945533e6133ff409db88ab3b8e5f29bef8cb2343221b17d41a5afe7,table1:R5,,1a667e103945533e-table1-R5,388000
+1a667e103945533e-table1-R5#2,2026-04-28,ulsan-city,,이디야커피,생활공감 정책 의견수렴 간담회(행정국장),,1a667e103945533e6133ff409db88ab3b8e5f29bef8cb2343221b17d41a5afe7,table1:R5,,1a667e103945533e-table1-R5,388000
 1a667e103945533e-table1-R6,2026-04-28,ulsan-city,,노곡회관,사유지 개방주차장 조성 지원 관련 업무협의 후 만찬 제공(교통국),240000,1a667e103945533e6133ff409db88ab3b8e5f29bef8cb2343221b17d41a5afe7,table1:R6,,,
 1a667e103945533e-table1-R7,2026-04-28,ulsan-city,,소라고래집,상반기 화물운송 불법행위 특별단속 관련 업무협의 후 오찬 제공(교통국),410000,1a667e103945533e6133ff409db88ab3b8e5f29bef8cb2343221b17d41a5afe7,table1:R7,,,
 1a667e103945533e-table1-R8,2026-04-28,ulsan-city,,윤우나기,사전 컨설팅 관련 업무협의 간담회 (감사관),228000,1a667e103945533e6133ff409db88ab3b8e5f29bef8cb2343221b17d41a5afe7,table1:R8,,,
@@ -790,7 +844,8 @@ e29ec915691929a8-table1-R12,2026-04-27,ulsan-city,,관내식당,AI수도추진�
 e29ec915691929a8-table1-R13,2026-04-27,ulsan-city,,경북뜰,선암배수지 증설사업 관련 추진현황 청취 후 관계자 격려 만찬 제공(상수도사업본부장),409000,e29ec915691929a80c47d0edc5cf6e4cc3277621c97bac0b7c73bebec7048e42,table1:R13,,,
 eea242425cc3ccd8-table1-R2,2026-04-26,ulsan-city,,울산하늘공원,조의금 지급,50000,eea242425cc3ccd8c9783fc2bff2fbd06217aa406d1484250a6058a925d30eb2,table1:R2,,,
 cc291cde1b1a5a50-table1-R2,2026-04-24,ulsan-city,,차이797,세계적 공연장 상영관 구축 관련 현장 방문 및 오찬 간담회(문화관광체육국),194000,cc291cde1b1a5a5068781b9784a3fc74b2fb32582a1096d44de8b0f5d9b11940,table1:R2,,,
-cc291cde1b1a5a50-table1-R3,2026-04-24,ulsan-city,,"일품참숯암소갈비살, 향전",정책자문위원회 행정자치분과 회의 참석자 오찬 제공(행정국장),386000,cc291cde1b1a5a5068781b9784a3fc74b2fb32582a1096d44de8b0f5d9b11940,table1:R3,,,
+cc291cde1b1a5a50-table1-R3#1,2026-04-24,ulsan-city,,일품참숯암소갈비살,정책자문위원회 행정자치분과 회의 참석자 오찬 제공(행정국장),,cc291cde1b1a5a5068781b9784a3fc74b2fb32582a1096d44de8b0f5d9b11940,table1:R3,,cc291cde1b1a5a50-table1-R3,386000
+cc291cde1b1a5a50-table1-R3#2,2026-04-24,ulsan-city,,향전,정책자문위원회 행정자치분과 회의 참석자 오찬 제공(행정국장),,cc291cde1b1a5a5068781b9784a3fc74b2fb32582a1096d44de8b0f5d9b11940,table1:R3,,cc291cde1b1a5a50-table1-R3,386000
 cc291cde1b1a5a50-table1-R4,2026-04-24,ulsan-city,,시골추어탕,자율방범연합회 행사 지원 관련 논의 간담회 후 오찬 제공(위원장),75000,cc291cde1b1a5a5068781b9784a3fc74b2fb32582a1096d44de8b0f5d9b11940,table1:R4,,,
 cc291cde1b1a5a50-table1-R5,2026-04-24,ulsan-city,,-,경조금 지급(도시국장),50000,cc291cde1b1a5a5068781b9784a3fc74b2fb32582a1096d44de8b0f5d9b11940,table1:R5,,,
 cc291cde1b1a5a50-table1-R6,2026-04-24,ulsan-city,,행루즈버거,현안업무 추진 직원 격려 오찬 제공(시민안전실장),84000,cc291cde1b1a5a5068781b9784a3fc74b2fb32582a1096d44de8b0f5d9b11940,table1:R6,,,
@@ -836,7 +891,8 @@ cc291cde1b1a5a50-table1-R10,2026-04-24,ulsan-city,,동부사업소,축의금 지
 8c2f08cd0bd1c98d-table1-R3,2026-04-16,ulsan-city,,식당,2026년 제262회 울산광역시의회 임시회 참석자 중식 제공,130000,8c2f08cd0bd1c98d4833f4c46cc5a7553d99b1f61acdd0e68a3f5262bc489585,table1:R3,,,
 8c2f08cd0bd1c98d-table1-R4,2026-04-16,ulsan-city,,"신대동마트, 파리바게뜨",녹지정원국장실 내방객 응대용 다과 및 차류 구입(녹지정원국),412000,8c2f08cd0bd1c98d4833f4c46cc5a7553d99b1f61acdd0e68a3f5262bc489585,table1:R4,,,
 8c2f08cd0bd1c98d-table1-R5,2026-04-16,ulsan-city,,연미정식당,주요 정책 의견수렴 간담회(행정국장),470000,8c2f08cd0bd1c98d4833f4c46cc5a7553d99b1f61acdd0e68a3f5262bc489585,table1:R5,,,
-8c2f08cd0bd1c98d-table1-R6,2026-04-16,ulsan-city,,"꽃바위횟집, 스타벅스",중견관리자 양성 교육 간담회(행정국장),253000,8c2f08cd0bd1c98d4833f4c46cc5a7553d99b1f61acdd0e68a3f5262bc489585,table1:R6,,,
+8c2f08cd0bd1c98d-table1-R6#1,2026-04-16,ulsan-city,,꽃바위횟집,중견관리자 양성 교육 간담회(행정국장),,8c2f08cd0bd1c98d4833f4c46cc5a7553d99b1f61acdd0e68a3f5262bc489585,table1:R6,,8c2f08cd0bd1c98d-table1-R6,253000
+8c2f08cd0bd1c98d-table1-R6#2,2026-04-16,ulsan-city,,스타벅스,중견관리자 양성 교육 간담회(행정국장),,8c2f08cd0bd1c98d4833f4c46cc5a7553d99b1f61acdd0e68a3f5262bc489585,table1:R6,,8c2f08cd0bd1c98d-table1-R6,253000
 8c2f08cd0bd1c98d-table1-R7,2026-04-16,ulsan-city,,"연미정식당, 아이갓에브리씽",학성공원 물길 복원사업 관계자 업무협의(환경국장),110000,8c2f08cd0bd1c98d4833f4c46cc5a7553d99b1f61acdd0e68a3f5262bc489585,table1:R7,,,
 8c2f08cd0bd1c98d-table1-R8,2026-04-16,ulsan-city,,소라고래집,지구단위계획 결정 업무 관계자 오찬 제공(도시국장),471000,8c2f08cd0bd1c98d4833f4c46cc5a7553d99b1f61acdd0e68a3f5262bc489585,table1:R8,,,
 8c2f08cd0bd1c98d-table1-R9,2026-04-16,ulsan-city,,어향횟집,하천 계곡 주변 불법점용 안전감찰 관련 업무 협의 후 만찬 제공(시민안전실장),315000,8c2f08cd0bd1c98d4833f4c46cc5a7553d99b1f61acdd0e68a3f5262bc489585,table1:R9,,,
@@ -846,7 +902,8 @@ cc291cde1b1a5a50-table1-R10,2026-04-24,ulsan-city,,동부사업소,축의금 지
 d7eaae944b96fe9d-table1-R2,2026-04-15,ulsan-city,,-,경조금 지급(행정국장),50000,d7eaae944b96fe9d1d5a386f41176f51702fc73ee04112531fe261083ef49cc7,table1:R2,,,
 d7eaae944b96fe9d-table1-R3,2026-04-15,ulsan-city,,용문,시정 현안사업 의견수렴 간담회(행정국장),480000,d7eaae944b96fe9d1d5a386f41176f51702fc73ee04112531fe261083ef49cc7,table1:R3,,,
 d7eaae944b96fe9d-table1-R4,2026-04-15,ulsan-city,,붉은우럭,신도시 교통대책 신속추진 관련 업무협의 후 만찬 제공(교통국),82000,d7eaae944b96fe9d1d5a386f41176f51702fc73ee04112531fe261083ef49cc7,table1:R4,,,
-d7eaae944b96fe9d-table1-R5,2026-04-15,ulsan-city,,"효정밥상, 몽블랙",종합감사 추진 직원 격려(감사관),235000,d7eaae944b96fe9d1d5a386f41176f51702fc73ee04112531fe261083ef49cc7,table1:R5,,,
+d7eaae944b96fe9d-table1-R5#1,2026-04-15,ulsan-city,,효정밥상,종합감사 추진 직원 격려(감사관),,d7eaae944b96fe9d1d5a386f41176f51702fc73ee04112531fe261083ef49cc7,table1:R5,,d7eaae944b96fe9d-table1-R5,235000
+d7eaae944b96fe9d-table1-R5#2,2026-04-15,ulsan-city,,몽블랙,종합감사 추진 직원 격려(감사관),,d7eaae944b96fe9d1d5a386f41176f51702fc73ee04112531fe261083ef49cc7,table1:R5,,d7eaae944b96fe9d-table1-R5,235000
 d7eaae944b96fe9d-table1-R6,2026-04-15,ulsan-city,,봉계숯불갈비,중대시민재해 예방 관련 업무 협의 후 오찬 제공(시민안전실장),466000,d7eaae944b96fe9d1d5a386f41176f51702fc73ee04112531fe261083ef49cc7,table1:R6,,,
 d7eaae944b96fe9d-table1-R7,2026-04-15,ulsan-city,,울산은하수,지역 동반성장협의체 구성 추진을 위한 업무협의(기업투자국장),90000,d7eaae944b96fe9d1d5a386f41176f51702fc73ee04112531fe261083ef49cc7,table1:R7,,,
 d7eaae944b96fe9d-table1-R8,2026-04-15,ulsan-city,,"어옥동, 프루베",경제자유구역 추가지정 관련 업무관계자 오찬 간담회(울산경제자유구역청),186000,d7eaae944b96fe9d1d5a386f41176f51702fc73ee04112531fe261083ef49cc7,table1:R8,,,
@@ -856,7 +913,8 @@ d7eaae944b96fe9d-table1-R11,2026-04-15,ulsan-city,,양산도,임도사업 관련
 d7eaae944b96fe9d-table1-R12,2026-04-15,ulsan-city,,팔도낙지촌,상수도 현안업무 관련 울산기자단 간담회 후 오찬 제공(상수도사업본부장),300000,d7eaae944b96fe9d1d5a386f41176f51702fc73ee04112531fe261083ef49cc7,table1:R12,,,
 d3ed1248b9f48419-table1-R2,2026-04-14,ulsan-city,,대정에프엔비,권역책임의료기관 역량강화 사업 업무 협의 및 오찬 제공(시민건강국장),102000,d3ed1248b9f484192603dd53b3f62b2fc8fca0cb68cd2de0d553e30136a5abc6,table1:R2,,,
 d3ed1248b9f48419-table1-R3,2026-04-14,ulsan-city,,원조진불고기,지역사회 자원봉사 활성화 간담회(행정국장),220000,d3ed1248b9f484192603dd53b3f62b2fc8fca0cb68cd2de0d553e30136a5abc6,table1:R3,,,
-d3ed1248b9f48419-table1-R4,2026-04-14,ulsan-city,,"파라안병영성, 콩이파리",시니어치안지킴이 업무 관련 논의 후 오찬 제공(사무국장),60000,d3ed1248b9f484192603dd53b3f62b2fc8fca0cb68cd2de0d553e30136a5abc6,table1:R4,,,
+d3ed1248b9f48419-table1-R4#1,2026-04-14,ulsan-city,,파라안병영성,시니어치안지킴이 업무 관련 논의 후 오찬 제공(사무국장),,d3ed1248b9f484192603dd53b3f62b2fc8fca0cb68cd2de0d553e30136a5abc6,table1:R4,,d3ed1248b9f48419-table1-R4,60000
+d3ed1248b9f48419-table1-R4#2,2026-04-14,ulsan-city,,콩이파리,시니어치안지킴이 업무 관련 논의 후 오찬 제공(사무국장),,d3ed1248b9f484192603dd53b3f62b2fc8fca0cb68cd2de0d553e30136a5abc6,table1:R4,,d3ed1248b9f48419-table1-R4,60000
 d3ed1248b9f48419-table1-R5,2026-04-14,ulsan-city,,청우횟집,버스킹 관련 업무협의 간담회(문화관광체육국),305000,d3ed1248b9f484192603dd53b3f62b2fc8fca0cb68cd2de0d553e30136a5abc6,table1:R5,,,
 d3ed1248b9f48419-table1-R6,2026-04-14,ulsan-city,,다운목살구이식당,모두의 카드 기념 행사 관련 업무협의 후 만찬 제공(교통국),98000,d3ed1248b9f484192603dd53b3f62b2fc8fca0cb68cd2de0d553e30136a5abc6,table1:R6,,,
 d3ed1248b9f48419-table1-R7,2026-04-14,ulsan-city,,두부촌,청렴시민감사관 운영 관련 업무협의 간담회(감사관),140000,d3ed1248b9f484192603dd53b3f62b2fc8fca0cb68cd2de0d553e30136a5abc6,table1:R7,,,
@@ -868,7 +926,8 @@ d3ed1248b9f48419-table1-R9,2026-04-14,ulsan-city,,약수가든,선바위공원 �
 3d0f401f9008ece4-table1-R5,2026-04-13,ulsan-city,,중국성,중대재해 관련 업무 협의 후 만찬 제공(시민안전실장),298000,3d0f401f9008ece426c4f927593bfe904b7affcf55b9a3eb376b788e76ad9361,table1:R5,,,
 3d0f401f9008ece4-table1-R6,2026-04-13,ulsan-city,,고빈정,안전문화운동 관련 업무 협의 후 오찬 제공(시민안전실장),75000,3d0f401f9008ece426c4f927593bfe904b7affcf55b9a3eb376b788e76ad9361,table1:R6,,,
 3d0f401f9008ece4-table1-R7,2026-04-13,ulsan-city,,동명,중소기업 경영안정자금 지원방안 논의를 위한 업무협의(기업투자국장),286000,3d0f401f9008ece426c4f927593bfe904b7affcf55b9a3eb376b788e76ad9361,table1:R7,,,
-3d0f401f9008ece4-table1-R8,2026-04-13,ulsan-city,,"역전양평해장국, 해당의정원",투자유치 활성화 관련 논의를 위한 오찬 간담회(울산경제자유구역청),50000,3d0f401f9008ece426c4f927593bfe904b7affcf55b9a3eb376b788e76ad9361,table1:R8,,,
+3d0f401f9008ece4-table1-R8#1,2026-04-13,ulsan-city,,역전양평해장국,투자유치 활성화 관련 논의를 위한 오찬 간담회(울산경제자유구역청),,3d0f401f9008ece426c4f927593bfe904b7affcf55b9a3eb376b788e76ad9361,table1:R8,,3d0f401f9008ece4-table1-R8,50000
+3d0f401f9008ece4-table1-R8#2,2026-04-13,ulsan-city,,해당의정원,투자유치 활성화 관련 논의를 위한 오찬 간담회(울산경제자유구역청),,3d0f401f9008ece426c4f927593bfe904b7affcf55b9a3eb376b788e76ad9361,table1:R8,,3d0f401f9008ece4-table1-R8,50000
 3d0f401f9008ece4-table1-R9,2026-04-13,ulsan-city,,상해,태화강국가정원 운영 관련 관계자 업무협의 및 만찬 제공(녹지정원국장),221000,3d0f401f9008ece426c4f927593bfe904b7affcf55b9a3eb376b788e76ad9361,table1:R9,,,
 3d0f401f9008ece4-table1-R10,2026-04-13,ulsan-city,,한양식당,태화루(용금소) 스카이워크 운영 관련 관계자 업무협의 및 오찬 제공(녹지정원국장),44000,3d0f401f9008ece426c4f927593bfe904b7affcf55b9a3eb376b788e76ad9361,table1:R10,,,
 81f00c2fb93d9176-table1-R2,2026-04-10,ulsan-city,,봉계돼지국밥,공공보건의료 사업 추진 간담회 개최 후 오찬 제공(시민건강국장),66000,81f00c2fb93d91762ccb1e70d0f6e5af1d9a4266be2cd01f73a3535b5c04382a,table1:R2,,,
@@ -900,7 +959,8 @@ d3ed1248b9f48419-table1-R9,2026-04-14,ulsan-city,,약수가든,선바위공원 �
 1ce6e7d900d70beb-table1-R10,2026-04-08,ulsan-city,,태원수산산곰장어,공직기강 감찰 관련 업무협의 및 만찬 제공(감사관),210000,1ce6e7d900d70beb3efff1e538f3df6b1814731b82f01b05163ce60178121e4c,table1:R10,,,
 1ce6e7d900d70beb-table1-R11,2026-04-08,ulsan-city,,송림생오리참숯불구이,읍면동 안전서비스 관련 업무 협의 후 만찬 제공(시민안전실장),192000,1ce6e7d900d70beb3efff1e538f3df6b1814731b82f01b05163ce60178121e4c,table1:R11,,,
 1ce6e7d900d70beb-table1-R12,2026-04-08,ulsan-city,,에이오피(AOP),물가안정을 위한 업무협의(기업투자국장),453000,1ce6e7d900d70beb3efff1e538f3df6b1814731b82f01b05163ce60178121e4c,table1:R12,,,
-1ce6e7d900d70beb-table1-R13,2026-04-08,ulsan-city,,"이조장어, 카페메르",울산경제자유구역 민간수요 발굴 간담회 개최 오찬 제공(울산경제자유구역청),102000,1ce6e7d900d70beb3efff1e538f3df6b1814731b82f01b05163ce60178121e4c,table1:R13,,,
+1ce6e7d900d70beb-table1-R13#1,2026-04-08,ulsan-city,,이조장어,울산경제자유구역 민간수요 발굴 간담회 개최 오찬 제공(울산경제자유구역청),,1ce6e7d900d70beb3efff1e538f3df6b1814731b82f01b05163ce60178121e4c,table1:R13,,1ce6e7d900d70beb-table1-R13,102000
+1ce6e7d900d70beb-table1-R13#2,2026-04-08,ulsan-city,,카페메르,울산경제자유구역 민간수요 발굴 간담회 개최 오찬 제공(울산경제자유구역청),,1ce6e7d900d70beb3efff1e538f3df6b1814731b82f01b05163ce60178121e4c,table1:R13,,1ce6e7d900d70beb-table1-R13,102000
 1ce6e7d900d70beb-table1-R14,2026-04-08,ulsan-city,,신라촌오리,직원 격려 오찬 제공(종합건설본부장),330000,1ce6e7d900d70beb3efff1e538f3df6b1814731b82f01b05163ce60178121e4c,table1:R14,,,
 1ce6e7d900d70beb-table1-R15,2026-04-08,ulsan-city,,개인(성명 비공개),축의금 지급,50000,1ce6e7d900d70beb3efff1e538f3df6b1814731b82f01b05163ce60178121e4c,table1:R15,,,
 9409e966943fb2a5-table1-R2,2026-04-07,ulsan-city,,팔도낙지촌,청년 일자리사업 관련 업무협의 후 관계자 오찬 제공(경제산업실장),350000,9409e966943fb2a57db8b50bfcb77a2d0eed12d42f69fdeb169b480ad68b978e,table1:R2,,,
@@ -920,18 +980,22 @@ cc0294ab42a0cc6a-table1-R4,2026-04-06,ulsan-city,,"소소원, 꽃사슴식당",�
 cc0294ab42a0cc6a-table1-R5,2026-04-06,ulsan-city,,꿀단지,현안업무 추진 관련 직원 격려 만찬 제공(위원장),240000,cc0294ab42a0cc6acc0c85357a2e1bc10842bd62c840220fa8eb0e429d3e781e,table1:R5,,,
 cc0294ab42a0cc6a-table1-R6,2026-04-06,ulsan-city,,토석정,도시국 시책홍보 관련 기자단 간담회 개최 후 오찬 제공(도시국장),168000,cc0294ab42a0cc6acc0c85357a2e1bc10842bd62c840220fa8eb0e429d3e781e,table1:R6,,,
 cc0294ab42a0cc6a-table1-R7,2026-04-06,ulsan-city,,황가네참숯생고기,지능형교통체계(ITS) 관련 업무협의 후 만찬 제공(교통국),195000,cc0294ab42a0cc6acc0c85357a2e1bc10842bd62c840220fa8eb0e429d3e781e,table1:R7,,,
-cc0294ab42a0cc6a-table1-R8,2026-04-06,ulsan-city,,"메오, 할리스울산국가정원점",기업투자국 직원 격려 간담회(기업투자국장),122000,cc0294ab42a0cc6acc0c85357a2e1bc10842bd62c840220fa8eb0e429d3e781e,table1:R8,,,
+cc0294ab42a0cc6a-table1-R8#1,2026-04-06,ulsan-city,,메오,기업투자국 직원 격려 간담회(기업투자국장),,cc0294ab42a0cc6acc0c85357a2e1bc10842bd62c840220fa8eb0e429d3e781e,table1:R8,,cc0294ab42a0cc6a-table1-R8,122000
+cc0294ab42a0cc6a-table1-R8#2,2026-04-06,ulsan-city,,할리스울산국가정원점,기업투자국 직원 격려 간담회(기업투자국장),,cc0294ab42a0cc6acc0c85357a2e1bc10842bd62c840220fa8eb0e429d3e781e,table1:R8,,cc0294ab42a0cc6a-table1-R8,122000
 cc0294ab42a0cc6a-table1-R9,2026-04-06,ulsan-city,,개인(성명 비공개),직원 경조사비 지급,50000,cc0294ab42a0cc6acc0c85357a2e1bc10842bd62c840220fa8eb0e429d3e781e,table1:R9,,,
 cc0294ab42a0cc6a-table1-R10,2026-04-06,ulsan-city,,세종,과기정통부 관련 사업 사전 컨설팅 후 오찬 제공(AI수도추진본부),210000,cc0294ab42a0cc6acc0c85357a2e1bc10842bd62c840220fa8eb0e429d3e781e,table1:R10,,,
 5139e26a3512d0c3-table1-R2,2026-04-05,ulsan-city,,중부사업소,축의금 지급,50000,5139e26a3512d0c3ae4c20be18f12e9ab2f88c03ab0aac6960d874b338858437,table1:R2,,,
 b47ce926dac23848-table1-R2,2026-04-04,ulsan-city,,본가한우곱창,궁거랑 벚꽃 한마당 행사 추진 후 관계자 만찬 제공(문화관광체육국),347000,b47ce926dac23848d7fd49cd4d015ca2481694b92a4f0f2c0f58698098b6f24d,table1:R2,,,
 0533758aa6d9801b-table1-R2,2026-04-03,ulsan-city,,원조언양옛날곰탕,농소~강동간 도로개설 협의 관계자 오찬 제공(건설주택국),45000,0533758aa6d9801b708388d7b58aadaa1d8141da63d1692fb1bd1d0d7aa3e17c,table1:R2,,,
 0533758aa6d9801b-table1-R3,2026-04-03,ulsan-city,,파르테르,자원봉사 및 나눔실천 활성화 간담회(행정국장),106000,0533758aa6d9801b708388d7b58aadaa1d8141da63d1692fb1bd1d0d7aa3e17c,table1:R3,,,
-0533758aa6d9801b-table1-R4,2026-04-03,ulsan-city,,"어나더맘보, 문수순메밀, 전통찻집담소",시민고충 행정지원 강화 간담회(행정국장),166000,0533758aa6d9801b708388d7b58aadaa1d8141da63d1692fb1bd1d0d7aa3e17c,table1:R4,,,
+0533758aa6d9801b-table1-R4#1,2026-04-03,ulsan-city,,어나더맘보,시민고충 행정지원 강화 간담회(행정국장),,0533758aa6d9801b708388d7b58aadaa1d8141da63d1692fb1bd1d0d7aa3e17c,table1:R4,,0533758aa6d9801b-table1-R4,166000
+0533758aa6d9801b-table1-R4#2,2026-04-03,ulsan-city,,문수순메밀,시민고충 행정지원 강화 간담회(행정국장),,0533758aa6d9801b708388d7b58aadaa1d8141da63d1692fb1bd1d0d7aa3e17c,table1:R4,,0533758aa6d9801b-table1-R4,166000
+0533758aa6d9801b-table1-R4#3,2026-04-03,ulsan-city,,전통찻집담소,시민고충 행정지원 강화 간담회(행정국장),,0533758aa6d9801b708388d7b58aadaa1d8141da63d1692fb1bd1d0d7aa3e17c,table1:R4,,0533758aa6d9801b-table1-R4,166000
 0533758aa6d9801b-table1-R5,2026-04-03,ulsan-city,,오차드힐 베이커리카페,다중운집장소(작천정 벚꽃축제 등) 현장 합동점검 후 오찬 제공(위원장),104000,0533758aa6d9801b708388d7b58aadaa1d8141da63d1692fb1bd1d0d7aa3e17c,table1:R5,,,
 0533758aa6d9801b-table1-R6,2026-04-03,ulsan-city,,스시돈,태화강 물새관찰장 관계자 업무협의(환경국장),143000,0533758aa6d9801b708388d7b58aadaa1d8141da63d1692fb1bd1d0d7aa3e17c,table1:R6,,,
 0533758aa6d9801b-table1-R7,2026-04-03,ulsan-city,,역전양평해장국,현안업무 추진 직원 격려 오찬 제공(시민안전실장),101000,0533758aa6d9801b708388d7b58aadaa1d8141da63d1692fb1bd1d0d7aa3e17c,table1:R7,,,
-0533758aa6d9801b-table1-R8,2026-04-03,ulsan-city,,"이조장어, 카페메르",경제자유구역청 현안업무 추진 관계자 오찬 간담회(울산경제자유구역청),172000,0533758aa6d9801b708388d7b58aadaa1d8141da63d1692fb1bd1d0d7aa3e17c,table1:R8,,,
+0533758aa6d9801b-table1-R8#1,2026-04-03,ulsan-city,,이조장어,경제자유구역청 현안업무 추진 관계자 오찬 간담회(울산경제자유구역청),,0533758aa6d9801b708388d7b58aadaa1d8141da63d1692fb1bd1d0d7aa3e17c,table1:R8,,0533758aa6d9801b-table1-R8,172000
+0533758aa6d9801b-table1-R8#2,2026-04-03,ulsan-city,,카페메르,경제자유구역청 현안업무 추진 관계자 오찬 간담회(울산경제자유구역청),,0533758aa6d9801b708388d7b58aadaa1d8141da63d1692fb1bd1d0d7aa3e17c,table1:R8,,0533758aa6d9801b-table1-R8,172000
 0533758aa6d9801b-table1-R9,2026-04-03,ulsan-city,,관내식당,연구개발지원단 사업 관련 업무협의 후 오찬 제공(AI수도추진본부),222000,0533758aa6d9801b708388d7b58aadaa1d8141da63d1692fb1bd1d0d7aa3e17c,table1:R9,,,
 0533758aa6d9801b-table1-R10,2026-04-03,ulsan-city,,신정양곱창,태화강 둔치 환경개선 관련 관계자 업무협의 후 오찬 제공(녹지정원국장),90000,0533758aa6d9801b708388d7b58aadaa1d8141da63d1692fb1bd1d0d7aa3e17c,table1:R10,,,
 0533758aa6d9801b-table1-R11,2026-04-03,ulsan-city,,이조백참치,실화재선박훈련장 설치공사 업무협의 후 만찬제공(종합건설본부장),200000,0533758aa6d9801b708388d7b58aadaa1d8141da63d1692fb1bd1d0d7aa3e17c,table1:R11,,,
@@ -949,11 +1013,13 @@ b47ce926dac23848-table1-R2,2026-04-04,ulsan-city,,본가한우곱창,궁거랑 �
 66b3c515dbe19b8c-table1-R11,2026-04-02,ulsan-city,,대가가든,보건분야 업무 홍보 및 협의 후 오찬 제공(시민건강국),119000,66b3c515dbe19b8c7455c796af2b9750ee07f22a0faafb5d392feccd49c63cfa,table1:R11,,,
 66b3c515dbe19b8c-table1-R12,2026-04-02,ulsan-city,,원조고동집,소방공무원 신규채용 체력평가 종사자 노고격려 오찬(소방본부),222000,66b3c515dbe19b8c7455c796af2b9750ee07f22a0faafb5d392feccd49c63cfa,table1:R12,,,
 66b3c515dbe19b8c-table1-R13,2026-04-02,ulsan-city,,어멍,전문예술인단체 지원육성을 위한 간담회 및 만찬제공(문화관광체육국),226000,66b3c515dbe19b8c7455c796af2b9750ee07f22a0faafb5d392feccd49c63cfa,table1:R13,,,
-66b3c515dbe19b8c-table1-R14,2026-04-02,ulsan-city,,"함양옻닭, 일리노",종합감사 추진 직원 격려(감사관),166000,66b3c515dbe19b8c7455c796af2b9750ee07f22a0faafb5d392feccd49c63cfa,table1:R14,,,
+66b3c515dbe19b8c-table1-R14#1,2026-04-02,ulsan-city,,함양옻닭,종합감사 추진 직원 격려(감사관),,66b3c515dbe19b8c7455c796af2b9750ee07f22a0faafb5d392feccd49c63cfa,table1:R14,,66b3c515dbe19b8c-table1-R14,166000
+66b3c515dbe19b8c-table1-R14#2,2026-04-02,ulsan-city,,일리노,종합감사 추진 직원 격려(감사관),,66b3c515dbe19b8c7455c796af2b9750ee07f22a0faafb5d392feccd49c63cfa,table1:R14,,66b3c515dbe19b8c-table1-R14,166000
 d9f925ed14ee8d3b-table1-R2,2026-04-01,ulsan-city,,본가한우곱창,사회복지시설 운영 관련 업무협의 후 오찬 제공(복지보훈여성국),117000,d9f925ed14ee8d3b25332c14f27e80ca1cf47a736f6c9059fafe681baf1c456e,table1:R2,,,
 d9f925ed14ee8d3b-table1-R3,2026-04-01,ulsan-city,,개인(성명 비공개),소속직원 경조사비 지급,50000,d9f925ed14ee8d3b25332c14f27e80ca1cf47a736f6c9059fafe681baf1c456e,table1:R3,,,
 d9f925ed14ee8d3b-table1-R4,2026-04-01,ulsan-city,,-,경조금 지급(행정국장),50000,d9f925ed14ee8d3b25332c14f27e80ca1cf47a736f6c9059fafe681baf1c456e,table1:R4,,,
-d9f925ed14ee8d3b-table1-R5,2026-04-01,ulsan-city,,"진호관, 카페숙이",현안업무 홍보를 위한 기자간담회 개최(환경국장),168000,d9f925ed14ee8d3b25332c14f27e80ca1cf47a736f6c9059fafe681baf1c456e,table1:R5,,,
+d9f925ed14ee8d3b-table1-R5#1,2026-04-01,ulsan-city,,진호관,현안업무 홍보를 위한 기자간담회 개최(환경국장),,d9f925ed14ee8d3b25332c14f27e80ca1cf47a736f6c9059fafe681baf1c456e,table1:R5,,d9f925ed14ee8d3b-table1-R5,168000
+d9f925ed14ee8d3b-table1-R5#2,2026-04-01,ulsan-city,,카페숙이,현안업무 홍보를 위한 기자간담회 개최(환경국장),,d9f925ed14ee8d3b25332c14f27e80ca1cf47a736f6c9059fafe681baf1c456e,table1:R5,,d9f925ed14ee8d3b-table1-R5,168000
 d9f925ed14ee8d3b-table1-R6,2026-04-01,ulsan-city,,아이갓에브리씽,국장실 내방객 응대를 위한 다과 제공(교통국),15000,d9f925ed14ee8d3b25332c14f27e80ca1cf47a736f6c9059fafe681baf1c456e,table1:R6,,,
 d9f925ed14ee8d3b-table1-R7,2026-04-01,ulsan-city,,일품한우참숯갈비,울산기자단 오찬 간담회(기업투자국장),204000,d9f925ed14ee8d3b25332c14f27e80ca1cf47a736f6c9059fafe681baf1c456e,table1:R7,,,
 d9f925ed14ee8d3b-table1-R8,2026-04-01,ulsan-city,,세종,제조AX 신규 사업 관련 업무협의 후 만찬 제공(AI수도추진본부),228000,d9f925ed14ee8d3b25332c14f27e80ca1cf47a736f6c9059fafe681baf1c456e,table1:R8,,,
@@ -979,7 +1045,8 @@ e6b6c01e65a88c8b-table1-R7,2026-03-31,ulsan-city,,두부촌,상반기 체납요�
 85bf41dc1ef5ac8f-table1-R11,2026-03-30,ulsan-city,,개인(성명 비공개),경조사비 지급,50000,85bf41dc1ef5ac8fa17e7f866b0a15de99b698e81055955862d27d8771608273,table1:R11,,,
 85bf41dc1ef5ac8f-table1-R12,2026-03-30,ulsan-city,,대성식당,산림재난대응센터 관련 관계자 업무협의 및 오찬 제공(녹지정원국장),150000,85bf41dc1ef5ac8fa17e7f866b0a15de99b698e81055955862d27d8771608273,table1:R12,,,
 85bf41dc1ef5ac8f-table1-R13,2026-03-30,ulsan-city,,대순대가,가로수 생육환경 개선사업 관련 관계자 업무협의 및 오찬 제공(녹지공원과),40000,85bf41dc1ef5ac8fa17e7f866b0a15de99b698e81055955862d27d8771608273,table1:R13,,,
-85bf41dc1ef5ac8f-table1-R14,2026-03-30,ulsan-city,,"부부스시, 두다",울산경제자유구역 핵심전략사업 육성을 위한 업무협의 오찬 간담회(울산경제자유구역청),169000,85bf41dc1ef5ac8fa17e7f866b0a15de99b698e81055955862d27d8771608273,table1:R14,,,
+85bf41dc1ef5ac8f-table1-R14#1,2026-03-30,ulsan-city,,부부스시,울산경제자유구역 핵심전략사업 육성을 위한 업무협의 오찬 간담회(울산경제자유구역청),,85bf41dc1ef5ac8fa17e7f866b0a15de99b698e81055955862d27d8771608273,table1:R14,,85bf41dc1ef5ac8f-table1-R14,169000
+85bf41dc1ef5ac8f-table1-R14#2,2026-03-30,ulsan-city,,두다,울산경제자유구역 핵심전략사업 육성을 위한 업무협의 오찬 간담회(울산경제자유구역청),,85bf41dc1ef5ac8fa17e7f866b0a15de99b698e81055955862d27d8771608273,table1:R14,,85bf41dc1ef5ac8f-table1-R14,169000
 facbca384982a984-table1-R2,2026-03-27,ulsan-city,,"옛날국수, 메가커피",지역 경제 현안 관련 업무협의 후 관계자 오찬 제공(경제산업실장),40000,facbca384982a984491feeaa0bf5a4dc7c7bd1af0f854ca068c4a28d3b9a8e34,table1:R2,,,
 facbca384982a984-table1-R3,2026-03-27,ulsan-city,,뚝배기식당,보도블럭 정비 관련 업무협의(건설주택국),41000,facbca384982a984491feeaa0bf5a4dc7c7bd1af0f854ca068c4a28d3b9a8e34,table1:R3,,,
 facbca384982a984-table1-R4,2026-03-27,ulsan-city,,세종,AX 분야 주요사업 관련 업무협의 후 오찬 등 제공(AI수도추진본부),62000,facbca384982a984491feeaa0bf5a4dc7c7bd1af0f854ca068c4a28d3b9a8e34,table1:R4,,,
@@ -988,7 +1055,8 @@ facbca384982a984-table1-R6,2026-03-27,ulsan-city,,약수가든,보훈단체 운�
 facbca384982a984-table1-R7,2026-03-27,ulsan-city,,해바라기,소상공인 육성 방안 논의를 위한 업무협의(기업투자국장),300000,facbca384982a984491feeaa0bf5a4dc7c7bd1af0f854ca068c4a28d3b9a8e34,table1:R7,,,
 facbca384982a984-table1-R8,2026-03-27,ulsan-city,,일품참숯암소갈비살,자원회수시설 운영 관계자 업무협의(환경국장),475000,facbca384982a984491feeaa0bf5a4dc7c7bd1af0f854ca068c4a28d3b9a8e34,table1:R8,,,
 facbca384982a984-table1-R9,2026-03-27,ulsan-city,,명성한우삼겹살,안전문화운동 관련 업무 협의 후 만찬 제공(시민안전실장),400000,facbca384982a984491feeaa0bf5a4dc7c7bd1af0f854ca068c4a28d3b9a8e34,table1:R9,,,
-facbca384982a984-table1-R10,2026-03-27,ulsan-city,,"팔도낙지촌, 해당의정원",입주기업 직접방문·애로사항 청취 운영 관련 업무 협의 후 오찬 제공(울산경제자유구역청),147000,facbca384982a984491feeaa0bf5a4dc7c7bd1af0f854ca068c4a28d3b9a8e34,table1:R10,,,
+facbca384982a984-table1-R10#1,2026-03-27,ulsan-city,,팔도낙지촌,입주기업 직접방문·애로사항 청취 운영 관련 업무 협의 후 오찬 제공(울산경제자유구역청),,facbca384982a984491feeaa0bf5a4dc7c7bd1af0f854ca068c4a28d3b9a8e34,table1:R10,,facbca384982a984-table1-R10,147000
+facbca384982a984-table1-R10#2,2026-03-27,ulsan-city,,해당의정원,입주기업 직접방문·애로사항 청취 운영 관련 업무 협의 후 오찬 제공(울산경제자유구역청),,facbca384982a984491feeaa0bf5a4dc7c7bd1af0f854ca068c4a28d3b9a8e34,table1:R10,,facbca384982a984-table1-R10,147000
 facbca384982a984-table1-R11,2026-03-27,ulsan-city,,(주)솥밭,문화재 보수정비 사업관계자 회의 및 오찬 제공(문화관광체육국),458000,facbca384982a984491feeaa0bf5a4dc7c7bd1af0f854ca068c4a28d3b9a8e34,table1:R11,,,
 7ca639645cdcba68-table1-R2,2026-03-26,ulsan-city,,울산옛날추어탕,중앙기자단 간담회 참석자 오찬제공(경제산업실장),78000,7ca639645cdcba68a2b520180f539f89a1404025de5aecab7a46cd9717c87e33,table1:R2,,,
 7ca639645cdcba68-table1-R3,2026-03-26,ulsan-city,,해운대횟집,보건 분야 지역현안 업무협의 후 오찬 제공(시민건강국),210000,7ca639645cdcba68a2b520180f539f89a1404025de5aecab7a46cd9717c87e33,table1:R3,,,
@@ -996,7 +1064,8 @@ facbca384982a984-table1-R11,2026-03-27,ulsan-city,,(주)솥밭,문화재 보수�
 7ca639645cdcba68-table1-R5,2026-03-26,ulsan-city,,함양지리산흑돼지,자치경찰위원회 간담회 만찬 제공,300000,7ca639645cdcba68a2b520180f539f89a1404025de5aecab7a46cd9717c87e33,table1:R5,,,
 7ca639645cdcba68-table1-R6,2026-03-26,ulsan-city,,스시히바나,자경위-공공안전부(인사계) 간담회 참석자 오찬 제공,278000,7ca639645cdcba68a2b520180f539f89a1404025de5aecab7a46cd9717c87e33,table1:R6,,,
 7ca639645cdcba68-table1-R7,2026-03-26,ulsan-city,,구희락복국,2027년 정부합동평가(`26년 실적) 추진 관련 간담회 후 오찬 제공(위원장),102000,7ca639645cdcba68a2b520180f539f89a1404025de5aecab7a46cd9717c87e33,table1:R7,,,
-7ca639645cdcba68-table1-R8,2026-03-26,ulsan-city,,"토석정, 아이갓에브리씽",화학사고 대응 관계자 업무협의(환경국장),296000,7ca639645cdcba68a2b520180f539f89a1404025de5aecab7a46cd9717c87e33,table1:R8,,,
+7ca639645cdcba68-table1-R8#1,2026-03-26,ulsan-city,,토석정,화학사고 대응 관계자 업무협의(환경국장),,7ca639645cdcba68a2b520180f539f89a1404025de5aecab7a46cd9717c87e33,table1:R8,,7ca639645cdcba68-table1-R8,296000
+7ca639645cdcba68-table1-R8#2,2026-03-26,ulsan-city,,아이갓에브리씽,화학사고 대응 관계자 업무협의(환경국장),,7ca639645cdcba68a2b520180f539f89a1404025de5aecab7a46cd9717c87e33,table1:R8,,7ca639645cdcba68-table1-R8,296000
 7ca639645cdcba68-table1-R9,2026-03-26,ulsan-city,,과일소풍,직원 격려 간식 제공(기획조정실장),125000,7ca639645cdcba68a2b520180f539f89a1404025de5aecab7a46cd9717c87e33,table1:R9,,,
 7ca639645cdcba68-table1-R10,2026-03-26,ulsan-city,,아니마,민간위탁 사무 업무추진 간담회 개최(기획조정실장),129000,7ca639645cdcba68a2b520180f539f89a1404025de5aecab7a46cd9717c87e33,table1:R10,,,
 7ca639645cdcba68-table1-R11,2026-03-26,ulsan-city,,토석정,감사업무 추진 직원 노고격려를 위한 오찬 제공(감사관),220000,7ca639645cdcba68a2b520180f539f89a1404025de5aecab7a46cd9717c87e33,table1:R11,,,
@@ -1022,7 +1091,8 @@ fb7742a578b94840-table1-R6,2026-03-24,ulsan-city,,해장마을,개발제한구�
 fb7742a578b94840-table1-R7,2026-03-24,ulsan-city,,세명,자경위 - 울산청 생활안전부 간담회 참석자 만찬 제공,300000,fb7742a578b9484070a2d70959b2cd857610e7d9374f57e5f7c45136fc158749,table1:R7,,,
 fb7742a578b94840-table1-R8,2026-03-24,ulsan-city,,섬횟집,정부합동평가 업무추진 간담회 개최(기획조정실장),282000,fb7742a578b9484070a2d70959b2cd857610e7d9374f57e5f7c45136fc158749,table1:R8,,,
 cd003a45744fbbc0-table1-R2,2026-03-23,ulsan-city,,팔도낙지촌,경제현안 관련 업무협의 후 관계자 오찬 제공(경제산업실장),202000,cd003a45744fbbc05b63d3ccaa7ea98e3fdb1b30376b8d4ba01f625091be822d,table1:R2,,,
-cd003a45744fbbc0-table1-R3,2026-03-23,ulsan-city,,"홍성면옥, 외갓집에가면",공직자 직장교육 사전준비 간담회(행정국장),78000,cd003a45744fbbc05b63d3ccaa7ea98e3fdb1b30376b8d4ba01f625091be822d,table1:R3,,,
+cd003a45744fbbc0-table1-R3#1,2026-03-23,ulsan-city,,홍성면옥,공직자 직장교육 사전준비 간담회(행정국장),,cd003a45744fbbc05b63d3ccaa7ea98e3fdb1b30376b8d4ba01f625091be822d,table1:R3,,cd003a45744fbbc0-table1-R3,78000
+cd003a45744fbbc0-table1-R3#2,2026-03-23,ulsan-city,,외갓집에가면,공직자 직장교육 사전준비 간담회(행정국장),,cd003a45744fbbc05b63d3ccaa7ea98e3fdb1b30376b8d4ba01f625091be822d,table1:R3,,cd003a45744fbbc0-table1-R3,78000
 cd003a45744fbbc0-table1-R4,2026-03-23,ulsan-city,,관내식당,AI 반도체사업 관련 업무협의 후 오찬 제공(AI수도추진본부),80000,cd003a45744fbbc05b63d3ccaa7ea98e3fdb1b30376b8d4ba01f625091be822d,table1:R4,,,
 cd003a45744fbbc0-table1-R5,2026-03-23,ulsan-city,,에이오피,완충녹지 기반 조성사업 관련 관계자 업무협의 및 만찬 제공(녹지정원국장),463000,cd003a45744fbbc05b63d3ccaa7ea98e3fdb1b30376b8d4ba01f625091be822d,table1:R5,,,
 cd003a45744fbbc0-table1-R6,2026-03-23,ulsan-city,,본가한우곱창,울산정원지원센터 개관 준비 관련 업무협의 및 오찬 제공(녹지정원국장),50000,cd003a45744fbbc05b63d3ccaa7ea98e3fdb1b30376b8d4ba01f625091be822d,table1:R6,,,
@@ -1036,12 +1106,14 @@ cd003a45744fbbc0-table1-R8,2026-03-23,ulsan-city,,오발탄,콘텐츠산업 육�
 66f8ad12490172d8-table1-R7,2026-03-20,ulsan-city,,중국성,청년 정책 추진을 위한 업무협의(기업지원과),99000,66f8ad12490172d8e73c535fb1a0d6ccedf4a7dcbf229635d61b09c80371a617,table1:R7,,,
 66f8ad12490172d8-table1-R8,2026-03-20,ulsan-city,,"김달인김밥, 화신스토아",당면업무 추진 직원 노고격려 간식 제공(환경국장),198000,66f8ad12490172d8e73c535fb1a0d6ccedf4a7dcbf229635d61b09c80371a617,table1:R8,,,
 66f8ad12490172d8-table1-R9,2026-03-20,ulsan-city,,맘스터치,현안업무 추진 직원 격려(감사관),156000,66f8ad12490172d8e73c535fb1a0d6ccedf4a7dcbf229635d61b09c80371a617,table1:R9,,,
-66f8ad12490172d8-table1-R10,2026-03-20,ulsan-city,,"점심엔한우국밥, 텐퍼센트",HTV 일반산업단지 조성관련 업무 관계자 간담회 후 오찬 제공(울산경제자유구역청),143000,66f8ad12490172d8e73c535fb1a0d6ccedf4a7dcbf229635d61b09c80371a617,table1:R10,,,
+66f8ad12490172d8-table1-R10#1,2026-03-20,ulsan-city,,점심엔한우국밥,HTV 일반산업단지 조성관련 업무 관계자 간담회 후 오찬 제공(울산경제자유구역청),,66f8ad12490172d8e73c535fb1a0d6ccedf4a7dcbf229635d61b09c80371a617,table1:R10,,66f8ad12490172d8-table1-R10,143000
+66f8ad12490172d8-table1-R10#2,2026-03-20,ulsan-city,,텐퍼센트,HTV 일반산업단지 조성관련 업무 관계자 간담회 후 오찬 제공(울산경제자유구역청),,66f8ad12490172d8e73c535fb1a0d6ccedf4a7dcbf229635d61b09c80371a617,table1:R10,,66f8ad12490172d8-table1-R10,143000
 66f8ad12490172d8-table1-R11,2026-03-20,ulsan-city,,팔등로영덕대게,상수도사업 홍보업무 관련 협의 후 관계자 오찬제공(상수도사업본부경영부),240000,66f8ad12490172d8e73c535fb1a0d6ccedf4a7dcbf229635d61b09c80371a617,table1:R11,,,
 66f8ad12490172d8-table1-R12,2026-03-20,ulsan-city,,청춘닭강정 외 1,주요 현안 업무 추진 직원 격려 간담회 개최(기획조정실장),263000,66f8ad12490172d8e73c535fb1a0d6ccedf4a7dcbf229635d61b09c80371a617,table1:R12,,,
 66f8ad12490172d8-table1-R13,2026-03-20,ulsan-city,,더다이닝빌라,울산연구원 수행연구과제 추진 업무 협의(기획조정실),286000,66f8ad12490172d8e73c535fb1a0d6ccedf4a7dcbf229635d61b09c80371a617,table1:R13,,,
 f1102f2b24835fa1-table1-R2,2026-03-19,ulsan-city,,함양집,부동산 거래신고법 개정 관련 관계자 업무협의(건설주택국),477000,f1102f2b24835fa1e6bd8aa1059fa5c2a7f69fb30cecd1b24d6a9cbb71291459,table1:R2,,,
-f1102f2b24835fa1-table1-R3,2026-03-19,ulsan-city,,"팔도낙지촌, 드림카페",주요 사업 홍보 및 의견수렴 간담회(행정국장),476000,f1102f2b24835fa1e6bd8aa1059fa5c2a7f69fb30cecd1b24d6a9cbb71291459,table1:R3,,,
+f1102f2b24835fa1-table1-R3#1,2026-03-19,ulsan-city,,팔도낙지촌,주요 사업 홍보 및 의견수렴 간담회(행정국장),,f1102f2b24835fa1e6bd8aa1059fa5c2a7f69fb30cecd1b24d6a9cbb71291459,table1:R3,,f1102f2b24835fa1-table1-R3,476000
+f1102f2b24835fa1-table1-R3#2,2026-03-19,ulsan-city,,드림카페,주요 사업 홍보 및 의견수렴 간담회(행정국장),,f1102f2b24835fa1e6bd8aa1059fa5c2a7f69fb30cecd1b24d6a9cbb71291459,table1:R3,,f1102f2b24835fa1-table1-R3,476000
 f1102f2b24835fa1-table1-R4,2026-03-19,ulsan-city,,관내식당,AI팩토리사업 관련 업무 협의 후 오찬 제공(AI수도추진본부),363000,f1102f2b24835fa1e6bd8aa1059fa5c2a7f69fb30cecd1b24d6a9cbb71291459,table1:R4,,,
 f1102f2b24835fa1-table1-R5,2026-03-19,ulsan-city,,터미널식당,복지분야 현안 업무협의 후 오찬 제공(복지보훈여성국),416000,f1102f2b24835fa1e6bd8aa1059fa5c2a7f69fb30cecd1b24d6a9cbb71291459,table1:R5,,,
 f1102f2b24835fa1-table1-R6,2026-03-19,ulsan-city,,디비디비딥,자원순환 활성화 관계자 업무협의(환경국장),427000,f1102f2b24835fa1e6bd8aa1059fa5c2a7f69fb30cecd1b24d6a9cbb71291459,table1:R6,,,
@@ -1057,7 +1129,8 @@ a74fe00b10371028-table1-R4,2026-03-18,ulsan-city,,신대동마트,내방객 응�
 a74fe00b10371028-table1-R5,2026-03-18,ulsan-city,,"연미정식당, 해당의정원",맑은물 확보 사업 추진 관계자 업무협의(환경국장),112000,a74fe00b1037102851f0281657d350b6ee1566c04b1214f0db3c01ea4683fb44,table1:R5,,,
 a74fe00b10371028-table1-R6,2026-03-18,ulsan-city,,신사동찌개마을,중대재해 배상책임공제 관련 업무 협의 후 오찬 제공(시민안전실장),90000,a74fe00b1037102851f0281657d350b6ee1566c04b1214f0db3c01ea4683fb44,table1:R6,,,
 a74fe00b10371028-table1-R7,2026-03-18,ulsan-city,,신토불이,태화강국가정원 봄꽃축제 추진 관련 업무협의 및 오찬 제공(녹지정원국장),74000,a74fe00b1037102851f0281657d350b6ee1566c04b1214f0db3c01ea4683fb44,table1:R7,,,
-a74fe00b10371028-table1-R8,2026-03-18,ulsan-city,,"퐁당퐁당, 투썸플레이스",KTX역세권 투자유치 업무 협의 후 오찬 제공(울산경제자유구역청),129000,a74fe00b1037102851f0281657d350b6ee1566c04b1214f0db3c01ea4683fb44,table1:R8,,,
+a74fe00b10371028-table1-R8#1,2026-03-18,ulsan-city,,퐁당퐁당,KTX역세권 투자유치 업무 협의 후 오찬 제공(울산경제자유구역청),,a74fe00b1037102851f0281657d350b6ee1566c04b1214f0db3c01ea4683fb44,table1:R8,,a74fe00b10371028-table1-R8,129000
+a74fe00b10371028-table1-R8#2,2026-03-18,ulsan-city,,투썸플레이스,KTX역세권 투자유치 업무 협의 후 오찬 제공(울산경제자유구역청),,a74fe00b1037102851f0281657d350b6ee1566c04b1214f0db3c01ea4683fb44,table1:R8,,a74fe00b10371028-table1-R8,129000
 a74fe00b10371028-table1-R9,2026-03-18,ulsan-city,,콜프로스터스,직원 격려 간식 제공(기획조정실장),26000,a74fe00b1037102851f0281657d350b6ee1566c04b1214f0db3c01ea4683fb44,table1:R9,,,
 53b08be7dd03789d-table1-R2,2026-03-17,ulsan-city,,울산포대인,농소~강동간 도로개설 협의 관계자 오찬 제공(건설주택국),61000,53b08be7dd03789d2c6afdb5d6acdef97367c311a21050776f5b098ec42bcde3,table1:R2,,,
 53b08be7dd03789d-table1-R3,2026-03-17,ulsan-city,,식당,2026년 제262회 울산광역시의회 임시회 참석자 중식 제공,130000,53b08be7dd03789d2c6afdb5d6acdef97367c311a21050776f5b098ec42bcde3,table1:R3,,,
@@ -1071,7 +1144,8 @@ a74fe00b10371028-table1-R9,2026-03-18,ulsan-city,,콜프로스터스,직원 격�
 53b08be7dd03789d-table1-R11,2026-03-17,ulsan-city,,더다이닝빌라,경제자유구역 추가지정 관련 업무관계자 오찬 간담회(울산경제자유구역청),142000,53b08be7dd03789d2c6afdb5d6acdef97367c311a21050776f5b098ec42bcde3,table1:R11,,,
 53b08be7dd03789d-table1-R12,2026-03-17,ulsan-city,,진호관,2026년 제1회 추경예산안 심의 후 직원격려 오찬(상수도사업본부장),169000,53b08be7dd03789d2c6afdb5d6acdef97367c311a21050776f5b098ec42bcde3,table1:R12,,,
 a3ec5c549685043b-table1-R2,2026-03-16,ulsan-city,,-,경조금 지급(행정국장),50000,a3ec5c549685043bc9bf6f8354538bfece6fb1608585902ba0f4847564d3958b,table1:R2,,,
-a3ec5c549685043b-table1-R3,2026-03-16,ulsan-city,,"구희락복국, 단디커피",기록물관리 강화 간담회(행정국장),77000,a3ec5c549685043bc9bf6f8354538bfece6fb1608585902ba0f4847564d3958b,table1:R3,,,
+a3ec5c549685043b-table1-R3#1,2026-03-16,ulsan-city,,구희락복국,기록물관리 강화 간담회(행정국장),,a3ec5c549685043bc9bf6f8354538bfece6fb1608585902ba0f4847564d3958b,table1:R3,,a3ec5c549685043b-table1-R3,77000
+a3ec5c549685043b-table1-R3#2,2026-03-16,ulsan-city,,단디커피,기록물관리 강화 간담회(행정국장),,a3ec5c549685043bc9bf6f8354538bfece6fb1608585902ba0f4847564d3958b,table1:R3,,a3ec5c549685043b-table1-R3,77000
 a3ec5c549685043b-table1-R4,2026-03-16,ulsan-city,,일식와사비,도로개설공사 업무협의 후 오찬제공(종합건설본부장),120000,a3ec5c549685043bc9bf6f8354538bfece6fb1608585902ba0f4847564d3958b,table1:R4,,,
 a3ec5c549685043b-table1-R5,2026-03-16,ulsan-city,,팔도낙지촌,추가경정예산안 심의 직원 격려 오찬 제공(시민건강국),400000,a3ec5c549685043bc9bf6f8354538bfece6fb1608585902ba0f4847564d3958b,table1:R5,,,
 a3ec5c549685043b-table1-R6,2026-03-16,ulsan-city,,울산포대인,울부심 사업 브리핑 관련 관계자 오찬 제공(복지보훈여성국),130000,a3ec5c549685043bc9bf6f8354538bfece6fb1608585902ba0f4847564d3958b,table1:R6,,,
@@ -1094,11 +1168,13 @@ a3ec5c549685043b-table1-R14,2026-03-16,ulsan-city,,팔도낙지촌,상수도현�
 99bf3569bf32d0d8-table1-R10,2026-03-13,ulsan-city,,진호관,울산대공원 장미원 정비계획 관련 관계자 업무협의 후 오찬 제공(녹지정원국장),65000,99bf3569bf32d0d85b0f55e23fe51e786eeac52d0a5911cd99ca57b0329caa75,table1:R10,,,
 99bf3569bf32d0d8-table1-R11,2026-03-13,ulsan-city,,세계음식문화관,주요 현안 업무 추진 직원 격려 간담회 개최(기획조정실장),409000,99bf3569bf32d0d85b0f55e23fe51e786eeac52d0a5911cd99ca57b0329caa75,table1:R11,,,
 cb3e837869765b28-table1-R2,2026-03-12,ulsan-city,,연미정,지역 경제 현안 관련 업무협의 후 관계자 오찬 제공(경제산업실장),225000,cb3e837869765b2812fd3fba2713bc0c6530a4d7865ee07f2467d808594803dc,table1:R2,,,
-cb3e837869765b28-table1-R3,2026-03-12,ulsan-city,,"팔도낙지촌, 드림카페",시의회 협력 강화 간담회(행정국장),474000,cb3e837869765b2812fd3fba2713bc0c6530a4d7865ee07f2467d808594803dc,table1:R3,,,
+cb3e837869765b28-table1-R3#1,2026-03-12,ulsan-city,,팔도낙지촌,시의회 협력 강화 간담회(행정국장),,cb3e837869765b2812fd3fba2713bc0c6530a4d7865ee07f2467d808594803dc,table1:R3,,cb3e837869765b28-table1-R3,474000
+cb3e837869765b28-table1-R3#2,2026-03-12,ulsan-city,,드림카페,시의회 협력 강화 간담회(행정국장),,cb3e837869765b2812fd3fba2713bc0c6530a4d7865ee07f2467d808594803dc,table1:R3,,cb3e837869765b28-table1-R3,474000
 cb3e837869765b28-table1-R4,2026-03-12,ulsan-city,,관내식당,양자펩 개소식 관련 업무협의 후 오찬 제공(AI수도추진본부),39000,cb3e837869765b2812fd3fba2713bc0c6530a4d7865ee07f2467d808594803dc,table1:R4,,,
 cb3e837869765b28-table1-R5,2026-03-12,ulsan-city,,함양집,2026년 소방본부 팀별(구조팀) 소통 간담회 실시(소방본부),76000,cb3e837869765b2812fd3fba2713bc0c6530a4d7865ee07f2467d808594803dc,table1:R5,,,
 cb3e837869765b28-table1-R6,2026-03-12,ulsan-city,,팔도낙지촌,2026년 제1회 추경예산 의회 심의 관련 간담회 오찬 제공(위원장),400000,cb3e837869765b2812fd3fba2713bc0c6530a4d7865ee07f2467d808594803dc,table1:R6,,,
-cb3e837869765b28-table1-R7,2026-03-12,ulsan-city,,"부부스시, 버드로스터스",기업투자국 직원 격려 간담회(기업투자국장),122000,cb3e837869765b2812fd3fba2713bc0c6530a4d7865ee07f2467d808594803dc,table1:R7,,,
+cb3e837869765b28-table1-R7#1,2026-03-12,ulsan-city,,부부스시,기업투자국 직원 격려 간담회(기업투자국장),,cb3e837869765b2812fd3fba2713bc0c6530a4d7865ee07f2467d808594803dc,table1:R7,,cb3e837869765b28-table1-R7,122000
+cb3e837869765b28-table1-R7#2,2026-03-12,ulsan-city,,버드로스터스,기업투자국 직원 격려 간담회(기업투자국장),,cb3e837869765b2812fd3fba2713bc0c6530a4d7865ee07f2467d808594803dc,table1:R7,,cb3e837869765b28-table1-R7,122000
 cb3e837869765b28-table1-R8,2026-03-12,ulsan-city,,팔도낙지촌,녹지정원국 울산기자단 간담회 개최 후 오찬 제공(녹지정원국장),232000,cb3e837869765b2812fd3fba2713bc0c6530a4d7865ee07f2467d808594803dc,table1:R8,,,
 cb3e837869765b28-table1-R9,2026-03-12,ulsan-city,,오발탄,공연산업 활선화를 위한 간담회 및 오찬 제공(문화관광체육국),477000,cb3e837869765b2812fd3fba2713bc0c6530a4d7865ee07f2467d808594803dc,table1:R9,,,
 cb3e837869765b28-table1-R10,2026-03-12,ulsan-city,,화덕에서나온고등어,수돗물평가위원회 정기회 개최 후 관계자 오찬제공(상수도사업본부장),437000,cb3e837869765b2812fd3fba2713bc0c6530a4d7865ee07f2467d808594803dc,table1:R10,,,
@@ -1109,17 +1185,21 @@ d62346fba4142b5c-table1-R3,2026-03-11,ulsan-city,,분당만강원 세종점,간�
 d62346fba4142b5c-table1-R4,2026-03-11,ulsan-city,,봉계숯불갈비,시민아카데미 협업 간담회(행정국장),280000,d62346fba4142b5cea4a22dc133af41c1d0c3d368efc7d433943f1710244c301,table1:R4,,,
 d62346fba4142b5c-table1-R5,2026-03-11,ulsan-city,,돈투플러스,과적단속 관련 업무협의 후 만찬제공(종합건설본부장),360000,d62346fba4142b5cea4a22dc133af41c1d0c3d368efc7d433943f1710244c301,table1:R5,,,
 d62346fba4142b5c-table1-R6,2026-03-11,ulsan-city,,촌당,착한가격업소 확대를 위한 업무협의(기업투자국장),476000,d62346fba4142b5cea4a22dc133af41c1d0c3d368efc7d433943f1710244c301,table1:R6,,,
-d62346fba4142b5c-table1-R7,2026-03-11,ulsan-city,,"모리, 수아빈",정부함동감사 관련 업무협의 간담회(감사관),170000,d62346fba4142b5cea4a22dc133af41c1d0c3d368efc7d433943f1710244c301,table1:R7,,,
+d62346fba4142b5c-table1-R7#1,2026-03-11,ulsan-city,,모리,정부함동감사 관련 업무협의 간담회(감사관),,d62346fba4142b5cea4a22dc133af41c1d0c3d368efc7d433943f1710244c301,table1:R7,,d62346fba4142b5c-table1-R7,170000
+d62346fba4142b5c-table1-R7#2,2026-03-11,ulsan-city,,수아빈,정부함동감사 관련 업무협의 간담회(감사관),,d62346fba4142b5cea4a22dc133af41c1d0c3d368efc7d433943f1710244c301,table1:R7,,d62346fba4142b5c-table1-R7,170000
 d62346fba4142b5c-table1-R8,2026-03-11,ulsan-city,,과일소풍,감사관련 업무협의 관계자 간식 구입(감사관),187000,d62346fba4142b5cea4a22dc133af41c1d0c3d368efc7d433943f1710244c301,table1:R8,,,
 d62346fba4142b5c-table1-R9,2026-03-11,ulsan-city,,인얼스커피,울산 온 미팅 in 동구 관련 직원 노고격려 다과 제공(교통국),74000,d62346fba4142b5cea4a22dc133af41c1d0c3d368efc7d433943f1710244c301,table1:R9,,,
 4f13b2e98d167682-table1-R2,2026-03-10,ulsan-city,,팔도낙지촌,중앙기자단 간담회 참석자 오찬 제공(경제산업실장),204000,4f13b2e98d1676825fc0a33b3b625d1e149dc1d0ff631a3235fbe0cb443f0824,table1:R2,,,
 4f13b2e98d167682-table1-R3,2026-03-10,ulsan-city,,봉계숯불갈비,자전거 펌프트랙 조성사업 관련 업무협의(건설주택국),479000,4f13b2e98d1676825fc0a33b3b625d1e149dc1d0ff631a3235fbe0cb443f0824,table1:R3,,,
-4f13b2e98d167682-table1-R4,2026-03-10,ulsan-city,,"한우마을, 시로스시",세계음식문화관 행정지원 강화 간담회(행정국장),167000,4f13b2e98d1676825fc0a33b3b625d1e149dc1d0ff631a3235fbe0cb443f0824,table1:R4,,,
+4f13b2e98d167682-table1-R4#1,2026-03-10,ulsan-city,,한우마을,세계음식문화관 행정지원 강화 간담회(행정국장),,4f13b2e98d1676825fc0a33b3b625d1e149dc1d0ff631a3235fbe0cb443f0824,table1:R4,,4f13b2e98d167682-table1-R4,167000
+4f13b2e98d167682-table1-R4#2,2026-03-10,ulsan-city,,시로스시,세계음식문화관 행정지원 강화 간담회(행정국장),,4f13b2e98d1676825fc0a33b3b625d1e149dc1d0ff631a3235fbe0cb443f0824,table1:R4,,4f13b2e98d167682-table1-R4,167000
 4f13b2e98d167682-table1-R5,2026-03-10,ulsan-city,,-,경조금 지급(행정국장),50000,4f13b2e98d1676825fc0a33b3b625d1e149dc1d0ff631a3235fbe0cb443f0824,table1:R5,,,
 4f13b2e98d167682-table1-R6,2026-03-10,ulsan-city,,돈투플러스,직원 격려 오찬 제공(종합건설본부장),240000,4f13b2e98d1676825fc0a33b3b625d1e149dc1d0ff631a3235fbe0cb443f0824,table1:R6,,,
 4f13b2e98d167682-table1-R7,2026-03-10,ulsan-city,,(주)언양불고기,노인일자리 관련 업무협의 후 오찬 제공(복지보훈여성국),286000,4f13b2e98d1676825fc0a33b3b625d1e149dc1d0ff631a3235fbe0cb443f0824,table1:R7,,,
 4f13b2e98d167682-table1-R8,2026-03-10,ulsan-city,,태화직화숯불구이전문,청년창업 지원방안 모색을 위한 업무협의(기업투자국장),206000,4f13b2e98d1676825fc0a33b3b625d1e149dc1d0ff631a3235fbe0cb443f0824,table1:R8,,,
-4f13b2e98d167682-table1-R9,2026-03-10,ulsan-city,,"포화영베트남쌀국수2호점, 한우마을 사회적협동조합, 울산중구시니어클럽 해울이카페",기업투자국 직원 격려 간담회(기업투자국장),175000,4f13b2e98d1676825fc0a33b3b625d1e149dc1d0ff631a3235fbe0cb443f0824,table1:R9,,,
+4f13b2e98d167682-table1-R9#1,2026-03-10,ulsan-city,,포화영베트남쌀국수2호점,기업투자국 직원 격려 간담회(기업투자국장),,4f13b2e98d1676825fc0a33b3b625d1e149dc1d0ff631a3235fbe0cb443f0824,table1:R9,,4f13b2e98d167682-table1-R9,175000
+4f13b2e98d167682-table1-R9#2,2026-03-10,ulsan-city,,한우마을 사회적협동조합,기업투자국 직원 격려 간담회(기업투자국장),,4f13b2e98d1676825fc0a33b3b625d1e149dc1d0ff631a3235fbe0cb443f0824,table1:R9,,4f13b2e98d167682-table1-R9,175000
+4f13b2e98d167682-table1-R9#3,2026-03-10,ulsan-city,,울산중구시니어클럽 해울이카페,기업투자국 직원 격려 간담회(기업투자국장),,4f13b2e98d1676825fc0a33b3b625d1e149dc1d0ff631a3235fbe0cb443f0824,table1:R9,,4f13b2e98d167682-table1-R9,175000
 4f13b2e98d167682-table1-R10,2026-03-10,ulsan-city,,-,환경국 직원 부의금 지급,50000,4f13b2e98d1676825fc0a33b3b625d1e149dc1d0ff631a3235fbe0cb443f0824,table1:R10,,,
 4f13b2e98d167682-table1-R11,2026-03-10,ulsan-city,,거성횟집,통합방위회의 관련 사전 업무 협의 후 만찬 제공(시민안전실장),258000,4f13b2e98d1676825fc0a33b3b625d1e149dc1d0ff631a3235fbe0cb443f0824,table1:R11,,,
 4f13b2e98d167682-table1-R12,2026-03-10,ulsan-city,,꽃사슴식당,재난안전산업 진흥시설 조성 관련 업무 협의 후 오찬 제공(시민안전실장),108000,4f13b2e98d1676825fc0a33b3b625d1e149dc1d0ff631a3235fbe0cb443f0824,table1:R12,,,
@@ -1178,7 +1258,8 @@ ab51e5edae8aa024-table1-R15,2026-03-03,ulsan-city,,양동곰장어,회야정수�
 29a9f7b0a4397264-table1-R3,2026-02-27,ulsan-city,,주식회사 라한호텔 울산,시니어클럽 노인일자리 관련 업무협의 차담회 개최(복지보훈여성국),172000,29a9f7b0a4397264eabbb5cb6f585ce2e273e746ee80b25a2cf7f517ed237aa4,table1:R3,,,
 29a9f7b0a4397264-table1-R4,2026-02-27,ulsan-city,,봉계돼지국밥,AI기반 민원상담 키오스크 운영 홍보 및 의견수렴 간담회(행정국장),452000,29a9f7b0a4397264eabbb5cb6f585ce2e273e746ee80b25a2cf7f517ed237aa4,table1:R4,,,
 29a9f7b0a4397264-table1-R5,2026-02-27,ulsan-city,,먹거리토배기식당,투자기업 현장지원 간담회 만찬 제공(기업투자국장),400000,29a9f7b0a4397264eabbb5cb6f585ce2e273e746ee80b25a2cf7f517ed237aa4,table1:R5,,,
-29a9f7b0a4397264-table1-R6,2026-02-27,ulsan-city,,"가마골, 스타벅스",감사 관련 업무협의 후 오찬 및 다과 제공(감사관),178000,29a9f7b0a4397264eabbb5cb6f585ce2e273e746ee80b25a2cf7f517ed237aa4,table1:R6,,,
+29a9f7b0a4397264-table1-R6#1,2026-02-27,ulsan-city,,가마골,감사 관련 업무협의 후 오찬 및 다과 제공(감사관),,29a9f7b0a4397264eabbb5cb6f585ce2e273e746ee80b25a2cf7f517ed237aa4,table1:R6,,29a9f7b0a4397264-table1-R6,178000
+29a9f7b0a4397264-table1-R6#2,2026-02-27,ulsan-city,,스타벅스,감사 관련 업무협의 후 오찬 및 다과 제공(감사관),,29a9f7b0a4397264eabbb5cb6f585ce2e273e746ee80b25a2cf7f517ed237aa4,table1:R6,,29a9f7b0a4397264-table1-R6,178000
 29a9f7b0a4397264-table1-R7,2026-02-27,ulsan-city,,강원숯불산곰장어,울산대공원 장미축제 업무협의 및 만찬 제공(녹지정원국장),144000,29a9f7b0a4397264eabbb5cb6f585ce2e273e746ee80b25a2cf7f517ed237aa4,table1:R7,,,
 29a9f7b0a4397264-table1-R8,2026-02-27,ulsan-city,,관내식당,소버린AI 관련 업무협의 후 만찬 제공(AI수도추진본부),190000,29a9f7b0a4397264eabbb5cb6f585ce2e273e746ee80b25a2cf7f517ed237aa4,table1:R8,,,
 29a9f7b0a4397264-table1-R9,2026-02-27,ulsan-city,,관내식당,탄소중립과학관 착공식 관련 업무협의 후 오찬 제공(AI수도추진본부),36000,29a9f7b0a4397264eabbb5cb6f585ce2e273e746ee80b25a2cf7f517ed237aa4,table1:R9,,,
@@ -1202,7 +1283,8 @@ ab51e5edae8aa024-table1-R15,2026-03-03,ulsan-city,,양동곰장어,회야정수�
 9c3c3c7696eb2d87-table1-R2,2026-02-25,ulsan-city,,송원칡냉면,자전거이용시설 정비 및 설치 관련 업무협의 후 관계자 오찬 제공(건설주택국),56000,9c3c3c7696eb2d87ee8f960a46338fd2bf186ff770bf7bc3a8656eac23380a19,table1:R2,,,
 9c3c3c7696eb2d87-table1-R3,2026-02-25,ulsan-city,,능이와백숙,어린이 복합 교육놀이 공간 조성 관련 업무협의 후 오찬 제공(복지보훈여성국),72000,9c3c3c7696eb2d87ee8f960a46338fd2bf186ff770bf7bc3a8656eac23380a19,table1:R3,,,
 9c3c3c7696eb2d87-table1-R4,2026-02-25,ulsan-city,,두왕골,행정동우회 사회공헌사업 활성화 간담회(행정국장),68000,9c3c3c7696eb2d87ee8f960a46338fd2bf186ff770bf7bc3a8656eac23380a19,table1:R4,,,
-9c3c3c7696eb2d87-table1-R5,2026-02-25,ulsan-city,,"옹기골, 드림카페",당면업무 추진 직원 노고격려를 위한 오찬 제공(감사관),92000,9c3c3c7696eb2d87ee8f960a46338fd2bf186ff770bf7bc3a8656eac23380a19,table1:R5,,,
+9c3c3c7696eb2d87-table1-R5#1,2026-02-25,ulsan-city,,옹기골,당면업무 추진 직원 노고격려를 위한 오찬 제공(감사관),,9c3c3c7696eb2d87ee8f960a46338fd2bf186ff770bf7bc3a8656eac23380a19,table1:R5,,9c3c3c7696eb2d87-table1-R5,92000
+9c3c3c7696eb2d87-table1-R5#2,2026-02-25,ulsan-city,,드림카페,당면업무 추진 직원 노고격려를 위한 오찬 제공(감사관),,9c3c3c7696eb2d87ee8f960a46338fd2bf186ff770bf7bc3a8656eac23380a19,table1:R5,,9c3c3c7696eb2d87-table1-R5,92000
 9c3c3c7696eb2d87-table1-R6,2026-02-25,ulsan-city,,세종시,울산혁신 콘퍼런스 추진 관련 간담회 개최 후 만찬 제공(AI수도추진본부),335000,9c3c3c7696eb2d87ee8f960a46338fd2bf186ff770bf7bc3a8656eac23380a19,table1:R6,,,
 9c3c3c7696eb2d87-table1-R7,2026-02-25,ulsan-city,,꿀단지,찾아가는 위원회 현장소통 간담회 개최 후 오찬 제공(위원장),200000,9c3c3c7696eb2d87ee8f960a46338fd2bf186ff770bf7bc3a8656eac23380a19,table1:R7,,,
 9c3c3c7696eb2d87-table1-R8,2026-02-25,ulsan-city,,범서회관식육식당,독수리학교 관계자 업무협의(환경국장),234000,9c3c3c7696eb2d87ee8f960a46338fd2bf186ff770bf7bc3a8656eac23380a19,table1:R8,,,
@@ -1257,7 +1339,8 @@ e01625c1b98065c7-table1-R12,2026-02-19,ulsan-city,,정책기획관,조의금 지
 87fcb3213c36af1a-table1-R5,2026-02-12,ulsan-city,,옥동술상,설 연휴 종합상황실 운영 체계 강화 간담회(행정국장),145000,87fcb3213c36af1ae6caf2dc4e88e7ddfd0001c8ed1878d489e59f5072535a42,table1:R5,,,
 87fcb3213c36af1a-table1-R6,2026-02-12,ulsan-city,,소근소근한우뒷고기,개발제한구역 주민지원사업 업무 관계자 만찬 제공(도시국장),196000,87fcb3213c36af1ae6caf2dc4e88e7ddfd0001c8ed1878d489e59f5072535a42,table1:R6,,,
 87fcb3213c36af1a-table1-R7,2026-02-12,ulsan-city,,재원복국,2026년 자치경찰위원회 연간홍보계획 추진일정 논의 후 오찬 제공(위원장),100000,87fcb3213c36af1ae6caf2dc4e88e7ddfd0001c8ed1878d489e59f5072535a42,table1:R7,,,
-87fcb3213c36af1a-table1-R8,2026-02-12,ulsan-city,,"토석정, 머머랩",당면 현안업무 홍보 및 협의를 위한 기자간담회 개최(환경국장),239000,87fcb3213c36af1ae6caf2dc4e88e7ddfd0001c8ed1878d489e59f5072535a42,table1:R8,,,
+87fcb3213c36af1a-table1-R8#1,2026-02-12,ulsan-city,,토석정,당면 현안업무 홍보 및 협의를 위한 기자간담회 개최(환경국장),,87fcb3213c36af1ae6caf2dc4e88e7ddfd0001c8ed1878d489e59f5072535a42,table1:R8,,87fcb3213c36af1a-table1-R8,239000
+87fcb3213c36af1a-table1-R8#2,2026-02-12,ulsan-city,,머머랩,당면 현안업무 홍보 및 협의를 위한 기자간담회 개최(환경국장),,87fcb3213c36af1ae6caf2dc4e88e7ddfd0001c8ed1878d489e59f5072535a42,table1:R8,,87fcb3213c36af1a-table1-R8,239000
 87fcb3213c36af1a-table1-R9,2026-02-12,ulsan-city,,붉은우럭,신규·노후 BIT 확대사업 관련 업무협의 및 만찬 제공(교통국),870000,87fcb3213c36af1ae6caf2dc4e88e7ddfd0001c8ed1878d489e59f5072535a42,table1:R9,,,
 87fcb3213c36af1a-table1-R10,2026-02-12,ulsan-city,,맛찬들왕소금구이,보조금감사 교육 관련 노고 격려 만찬 제공(감사관),180000,87fcb3213c36af1ae6caf2dc4e88e7ddfd0001c8ed1878d489e59f5072535a42,table1:R10,,,
 87fcb3213c36af1a-table1-R11,2026-02-12,ulsan-city,,개인(성명 비공개),소속직원 경조사비 지급,50000,87fcb3213c36af1ae6caf2dc4e88e7ddfd0001c8ed1878d489e59f5072535a42,table1:R11,,,
@@ -1266,7 +1349,8 @@ e01625c1b98065c7-table1-R12,2026-02-19,ulsan-city,,정책기획관,조의금 지
 81811b6f2f15d5ca-table1-R2,2026-02-11,ulsan-city,,봉계돼지국밥,지역보건의료체계 업무협의 후 만찬 제공(시민건강국),88000,81811b6f2f15d5ca79ba59ee216341cde2e9497e24414f6a76e1a1aa6cadc059,table1:R2,,,
 81811b6f2f15d5ca-table1-R3,2026-02-11,ulsan-city,,장어광장,시민건강국 울산기자단 간담회 개최 후 오찬 제공(시민건강국),120000,81811b6f2f15d5ca79ba59ee216341cde2e9497e24414f6a76e1a1aa6cadc059,table1:R3,,,
 81811b6f2f15d5ca-table1-R4,2026-02-11,ulsan-city,,새울산식당 북구점,노인복지시설 관계자 업무협의 후 오찬 제공(복지보훈여성국),128000,81811b6f2f15d5ca79ba59ee216341cde2e9497e24414f6a76e1a1aa6cadc059,table1:R4,,,
-81811b6f2f15d5ca-table1-R5,2026-02-11,ulsan-city,,"주전토종닭백숙, 이디야",2026년 소방본부 팀별(안전보건노사팀) 소통 간담회 실시(소방본부),141000,81811b6f2f15d5ca79ba59ee216341cde2e9497e24414f6a76e1a1aa6cadc059,table1:R5,,,
+81811b6f2f15d5ca-table1-R5#1,2026-02-11,ulsan-city,,주전토종닭백숙,2026년 소방본부 팀별(안전보건노사팀) 소통 간담회 실시(소방본부),,81811b6f2f15d5ca79ba59ee216341cde2e9497e24414f6a76e1a1aa6cadc059,table1:R5,,81811b6f2f15d5ca-table1-R5,141000
+81811b6f2f15d5ca-table1-R5#2,2026-02-11,ulsan-city,,이디야,2026년 소방본부 팀별(안전보건노사팀) 소통 간담회 실시(소방본부),,81811b6f2f15d5ca79ba59ee216341cde2e9497e24414f6a76e1a1aa6cadc059,table1:R5,,81811b6f2f15d5ca-table1-R5,141000
 81811b6f2f15d5ca-table1-R6,2026-02-11,ulsan-city,,완도참전복집,집회시위 대응·협력 강화 간담회(행정국장),245000,81811b6f2f15d5ca79ba59ee216341cde2e9497e24414f6a76e1a1aa6cadc059,table1:R6,,,
 81811b6f2f15d5ca-table1-R7,2026-02-11,ulsan-city,,이조장어,자치경찰위원회 직원 업무 추진 노고 격려 오찬 제공(위원장),480000,81811b6f2f15d5ca79ba59ee216341cde2e9497e24414f6a76e1a1aa6cadc059,table1:R7,,,
 81811b6f2f15d5ca-table1-R8,2026-02-11,ulsan-city,,은하수식당,설 연휴 안전관리 관련 업무 협의 후 오찬 제공(시민안전실장),180000,81811b6f2f15d5ca79ba59ee216341cde2e9497e24414f6a76e1a1aa6cadc059,table1:R8,,,
@@ -1302,7 +1386,8 @@ e01625c1b98065c7-table1-R12,2026-02-19,ulsan-city,,정책기획관,조의금 지
 245e61f1b1849b9e-table1-R6,2026-02-06,ulsan-city,,레비보,지역펀드 조성을 위한 업무협의(기업투자국장),77000,245e61f1b1849b9ee4ffe508a619a1048d691db5258a138c2fdd343f9a4f4fdb,table1:R6,,,
 245e61f1b1849b9e-table1-R7,2026-02-06,ulsan-city,,수미식당,민방위대 정기검열 관련 업무협의 후 만찬 제공(시민안전실장),260000,245e61f1b1849b9ee4ffe508a619a1048d691db5258a138c2fdd343f9a4f4fdb,table1:R7,,,
 245e61f1b1849b9e-table1-R8,2026-02-06,ulsan-city,,통영굴국밥,주요 현안업무 추진 직원 격려 오찬 제공(시민안전실장),52000,245e61f1b1849b9ee4ffe508a619a1048d691db5258a138c2fdd343f9a4f4fdb,table1:R8,,,
-245e61f1b1849b9e-table1-R9,2026-02-06,ulsan-city,,"동서수제비, 향전",경제자유구역 제도 운영 관련 회의 개최 및 관계자 오찬(울산경제자유구역청),80000,245e61f1b1849b9ee4ffe508a619a1048d691db5258a138c2fdd343f9a4f4fdb,table1:R9,,,
+245e61f1b1849b9e-table1-R9#1,2026-02-06,ulsan-city,,동서수제비,경제자유구역 제도 운영 관련 회의 개최 및 관계자 오찬(울산경제자유구역청),,245e61f1b1849b9ee4ffe508a619a1048d691db5258a138c2fdd343f9a4f4fdb,table1:R9,,245e61f1b1849b9e-table1-R9,80000
+245e61f1b1849b9e-table1-R9#2,2026-02-06,ulsan-city,,향전,경제자유구역 제도 운영 관련 회의 개최 및 관계자 오찬(울산경제자유구역청),,245e61f1b1849b9ee4ffe508a619a1048d691db5258a138c2fdd343f9a4f4fdb,table1:R9,,245e61f1b1849b9e-table1-R9,80000
 245e61f1b1849b9e-table1-R10,2026-02-06,ulsan-city,,이조장어,청년 일자리사업 관련 업무협의 후 관계자 오찬 제공(경제산업실장),105000,245e61f1b1849b9ee4ffe508a619a1048d691db5258a138c2fdd343f9a4f4fdb,table1:R10,,,
 245e61f1b1849b9e-table1-R11,2026-02-06,ulsan-city,,친절한정육씨,국가정원 운영 관련 관계자 업무협의 후 만찬 제공(녹지정원국장),200000,245e61f1b1849b9ee4ffe508a619a1048d691db5258a138c2fdd343f9a4f4fdb,table1:R11,,,
 245e61f1b1849b9e-table1-R12,2026-02-06,ulsan-city,,양산도,가로녹지시설 점검 및 관계자 오찬 제공(녹지정원국장),50000,245e61f1b1849b9ee4ffe508a619a1048d691db5258a138c2fdd343f9a4f4fdb,table1:R12,,,
@@ -1376,7 +1461,8 @@ c0abb1b4b0bbde95-table1-R18,2026-01-29,ulsan-city,,함양집,지역사업소 주
 c0abb1b4b0bbde95-table1-R19,2026-01-29,ulsan-city,,명가 씨푸드,민간위탁 사무 업무추진 간담회 개최(기획조정실장),300000,c0abb1b4b0bbde950a60bde2bee719584a16609eb37f42a0468a48207adff4d0,table1:R19,,,
 8bd1def03f49bf01-table1-R2,2026-01-28,ulsan-city,,㈜옛간,방문 내빈 제공 등을 위한 기념품 구입(참기름)(건설주택국),1400000,8bd1def03f49bf0167b4f561535f099abfd022ca7d761e5fa24f5259caef5de0,table1:R2,,,
 8bd1def03f49bf01-table1-R3,2026-01-28,ulsan-city,,토석정,보건업무 추진관련 간담회 개최 후 오찬 제공(시민건강국),300000,8bd1def03f49bf0167b4f561535f099abfd022ca7d761e5fa24f5259caef5de0,table1:R3,,,
-8bd1def03f49bf01-table1-R4,2026-01-28,ulsan-city,,한우클라쓰/주식회사 사오식탁,산재전문 공공병원 관련 업무협의 후 만찬 제공(시민건강국),213000,8bd1def03f49bf0167b4f561535f099abfd022ca7d761e5fa24f5259caef5de0,table1:R4,,,
+8bd1def03f49bf01-table1-R4#1,2026-01-28,ulsan-city,,한우클라쓰,산재전문 공공병원 관련 업무협의 후 만찬 제공(시민건강국),,8bd1def03f49bf0167b4f561535f099abfd022ca7d761e5fa24f5259caef5de0,table1:R4,,8bd1def03f49bf01-table1-R4,213000
+8bd1def03f49bf01-table1-R4#2,2026-01-28,ulsan-city,,주식회사 사오식탁,산재전문 공공병원 관련 업무협의 후 만찬 제공(시민건강국),,8bd1def03f49bf0167b4f561535f099abfd022ca7d761e5fa24f5259caef5de0,table1:R4,,8bd1def03f49bf01-table1-R4,213000
 8bd1def03f49bf01-table1-R5,2026-01-28,ulsan-city,,소근소근한우뒷고기,개발제한구역 현안사업 관련 업무협의 후 관계자 만찬 제공(도시국장),165000,8bd1def03f49bf0167b4f561535f099abfd022ca7d761e5fa24f5259caef5de0,table1:R5,,,
 8bd1def03f49bf01-table1-R6,2026-01-28,ulsan-city,,토석정,2026년 시의회 주요업무보고 관련 업무추진 직원 격려 오찬 제공(위원장),400000,8bd1def03f49bf0167b4f561535f099abfd022ca7d761e5fa24f5259caef5de0,table1:R6,,,
 8bd1def03f49bf01-table1-R7,2026-01-28,ulsan-city,,일식와사비,공익활동 지원사업 간담회(행정국장),170000,8bd1def03f49bf0167b4f561535f099abfd022ca7d761e5fa24f5259caef5de0,table1:R7,,,
@@ -1392,7 +1478,8 @@ c0abb1b4b0bbde95-table1-R19,2026-01-29,ulsan-city,,명가 씨푸드,민간위탁
 3a44006d13a8abc5-table1-R2,2026-01-27,ulsan-city,,"본죽,본비빔밥",보도제초 관련 업무협의(건설주택국),150000,3a44006d13a8abc50d106f84b42c74487fe929dd1c6a602d3bc6da2215081e2f,table1:R2,,,
 3a44006d13a8abc5-table1-R3,2026-01-27,ulsan-city,,너프(NUFF),공공병원 설립 관련 간담회 개최 후 오찬 제공(시민건강국),139000,3a44006d13a8abc50d106f84b42c74487fe929dd1c6a602d3bc6da2215081e2f,table1:R3,,,
 3a44006d13a8abc5-table1-R4,2026-01-27,ulsan-city,,정답해신삼계탕,2026년 주요업무 정책 토론회 관련 오찬(소방본부),300000,3a44006d13a8abc50d106f84b42c74487fe929dd1c6a602d3bc6da2215081e2f,table1:R4,,,
-3a44006d13a8abc5-table1-R5,2026-01-27,ulsan-city,,"진호관, 코벤트가든",기획·행정 연두 언론브리핑 연계 오찬 간담회(행정국장),477000,3a44006d13a8abc50d106f84b42c74487fe929dd1c6a602d3bc6da2215081e2f,table1:R5,,,
+3a44006d13a8abc5-table1-R5#1,2026-01-27,ulsan-city,,진호관,기획·행정 연두 언론브리핑 연계 오찬 간담회(행정국장),,3a44006d13a8abc50d106f84b42c74487fe929dd1c6a602d3bc6da2215081e2f,table1:R5,,3a44006d13a8abc5-table1-R5,477000
+3a44006d13a8abc5-table1-R5#2,2026-01-27,ulsan-city,,코벤트가든,기획·행정 연두 언론브리핑 연계 오찬 간담회(행정국장),,3a44006d13a8abc50d106f84b42c74487fe929dd1c6a602d3bc6da2215081e2f,table1:R5,,3a44006d13a8abc5-table1-R5,477000
 3a44006d13a8abc5-table1-R6,2026-01-27,ulsan-city,,장어광장,지역 고용 현안 관련 업무협의 후 관계자 오찬 제공(경제산업실장),120000,3a44006d13a8abc50d106f84b42c74487fe929dd1c6a602d3bc6da2215081e2f,table1:R6,,,
 3a44006d13a8abc5-table1-R7,2026-01-27,ulsan-city,,경복궁,민방위 교육훈련 관련 업무 협의 후 오찬 제공(시민안전실장),76000,3a44006d13a8abc50d106f84b42c74487fe929dd1c6a602d3bc6da2215081e2f,table1:R7,,,
 3a44006d13a8abc5-table1-R8,2026-01-27,ulsan-city,,토석정,기업투자국 직원 격려 간담회(기업투자국장),120000,3a44006d13a8abc50d106f84b42c74487fe929dd1c6a602d3bc6da2215081e2f,table1:R8,,,
@@ -1429,7 +1516,8 @@ f1be6ae9f705783c-table1-R2,2026-01-25,ulsan-city,,개인(성명 비공개),직�
 162f70de54ab926c-table1-R12,2026-01-22,ulsan-city,,댓잎장어,지역사업소 주요사업 추진현황 청취 후 직원 격려 오찬 제공(상수도사업본부장),216000,162f70de54ab926c507e9a41941f627a2c882d8c5d8732a436c90ae92af432fa,table1:R12,,,
 162f70de54ab926c-table1-R13,2026-01-22,ulsan-city,,언양불고기,기회발전특구 지방세 감면대상 확대 추진 간담회 개최(기획조정실장),242000,162f70de54ab926c507e9a41941f627a2c882d8c5d8732a436c90ae92af432fa,table1:R13,,,
 548d5719385bddfb-table1-R2,2026-01-21,ulsan-city,,일품참숯암소갈비살,도로종합계획 수립 관련 업무협의 후 만찬 제공(건설주택국),376000,548d5719385bddfb4319b2f05f730f585245a3fe51f5d59706ff2ba7d41a1e9d,table1:R2,,,
-548d5719385bddfb-table1-R3,2026-01-21,ulsan-city,,"언양불고기, 하이오커피",해울이콜센터 기능 강화 간담회(행정국장),318000,548d5719385bddfb4319b2f05f730f585245a3fe51f5d59706ff2ba7d41a1e9d,table1:R3,,,
+548d5719385bddfb-table1-R3#1,2026-01-21,ulsan-city,,언양불고기,해울이콜센터 기능 강화 간담회(행정국장),,548d5719385bddfb4319b2f05f730f585245a3fe51f5d59706ff2ba7d41a1e9d,table1:R3,,548d5719385bddfb-table1-R3,318000
+548d5719385bddfb-table1-R3#2,2026-01-21,ulsan-city,,하이오커피,해울이콜센터 기능 강화 간담회(행정국장),,548d5719385bddfb4319b2f05f730f585245a3fe51f5d59706ff2ba7d41a1e9d,table1:R3,,548d5719385bddfb-table1-R3,318000
 548d5719385bddfb-table1-R4,2026-01-21,ulsan-city,,과일소풍,청사방호 현장직원 격려물품 구입(행정국장),200000,548d5719385bddfb4319b2f05f730f585245a3fe51f5d59706ff2ba7d41a1e9d,table1:R4,,,
 548d5719385bddfb-table1-R5,2026-01-21,ulsan-city,,강남횟집,경제자유구역청 현안업무 추진 관계자 만찬 간담회(울산경제자유구역청 사업총괄본부장),417000,548d5719385bddfb4319b2f05f730f585245a3fe51f5d59706ff2ba7d41a1e9d,table1:R5,,,
 548d5719385bddfb-table1-R6,2026-01-21,ulsan-city,,산정식당,소상공인 상생발전 방안 논의를 위한 업무협의(기업투자국장),300000,548d5719385bddfb4319b2f05f730f585245a3fe51f5d59706ff2ba7d41a1e9d,table1:R6,,,
@@ -1540,7 +1628,8 @@ fc23e3c86f21c654-table1-R13,2026-01-09,ulsan-city,,스시은,2026년 소방본�
 6a54f4c197e0982c-table1-R3,2026-01-08,ulsan-city,,-,경조금 지급(도시국장),50000,6a54f4c197e0982cf855357bd16bb01eda02fa403db6c33ef94d8a5f9c94b450,table1:R3,,,
 6a54f4c197e0982c-table1-R4,2026-01-08,ulsan-city,,대가가든,인사발령에 따른 직원 격려 오찬 제공(위원장),136000,6a54f4c197e0982cf855357bd16bb01eda02fa403db6c33ef94d8a5f9c94b450,table1:R4,,,
 6a54f4c197e0982c-table1-R5,2026-01-08,ulsan-city,,부부스시,경제산업실 직원 노고격려 오찬 제공(경제산업실장),150000,6a54f4c197e0982cf855357bd16bb01eda02fa403db6c33ef94d8a5f9c94b450,table1:R5,,,
-6a54f4c197e0982c-table1-R6,2026-01-08,ulsan-city,,"부부스시, 아이갓에브리싱",중소기업 육성시책 계획 수립을 위한 업무협의(기업투자국장),303000,6a54f4c197e0982cf855357bd16bb01eda02fa403db6c33ef94d8a5f9c94b450,table1:R6,,,
+6a54f4c197e0982c-table1-R6#1,2026-01-08,ulsan-city,,부부스시,중소기업 육성시책 계획 수립을 위한 업무협의(기업투자국장),,6a54f4c197e0982cf855357bd16bb01eda02fa403db6c33ef94d8a5f9c94b450,table1:R6,,6a54f4c197e0982c-table1-R6,303000
+6a54f4c197e0982c-table1-R6#2,2026-01-08,ulsan-city,,아이갓에브리싱,중소기업 육성시책 계획 수립을 위한 업무협의(기업투자국장),,6a54f4c197e0982cf855357bd16bb01eda02fa403db6c33ef94d8a5f9c94b450,table1:R6,,6a54f4c197e0982c-table1-R6,303000
 6a54f4c197e0982c-table1-R7,2026-01-08,ulsan-city,,-,환경국 직원 축의금,50000,6a54f4c197e0982cf855357bd16bb01eda02fa403db6c33ef94d8a5f9c94b450,table1:R7,,,
 6a54f4c197e0982c-table1-R8,2026-01-08,ulsan-city,,세종시,업무 회의를 위한 다과 구입(AI수도추진본부),22000,6a54f4c197e0982cf855357bd16bb01eda02fa403db6c33ef94d8a5f9c94b450,table1:R8,,,
 6a54f4c197e0982c-table1-R9,2026-01-08,ulsan-city,,카페숙이,국장실 내방객 응대를 위한 다과 제공(교통국),26000,6a54f4c197e0982cf855357bd16bb01eda02fa403db6c33ef94d8a5f9c94b450,table1:R9,,,
@@ -1611,7 +1700,8 @@ df7600631c74bc52-table1-R18,2026-06-29,ulsan-city,,경복궁,화랑훈련 관련
 2bb520228c34ae49-table1-R9,2026-06-26,ulsan-city,,전통국밥,긴급구조표준 노후장비 교체 및 고도화 사업관련 관계자 간담회 비용지급(소방본부 119종합상황실),210000,2bb520228c34ae49c7861fe36b88c774c714052a765d7e0cacf32140731de47b,table1:R9,,,
 2bb520228c34ae49-table1-R10,2026-06-26,ulsan-city,,봉계숯불갈비,일자리사업 관련 업무 협의 후 관계자 오찬 제공(경제정책관),471000,2bb520228c34ae49c7861fe36b88c774c714052a765d7e0cacf32140731de47b,table1:R10,,,
 2bb520228c34ae49-table1-R11,2026-06-26,ulsan-city,,상안가든,공영주차장 관련 업무협의 후 오찬 제공(교통기획과),63000,2bb520228c34ae49c7861fe36b88c774c714052a765d7e0cacf32140731de47b,table1:R11,,,
-2bb520228c34ae49-table1-R12,2026-06-26,ulsan-city,,"파자호식당, 버드로스터스",투자기업 현장지원 간담회 오찬(기업현장지원과),69000,2bb520228c34ae49c7861fe36b88c774c714052a765d7e0cacf32140731de47b,table1:R12,,,
+2bb520228c34ae49-table1-R12#1,2026-06-26,ulsan-city,,파자호식당,투자기업 현장지원 간담회 오찬(기업현장지원과),,2bb520228c34ae49c7861fe36b88c774c714052a765d7e0cacf32140731de47b,table1:R12,,2bb520228c34ae49-table1-R12,69000
+2bb520228c34ae49-table1-R12#2,2026-06-26,ulsan-city,,버드로스터스,투자기업 현장지원 간담회 오찬(기업현장지원과),,2bb520228c34ae49c7861fe36b88c774c714052a765d7e0cacf32140731de47b,table1:R12,,2bb520228c34ae49-table1-R12,69000
 2bb520228c34ae49-table1-R13,2026-06-26,ulsan-city,,미승소바,고충민원 업무 협의에 따른 오찬 제공(권익인권담당관),67000,2bb520228c34ae49c7861fe36b88c774c714052a765d7e0cacf32140731de47b,table1:R13,,,
 2bb520228c34ae49-table1-R14,2026-06-26,ulsan-city,,세종 오이시,울산박물관 BTL사업 관련 간담회 개최 및 오찬 제공(울산박물관),130000,2bb520228c34ae49c7861fe36b88c774c714052a765d7e0cacf32140731de47b,table1:R14,,,
 2bb520228c34ae49-table1-R15,2026-06-26,ulsan-city,,소근소근한우뒷고기,인공지능 기업 육성 관련 업무협의 후 만찬 제공(AI산업전략과),150000,2bb520228c34ae49c7861fe36b88c774c714052a765d7e0cacf32140731de47b,table1:R15,,,
@@ -1639,7 +1729,8 @@ df7600631c74bc52-table1-R18,2026-06-29,ulsan-city,,경복궁,화랑훈련 관련
 1b19c778536b6a67-table1-R6,2026-06-24,ulsan-city,,점심엔 한우국밥,KTX 울산역 복합특화지구 투자유치 관계자 오찬 간담회(울산경제자유구역청 투자유치부장),110000,1b19c778536b6a67c2b3897726559142d4365eb7ee7efb90c8cef14847c084c3,table1:R6,,,
 1b19c778536b6a67-table1-R7,2026-06-24,ulsan-city,,바로쌈밥,지방정부 산업 특성 반영 중대재해 예방 사업 간담회(서울본부),223000,1b19c778536b6a67c2b3897726559142d4365eb7ee7efb90c8cef14847c084c3,table1:R7,,,
 1b19c778536b6a67-table1-R8,2026-06-24,ulsan-city,,관내식당,명소발굴 100X100 프로젝트 관련 대응 회의 후 오찬제공(관광과),126000,1b19c778536b6a67c2b3897726559142d4365eb7ee7efb90c8cef14847c084c3,table1:R8,,,
-1b19c778536b6a67-table1-R9,2026-06-24,ulsan-city,,"전통촌두부식당, 상개커피",투자기업 현장지원 간담회 오찬(기업현장지원과),91000,1b19c778536b6a67c2b3897726559142d4365eb7ee7efb90c8cef14847c084c3,table1:R9,,,
+1b19c778536b6a67-table1-R9#1,2026-06-24,ulsan-city,,전통촌두부식당,투자기업 현장지원 간담회 오찬(기업현장지원과),,1b19c778536b6a67c2b3897726559142d4365eb7ee7efb90c8cef14847c084c3,table1:R9,,1b19c778536b6a67-table1-R9,91000
+1b19c778536b6a67-table1-R9#2,2026-06-24,ulsan-city,,상개커피,투자기업 현장지원 간담회 오찬(기업현장지원과),,1b19c778536b6a67c2b3897726559142d4365eb7ee7efb90c8cef14847c084c3,table1:R9,,1b19c778536b6a67-table1-R9,91000
 1b19c778536b6a67-table1-R10,2026-06-24,ulsan-city,,바로쌈밥,지방정부 산업 특성 반영 중대재해 예방 사업 간담회 개최(세종사무소),223000,1b19c778536b6a67c2b3897726559142d4365eb7ee7efb90c8cef14847c084c3,table1:R10,,,
 1b19c778536b6a67-table1-R11,2026-06-24,ulsan-city,,팔등로영덕대게,보호수 및 노거수 관리 관련 업무협의 및 오찬 제공(녹지공원과),250000,1b19c778536b6a67c2b3897726559142d4365eb7ee7efb90c8cef14847c084c3,table1:R11,,,
 1b19c778536b6a67-table1-R12,2026-06-24,ulsan-city,,울산웰빙생오리,하천 계곡 불법점용 관리실태 안전감찰 관련 업무 협의 후 오찬 제공(안전정책관),241000,1b19c778536b6a67c2b3897726559142d4365eb7ee7efb90c8cef14847c084c3,table1:R12,,,
@@ -1690,11 +1781,13 @@ f534bc8c1e3cdd39-table1-R12,2026-06-22,ulsan-city,,장어광장,도시재생사�
 b7c035221d5360f5-table1-R2,2026-06-17,ulsan-city,,개인(성명 비공개),남울주 예방안전과 소방교 정용호 결혼 축의금,50000,b7c035221d5360f574f2e85aaddb6a4a6ab6764144a05f80252ca00af8d80e5e,table1:R2,,,
 b7c035221d5360f5-table1-R3,2026-06-17,ulsan-city,,관내식당,퇴직소방공무원 노고 격려(중부소방서장),140000,b7c035221d5360f574f2e85aaddb6a4a6ab6764144a05f80252ca00af8d80e5e,table1:R3,,,
 b7c035221d5360f5-table1-R4,2026-06-17,ulsan-city,,상수도사업본부 구내식당 외 1,울산광역시장직 인수위원회 업무 추진 간담회 개최(인수위원회),395000,b7c035221d5360f574f2e85aaddb6a4a6ab6764144a05f80252ca00af8d80e5e,table1:R4,,,
-b7c035221d5360f5-table1-R5,2026-06-17,ulsan-city,,"정동진아구찜, 카페로다",반구천 암각화 홍보영상 제작 관련 업무협의 및 오찬 제공(문화유산과),80000,b7c035221d5360f574f2e85aaddb6a4a6ab6764144a05f80252ca00af8d80e5e,table1:R5,,,
+b7c035221d5360f5-table1-R5#1,2026-06-17,ulsan-city,,정동진아구찜,반구천 암각화 홍보영상 제작 관련 업무협의 및 오찬 제공(문화유산과),,b7c035221d5360f574f2e85aaddb6a4a6ab6764144a05f80252ca00af8d80e5e,table1:R5,,b7c035221d5360f5-table1-R5,80000
+b7c035221d5360f5-table1-R5#2,2026-06-17,ulsan-city,,카페로다,반구천 암각화 홍보영상 제작 관련 업무협의 및 오찬 제공(문화유산과),,b7c035221d5360f574f2e85aaddb6a4a6ab6764144a05f80252ca00af8d80e5e,table1:R5,,b7c035221d5360f5-table1-R5,80000
 b7c035221d5360f5-table1-R6,2026-06-17,ulsan-city,,화담,내년도 국가예산 확보를 위한 오찬 간담회(서울본부),116000,b7c035221d5360f574f2e85aaddb6a4a6ab6764144a05f80252ca00af8d80e5e,table1:R6,,,
 b7c035221d5360f5-table1-R7,2026-06-17,ulsan-city,,강원칡냉면,간부공무원 업무보고회 및 오찬(북부소방서),144000,b7c035221d5360f574f2e85aaddb6a4a6ab6764144a05f80252ca00af8d80e5e,table1:R7,,,
 b7c035221d5360f5-table1-R8,2026-06-17,ulsan-city,,철길과일,폭염대비 소속 근무자 격려품 구입(북부소방서),550000,b7c035221d5360f574f2e85aaddb6a4a6ab6764144a05f80252ca00af8d80e5e,table1:R8,,,
-b7c035221d5360f5-table1-R9,2026-06-17,ulsan-city,,"파자호식당, 콜프로스터스",투자기업 현장지원 간담회 오찬(기업현장지원과),145000,b7c035221d5360f574f2e85aaddb6a4a6ab6764144a05f80252ca00af8d80e5e,table1:R9,,,
+b7c035221d5360f5-table1-R9#1,2026-06-17,ulsan-city,,파자호식당,투자기업 현장지원 간담회 오찬(기업현장지원과),,b7c035221d5360f574f2e85aaddb6a4a6ab6764144a05f80252ca00af8d80e5e,table1:R9,,b7c035221d5360f5-table1-R9,145000
+b7c035221d5360f5-table1-R9#2,2026-06-17,ulsan-city,,콜프로스터스,투자기업 현장지원 간담회 오찬(기업현장지원과),,b7c035221d5360f574f2e85aaddb6a4a6ab6764144a05f80252ca00af8d80e5e,table1:R9,,b7c035221d5360f5-table1-R9,145000
 b7c035221d5360f5-table1-R10,2026-06-17,ulsan-city,,대공원축산물백화점,소나무 재선충병 방제 관련 업무협의 및 만찬 제공(녹지공원과),300000,b7c035221d5360f574f2e85aaddb6a4a6ab6764144a05f80252ca00af8d80e5e,table1:R10,,,
 b7c035221d5360f5-table1-R11,2026-06-17,ulsan-city,,지관서가,울산대공원 장미축제 사후평가 회의 참석자 다과 제공(녹지공원과),58000,b7c035221d5360f574f2e85aaddb6a4a6ab6764144a05f80252ca00af8d80e5e,table1:R11,,,
 b7c035221d5360f5-table1-R12,2026-06-17,ulsan-city,,장어광장,울산대공원 참여정원 조성사업 관련 관계자 업무협의 및 오찬 제공(녹지공원과),97000,b7c035221d5360f574f2e85aaddb6a4a6ab6764144a05f80252ca00af8d80e5e,table1:R12,,,
@@ -1704,7 +1797,8 @@ fdeb444e5727c2c3-table1-R2,2026-06-15,ulsan-city,,선장과해녀,특사경 간�
 fdeb444e5727c2c3-table1-R3,2026-06-15,ulsan-city,,수미가찌개외 1명,생활공〮업용수 배분〮조정 실무협의체 회의 참석(상수도사업본부 급수부),213000,fdeb444e5727c2c376a0848f9af78634e142973ae4a1d84e5eba214913fc159f,table1:R3,,,
 fdeb444e5727c2c3-table1-R4,2026-06-15,ulsan-city,,포석정,우수농업인 단체(한국새농민회) 간담회 개최에 따른 오찬 제공(농축산과),420000,fdeb444e5727c2c376a0848f9af78634e142973ae4a1d84e5eba214913fc159f,table1:R4,,,
 fdeb444e5727c2c3-table1-R5,2026-06-15,ulsan-city,,외식명가 삼산정,퇴직공무원 사회적응 지원방안 간담회(총무과장),475000,fdeb444e5727c2c376a0848f9af78634e142973ae4a1d84e5eba214913fc159f,table1:R5,,,
-fdeb444e5727c2c3-table1-R6,2026-06-15,ulsan-city,,"이조장어, 85도c",개발제한구역 주민지원사업 업무 관계자 오찬 제공(도시계획과),473000,fdeb444e5727c2c376a0848f9af78634e142973ae4a1d84e5eba214913fc159f,table1:R6,,,
+fdeb444e5727c2c3-table1-R6#1,2026-06-15,ulsan-city,,이조장어,개발제한구역 주민지원사업 업무 관계자 오찬 제공(도시계획과),,fdeb444e5727c2c376a0848f9af78634e142973ae4a1d84e5eba214913fc159f,table1:R6,,fdeb444e5727c2c3-table1-R6,473000
+fdeb444e5727c2c3-table1-R6#2,2026-06-15,ulsan-city,,85도c,개발제한구역 주민지원사업 업무 관계자 오찬 제공(도시계획과),,fdeb444e5727c2c376a0848f9af78634e142973ae4a1d84e5eba214913fc159f,table1:R6,,fdeb444e5727c2c3-table1-R6,473000
 fdeb444e5727c2c3-table1-R7,2026-06-15,ulsan-city,,누마루,인권경영업무 추진 유관기관 간담회 개최에 따른 만찬 제공(권익인권담당관),210000,fdeb444e5727c2c376a0848f9af78634e142973ae4a1d84e5eba214913fc159f,table1:R7,,,
 fdeb444e5727c2c3-table1-R8,2026-06-15,ulsan-city,,"시골다슬기, 카페숙이",현안업무 홍보를 위한 울산기자단 오찬 간담회 개최(환경정책과),305000,fdeb444e5727c2c376a0848f9af78634e142973ae4a1d84e5eba214913fc159f,table1:R8,,,
 fdeb444e5727c2c3-table1-R9,2026-06-15,ulsan-city,,KICHINTOKICHIN,우즈베키스탄 페르가나주 의료봉사단 해단식 후 만찬 제공(투자유치과),300000,fdeb444e5727c2c376a0848f9af78634e142973ae4a1d84e5eba214913fc159f,table1:R9,,,
@@ -1721,7 +1815,8 @@ fdeb444e5727c2c3-table1-R11,2026-06-15,ulsan-city,,진호관,교육기획 관련
 21f53504b04fe70f-table1-R10,2026-06-10,ulsan-city,,천서방숯불,대왕암공원 운영 관계자 업무협의 및 오찬 제공(녹지공원과),172000,21f53504b04fe70f9c036a54568e4517090f6801b8db52c973914bd1d8850c8e,table1:R10,,,
 21f53504b04fe70f-table1-R11,2026-06-10,ulsan-city,,"포대인, 버드로스터스",투자기업 현장지원 간담회 오찬(기업현장지원과),98000,21f53504b04fe70f9c036a54568e4517090f6801b8db52c973914bd1d8850c8e,table1:R11,,,
 21f53504b04fe70f-table1-R12,2026-06-10,ulsan-city,,트레비브로이,제48차 세계유산위원회 연계 포럼 개최 관련 간담회 개최 및 오찬 제공 (문화유산과),351000,21f53504b04fe70f9c036a54568e4517090f6801b8db52c973914bd1d8850c8e,table1:R12,,,
-21f53504b04fe70f-table1-R13,2026-06-10,ulsan-city,,"댓잎장어, 카페마당",간담회 후 오찬제공,260000,21f53504b04fe70f9c036a54568e4517090f6801b8db52c973914bd1d8850c8e,table1:R13,,,
+21f53504b04fe70f-table1-R13#1,2026-06-10,ulsan-city,,댓잎장어,간담회 후 오찬제공,,21f53504b04fe70f9c036a54568e4517090f6801b8db52c973914bd1d8850c8e,table1:R13,,21f53504b04fe70f-table1-R13,260000
+21f53504b04fe70f-table1-R13#2,2026-06-10,ulsan-city,,카페마당,간담회 후 오찬제공,,21f53504b04fe70f9c036a54568e4517090f6801b8db52c973914bd1d8850c8e,table1:R13,,21f53504b04fe70f-table1-R13,260000
 21f53504b04fe70f-table1-R14,2026-06-10,ulsan-city,,부산식당,재난대응과 부서운영업무추진비 집행(서울주소방서),300000,21f53504b04fe70f9c036a54568e4517090f6801b8db52c973914bd1d8850c8e,table1:R14,,,
 a6cf914a3b2d8db6-table1-R2,2026-06-08,ulsan-city,,엄마밥상,업무협의 후 만찬제공(문화예술회관 예술사업과),270000,a6cf914a3b2d8db69c82ce3f125e1ce43001bc264c9198de904be94441f13281,table1:R2,,,
 a6cf914a3b2d8db6-table1-R3,2026-06-08,ulsan-city,,한마음 전복돌솥밥,어린이대상 안전교육 활성화 간담회 개최에 따른 업무추진비 집행(안전체험관),136000,a6cf914a3b2d8db69c82ce3f125e1ce43001bc264c9198de904be94441f13281,table1:R3,,,
@@ -1732,7 +1827,8 @@ a6cf914a3b2d8db6-table1-R7,2026-06-08,ulsan-city,,팔도낙지,여름철 안전�
 a6cf914a3b2d8db6-table1-R8,2026-06-08,ulsan-city,,울산문수야구장,직원 MT추진 관련 간식 제공 (법무통계담당관),180000,a6cf914a3b2d8db69c82ce3f125e1ce43001bc264c9198de904be94441f13281,table1:R8,,,
 a6cf914a3b2d8db6-table1-R9,2026-06-08,ulsan-city,,대복축산,지역건설산업 활성화 추진 관계자 만찬 제공(주택허가과),165000,a6cf914a3b2d8db69c82ce3f125e1ce43001bc264c9198de904be94441f13281,table1:R9,,,
 a6cf914a3b2d8db6-table1-R10,2026-06-08,ulsan-city,,함루(서울역),2027년 국가예산 확보관련 업무협의,117000,a6cf914a3b2d8db69c82ce3f125e1ce43001bc264c9198de904be94441f13281,table1:R10,,,
-a6cf914a3b2d8db6-table1-R11,2026-06-08,ulsan-city,,"퐁당퐁당, 투썸플레이스",동매산 습지 관련 업무협의 및 오찬제공(문화유산과),64000,a6cf914a3b2d8db69c82ce3f125e1ce43001bc264c9198de904be94441f13281,table1:R11,,,
+a6cf914a3b2d8db6-table1-R11#1,2026-06-08,ulsan-city,,퐁당퐁당,동매산 습지 관련 업무협의 및 오찬제공(문화유산과),,a6cf914a3b2d8db69c82ce3f125e1ce43001bc264c9198de904be94441f13281,table1:R11,,a6cf914a3b2d8db6-table1-R11,64000
+a6cf914a3b2d8db6-table1-R11#2,2026-06-08,ulsan-city,,투썸플레이스,동매산 습지 관련 업무협의 및 오찬제공(문화유산과),,a6cf914a3b2d8db69c82ce3f125e1ce43001bc264c9198de904be94441f13281,table1:R11,,a6cf914a3b2d8db6-table1-R11,64000
 a6cf914a3b2d8db6-table1-R12,2026-06-08,ulsan-city,,강변식당,와지공단 소방시설안전관리자 간담회 경비 지급(남울주소방서),150000,a6cf914a3b2d8db69c82ce3f125e1ce43001bc264c9198de904be94441f13281,table1:R12,,,
 a6cf914a3b2d8db6-table1-R13,2026-06-08,ulsan-city,,팔등로영덕대게,요금시스템 관리 업무현황 점검 후 관계자 격려 오찬 제공(상수도사업본부 경영부),180000,a6cf914a3b2d8db69c82ce3f125e1ce43001bc264c9198de904be94441f13281,table1:R13,,,
 a6cf914a3b2d8db6-table1-R14,2026-06-08,ulsan-city,,눈꽃한우,기관운영업무추진비 지출(동부소방서 화암센터),270000,a6cf914a3b2d8db69c82ce3f125e1ce43001bc264c9198de904be94441f13281,table1:R14,,,
@@ -1750,15 +1846,18 @@ ce81f0376e874195-table1-R3,2026-06-06,ulsan-city,,개인(성명 비공개),직�
 0b7bad1c05f2fe18-table1-R11,2026-06-05,ulsan-city,,섬진강추어탕,가로녹지 정비 관련 관계자 업무협의 및 오찬 제공(녹지공원과),58000,0b7bad1c05f2fe18bf874d8d53238c6c641817dba18e453888291901c3297d3a,table1:R11,,,
 0b7bad1c05f2fe18-table1-R12,2026-06-05,ulsan-city,,울산페이,2026년 2분기 생일자 울산페이 구입(울산시립미술관),120000,0b7bad1c05f2fe18bf874d8d53238c6c641817dba18e453888291901c3297d3a,table1:R12,,,
 0b7bad1c05f2fe18-table1-R13,2026-06-05,ulsan-city,,관내식당,직원 노고 격려를 위한 오찬 제공(관광과),180000,0b7bad1c05f2fe18bf874d8d53238c6c641817dba18e453888291901c3297d3a,table1:R13,,,
-0b7bad1c05f2fe18-table1-R14,2026-06-05,ulsan-city,,"함양집, 소통",문화유산 보존 관련 업무협의 및 오찬 제공(문화유산과),270000,0b7bad1c05f2fe18bf874d8d53238c6c641817dba18e453888291901c3297d3a,table1:R14,,,
+0b7bad1c05f2fe18-table1-R14#1,2026-06-05,ulsan-city,,함양집,문화유산 보존 관련 업무협의 및 오찬 제공(문화유산과),,0b7bad1c05f2fe18bf874d8d53238c6c641817dba18e453888291901c3297d3a,table1:R14,,0b7bad1c05f2fe18-table1-R14,270000
+0b7bad1c05f2fe18-table1-R14#2,2026-06-05,ulsan-city,,소통,문화유산 보존 관련 업무협의 및 오찬 제공(문화유산과),,0b7bad1c05f2fe18bf874d8d53238c6c641817dba18e453888291901c3297d3a,table1:R14,,0b7bad1c05f2fe18-table1-R14,270000
 0b7bad1c05f2fe18-table1-R15,2026-06-05,ulsan-city,,용궁횟집,중계펌프장 시설물 점검에 따른 관계자 오찬 제공(온산수질개선사업소),180000,0b7bad1c05f2fe18bf874d8d53238c6c641817dba18e453888291901c3297d3a,table1:R15,,,
 0b7bad1c05f2fe18-table1-R16,2026-06-05,ulsan-city,,팔등로영덕대게,교육기획 관련 관계자 업무협의 후 오찬 제공(인재교육과),100000,0b7bad1c05f2fe18bf874d8d53238c6c641817dba18e453888291901c3297d3a,table1:R16,,,
 d798adfb58174c21-table1-R2,2026-06-04,ulsan-city,,봉계숯불갈비,업무협의 후 만찬제공(문화예술회관 예술사업과),100000,d798adfb58174c21ac5250c9b4c2479ffd2a5f8cd60248106b3ca35549ac49a5,table1:R2,,,
 d798adfb58174c21-table1-R3,2026-06-04,ulsan-city,,풍천민물장어상리연,지역노동현안 관련 간담회 후 오찬 제공(노동특보),80000,d798adfb58174c21ac5250c9b4c2479ffd2a5f8cd60248106b3ca35549ac49a5,table1:R3,,,
 d798adfb58174c21-table1-R4,2026-06-04,ulsan-city,,봉계숯불갈비,국비 확보 관련 업무추진 간담회 개최(정책기획관),471000,d798adfb58174c21ac5250c9b4c2479ffd2a5f8cd60248106b3ca35549ac49a5,table1:R4,,,
-d798adfb58174c21-table1-R5,2026-06-04,ulsan-city,,"진미불고기(주), 신불산에봄",제11차 GHS 민간합동위원회 개최 관련 업무협의 경비 지급(소방본부 예방안전과),133000,d798adfb58174c21ac5250c9b4c2479ffd2a5f8cd60248106b3ca35549ac49a5,table1:R5,,,
+d798adfb58174c21-table1-R5#1,2026-06-04,ulsan-city,,진미불고기(주),제11차 GHS 민간합동위원회 개최 관련 업무협의 경비 지급(소방본부 예방안전과),,d798adfb58174c21ac5250c9b4c2479ffd2a5f8cd60248106b3ca35549ac49a5,table1:R5,,d798adfb58174c21-table1-R5,133000
+d798adfb58174c21-table1-R5#2,2026-06-04,ulsan-city,,신불산에봄,제11차 GHS 민간합동위원회 개최 관련 업무협의 경비 지급(소방본부 예방안전과),,d798adfb58174c21ac5250c9b4c2479ffd2a5f8cd60248106b3ca35549ac49a5,table1:R5,,d798adfb58174c21-table1-R5,133000
 d798adfb58174c21-table1-R6,2026-06-04,ulsan-city,,마트,국제농업전문지도연구회 과제교육 다과 구입,115000,d798adfb58174c21ac5250c9b4c2479ffd2a5f8cd60248106b3ca35549ac49a5,table1:R6,,,
-d798adfb58174c21-table1-R7,2026-06-04,ulsan-city,,"일품양평해장국, 이디야커피태화먹거리단지점",청년 일자리사업 관련 업무협의 후 관계자 오찬 제공(경제정책관),3000,d798adfb58174c21ac5250c9b4c2479ffd2a5f8cd60248106b3ca35549ac49a5,table1:R7,,,
+d798adfb58174c21-table1-R7#1,2026-06-04,ulsan-city,,일품양평해장국,청년 일자리사업 관련 업무협의 후 관계자 오찬 제공(경제정책관),,d798adfb58174c21ac5250c9b4c2479ffd2a5f8cd60248106b3ca35549ac49a5,table1:R7,,d798adfb58174c21-table1-R7,3000
+d798adfb58174c21-table1-R7#2,2026-06-04,ulsan-city,,이디야커피태화먹거리단지점,청년 일자리사업 관련 업무협의 후 관계자 오찬 제공(경제정책관),,d798adfb58174c21ac5250c9b4c2479ffd2a5f8cd60248106b3ca35549ac49a5,table1:R7,,d798adfb58174c21-table1-R7,3000
 d798adfb58174c21-table1-R8,2026-06-04,ulsan-city,,워낭2013,전자정부 디지털 서비스 육성 간담회 개최(세종사무소),400000,d798adfb58174c21ac5250c9b4c2479ffd2a5f8cd60248106b3ca35549ac49a5,table1:R8,,,
 d798adfb58174c21-table1-R9,2026-06-04,ulsan-city,,독도참가자미 외 1,반구천의 암각화 브랜드 홍보관련 관계자 업무협의(공보담당관),203000,d798adfb58174c21ac5250c9b4c2479ffd2a5f8cd60248106b3ca35549ac49a5,table1:R9,,,
 d798adfb58174c21-table1-R10,2026-06-04,ulsan-city,,팔도낙지촌,시 블로그기자단 운영 관련 관계자 업무협의(공보담당관),350000,d798adfb58174c21ac5250c9b4c2479ffd2a5f8cd60248106b3ca35549ac49a5,table1:R10,,,
@@ -1767,7 +1866,8 @@ d798adfb58174c21-table1-R11,2026-06-04,ulsan-city,,영천할매집곰탕,숲가�
 3156d392ffb87932-table1-R3,2026-06-02,ulsan-city,,문경숯불,노사 현안 업무협의 간담회(총무과장),215000,3156d392ffb87932f95a33a4ce54c32313a1199c1002609c9faea9385b3f4173,table1:R3,,,
 3156d392ffb87932-table1-R4,2026-06-02,ulsan-city,,스타벅스 코리아외 1,주민자치 활성화 사업 관련 간담회(서울본부),129000,3156d392ffb87932f95a33a4ce54c32313a1199c1002609c9faea9385b3f4173,table1:R4,,,
 3156d392ffb87932-table1-R5,2026-06-02,ulsan-city,,정답해신삼계탕,2026년 119안전문화축제 추진 관계자 간담회 계획(소방본부 소방행정과),240000,3156d392ffb87932f95a33a4ce54c32313a1199c1002609c9faea9385b3f4173,table1:R5,,,
-3156d392ffb87932-table1-R6,2026-06-02,ulsan-city,,"섭생정식, 스타벅스",주민자치 활성화 사업 관련 간담회 개최(세종사무소),129000,3156d392ffb87932f95a33a4ce54c32313a1199c1002609c9faea9385b3f4173,table1:R6,,,
+3156d392ffb87932-table1-R6#1,2026-06-02,ulsan-city,,섭생정식,주민자치 활성화 사업 관련 간담회 개최(세종사무소),,3156d392ffb87932f95a33a4ce54c32313a1199c1002609c9faea9385b3f4173,table1:R6,,3156d392ffb87932-table1-R6,129000
+3156d392ffb87932-table1-R6#2,2026-06-02,ulsan-city,,스타벅스,주민자치 활성화 사업 관련 간담회 개최(세종사무소),,3156d392ffb87932f95a33a4ce54c32313a1199c1002609c9faea9385b3f4173,table1:R6,,3156d392ffb87932-table1-R6,129000
 3156d392ffb87932-table1-R7,2026-06-02,ulsan-city,,자작,호우대비 도시공원 시설물 점검 및 관계자 오찬 제공(녹지공원과),71000,3156d392ffb87932f95a33a4ce54c32313a1199c1002609c9faea9385b3f4173,table1:R7,,,
 3156d392ffb87932-table1-R8,2026-06-02,ulsan-city,,관내식당,찾아가는 심리상담실 업무협의 간담회(남부소방서),95000,3156d392ffb87932f95a33a4ce54c32313a1199c1002609c9faea9385b3f4173,table1:R8,,,
 3156d392ffb87932-table1-R9,2026-06-02,ulsan-city,,복정원,현안업무 추진 직원 노고 격려 및 사기 진작 오찬 제공(울산박물관),68000,3156d392ffb87932f95a33a4ce54c32313a1199c1002609c9faea9385b3f4173,table1:R9,,,
@@ -1775,7 +1875,8 @@ d798adfb58174c21-table1-R11,2026-06-04,ulsan-city,,영천할매집곰탕,숲가�
 de05ce9f0d342f0c-table1-R2,2026-05-29,ulsan-city,,감자옹심이,원산지표시 분야 업무 협의 후 오찬 제공(민생사법경찰과),68000,de05ce9f0d342f0c6387d4a4e8a54ef5df054f8b72e1fefa5e12a0d3b57ad39e,table1:R2,,,
 de05ce9f0d342f0c-table1-R3,2026-05-29,ulsan-city,,한양생고기 바름수산,"기관운영업무추진비 지출(북부소방서, 구조대)",120000,de05ce9f0d342f0c6387d4a4e8a54ef5df054f8b72e1fefa5e12a0d3b57ad39e,table1:R3,,,
 de05ce9f0d342f0c-table1-R4,2026-05-29,ulsan-city,,관내식당,직원 격려 오찬 제공(일반산단과),230000,de05ce9f0d342f0c6387d4a4e8a54ef5df054f8b72e1fefa5e12a0d3b57ad39e,table1:R4,,,
-de05ce9f0d342f0c-table1-R5,2026-05-29,ulsan-city,,"디비디비딥, BCD커피",에너지산업 업무 협의 후 참석자 오찬 제공(에너지산업과),164000,de05ce9f0d342f0c6387d4a4e8a54ef5df054f8b72e1fefa5e12a0d3b57ad39e,table1:R5,,,
+de05ce9f0d342f0c-table1-R5#1,2026-05-29,ulsan-city,,디비디비딥,에너지산업 업무 협의 후 참석자 오찬 제공(에너지산업과),,de05ce9f0d342f0c6387d4a4e8a54ef5df054f8b72e1fefa5e12a0d3b57ad39e,table1:R5,,de05ce9f0d342f0c-table1-R5,164000
+de05ce9f0d342f0c-table1-R5#2,2026-05-29,ulsan-city,,BCD커피,에너지산업 업무 협의 후 참석자 오찬 제공(에너지산업과),,de05ce9f0d342f0c6387d4a4e8a54ef5df054f8b72e1fefa5e12a0d3b57ad39e,table1:R5,,de05ce9f0d342f0c-table1-R5,164000
 de05ce9f0d342f0c-table1-R6,2026-05-29,ulsan-city,,커피소풍,경제현안 관련 업무협의 후 관계자 음료 제공(경제정책관),23000,de05ce9f0d342f0c6387d4a4e8a54ef5df054f8b72e1fefa5e12a0d3b57ad39e,table1:R6,,,
 de05ce9f0d342f0c-table1-R7,2026-05-29,ulsan-city,,끄티,인구업무 추진 간담회 개최(정책기획관),153000,de05ce9f0d342f0c6387d4a4e8a54ef5df054f8b72e1fefa5e12a0d3b57ad39e,table1:R7,,,
 de05ce9f0d342f0c-table1-R8,2026-05-29,ulsan-city,,눈앞에과일 세종점,중앙부처 협력강화를 위한 간담회 다과 구입(서울본부),178000,de05ce9f0d342f0c6387d4a4e8a54ef5df054f8b72e1fefa5e12a0d3b57ad39e,table1:R8,,,
@@ -1818,7 +1919,8 @@ abfdf1f9cf7b2035-table1-R2,2026-05-23,ulsan-city,,돈아이가,장미축제 지�
 e69a84139a11a33e-table1-R2,2026-05-21,ulsan-city,,관내 일반음식점,남울주 화재취약시설 현장지도방문 및 간담회,149000,e69a84139a11a33e4b7ba13be6ddae756abf989b73ccfe648240df0f61f9447e,table1:R2,,,
 e69a84139a11a33e-table1-R3,2026-05-21,ulsan-city,,개인(성명 비공개),남울주 청량 소방사 신종현 결혼 축의금,50000,e69a84139a11a33e4b7ba13be6ddae756abf989b73ccfe648240df0f61f9447e,table1:R3,,,
 e69a84139a11a33e-table1-R4,2026-05-21,ulsan-city,,부강쌈밥숯불,구조대 간담회(동부구조대),270000,e69a84139a11a33e4b7ba13be6ddae756abf989b73ccfe648240df0f61f9447e,table1:R4,,,
-e69a84139a11a33e-table1-R5,2026-05-21,ulsan-city,,"장어광장, 카페숙이",청년 일자리사업 관련 업무협의 후 관계자 오찬 제공(경제정책관),74000,e69a84139a11a33e4b7ba13be6ddae756abf989b73ccfe648240df0f61f9447e,table1:R5,,,
+e69a84139a11a33e-table1-R5#1,2026-05-21,ulsan-city,,장어광장,청년 일자리사업 관련 업무협의 후 관계자 오찬 제공(경제정책관),,e69a84139a11a33e4b7ba13be6ddae756abf989b73ccfe648240df0f61f9447e,table1:R5,,e69a84139a11a33e-table1-R5,74000
+e69a84139a11a33e-table1-R5#2,2026-05-21,ulsan-city,,카페숙이,청년 일자리사업 관련 업무협의 후 관계자 오찬 제공(경제정책관),,e69a84139a11a33e4b7ba13be6ddae756abf989b73ccfe648240df0f61f9447e,table1:R5,,e69a84139a11a33e-table1-R5,74000
 e69a84139a11a33e-table1-R6,2026-05-21,ulsan-city,,정식당,도서관 공간 개선을 위한 관계자 오찬 제공(울산도서관),102000,e69a84139a11a33e4b7ba13be6ddae756abf989b73ccfe648240df0f61f9447e,table1:R6,,,
 e69a84139a11a33e-table1-R7,2026-05-21,ulsan-city,,자담치킨,시정 업무 관련 네트워킹 정책간담회 개최(정책기획관),453000,e69a84139a11a33e4b7ba13be6ddae756abf989b73ccfe648240df0f61f9447e,table1:R7,,,
 e69a84139a11a33e-table1-R8,2026-05-21,ulsan-city,,시골빈대떡,중앙부처 협력강화 간담회 간담회 개최(정책기획관),169000,e69a84139a11a33e4b7ba13be6ddae756abf989b73ccfe648240df0f61f9447e,table1:R8,,,
@@ -1966,7 +2068,8 @@ e69a84139a11a33e-table1-R22,2026-05-21,ulsan-city,,울산문화예술회관,부�
 92235e05e61cdfe0-table1-R17,2026-04-30,ulsan-city,,구희락복국,울산 무장애 관광 포럼 홍보 관련 관계자 업무협의(공보담당관),151000,92235e05e61cdfe05be53a6d825c2a2fd7e28da76c9d6742540dd7034c341020,table1:R17,,,
 92235e05e61cdfe0-table1-R18,2026-04-30,ulsan-city,,쭈불당 등,부서 직원 노고격려 오찬 제공(공보담당관),316000,92235e05e61cdfe05be53a6d825c2a2fd7e28da76c9d6742540dd7034c341020,table1:R18,,,
 92235e05e61cdfe0-table1-R19,2026-04-30,ulsan-city,,게수작,옥동 군부대 이전 사업 추진 관계자 만찬 제공(도시균형개발과),300000,92235e05e61cdfe05be53a6d825c2a2fd7e28da76c9d6742540dd7034c341020,table1:R19,,,
-92235e05e61cdfe0-table1-R20,2026-04-30,ulsan-city,,"팔도낙지촌, 해당의정원",경제자유구역 기업 지원시책 관련 업무 협의 및 오찬 제공(울산경제자유구역청),119000,92235e05e61cdfe05be53a6d825c2a2fd7e28da76c9d6742540dd7034c341020,table1:R20,,,
+92235e05e61cdfe0-table1-R20#1,2026-04-30,ulsan-city,,팔도낙지촌,경제자유구역 기업 지원시책 관련 업무 협의 및 오찬 제공(울산경제자유구역청),,92235e05e61cdfe05be53a6d825c2a2fd7e28da76c9d6742540dd7034c341020,table1:R20,,92235e05e61cdfe0-table1-R20,119000
+92235e05e61cdfe0-table1-R20#2,2026-04-30,ulsan-city,,해당의정원,경제자유구역 기업 지원시책 관련 업무 협의 및 오찬 제공(울산경제자유구역청),,92235e05e61cdfe05be53a6d825c2a2fd7e28da76c9d6742540dd7034c341020,table1:R20,,92235e05e61cdfe0-table1-R20,119000
 174eba52ceb9f27e-table1-R2,2026-04-29,ulsan-city,,버드로스터스,부서 커피원두 구입(민생사법경찰과),71000,174eba52ceb9f27ea27ac8eac6c70fc81bb33da58b24486b38ff3f766a1d1b91,table1:R2,,,
 174eba52ceb9f27e-table1-R3,2026-04-29,ulsan-city,,화덕에서나온고등어외 1명,고래수 병입 생산시설 구축사업 현장 확인 후 참석자 오찬 제공(상수도사업본부 급수부),74000,174eba52ceb9f27ea27ac8eac6c70fc81bb33da58b24486b38ff3f766a1d1b91,table1:R3,,,
 174eba52ceb9f27e-table1-R4,2026-04-29,ulsan-city,,옹기골,효율적인 구내식당 운영을 위한 간담회 비용 지급(소방본부 소방행정과),236000,174eba52ceb9f27ea27ac8eac6c70fc81bb33da58b24486b38ff3f766a1d1b91,table1:R4,,,
@@ -1976,7 +2079,8 @@ e69a84139a11a33e-table1-R22,2026-05-21,ulsan-city,,울산문화예술회관,부�
 174eba52ceb9f27e-table1-R8,2026-04-29,ulsan-city,,부부스시,법률 자문 관련 관계자 간담회 후 만찬 제공 (법무통계담당관),175000,174eba52ceb9f27ea27ac8eac6c70fc81bb33da58b24486b38ff3f766a1d1b91,table1:R8,,,
 174eba52ceb9f27e-table1-R9,2026-04-29,ulsan-city,,오밀조밀,국립경주박물관 방문 관련 다과 구입(울산박물관),50000,174eba52ceb9f27ea27ac8eac6c70fc81bb33da58b24486b38ff3f766a1d1b91,table1:R9,,,
 174eba52ceb9f27e-table1-R10,2026-04-29,ulsan-city,,팔도낙지촌,원천기술 상용화 플랫폼 구축사업 관련 업무협의 후 오찬 제공(AI산업전략과),150000,174eba52ceb9f27ea27ac8eac6c70fc81bb33da58b24486b38ff3f766a1d1b91,table1:R10,,,
-174eba52ceb9f27e-table1-R11,2026-04-29,ulsan-city,,"부부스시, 두다",중요 비전자기록물 관리 강화 간담회(총무과장),341000,174eba52ceb9f27ea27ac8eac6c70fc81bb33da58b24486b38ff3f766a1d1b91,table1:R11,,,
+174eba52ceb9f27e-table1-R11#1,2026-04-29,ulsan-city,,부부스시,중요 비전자기록물 관리 강화 간담회(총무과장),,174eba52ceb9f27ea27ac8eac6c70fc81bb33da58b24486b38ff3f766a1d1b91,table1:R11,,174eba52ceb9f27e-table1-R11,341000
+174eba52ceb9f27e-table1-R11#2,2026-04-29,ulsan-city,,두다,중요 비전자기록물 관리 강화 간담회(총무과장),,174eba52ceb9f27ea27ac8eac6c70fc81bb33da58b24486b38ff3f766a1d1b91,table1:R11,,174eba52ceb9f27e-table1-R11,341000
 174eba52ceb9f27e-table1-R12,2026-04-29,ulsan-city,,중국성,인구업무 추진 간담회 개최(정책기획관),249000,174eba52ceb9f27ea27ac8eac6c70fc81bb33da58b24486b38ff3f766a1d1b91,table1:R12,,,
 174eba52ceb9f27e-table1-R13,2026-04-29,ulsan-city,,만객가,국비 확보 관련 업무추진 간담회 개최(정책기획관),106000,174eba52ceb9f27ea27ac8eac6c70fc81bb33da58b24486b38ff3f766a1d1b91,table1:R13,,,
 174eba52ceb9f27e-table1-R14,2026-04-29,ulsan-city,,(주)신화케이푸드,중앙부처 정책동향 수렴 간담회 개최(서울본부),270000,174eba52ceb9f27ea27ac8eac6c70fc81bb33da58b24486b38ff3f766a1d1b91,table1:R14,,,
@@ -1986,7 +2090,8 @@ e69a84139a11a33e-table1-R22,2026-05-21,ulsan-city,,울산문화예술회관,부�
 174eba52ceb9f27e-table1-R18,2026-04-29,ulsan-city,,봉계숯불갈비,재정주요현안 업무추진 간담회 후 오찬 제공,480000,174eba52ceb9f27ea27ac8eac6c70fc81bb33da58b24486b38ff3f766a1d1b91,table1:R18,,,
 174eba52ceb9f27e-table1-R19,2026-04-29,ulsan-city,,관내,상반기 소비자식품위생감시원 직무교육 참석자 다과 구입(식의약안전과),125000,174eba52ceb9f27ea27ac8eac6c70fc81bb33da58b24486b38ff3f766a1d1b91,table1:R19,,,
 174eba52ceb9f27e-table1-R20,2026-04-29,ulsan-city,,이비가,주차관제시스템 개선공사 관련 추진현황 청취 후 관계자 격려 만찬 제공(상수도사업본부경영부),100000,174eba52ceb9f27ea27ac8eac6c70fc81bb33da58b24486b38ff3f766a1d1b91,table1:R20,,,
-174eba52ceb9f27e-table1-R21,2026-04-29,ulsan-city,,"역전양평해장국, 레비보",울산경제자유구역 입주기업 애로사항 후속조치 관련 협의 후 오찬 제공(울산경제자유구역청),69000,174eba52ceb9f27ea27ac8eac6c70fc81bb33da58b24486b38ff3f766a1d1b91,table1:R21,,,
+174eba52ceb9f27e-table1-R21#1,2026-04-29,ulsan-city,,역전양평해장국,울산경제자유구역 입주기업 애로사항 후속조치 관련 협의 후 오찬 제공(울산경제자유구역청),,174eba52ceb9f27ea27ac8eac6c70fc81bb33da58b24486b38ff3f766a1d1b91,table1:R21,,174eba52ceb9f27e-table1-R21,69000
+174eba52ceb9f27e-table1-R21#2,2026-04-29,ulsan-city,,레비보,울산경제자유구역 입주기업 애로사항 후속조치 관련 협의 후 오찬 제공(울산경제자유구역청),,174eba52ceb9f27ea27ac8eac6c70fc81bb33da58b24486b38ff3f766a1d1b91,table1:R21,,174eba52ceb9f27e-table1-R21,69000
 174eba52ceb9f27e-table1-R22,2026-04-29,ulsan-city,,그집고등어 외 1,울산미포국가산단 활력있고 아름다운거리 조성 업무협의에 따른 관계자 오찬 및 다과 제공(국가산단과),123000,174eba52ceb9f27ea27ac8eac6c70fc81bb33da58b24486b38ff3f766a1d1b91,table1:R22,,,
 4321463b3b1dfd69-table1-R2,2026-04-28,ulsan-city,,가람오리집,업무협의 후 만찬제공(문화예술회관 예술사업과),165000,4321463b3b1dfd6996077d1066000751ad2d1414789e08ad750a2a935d7021ce,table1:R2,,,
 4321463b3b1dfd69-table1-R3,2026-04-28,ulsan-city,,토스카,오찬 제공(소속 상근직원 격려)(울산문화예술회관),300000,4321463b3b1dfd6996077d1066000751ad2d1414789e08ad750a2a935d7021ce,table1:R3,,,
@@ -2003,7 +2108,8 @@ c3a754e2808e2e63-table1-R2,2026-04-27,ulsan-city,,향수,지역노동현안 관�
 c3a754e2808e2e63-table1-R3,2026-04-27,ulsan-city,,오발탄,아이돌봄사업 운영 관련 업무협의 후 오찬 제공(복지정책과),466000,c3a754e2808e2e63c26d192c319dc289c130c977b759419f012205759295f581,table1:R3,,,
 c3a754e2808e2e63-table1-R4,2026-04-27,ulsan-city,,식당,"노후 청사, 가설건축물 점검 및 유지관리업무 협의를 위한 간담회, 오찬 계획(남부소방서)",210000,c3a754e2808e2e63c26d192c319dc289c130c977b759419f012205759295f581,table1:R4,,,
 c3a754e2808e2e63-table1-R5,2026-04-27,ulsan-city,,어궁참가자미횟집,일하는 방식 개선 간담회(총무과장),272000,c3a754e2808e2e63c26d192c319dc289c130c977b759419f012205759295f581,table1:R5,,,
-c3a754e2808e2e63-table1-R6,2026-04-27,ulsan-city,,마산아구찜 및 투썸플레이스,가족안전119체험행사 추진 노고 격려(중부 예방안전과),98000,c3a754e2808e2e63c26d192c319dc289c130c977b759419f012205759295f581,table1:R6,,,
+c3a754e2808e2e63-table1-R6#1,2026-04-27,ulsan-city,,마산아구찜,가족안전119체험행사 추진 노고 격려(중부 예방안전과),,c3a754e2808e2e63c26d192c319dc289c130c977b759419f012205759295f581,table1:R6,,c3a754e2808e2e63-table1-R6,98000
+c3a754e2808e2e63-table1-R6#2,2026-04-27,ulsan-city,,투썸플레이스,가족안전119체험행사 추진 노고 격려(중부 예방안전과),,c3a754e2808e2e63c26d192c319dc289c130c977b759419f012205759295f581,table1:R6,,c3a754e2808e2e63-table1-R6,98000
 c3a754e2808e2e63-table1-R7,2026-04-27,ulsan-city,,울산시티컨벤션,직원 자녀 결혼 축의금 지급,50000,c3a754e2808e2e63c26d192c319dc289c130c977b759419f012205759295f581,table1:R7,,,
 c3a754e2808e2e63-table1-R8,2026-04-27,ulsan-city,,함양집,2026년 2회추경 편성 업무 추진 간담회 개최(정책기획관),393000,c3a754e2808e2e63c26d192c319dc289c130c977b759419f012205759295f581,table1:R8,,,
 c3a754e2808e2e63-table1-R9,2026-04-27,ulsan-city,,노도고등어회,26년 기획전시 이중섭 전시 관계자 만찬 제공(울산시립미술관),144000,c3a754e2808e2e63c26d192c319dc289c130c977b759419f012205759295f581,table1:R9,,,
@@ -2072,7 +2178,8 @@ b2b269ee94b5c665-table1-R8,2026-04-20,ulsan-city,,원산가,시정핵심과제 �
 b2b269ee94b5c665-table1-R9,2026-04-20,ulsan-city,,웰씨로스터리,부서운영 다과 구입(관광과),90000,b2b269ee94b5c665ff2e40af21fccbef7d6260fbf078399db9b7111bbef9efdc,table1:R9,,,
 b2b269ee94b5c665-table1-R10,2026-04-20,ulsan-city,,연타발,인적네트워크 발굴 오찬 간담회(서울본부),140000,b2b269ee94b5c665ff2e40af21fccbef7d6260fbf078399db9b7111bbef9efdc,table1:R10,,,
 b2b269ee94b5c665-table1-R11,2026-04-20,ulsan-city,,차량등록사업소,경조사비 지급,50000,b2b269ee94b5c665ff2e40af21fccbef7d6260fbf078399db9b7111bbef9efdc,table1:R11,,,
-b2b269ee94b5c665-table1-R12,2026-04-20,ulsan-city,,"카페브릭스, 미가원추어탕",응급구조자 통합 보호센터 구축 관련 업무 간담회 후 오찬 제공,125000,b2b269ee94b5c665ff2e40af21fccbef7d6260fbf078399db9b7111bbef9efdc,table1:R12,,,
+b2b269ee94b5c665-table1-R12#1,2026-04-20,ulsan-city,,카페브릭스,응급구조자 통합 보호센터 구축 관련 업무 간담회 후 오찬 제공,,b2b269ee94b5c665ff2e40af21fccbef7d6260fbf078399db9b7111bbef9efdc,table1:R12,,b2b269ee94b5c665-table1-R12,125000
+b2b269ee94b5c665-table1-R12#2,2026-04-20,ulsan-city,,미가원추어탕,응급구조자 통합 보호센터 구축 관련 업무 간담회 후 오찬 제공,,b2b269ee94b5c665ff2e40af21fccbef7d6260fbf078399db9b7111bbef9efdc,table1:R12,,b2b269ee94b5c665-table1-R12,125000
 b2b269ee94b5c665-table1-R13,2026-04-20,ulsan-city,,일품참숯암소갈비살,환경교육센터 운영 관계자 업무협의(환경정책과),142000,b2b269ee94b5c665ff2e40af21fccbef7d6260fbf078399db9b7111bbef9efdc,table1:R13,,,
 b2b269ee94b5c665-table1-R14,2026-04-20,ulsan-city,,대복축산,중대재해예방 사각지대 해소 관련 업무 협의 후 오찬 제공(안전정책관),467000,b2b269ee94b5c665ff2e40af21fccbef7d6260fbf078399db9b7111bbef9efdc,table1:R14,,,
 b2b269ee94b5c665-table1-R15,2026-04-20,ulsan-city,,"라오, 탐앤탐스",공공기관2차 이전 관련 업무 협의 간담회(분권담당관),90000,b2b269ee94b5c665ff2e40af21fccbef7d6260fbf078399db9b7111bbef9efdc,table1:R15,,,
@@ -2114,7 +2221,8 @@ b2b269ee94b5c665-table1-R21,2026-04-20,ulsan-city,,육의삼승,투자기업 현
 89ce1e791358ff3d-table1-R14,2026-04-16,ulsan-city,,봉계돼지국밥,2026년 울산시립미술관 하반기 XR랩 기획전시 자문회의 관계자 오찬 제공(울산시립미술관),20000,89ce1e791358ff3dd16c43fe5a0a220b30907dfab1eab0dbc94908b6376a89a1,table1:R14,,,
 89ce1e791358ff3d-table1-R15,2026-04-16,ulsan-city,,리아노,직원 MT 경비 지급(울산시립미술관),364000,89ce1e791358ff3dd16c43fe5a0a220b30907dfab1eab0dbc94908b6376a89a1,table1:R15,,,
 89ce1e791358ff3d-table1-R16,2026-04-16,ulsan-city,,노조미,지역의원실 비서진과 오찬 간담회(서울본부),213000,89ce1e791358ff3dd16c43fe5a0a220b30907dfab1eab0dbc94908b6376a89a1,table1:R16,,,
-89ce1e791358ff3d-table1-R17,2026-04-16,ulsan-city,,"둥굴관,커피가게클래식924",장애인단체 지원 업무협의 후 관계자 오찬 및 다과 제공(장애인복지과),144000,89ce1e791358ff3dd16c43fe5a0a220b30907dfab1eab0dbc94908b6376a89a1,table1:R17,,,
+89ce1e791358ff3d-table1-R17#1,2026-04-16,ulsan-city,,둥굴관,장애인단체 지원 업무협의 후 관계자 오찬 및 다과 제공(장애인복지과),,89ce1e791358ff3dd16c43fe5a0a220b30907dfab1eab0dbc94908b6376a89a1,table1:R17,,89ce1e791358ff3d-table1-R17,144000
+89ce1e791358ff3d-table1-R17#2,2026-04-16,ulsan-city,,커피가게클래식924,장애인단체 지원 업무협의 후 관계자 오찬 및 다과 제공(장애인복지과),,89ce1e791358ff3dd16c43fe5a0a220b30907dfab1eab0dbc94908b6376a89a1,table1:R17,,89ce1e791358ff3d-table1-R17,144000
 89ce1e791358ff3d-table1-R18,2026-04-16,ulsan-city,,할머니의 손두부,평창현대아파트 앞 공영주차장 관련 업무협의 후 오찬 제공(교통기획과),83000,89ce1e791358ff3dd16c43fe5a0a220b30907dfab1eab0dbc94908b6376a89a1,table1:R18,,,
 89ce1e791358ff3d-table1-R19,2026-04-16,ulsan-city,,아덴플래닝,기념품 구입(자개명함케이스),605000,89ce1e791358ff3dd16c43fe5a0a220b30907dfab1eab0dbc94908b6376a89a1,table1:R19,,,
 89ce1e791358ff3d-table1-R20,2026-04-16,ulsan-city,,가양,2027년 국가예산 확보관련 업무협의,354000,89ce1e791358ff3dd16c43fe5a0a220b30907dfab1eab0dbc94908b6376a89a1,table1:R20,,,
@@ -2131,7 +2239,8 @@ b2b269ee94b5c665-table1-R21,2026-04-20,ulsan-city,,육의삼승,투자기업 현
 29c7b23264481ff3-table1-R6,2026-04-14,ulsan-city,,808웨스트도어,업무협의 후 만찬제공(문화예술회관 예술사업과),370000,29c7b23264481ff36841527641ce79babc03406f6e7cb157c77acee68a23bbac,table1:R6,,,
 29c7b23264481ff3-table1-R7,2026-04-14,ulsan-city,,속초해물탕,국가예산 확보를 위한 오찬 간담회(서울본부),210000,29c7b23264481ff36841527641ce79babc03406f6e7cb157c77acee68a23bbac,table1:R7,,,
 29c7b23264481ff3-table1-R8,2026-04-14,ulsan-city,,양문울산공업탑점,경자구역 투자유치 전략 마련 관계자 회의 및 만찬 제공(울산경제자유구역청),165000,29c7b23264481ff36841527641ce79babc03406f6e7cb157c77acee68a23bbac,table1:R8,,,
-29c7b23264481ff3-table1-R9,2026-04-14,ulsan-city,,"만객가, 이디야커피",경제자유구역 언론협력 전략회의 참석자 오찬 제공(울산경제자유구역청),298000,29c7b23264481ff36841527641ce79babc03406f6e7cb157c77acee68a23bbac,table1:R9,,,
+29c7b23264481ff3-table1-R9#1,2026-04-14,ulsan-city,,만객가,경제자유구역 언론협력 전략회의 참석자 오찬 제공(울산경제자유구역청),,29c7b23264481ff36841527641ce79babc03406f6e7cb157c77acee68a23bbac,table1:R9,,29c7b23264481ff3-table1-R9,298000
+29c7b23264481ff3-table1-R9#2,2026-04-14,ulsan-city,,이디야커피,경제자유구역 언론협력 전략회의 참석자 오찬 제공(울산경제자유구역청),,29c7b23264481ff36841527641ce79babc03406f6e7cb157c77acee68a23bbac,table1:R9,,29c7b23264481ff3-table1-R9,298000
 29c7b23264481ff3-table1-R10,2026-04-14,ulsan-city,,"소나무향기, 바림",지역 민생 활성화 추진 간담회 개최(세종사무소),142000,29c7b23264481ff36841527641ce79babc03406f6e7cb157c77acee68a23bbac,table1:R10,,,
 29c7b23264481ff3-table1-R11,2026-04-14,ulsan-city,,유아목살,지역 현안 사업 추진 간담회 개최(정책기획관),239000,29c7b23264481ff36841527641ce79babc03406f6e7cb157c77acee68a23bbac,table1:R11,,,
 29c7b23264481ff3-table1-R12,2026-04-14,ulsan-city,,개성순대 돼지국밥,시정핵심과제 업무 추진 관련 간담회 개최(정책기획관),50000,29c7b23264481ff36841527641ce79babc03406f6e7cb157c77acee68a23bbac,table1:R12,,,
@@ -2189,7 +2298,8 @@ f80e7c4f8d609df2-table1-R3,2026-04-11,ulsan-city,,개인(성명 비공개),직�
 6663ca94955aa681-table1-R7,2026-04-07,ulsan-city,,외식명가삼산정,오찬제공(시립예술단 공연 추진 관련 업무협의)(울산문화예술회관),416000,6663ca94955aa681003452ccf5bf14b2c6f71a9a8fa4a0b1dbd6d25442ce0b43,table1:R7,,,
 6663ca94955aa681-table1-R8,2026-04-07,ulsan-city,,개인(성명 비공개),축의금 지급,50000,6663ca94955aa681003452ccf5bf14b2c6f71a9a8fa4a0b1dbd6d25442ce0b43,table1:R8,,,
 6663ca94955aa681-table1-R9,2026-04-07,ulsan-city,,함양집,기후변화주간 행사 관련 관계자 업무협의(환경정책과),441000,6663ca94955aa681003452ccf5bf14b2c6f71a9a8fa4a0b1dbd6d25442ce0b43,table1:R9,,,
-6663ca94955aa681-table1-R10,2026-04-07,ulsan-city,,"스시돈, 카페메르",인권증진 정책 업무협의에 따른 오찬 및 다과 제공(권익인권담당관),70000,6663ca94955aa681003452ccf5bf14b2c6f71a9a8fa4a0b1dbd6d25442ce0b43,table1:R10,,,
+6663ca94955aa681-table1-R10#1,2026-04-07,ulsan-city,,스시돈,인권증진 정책 업무협의에 따른 오찬 및 다과 제공(권익인권담당관),,6663ca94955aa681003452ccf5bf14b2c6f71a9a8fa4a0b1dbd6d25442ce0b43,table1:R10,,6663ca94955aa681-table1-R10,70000
+6663ca94955aa681-table1-R10#2,2026-04-07,ulsan-city,,카페메르,인권증진 정책 업무협의에 따른 오찬 및 다과 제공(권익인권담당관),,6663ca94955aa681003452ccf5bf14b2c6f71a9a8fa4a0b1dbd6d25442ce0b43,table1:R10,,6663ca94955aa681-table1-R10,70000
 6663ca94955aa681-table1-R11,2026-04-07,ulsan-city,,경복궁,시설물안전버버 대상 안전감찰 관련 업무 협의 후 오찬 제공(안전정책관),476000,6663ca94955aa681003452ccf5bf14b2c6f71a9a8fa4a0b1dbd6d25442ce0b43,table1:R11,,,
 6663ca94955aa681-table1-R12,2026-04-07,ulsan-city,,도미노피자,언론민원 응대직원 노고 격려 간식 구입(공보담당관),206000,6663ca94955aa681003452ccf5bf14b2c6f71a9a8fa4a0b1dbd6d25442ce0b43,table1:R12,,,
 6663ca94955aa681-table1-R13,2026-04-07,ulsan-city,,세종,인공지능 집적단지 조성 관련 업무협의 후 오찬 등 제공(AI산업전략과),173000,6663ca94955aa681003452ccf5bf14b2c6f71a9a8fa4a0b1dbd6d25442ce0b43,table1:R13,,,
@@ -2222,7 +2332,8 @@ f80e7c4f8d609df2-table1-R3,2026-04-11,ulsan-city,,개인(성명 비공개),직�
 0e7468b6a3ad69bf-table1-R2,2026-04-04,ulsan-city,,식당,직원에 대한 업무추진 노고격려 만찬(무거),90000,0e7468b6a3ad69bfaa6deb0a28749ac3fc1b06fc71d2c74202dc4a7cf366ea51,table1:R2,,,
 5be03f0c9631ac99-table1-R2,2026-04-03,ulsan-city,,퓨전대감당,국가정원 운영 관계자 협의 후 만찬 제공(태화강국가정원과),250000,5be03f0c9631ac99d029328d4bc449e5c8705c177de35dd804630681bde3dc77,table1:R2,,,
 5be03f0c9631ac99-table1-R3,2026-04-03,ulsan-city,,에이치디씨아이파크몰 주식회사,투자유치 전략 마련 간담회 오찬 제공(울산경제자유구역청 투자유치부장),210000,5be03f0c9631ac99d029328d4bc449e5c8705c177de35dd804630681bde3dc77,table1:R3,,,
-5be03f0c9631ac99-table1-R4,2026-04-03,ulsan-city,,"교촌치킨, 크레이지피자",직원 격려 오찬 제공 (미래첨단도시과),142000,5be03f0c9631ac99d029328d4bc449e5c8705c177de35dd804630681bde3dc77,table1:R4,,,
+5be03f0c9631ac99-table1-R4#1,2026-04-03,ulsan-city,,교촌치킨,직원 격려 오찬 제공 (미래첨단도시과),,5be03f0c9631ac99d029328d4bc449e5c8705c177de35dd804630681bde3dc77,table1:R4,,5be03f0c9631ac99-table1-R4,142000
+5be03f0c9631ac99-table1-R4#2,2026-04-03,ulsan-city,,크레이지피자,직원 격려 오찬 제공 (미래첨단도시과),,5be03f0c9631ac99d029328d4bc449e5c8705c177de35dd804630681bde3dc77,table1:R4,,5be03f0c9631ac99-table1-R4,142000
 5be03f0c9631ac99-table1-R5,2026-04-03,ulsan-city,,소방경 이영희,조의금 지급,50000,5be03f0c9631ac99d029328d4bc449e5c8705c177de35dd804630681bde3dc77,table1:R5,,,
 5be03f0c9631ac99-table1-R6,2026-04-03,ulsan-city,,울산문화예술회관,부의금 지급,50000,5be03f0c9631ac99d029328d4bc449e5c8705c177de35dd804630681bde3dc77,table1:R6,,,
 5be03f0c9631ac99-table1-R7,2026-04-03,ulsan-city,,풍천민물장어상리연,소방안전대책 마련 유관기관 간담회 경비(북부소방서),317000,5be03f0c9631ac99d029328d4bc449e5c8705c177de35dd804630681bde3dc77,table1:R7,,,
@@ -2230,8 +2341,10 @@ f80e7c4f8d609df2-table1-R3,2026-04-11,ulsan-city,,개인(성명 비공개),직�
 5be03f0c9631ac99-table1-R9,2026-04-03,ulsan-city,,이조장어,건전한 조직문화 조성 노사 간담회(총무과장),315000,5be03f0c9631ac99d029328d4bc449e5c8705c177de35dd804630681bde3dc77,table1:R9,,,
 5be03f0c9631ac99-table1-R10,2026-04-03,ulsan-city,,더키친우와,권익 보호 및 행정제도 개선 추진 관계자 간담회 개최(서울본부),99000,5be03f0c9631ac99d029328d4bc449e5c8705c177de35dd804630681bde3dc77,table1:R10,,,
 5be03f0c9631ac99-table1-R11,2026-04-03,ulsan-city,,풍천강민물장어,지역기업 현장간담회 건의사항 관련 업무협의 후 만찬 제공(교통기획과),193000,5be03f0c9631ac99d029328d4bc449e5c8705c177de35dd804630681bde3dc77,table1:R11,,,
-5be03f0c9631ac99-table1-R12,2026-04-03,ulsan-city,,"독도참가자미, 카페엠",민생경제 활성화를 위한 업무협의(기업지원과),187000,5be03f0c9631ac99d029328d4bc449e5c8705c177de35dd804630681bde3dc77,table1:R12,,,
-5be03f0c9631ac99-table1-R13,2026-04-03,ulsan-city,,"스시미즈기와, 윤연당 비앤시",울산경제자유구역 기업지원 활성화 회의 및 관계자 만찬(울산경제자유구역청),112000,5be03f0c9631ac99d029328d4bc449e5c8705c177de35dd804630681bde3dc77,table1:R13,,,
+5be03f0c9631ac99-table1-R12#1,2026-04-03,ulsan-city,,독도참가자미,민생경제 활성화를 위한 업무협의(기업지원과),,5be03f0c9631ac99d029328d4bc449e5c8705c177de35dd804630681bde3dc77,table1:R12,,5be03f0c9631ac99-table1-R12,187000
+5be03f0c9631ac99-table1-R12#2,2026-04-03,ulsan-city,,카페엠,민생경제 활성화를 위한 업무협의(기업지원과),,5be03f0c9631ac99d029328d4bc449e5c8705c177de35dd804630681bde3dc77,table1:R12,,5be03f0c9631ac99-table1-R12,187000
+5be03f0c9631ac99-table1-R13#1,2026-04-03,ulsan-city,,스시미즈기와,울산경제자유구역 기업지원 활성화 회의 및 관계자 만찬(울산경제자유구역청),,5be03f0c9631ac99d029328d4bc449e5c8705c177de35dd804630681bde3dc77,table1:R13,,5be03f0c9631ac99-table1-R13,112000
+5be03f0c9631ac99-table1-R13#2,2026-04-03,ulsan-city,,윤연당 비앤시,울산경제자유구역 기업지원 활성화 회의 및 관계자 만찬(울산경제자유구역청),,5be03f0c9631ac99d029328d4bc449e5c8705c177de35dd804630681bde3dc77,table1:R13,,5be03f0c9631ac99-table1-R13,112000
 5be03f0c9631ac99-table1-R14,2026-04-03,ulsan-city,,카페메르,도시환경 정비 캠페인 관련 관계자 업무협의(공보담당관),46000,5be03f0c9631ac99d029328d4bc449e5c8705c177de35dd804630681bde3dc77,table1:R14,,,
 5be03f0c9631ac99-table1-R15,2026-04-03,ulsan-city,,눈앞에과일,중앙부처 협력강화를 위한 간담괴 다과 구입(세종사무소),354000,5be03f0c9631ac99d029328d4bc449e5c8705c177de35dd804630681bde3dc77,table1:R15,,,
 5be03f0c9631ac99-table1-R16,2026-04-03,ulsan-city,,더키친우와,권익 보호 및 행정제도 개선 추진 관계자 간담회 개최(세종사무소),100000,5be03f0c9631ac99d029328d4bc449e5c8705c177de35dd804630681bde3dc77,table1:R16,,,
@@ -2247,7 +2360,8 @@ f80e7c4f8d609df2-table1-R3,2026-04-11,ulsan-city,,개인(성명 비공개),직�
 4f2a3dcdaa74db86-table1-R4,2026-04-02,ulsan-city,,관내식당(정성육회),현장부서 근무자에 대한 격려 및 지원,270000,4f2a3dcdaa74db86caea7c051614e98d4996b96c35f9898c4c1c5bd9983caa54,table1:R4,,,
 4f2a3dcdaa74db86-table1-R5,2026-04-02,ulsan-city,,개인(성명 비공개),축의금 지급,50000,4f2a3dcdaa74db86caea7c051614e98d4996b96c35f9898c4c1c5bd9983caa54,table1:R5,,,
 4f2a3dcdaa74db86-table1-R6,2026-04-02,ulsan-city,,언양불고기식당,대곡박물관 기획 전시 등 현안업무 노고에 따른 오찬 제공(울산박물관),72000,4f2a3dcdaa74db86caea7c051614e98d4996b96c35f9898c4c1c5bd9983caa54,table1:R6,,,
-4f2a3dcdaa74db86-table1-R7,2026-04-02,ulsan-city,,"옹기골, 머머랩",장애인단체 지원업무 협의 후 관계자 오찬 및 다과 제공(장애인복지과),90000,4f2a3dcdaa74db86caea7c051614e98d4996b96c35f9898c4c1c5bd9983caa54,table1:R7,,,
+4f2a3dcdaa74db86-table1-R7#1,2026-04-02,ulsan-city,,옹기골,장애인단체 지원업무 협의 후 관계자 오찬 및 다과 제공(장애인복지과),,4f2a3dcdaa74db86caea7c051614e98d4996b96c35f9898c4c1c5bd9983caa54,table1:R7,,4f2a3dcdaa74db86-table1-R7,90000
+4f2a3dcdaa74db86-table1-R7#2,2026-04-02,ulsan-city,,머머랩,장애인단체 지원업무 협의 후 관계자 오찬 및 다과 제공(장애인복지과),,4f2a3dcdaa74db86caea7c051614e98d4996b96c35f9898c4c1c5bd9983caa54,table1:R7,,4f2a3dcdaa74db86-table1-R7,90000
 4f2a3dcdaa74db86-table1-R8,2026-04-02,ulsan-city,,만희네,예비군 육성지원 관련 업무 협의 후 오찬 제공(안전정책관),90000,4f2a3dcdaa74db86caea7c051614e98d4996b96c35f9898c4c1c5bd9983caa54,table1:R8,,,
 4f2a3dcdaa74db86-table1-R9,2026-04-02,ulsan-city,,카페루트오,전략사업별 지역생태계 활성화 추진을 위한 업무협의(기업지원과),315000,4f2a3dcdaa74db86caea7c051614e98d4996b96c35f9898c4c1c5bd9983caa54,table1:R9,,,
 4f2a3dcdaa74db86-table1-R10,2026-04-02,ulsan-city,,다담,경자구역 신규지구 발굴 관련 현안 논의 및 만찬 제공(울산경제자유구역청),235000,4f2a3dcdaa74db86caea7c051614e98d4996b96c35f9898c4c1c5bd9983caa54,table1:R10,,,
@@ -2306,7 +2420,8 @@ afcba66f216a2781-table1-R16,2026-04-01,ulsan-city,,호계주택 남구점,상반
 6229a056fc9f7554-table1-R8,2026-03-30,ulsan-city,,원지산청장례식장,조의금 지급,50000,6229a056fc9f7554798285155c6f3d45b03be151f10190e795d616ebddec8b7e,table1:R8,,,
 6229a056fc9f7554-table1-R9,2026-03-30,ulsan-city,,비단길,직원 사기진작을 위한 부서운영 업무추진비 집행(서울주소방서 언양3팀),270000,6229a056fc9f7554798285155c6f3d45b03be151f10190e795d616ebddec8b7e,table1:R9,,,
 6229a056fc9f7554-table1-R10,2026-03-30,ulsan-city,,청도미나리뜯는돼지,화재원인 미상률 저감 대책 관련 관계자 간담회 경비 지급(소방본부 재난대응과),250000,6229a056fc9f7554798285155c6f3d45b03be151f10190e795d616ebddec8b7e,table1:R10,,,
-6229a056fc9f7554-table1-R11,2026-03-30,ulsan-city,,"로베잇, 해송",봄철 산불 대응체계 구축을 위한 유관기관 오찬 실시(소방본부 소방행정과),186000,6229a056fc9f7554798285155c6f3d45b03be151f10190e795d616ebddec8b7e,table1:R11,,,
+6229a056fc9f7554-table1-R11#1,2026-03-30,ulsan-city,,로베잇,봄철 산불 대응체계 구축을 위한 유관기관 오찬 실시(소방본부 소방행정과),,6229a056fc9f7554798285155c6f3d45b03be151f10190e795d616ebddec8b7e,table1:R11,,6229a056fc9f7554-table1-R11,186000
+6229a056fc9f7554-table1-R11#2,2026-03-30,ulsan-city,,해송,봄철 산불 대응체계 구축을 위한 유관기관 오찬 실시(소방본부 소방행정과),,6229a056fc9f7554798285155c6f3d45b03be151f10190e795d616ebddec8b7e,table1:R11,,6229a056fc9f7554-table1-R11,186000
 6229a056fc9f7554-table1-R12,2026-03-30,ulsan-city,,문경숯불,태화강 자전거도로 사고위험지역 개선사업 관계자 업무협의 및 만찬 제공(생태정원과),176000,6229a056fc9f7554798285155c6f3d45b03be151f10190e795d616ebddec8b7e,table1:R12,,,
 6229a056fc9f7554-table1-R13,2026-03-30,ulsan-city,,네이버파이낸셜(주),부서 운영 커피류 구입,108000,6229a056fc9f7554798285155c6f3d45b03be151f10190e795d616ebddec8b7e,table1:R13,,,
 6229a056fc9f7554-table1-R14,2026-03-30,ulsan-city,,"수림복국, 피트모스",문화유산 관련 관계자 간담회 및 오찬제공(문화유산과),83000,6229a056fc9f7554798285155c6f3d45b03be151f10190e795d616ebddec8b7e,table1:R14,,,
@@ -2407,7 +2522,8 @@ ea46d156d15c182a-table1-R14,2026-03-24,ulsan-city,,벚꽃별장,주택용소방�
 14b47756e215cb86-table1-R19,2026-03-19,ulsan-city,,오복미역,문화원 연합회 운영관련 간담회 및 오찬 제공(문화예술과),54000,14b47756e215cb86b58b6b6b50f852b86491085f1d3863518c5e3745aa4e4dc3,table1:R19,,,
 14b47756e215cb86-table1-R20,2026-03-19,ulsan-city,,댓잎장어,"직원 사기진작을 위한 부서운영 업무추진비 집행 (서울주소방서, 범서3팀)",400000,14b47756e215cb86b58b6b6b50f852b86491085f1d3863518c5e3745aa4e4dc3,table1:R20,,,
 14b47756e215cb86-table1-R21,2026-03-19,ulsan-city,,조선대패,소방 홍보 협력 강화를 위한 기자 간담회 경비(소방본부 예방안전과),250000,14b47756e215cb86b58b6b6b50f852b86491085f1d3863518c5e3745aa4e4dc3,table1:R21,,,
-14b47756e215cb86-table1-R22,2026-03-19,ulsan-city,,"가지산언양불고기, 투썸플레이스",반구천 일원 종합정비계획 수립 용역 자문회의 참석자 오찬 제공(문화유산과),210000,14b47756e215cb86b58b6b6b50f852b86491085f1d3863518c5e3745aa4e4dc3,table1:R22,,,
+14b47756e215cb86-table1-R22#1,2026-03-19,ulsan-city,,가지산언양불고기,반구천 일원 종합정비계획 수립 용역 자문회의 참석자 오찬 제공(문화유산과),,14b47756e215cb86b58b6b6b50f852b86491085f1d3863518c5e3745aa4e4dc3,table1:R22,,14b47756e215cb86-table1-R22,210000
+14b47756e215cb86-table1-R22#2,2026-03-19,ulsan-city,,투썸플레이스,반구천 일원 종합정비계획 수립 용역 자문회의 참석자 오찬 제공(문화유산과),,14b47756e215cb86b58b6b6b50f852b86491085f1d3863518c5e3745aa4e4dc3,table1:R22,,14b47756e215cb86-table1-R22,210000
 14b47756e215cb86-table1-R23,2026-03-19,ulsan-city,,온산수질개선사업소,직원 결혼에 대한 축의금 지급,50000,14b47756e215cb86b58b6b6b50f852b86491085f1d3863518c5e3745aa4e4dc3,table1:R23,,,
 774450c90b640d8c-table1-R2,2026-03-18,ulsan-city,,관내 일반음식점,남울주 화재안전조사 유관기관 간담회,200000,774450c90b640d8cdd5c2d853f4edf5af2b440aafc2adbd3f1af83cfbd4c868b,table1:R2,,,
 774450c90b640d8c-table1-R3,2026-03-18,ulsan-city,,우화,신재생에너지 업무 협의 후 참석자 만찬 제공(에너지산업과),261000,774450c90b640d8cdd5c2d853f4edf5af2b440aafc2adbd3f1af83cfbd4c868b,table1:R3,,,
@@ -2518,7 +2634,8 @@ ee04fd2974e555c2-table1-R16,2026-03-03,ulsan-city,,청송집,주요 현안 업�
 81521783010417e1-table1-R7,2026-02-27,ulsan-city,,연미정식당,울산시설공단 업무협의 관련 오찬 간담회 개최(복지정책과),175000,81521783010417e1f2a8aa43639ef47c69268fb34a29b4666cda8642d75cef34,table1:R7,,,
 81521783010417e1-table1-R8,2026-02-27,ulsan-city,,만객가,지방보조금 업무추진 간담회 후 만찬 제공,300000,81521783010417e1f2a8aa43639ef47c69268fb34a29b4666cda8642d75cef34,table1:R8,,,
 81521783010417e1-table1-R9,2026-02-27,ulsan-city,,봉계숯불갈비,시정 현안사업 의견수렴 간담회(총무과장),480000,81521783010417e1f2a8aa43639ef47c69268fb34a29b4666cda8642d75cef34,table1:R9,,,
-81521783010417e1-table1-R10,2026-02-27,ulsan-city,,"언양불고기, 하이오커피",제107주년 삼일절 기념식 관계자 간담회(총무과장),327000,81521783010417e1f2a8aa43639ef47c69268fb34a29b4666cda8642d75cef34,table1:R10,,,
+81521783010417e1-table1-R10#1,2026-02-27,ulsan-city,,언양불고기,제107주년 삼일절 기념식 관계자 간담회(총무과장),,81521783010417e1f2a8aa43639ef47c69268fb34a29b4666cda8642d75cef34,table1:R10,,81521783010417e1-table1-R10,327000
+81521783010417e1-table1-R10#2,2026-02-27,ulsan-city,,하이오커피,제107주년 삼일절 기념식 관계자 간담회(총무과장),,81521783010417e1f2a8aa43639ef47c69268fb34a29b4666cda8642d75cef34,table1:R10,,81521783010417e1-table1-R10,327000
 81521783010417e1-table1-R11,2026-02-27,ulsan-city,,토스카,오찬 제공(소속 상근직원 격려)(문화예술회관),200000,81521783010417e1f2a8aa43639ef47c69268fb34a29b4666cda8642d75cef34,table1:R11,,,
 81521783010417e1-table1-R12,2026-02-27,ulsan-city,,에쉬튼(ASHTON)호텔,공공외교 활성화를 위한 대책 논의 후 오찬 제공(투자유치과),857000,81521783010417e1f2a8aa43639ef47c69268fb34a29b4666cda8642d75cef34,table1:R12,,,
 81521783010417e1-table1-R13,2026-02-27,ulsan-city,,먹거리토배기식당,투자기업 현장지원 간담회 만찬 제공(기업현장지원과),400000,81521783010417e1f2a8aa43639ef47c69268fb34a29b4666cda8642d75cef34,table1:R13,,,
@@ -2548,7 +2665,8 @@ ee04fd2974e555c2-table1-R16,2026-03-03,ulsan-city,,청송집,주요 현안 업�
 35e6d8700d9282b1-table1-R19,2026-02-25,ulsan-city,,와사비,시정 주요 정책개발 간담회 개최(정책기획관),80000,35e6d8700d9282b1a3cfd699b735a2b61ee1b6adedce22b7da5deb82e1ae0ba3,table1:R19,,,
 35e6d8700d9282b1-table1-R20,2026-02-25,ulsan-city,,언양불고기식당,동해안권 관광진흥협의회 업무추진에 따른 오찬 제공(관광과),216000,35e6d8700d9282b1a3cfd699b735a2b61ee1b6adedce22b7da5deb82e1ae0ba3,table1:R20,,,
 c6d437acbf20170a-table1-R2,2026-02-23,ulsan-city,,칠암숯불장어구이,지역노동현안 관련 간담회 후 오찬 제공(노동특보),154000,c6d437acbf20170a0894009ba44dd1786ac7f8c18e673ccab49848e933038e0a,table1:R2,,,
-c6d437acbf20170a-table1-R3,2026-02-23,ulsan-city,,함야집 및 다모디,2026년 가족안전체험행사 운영 등 중구청 관계자 간담회(중부소방서장),320000,c6d437acbf20170a0894009ba44dd1786ac7f8c18e673ccab49848e933038e0a,table1:R3,,,
+c6d437acbf20170a-table1-R3#1,2026-02-23,ulsan-city,,함야집,2026년 가족안전체험행사 운영 등 중구청 관계자 간담회(중부소방서장),,c6d437acbf20170a0894009ba44dd1786ac7f8c18e673ccab49848e933038e0a,table1:R3,,c6d437acbf20170a-table1-R3,320000
+c6d437acbf20170a-table1-R3#2,2026-02-23,ulsan-city,,다모디,2026년 가족안전체험행사 운영 등 중구청 관계자 간담회(중부소방서장),,c6d437acbf20170a0894009ba44dd1786ac7f8c18e673ccab49848e933038e0a,table1:R3,,c6d437acbf20170a-table1-R3,320000
 c6d437acbf20170a-table1-R4,2026-02-23,ulsan-city,,함지박숯불갈비,도심외곽지역 배수관로 부설공사 현장 확인 후 참석자 오찬 제공(상수도사업본부 급수부),110000,c6d437acbf20170a0894009ba44dd1786ac7f8c18e673ccab49848e933038e0a,table1:R4,,,
 c6d437acbf20170a-table1-R5,2026-02-23,ulsan-city,,이든,전시해설사(도슨트) 간담회 개최 및 간식 제공(울산박물관),297000,c6d437acbf20170a0894009ba44dd1786ac7f8c18e673ccab49848e933038e0a,table1:R5,,,
 c6d437acbf20170a-table1-R6,2026-02-23,ulsan-city,,카페온외 1,오찬 제공(시립합창단 기획공연 추진 관련 관계자 간담회)(문화예술회관),100000,c6d437acbf20170a0894009ba44dd1786ac7f8c18e673ccab49848e933038e0a,table1:R6,,,
@@ -2630,7 +2748,8 @@ a00f37e1cbb7072e-table1-R19,2026-02-19,ulsan-city,,정책기획관,조의금 지
 019e9ebae278c63d-table1-R14,2026-02-12,ulsan-city,,언양불고기,설 연휴 교통대책 관련 업무 협의 후 오찬 제공 (버스택시과),88000,019e9ebae278c63ded633b36cab8e184f89dca93d5a1949119dd20da006748d0,table1:R14,,,
 019e9ebae278c63d-table1-R15,2026-02-12,ulsan-city,,뉴코아아울렛 울산점,도서관 시설 개선방안 의견수렴 (울산도서관),99000,019e9ebae278c63ded633b36cab8e184f89dca93d5a1949119dd20da006748d0,table1:R15,,,
 019e9ebae278c63d-table1-R16,2026-02-12,ulsan-city,,경복궁,도서관 업무 추진 관계자 간담회(울산도서관),162000,019e9ebae278c63ded633b36cab8e184f89dca93d5a1949119dd20da006748d0,table1:R16,,,
-019e9ebae278c63d-table1-R17,2026-02-12,ulsan-city,,"크리스피도넛, 스타벅스",인적자원 및 재난대비 강화 관련 차담회 개최(세종사무소),353000,019e9ebae278c63ded633b36cab8e184f89dca93d5a1949119dd20da006748d0,table1:R17,,,
+019e9ebae278c63d-table1-R17#1,2026-02-12,ulsan-city,,크리스피도넛,인적자원 및 재난대비 강화 관련 차담회 개최(세종사무소),,019e9ebae278c63ded633b36cab8e184f89dca93d5a1949119dd20da006748d0,table1:R17,,019e9ebae278c63d-table1-R17,353000
+019e9ebae278c63d-table1-R17#2,2026-02-12,ulsan-city,,스타벅스,인적자원 및 재난대비 강화 관련 차담회 개최(세종사무소),,019e9ebae278c63ded633b36cab8e184f89dca93d5a1949119dd20da006748d0,table1:R17,,019e9ebae278c63d-table1-R17,353000
 019e9ebae278c63d-table1-R18,2026-02-12,ulsan-city,,베이커리본신정점,언론민원 응대직원 간식 구입(대변인),97000,019e9ebae278c63ded633b36cab8e184f89dca93d5a1949119dd20da006748d0,table1:R18,,,
 019e9ebae278c63d-table1-R19,2026-02-12,ulsan-city,,태화강민물장어,울산사랑 캠페인관련 관계자 업무협의(대변인),435000,019e9ebae278c63ded633b36cab8e184f89dca93d5a1949119dd20da006748d0,table1:R19,,,
 019e9ebae278c63d-table1-R20,2026-02-12,ulsan-city,,팔등로영덕대게,원격검침 업무 개선에 따른 관계자 회의 후 만찬 제공(경영부장),105000,019e9ebae278c63ded633b36cab8e184f89dca93d5a1949119dd20da006748d0,table1:R20,,,
@@ -2702,7 +2821,8 @@ b6da172a7eee829b-table1-R39,2026-02-06,ulsan-city,,관내 식당,자동차 등�
 b6da172a7eee829b-table1-R40,2026-02-06,ulsan-city,,스시은,해양수산사업 업무협의 및 오찬 제공(해양수산과),165000,b6da172a7eee829b258e5e8f981380fe6e184908995d6495d9d30d7ca94dd468,table1:R40,,,
 f54f35507e6e91cf-table1-R2,2026-02-05,ulsan-city,,아이갓에브리씽 울산광역시청점,자원회수시설 실시협약 변경 협약(안) 타당성 검토 용역 착수보고회 다과 제공(자원순환과),50000,f54f35507e6e91cf15e9698239bbae65026d9504bac89ce70c73be047b5b4111,table1:R2,,,
 f54f35507e6e91cf-table1-R3,2026-02-05,ulsan-city,,카츠,전선 지중화사업 관련 업무 협의 후 만찬 제공(건설도로과),181000,f54f35507e6e91cf15e9698239bbae65026d9504bac89ce70c73be047b5b4111,table1:R3,,,
-f54f35507e6e91cf-table1-R4,2026-02-05,ulsan-city,,"장어광장, 버드로스터스",장애인복지시설 운영 관련 회의 후 오찬제공(장애인복지과),87000,f54f35507e6e91cf15e9698239bbae65026d9504bac89ce70c73be047b5b4111,table1:R4,,,
+f54f35507e6e91cf-table1-R4#1,2026-02-05,ulsan-city,,장어광장,장애인복지시설 운영 관련 회의 후 오찬제공(장애인복지과),,f54f35507e6e91cf15e9698239bbae65026d9504bac89ce70c73be047b5b4111,table1:R4,,f54f35507e6e91cf-table1-R4,87000
+f54f35507e6e91cf-table1-R4#2,2026-02-05,ulsan-city,,버드로스터스,장애인복지시설 운영 관련 회의 후 오찬제공(장애인복지과),,f54f35507e6e91cf15e9698239bbae65026d9504bac89ce70c73be047b5b4111,table1:R4,,f54f35507e6e91cf-table1-R4,87000
 f54f35507e6e91cf-table1-R5,2026-02-05,ulsan-city,,아이갓에브리씽 울산광역시청점,2026년 제1회 보육정책위원회 관련 다과 제공(복지정책과),49000,f54f35507e6e91cf15e9698239bbae65026d9504bac89ce70c73be047b5b4111,table1:R5,,,
 f54f35507e6e91cf-table1-R6,2026-02-05,ulsan-city,,진빼이 돼지국밥전골,2026년 주요업무보고회 관련 직원 노고 격려(안전체험관),40000,f54f35507e6e91cf15e9698239bbae65026d9504bac89ce70c73be047b5b4111,table1:R6,,,
 f54f35507e6e91cf-table1-R7,2026-02-05,ulsan-city,,옹기골,오찬 제공(소속 상근직원 격려)(문화예술회관),65000,f54f35507e6e91cf15e9698239bbae65026d9504bac89ce70c73be047b5b4111,table1:R7,,,
@@ -2731,7 +2851,8 @@ f54f35507e6e91cf-table1-R26,2026-02-05,ulsan-city,,관내식당,동부소방서-
 4697e034b391629d-table1-R5,2026-02-03,ulsan-city,,바로쌈밥,노동안전 종합대책 관련 정책간담회 개최,223000,4697e034b391629d1b75a86c95c5ac91284f545343e77ddc80381ee5bdcce92b,table1:R5,,,
 4697e034b391629d-table1-R6,2026-02-03,ulsan-city,,한류관,울산관광 홍보를 위한 오찬 간담회,300000,4697e034b391629d1b75a86c95c5ac91284f545343e77ddc80381ee5bdcce92b,table1:R6,,,
 4697e034b391629d-table1-R7,2026-02-03,ulsan-city,,버드로스터스,직원 및 내방객 접대용 커피원두 구입(투자유치과),150000,4697e034b391629d1b75a86c95c5ac91284f545343e77ddc80381ee5bdcce92b,table1:R7,,,
-4697e034b391629d-table1-R8,2026-02-03,ulsan-city,,"사랑채식당, 카페칼리스타",범죄예방대응 부서 업무연찬 간담회 후 오찬 제공,300000,4697e034b391629d1b75a86c95c5ac91284f545343e77ddc80381ee5bdcce92b,table1:R8,,,
+4697e034b391629d-table1-R8#1,2026-02-03,ulsan-city,,사랑채식당,범죄예방대응 부서 업무연찬 간담회 후 오찬 제공,,4697e034b391629d1b75a86c95c5ac91284f545343e77ddc80381ee5bdcce92b,table1:R8,,4697e034b391629d-table1-R8,300000
+4697e034b391629d-table1-R8#2,2026-02-03,ulsan-city,,카페칼리스타,범죄예방대응 부서 업무연찬 간담회 후 오찬 제공,,4697e034b391629d1b75a86c95c5ac91284f545343e77ddc80381ee5bdcce92b,table1:R8,,4697e034b391629d-table1-R8,300000
 4697e034b391629d-table1-R9,2026-02-03,ulsan-city,,"오광수산회센타, 숙자초장",생태관광 활성화 관련 업무협의(환경정책과),200000,4697e034b391629d1b75a86c95c5ac91284f545343e77ddc80381ee5bdcce92b,table1:R9,,,
 4697e034b391629d-table1-R10,2026-02-03,ulsan-city,,소많이먹어도돼지,교통약자 특별교통수단 이동지원 사업 관련 업무협의 및 오찬 제공(교통기획과),450000,4697e034b391629d1b75a86c95c5ac91284f545343e77ddc80381ee5bdcce92b,table1:R10,,,
 4697e034b391629d-table1-R11,2026-02-03,ulsan-city,,바로쌈밥,노동안전 종합대책 관련 정책간담회 개최(세종사무소),223000,4697e034b391629d1b75a86c95c5ac91284f545343e77ddc80381ee5bdcce92b,table1:R11,,,
@@ -2876,14 +2997,16 @@ d81648c7633c3c1d-table1-R31,2026-01-29,ulsan-city,,태영생막창,의회 주요
 67a672744de466f3-table1-R12,2026-01-19,ulsan-city,,일류불고기,국가예산 확보 관련 간담회 참석자 만찬 제공,480000,67a672744de466f37805f8b9e38aeab8efb0484be380433ba9a1008b0ce6360f,table1:R12,,,
 67a672744de466f3-table1-R13,2026-01-19,ulsan-city,,스시나고미,재경향우히 인적네트워크 발굴 간담회(서울본부),132000,67a672744de466f37805f8b9e38aeab8efb0484be380433ba9a1008b0ce6360f,table1:R13,,,
 67a672744de466f3-table1-R14,2026-01-19,ulsan-city,,담가화로구이 송정점,"기관운영업무추진비 지출(북부소방서, 구조대)",120000,67a672744de466f37805f8b9e38aeab8efb0484be380433ba9a1008b0ce6360f,table1:R14,,,
-67a672744de466f3-table1-R15,2026-01-19,ulsan-city,,"토석정, 카페숙이",청원심의 운영 간담회 개최에 따른 오찬 및 다과 제공(권익인권담당관),76000,67a672744de466f37805f8b9e38aeab8efb0484be380433ba9a1008b0ce6360f,table1:R15,,,
+67a672744de466f3-table1-R15#1,2026-01-19,ulsan-city,,토석정,청원심의 운영 간담회 개최에 따른 오찬 및 다과 제공(권익인권담당관),,67a672744de466f37805f8b9e38aeab8efb0484be380433ba9a1008b0ce6360f,table1:R15,,67a672744de466f3-table1-R15,76000
+67a672744de466f3-table1-R15#2,2026-01-19,ulsan-city,,카페숙이,청원심의 운영 간담회 개최에 따른 오찬 및 다과 제공(권익인권담당관),,67a672744de466f37805f8b9e38aeab8efb0484be380433ba9a1008b0ce6360f,table1:R15,,67a672744de466f3-table1-R15,76000
 67a672744de466f3-table1-R16,2026-01-19,ulsan-city,,회바다포장받아,생태관광도시 활성화 관련 관계자 업무협의(환경정책과),170000,67a672744de466f37805f8b9e38aeab8efb0484be380433ba9a1008b0ce6360f,table1:R16,,,
 67a672744de466f3-table1-R17,2026-01-19,ulsan-city,,복정원,울산박물관 홍보 관련 간담회 개최 및 참석자 오찬 제공(울산박물관),294000,67a672744de466f37805f8b9e38aeab8efb0484be380433ba9a1008b0ce6360f,table1:R17,,,
 67a672744de466f3-table1-R18,2026-01-19,ulsan-city,,다운고기백화점,인터넷웹진 운영관련 관계자 업무협의 및 만찬(대변인),380000,67a672744de466f37805f8b9e38aeab8efb0484be380433ba9a1008b0ce6360f,table1:R18,,,
 67a672744de466f3-table1-R19,2026-01-19,ulsan-city,,진주냉면,2026 지역문화예술 정책사업 설명회 참석자 오찬 제공(문화예술과),129000,67a672744de466f37805f8b9e38aeab8efb0484be380433ba9a1008b0ce6360f,table1:R19,,,
 67a672744de466f3-table1-R20,2026-01-19,ulsan-city,,대왕암암소갈비,지역현안 사업 추진 간담회 개최(정책기획관),463000,67a672744de466f37805f8b9e38aeab8efb0484be380433ba9a1008b0ce6360f,table1:R20,,,
 67a672744de466f3-table1-R21,2026-01-19,ulsan-city,,관내식당,내근 직원 사기진작을 위한 오찬 경비(동부소방서),90000,67a672744de466f37805f8b9e38aeab8efb0484be380433ba9a1008b0ce6360f,table1:R21,,,
-67a672744de466f3-table1-R22,2026-01-19,ulsan-city,,"선바위 한우국밥, 구유림",강동해안공원(강동해안지구) 조성사업 관련 업무 협의 후 오찬 제공(관광과),85000,67a672744de466f37805f8b9e38aeab8efb0484be380433ba9a1008b0ce6360f,table1:R22,,,
+67a672744de466f3-table1-R22#1,2026-01-19,ulsan-city,,선바위 한우국밥,강동해안공원(강동해안지구) 조성사업 관련 업무 협의 후 오찬 제공(관광과),,67a672744de466f37805f8b9e38aeab8efb0484be380433ba9a1008b0ce6360f,table1:R22,,67a672744de466f3-table1-R22,85000
+67a672744de466f3-table1-R22#2,2026-01-19,ulsan-city,,구유림,강동해안공원(강동해안지구) 조성사업 관련 업무 협의 후 오찬 제공(관광과),,67a672744de466f37805f8b9e38aeab8efb0484be380433ba9a1008b0ce6360f,table1:R22,,67a672744de466f3-table1-R22,85000
 749f7964148fa91d-table1-R2,2026-01-18,ulsan-city,,개인(성명 비공개),직원 결혼에 따른 축의금 지급,50000,749f7964148fa91dbd68699a0055b60872ea09d321d99b3484eb9dd8179f6a87,table1:R2,,,
 0a5d99f41ffc4f56-table1-R2,2026-01-17,ulsan-city,,타니베이호텔,축의금 지급,50000,0a5d99f41ffc4f5678dc1a24abddee4057af1ec950235eb962d61d52a48521cd,table1:R2,,,
 0f95b3024e12a756-table1-R2,2026-01-16,ulsan-city,,밀양시골밥상,지역노동현안 관련 간담회 후 오찬 제공(노동특보),540000,0f95b3024e12a756bdc0c7dd94c8994752581372d1916980de76bb82de862c31,table1:R2,,,
@@ -3019,11 +3142,13 @@ b05ebcdef68b01f8-table1-R13,2026-01-07,ulsan-city,,오크(Oak),지방재정 운�
 b05ebcdef68b01f8-table1-R14,2026-01-07,ulsan-city,,"시루엔젤, 목화떡집",인사이동 직원 전별 간식 구입,558000,b05ebcdef68b01f8d23af241a7fb019061bb63754e1454b81177ea9f4c320012,table1:R14,,,
 b05ebcdef68b01f8-table1-R15,2026-01-07,ulsan-city,,관내 카페,인사이동에 따른 직원 노고 격려 간식 구입(일반산단과),162000,b05ebcdef68b01f8d23af241a7fb019061bb63754e1454b81177ea9f4c320012,table1:R15,,,
 b05ebcdef68b01f8-table1-R16,2026-01-07,ulsan-city,,과사무실,부서 직원 간식 구입(주택허가과),132000,b05ebcdef68b01f8d23af241a7fb019061bb63754e1454b81177ea9f4c320012,table1:R16,,,
-b05ebcdef68b01f8-table1-R17,2026-01-07,ulsan-city,,"포석정, 커피라운지",시민고충처리위원회 운영 관련 간담회 개최에 따른 오찬 및 다과 제공(권익인권담당관),213000,b05ebcdef68b01f8d23af241a7fb019061bb63754e1454b81177ea9f4c320012,table1:R17,,,
+b05ebcdef68b01f8-table1-R17#1,2026-01-07,ulsan-city,,포석정,시민고충처리위원회 운영 관련 간담회 개최에 따른 오찬 및 다과 제공(권익인권담당관),,b05ebcdef68b01f8d23af241a7fb019061bb63754e1454b81177ea9f4c320012,table1:R17,,b05ebcdef68b01f8-table1-R17,213000
+b05ebcdef68b01f8-table1-R17#2,2026-01-07,ulsan-city,,커피라운지,시민고충처리위원회 운영 관련 간담회 개최에 따른 오찬 및 다과 제공(권익인권담당관),,b05ebcdef68b01f8d23af241a7fb019061bb63754e1454b81177ea9f4c320012,table1:R17,,b05ebcdef68b01f8-table1-R17,213000
 b05ebcdef68b01f8-table1-R18,2026-01-07,ulsan-city,,부산갈매기,녹색환경지원센터 관계자 업무협의(환경정책과),131000,b05ebcdef68b01f8d23af241a7fb019061bb63754e1454b81177ea9f4c320012,table1:R18,,,
 b05ebcdef68b01f8-table1-R19,2026-01-07,ulsan-city,,관내식당,부서 직원 격려 만찬 제공(AI산업전략과),380000,b05ebcdef68b01f8d23af241a7fb019061bb63754e1454b81177ea9f4c320012,table1:R19,,,
 b05ebcdef68b01f8-table1-R20,2026-01-07,ulsan-city,,호두랑파이랑,직원 간식 구입(중부사업소),224000,b05ebcdef68b01f8d23af241a7fb019061bb63754e1454b81177ea9f4c320012,table1:R20,,,
-b05ebcdef68b01f8-table1-R21,2026-01-07,ulsan-city,,"스시므지기와, 머스트커피",신규임용자 기초 직무교육(정신건강교육) 운영 관련 오찬(소방본부 소방행정과),127000,b05ebcdef68b01f8d23af241a7fb019061bb63754e1454b81177ea9f4c320012,table1:R21,,,
+b05ebcdef68b01f8-table1-R21#1,2026-01-07,ulsan-city,,스시므지기와,신규임용자 기초 직무교육(정신건강교육) 운영 관련 오찬(소방본부 소방행정과),,b05ebcdef68b01f8d23af241a7fb019061bb63754e1454b81177ea9f4c320012,table1:R21,,b05ebcdef68b01f8-table1-R21,127000
+b05ebcdef68b01f8-table1-R21#2,2026-01-07,ulsan-city,,머스트커피,신규임용자 기초 직무교육(정신건강교육) 운영 관련 오찬(소방본부 소방행정과),,b05ebcdef68b01f8d23af241a7fb019061bb63754e1454b81177ea9f4c320012,table1:R21,,b05ebcdef68b01f8-table1-R21,127000
 b05ebcdef68b01f8-table1-R22,2026-01-07,ulsan-city,,찰보리빵,상반기 정기인사에 따른 직원 격려 간식 구입(국가산단과),208000,b05ebcdef68b01f8d23af241a7fb019061bb63754e1454b81177ea9f4c320012,table1:R22,,,
 b05ebcdef68b01f8-table1-R23,2026-01-07,ulsan-city,,팔도낙지촌,소방홍보 발전을 위한 업무관계자 오찬(소방본부 예방안전과),210000,b05ebcdef68b01f8d23af241a7fb019061bb63754e1454b81177ea9f4c320012,table1:R23,,,
 388751efc2db2590-table1-R2,2026-01-06,ulsan-city,,복호두 우정혁신점,직원 격려용 간식 구입(태화강국가정원과),87000,388751efc2db25901577470e57380833daf632809bba370858a132cd3427bdf1,table1:R2,,,
@@ -3275,7 +3400,8 @@ f5a6cbc884a93978-table1-R3,2026-04-17,ulsan-namgu,건축허가과,"염서방식�
 f5a6cbc884a93978-table1-R4,2026-04-24,ulsan-namgu,건축허가과,신홍어마을,직원 노고격려 만찬 제공,233000,f5a6cbc884a93978ae6f240830fac5fa777fee93cf40f4501f05d8e1f89930b6,table1:R4,,,
 f5a6cbc884a93978-table1-R5,2026-05-15,ulsan-namgu,건축허가과,구첩식당,직원 노고격려 만찬 제공,544000,f5a6cbc884a93978ae6f240830fac5fa777fee93cf40f4501f05d8e1f89930b6,table1:R5,,,
 f5a6cbc884a93978-table1-R6,2026-05-27,ulsan-namgu,건축허가과,고집센그집갈비탕 울산야음점,2026년 우수기 민간건설공사 시공ㆍ감리 실태 점검에 따른 점검관 오찬 제공,50000,f5a6cbc884a93978ae6f240830fac5fa777fee93cf40f4501f05d8e1f89930b6,table1:R6,,,
-f5a6cbc884a93978-table1-R7,2026-05-28,ulsan-namgu,건축허가과,"롬브, 원조남산 민물추어탕",2026년 우수기 민간건설공사 시공ㆍ감리 실태 점검에 따른 점검관 오찬 제공,54600,f5a6cbc884a93978ae6f240830fac5fa777fee93cf40f4501f05d8e1f89930b6,table1:R7,,,
+f5a6cbc884a93978-table1-R7#1,2026-05-28,ulsan-namgu,건축허가과,롬브,2026년 우수기 민간건설공사 시공ㆍ감리 실태 점검에 따른 점검관 오찬 제공,,f5a6cbc884a93978ae6f240830fac5fa777fee93cf40f4501f05d8e1f89930b6,table1:R7,,f5a6cbc884a93978-table1-R7,54600
+f5a6cbc884a93978-table1-R7#2,2026-05-28,ulsan-namgu,건축허가과,원조남산 민물추어탕,2026년 우수기 민간건설공사 시공ㆍ감리 실태 점검에 따른 점검관 오찬 제공,,f5a6cbc884a93978ae6f240830fac5fa777fee93cf40f4501f05d8e1f89930b6,table1:R7,,f5a6cbc884a93978-table1-R7,54600
 116b614e978728d0-table1-R2,2026-05-15,ulsan-namgu,일자리청년과,마루 외,직원 격려 오찬 제공 (5. 4.자 인사이동),94500,116b614e978728d0c72a8c9596b4ce1b8c0ff6563f51705ad50d93b2687df299,table1:R2,,,
 116b614e978728d0-table1-R3,2026-05-21,ulsan-namgu,일자리청년과,경복궁,신중년 경력형 일자리사업 관련 간담회 참석자 오찬 제공,351000,116b614e978728d0c72a8c9596b4ce1b8c0ff6563f51705ad50d93b2687df299,table1:R3,,,
 fa0c7b9d87860405-table1-R2,2026-04-02,ulsan-namgu,일자리청년과,더만족 울산삼산점,"청년정책협의체 임원진, 신규 위원 간담회 참석자 만찬 제공",200.000,fa0c7b9d87860405a7e5c4b8aa7c6c6493687218b00d750d0fc8344a8fde5ac8,table1:R2,,,
@@ -3286,10 +3412,12 @@ fa0c7b9d87860405-table1-R6,2026-04-17,ulsan-namgu,일자리청년과,염서방�
 fa0c7b9d87860405-table1-R7,2026-04-29,ulsan-namgu,일자리청년과,갈매기구이,청년모임활동 간담회 참여자 만찬 제공,349000,fa0c7b9d87860405a7e5c4b8aa7c6c6493687218b00d750d0fc8344a8fde5ac8,table1:R7,,,
 fa0c7b9d87860405-table1-R8,2026-04-30,ulsan-namgu,일자리청년과,위클리스푼 외,직원 격려 오찬제공 (일자리 공시제),126000,fa0c7b9d87860405a7e5c4b8aa7c6c6493687218b00d750d0fc8344a8fde5ac8,table1:R8,,,
 5deec25ca192dbaa-table1-R2,2026-03-03,ulsan-namgu,건축허가과,팡팡할인마트,2026년 제1회 건축위원회 개최에 따른 간식 구입,77800,5deec25ca192dbaa1e1bf4e06c1135ed5065da20eea3cbcd6fff2b776db251e9,table1:R2,,,
-5deec25ca192dbaa-table1-R3,2026-03-25,ulsan-namgu,건축허가과,"고집센그집갈비탕 울산야음점, 투썸플레이스 울산선암호수공원점",2026년 해빙기 대비 민간건설공사 시공ㆍ감리 실태 안전점검에 따른 점검관 오찬 제공,72300,5deec25ca192dbaa1e1bf4e06c1135ed5065da20eea3cbcd6fff2b776db251e9,table1:R3,,,
+5deec25ca192dbaa-table1-R3#1,2026-03-25,ulsan-namgu,건축허가과,고집센그집갈비탕 울산야음점,2026년 해빙기 대비 민간건설공사 시공ㆍ감리 실태 안전점검에 따른 점검관 오찬 제공,,5deec25ca192dbaa1e1bf4e06c1135ed5065da20eea3cbcd6fff2b776db251e9,table1:R3,,5deec25ca192dbaa-table1-R3,72300
+5deec25ca192dbaa-table1-R3#2,2026-03-25,ulsan-namgu,건축허가과,투썸플레이스 울산선암호수공원점,2026년 해빙기 대비 민간건설공사 시공ㆍ감리 실태 안전점검에 따른 점검관 오찬 제공,,5deec25ca192dbaa1e1bf4e06c1135ed5065da20eea3cbcd6fff2b776db251e9,table1:R3,,5deec25ca192dbaa-table1-R3,72300
 5deec25ca192dbaa-table1-R4,2026-03-26,ulsan-namgu,건축허가과,"속초명가 울산무거본점, 오피스커피",2026년 해빙기 민간건설공사 시공ㆍ감리 실태 점검에 따른 점검관 오찬 제공,63500,5deec25ca192dbaa1e1bf4e06c1135ed5065da20eea3cbcd6fff2b776db251e9,table1:R4,,,
 5deec25ca192dbaa-table1-R5,2026-03-30,ulsan-namgu,건축허가과,앞산큰골집 달동점,주택건설공사 총괄감리원 면접에 따른 면접위원 등 관계자 오찬 제공,112000,5deec25ca192dbaa1e1bf4e06c1135ed5065da20eea3cbcd6fff2b776db251e9,table1:R5,,,
-f4903aa5a7f3113e-table1-R2,2026-02-11,ulsan-namgu,건축허가과,"미가횟집, 카페한",건축행정지원사업 활성화 관련 간담회 참석자 오찬 제공,174000,f4903aa5a7f3113e15abecca791664ef901f14e60546bb540196ff98aac3c329,table1:R2,,,
+f4903aa5a7f3113e-table1-R2#1,2026-02-11,ulsan-namgu,건축허가과,미가횟집,건축행정지원사업 활성화 관련 간담회 참석자 오찬 제공,,f4903aa5a7f3113e15abecca791664ef901f14e60546bb540196ff98aac3c329,table1:R2,,f4903aa5a7f3113e-table1-R2,174000
+f4903aa5a7f3113e-table1-R2#2,2026-02-11,ulsan-namgu,건축허가과,카페한,건축행정지원사업 활성화 관련 간담회 참석자 오찬 제공,,f4903aa5a7f3113e15abecca791664ef901f14e60546bb540196ff98aac3c329,table1:R2,,f4903aa5a7f3113e-table1-R2,174000
 6e05ecf9de76e927-table1-R2,2026-01-08,ulsan-namgu,건축허가과,온니떡,직원 격려용 간식 구입,240000,6e05ecf9de76e9271c96259d685ef6bca543a12d2ddeabefbfde4bce299baf62,table1:R2,,,
 6e05ecf9de76e927-table1-R3,2026-01-12,ulsan-namgu,건축허가과,㈜언양불고기,직원 노고격려 오찬 제공,732000,6e05ecf9de76e9271c96259d685ef6bca543a12d2ddeabefbfde4bce299baf62,table1:R3,,,
 6e05ecf9de76e927-table1-R4,2026-01-28,ulsan-namgu,건축허가과,숯불에닭 울산삼산점,직원 노고격려 만찬 제공,220000,6e05ecf9de76e9271c96259d685ef6bca543a12d2ddeabefbfde4bce299baf62,table1:R4,,,
@@ -3401,7 +3529,8 @@ f9dcc7d6720d9baf-table1-R2,2026-02-03,ulsan-donggu,,산내암소마을,지역사
 5ed4ffd0c2aad81a-table1-R3,2026-06-25,ulsan-bukgu,건설과,한씨막국수,보상업무 관계자 간담회 식사 제공,210000,5ed4ffd0c2aad81a9e93089035cf170d9de1fb2bc2eaeac108dd49771d27d455,table1:R3,,,
 5ed4ffd0c2aad81a-table1-R4,2026-06-30,ulsan-bukgu,건설과,대한돈가,하천시설 정비공사 관련 업무협의 간담회 식사 제공,300000,5ed4ffd0c2aad81a9e93089035cf170d9de1fb2bc2eaeac108dd49771d27d455,table1:R4,,,
 e5a06c714e198264-table1-R2,2026-03-05,ulsan-bukgu,공원녹지과,우리동네호두과자,연암정원 관련협의기관 방문에 따른 다과구입,42000,e5a06c714e19826430eaf753b1ad745b71cedad2fc9e72cde7e3de3c3cb39d2e,table1:R2,,,
-e5a06c714e198264-table1-R3,2026-03-05,ulsan-bukgu,공원녹지과,가온수산 및 우돈,가재골 공원 조성관련 간담회 참석자 석식 제공,274000,e5a06c714e19826430eaf753b1ad745b71cedad2fc9e72cde7e3de3c3cb39d2e,table1:R3,,,
+e5a06c714e198264-table1-R3#1,2026-03-05,ulsan-bukgu,공원녹지과,가온수산,가재골 공원 조성관련 간담회 참석자 석식 제공,,e5a06c714e19826430eaf753b1ad745b71cedad2fc9e72cde7e3de3c3cb39d2e,table1:R3,,e5a06c714e198264-table1-R3,274000
+e5a06c714e198264-table1-R3#2,2026-03-05,ulsan-bukgu,공원녹지과,우돈,가재골 공원 조성관련 간담회 참석자 석식 제공,,e5a06c714e19826430eaf753b1ad745b71cedad2fc9e72cde7e3de3c3cb39d2e,table1:R3,,e5a06c714e198264-table1-R3,274000
 e5a06c714e198264-table1-R4,2026-03-16,ulsan-bukgu,공원녹지과,돼지영농후계자,탄광골 일원 등산로 정비공사 관련 간담회 참석자 석식제공,290000,e5a06c714e19826430eaf753b1ad745b71cedad2fc9e72cde7e3de3c3cb39d2e,table1:R4,,,
 e5a06c714e198264-table1-R5,2026-03-25,ulsan-bukgu,공원녹지과,돼지영농후계자,가재골공원 준공식 관련 간담회 참석자 석식 제공,400000,e5a06c714e19826430eaf753b1ad745b71cedad2fc9e72cde7e3de3c3cb39d2e,table1:R5,,,
 ec2d04bfe309431e-table1-R2,2026-03-11,ulsan-bukgu,공원녹지과,-,공원환경국 직원 조모상 조의금 지급,50000,ec2d04bfe309431eb8c3061c13a33ce63c548fa166ef1594876856d2be56265d,table1:R2,,,
