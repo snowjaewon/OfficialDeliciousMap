@@ -31,6 +31,7 @@ from deliciousmap.contracts import (
     FetchOutput,
     GeocodeInput,
     GeocodeOutput,
+    GeocodeResult,
     HeaderMapInput,
     HeaderMapOutput,
     MarkerCandidate,
@@ -179,6 +180,25 @@ def cite_city_geocode(city: GeocodeOutput, records: tuple[Record, ...]) -> Geoco
     if any(record.record_id not in decided for record in records):
         raise ValueError("organization record missing from city geocode; rerun city geocode")
     return GeocodeOutput(results=tuple(decided[record.record_id] for record in records))
+
+
+def coordinate_peers(
+    store: ArtifactStore, results: tuple[GeocodeResult, ...]
+) -> tuple[GeocodeResult, ...]:
+    """기관 판정의 업소를 도시에서 함께 이루는 다른 기관의 레코드(#183).
+
+    도시 판정은 기관을 가로질러 업소를 합치므로 합쳐진 좌표를 낸 레코드가 기관 밖에 있을 수
+    있다. 좌표의 출처·주소와 업종 조회는 그 레코드가 밝히므로 함께 넘긴다. 도시 실행에는 없다.
+    """
+    if store.target.org is None:
+        return ()
+    own = {item.record_id for item in results}
+    businesses = {item.business_id for item in results if item.business_id is not None}
+    return tuple(
+        item
+        for item in store.city().load("geocode", GeocodeOutput).results
+        if item.business_id in businesses and item.record_id not in own
+    )
 
 
 def marker_candidates(
@@ -356,6 +376,7 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
                 )
             else:
                 closed = store.load("closure", ClosureOutput)
+                peers = coordinate_peers(store, geocoded.results)
                 result = adapters.build(
                     BuildInput(
                         records=parsed.records,
@@ -373,7 +394,10 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
                             classified.decisions,
                             geocoded.results,
                         ),
-                        categories=category.published(store.category_cache(), geocoded.results),
+                        categories=category.published(
+                            store.category_cache(), (*geocoded.results, *peers)
+                        ),
+                        peers=peers,
                     ),
                     context,
                 )
@@ -385,7 +409,7 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
         with store.category_cache() as category_lookups:
             category_failed = category.resolve(
                 category_lookups,
-                result.results,
+                (*result.results, *coordinate_peers(store, result.results)),
                 context.category_sources,
                 retry_failed=context.retry_failed,
             )
