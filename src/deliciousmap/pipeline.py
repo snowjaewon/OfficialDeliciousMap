@@ -31,6 +31,7 @@ from deliciousmap.contracts import (
     FetchOutput,
     GeocodeInput,
     GeocodeOutput,
+    GeocodeResult,
     HeaderMapInput,
     HeaderMapOutput,
     MarkerCandidate,
@@ -168,6 +169,37 @@ def restaurant_records(
     return tuple(record for record in records if record.record_id in included)
 
 
+def cite_city_geocode(
+    city: tuple[GeocodeResult, ...], records: tuple[Record, ...]
+) -> GeocodeOutput:
+    """기관 레코드의 판정을 도시 판정에서 그대로 옮긴다(#183).
+
+    기관이 따로 판정하면 조회 캐시를 다른 시각에 채우고 업소 합치기도 기관 레코드만 보므로
+    같은 레코드가 도시와 다른 좌표·근거를 갖는다. 사이트는 도시 산출물로 빌드하므로 도시를
+    기준으로 삼는다. 도시 판정에 없는 레코드는 기관이 혼자 정하지 않고 거부한다.
+    """
+    decided = {item.record_id: item for item in city}
+    if any(record.record_id not in decided for record in records):
+        raise ValueError("organization record missing from city geocode; rerun city geocode")
+    return GeocodeOutput(results=tuple(decided[record.record_id] for record in records))
+
+
+def coordinate_peers(
+    city: tuple[GeocodeResult, ...], results: tuple[GeocodeResult, ...]
+) -> tuple[GeocodeResult, ...]:
+    """기관 판정의 업소를 도시에서 함께 이루는 다른 기관의 레코드(#183).
+
+    도시 판정은 기관을 가로질러 업소를 합치므로 합쳐진 좌표를 낸 레코드가 기관 밖에 있을 수
+    있다. 좌표의 출처·주소와 업종 조회는 그 레코드가 밝히므로 함께 넘긴다. 도시 실행은 `city`를
+    비워 넘기므로 없다.
+    """
+    own = {item.record_id for item in results}
+    businesses = {item.business_id for item in results if item.business_id is not None}
+    return tuple(
+        item for item in city if item.business_id in businesses and item.record_id not in own
+    )
+
+
 def marker_candidates(
     records: tuple[Record, ...], decisions: tuple[Classification, ...], geocodes: GeocodeOutput
 ) -> tuple[MarkerCandidate, ...]:
@@ -236,6 +268,8 @@ def _folded_cause(error: Exception) -> FailureCause:
 def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> StageOutput:
     store = ArtifactStore(context.paths, context.target)
     result: StageOutput
+    # 기관 실행이 인용하는 도시 판정. 한 단계에서 한 번만 읽는다. 도시 실행에는 비어 있다.
+    city: tuple[GeocodeResult, ...] = ()
     match stage:
         case "fetch":
             result = adapters.fetch(FetchInput(context.target), context)
@@ -273,6 +307,14 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
                     restorations=restoration.resolve(parsed.records, store.restorations()),
                 ),
                 context,
+            )
+        case "geocode" if context.target.org is not None:
+            parsed = store.load("parse", ParseOutput)
+            classified = store.load("classify", ClassifyOutput)
+            city = store.city().load("geocode", GeocodeOutput).results
+            result = cite_city_geocode(
+                city,
+                restaurant_records(parsed.records, classified.decisions),
             )
         case "geocode":
             parsed = store.load("parse", ParseOutput)
@@ -336,6 +378,9 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
                 )
             else:
                 closed = store.load("closure", ClosureOutput)
+                if context.target.org is not None:
+                    city = store.city().load("geocode", GeocodeOutput).results
+                peers = coordinate_peers(city, geocoded.results)
                 result = adapters.build(
                     BuildInput(
                         records=parsed.records,
@@ -353,7 +398,10 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
                             classified.decisions,
                             geocoded.results,
                         ),
-                        categories=category.published(store.category_cache(), geocoded.results),
+                        categories=category.published(
+                            store.category_cache(), (*geocoded.results, *peers)
+                        ),
+                        peers=peers,
                     ),
                     context,
                 )
@@ -365,10 +413,12 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
         with store.category_cache() as category_lookups:
             category_failed = category.resolve(
                 category_lookups,
-                result.results,
+                (*result.results, *coordinate_peers(city, result.results)),
                 context.category_sources,
                 retry_failed=context.retry_failed,
             )
+        # 기관 실행의 `lookup_error`는 인용한 도시 판정의 것이다. 기관을 다시 돌려도 풀리지 않고
+        # 도시 geocode를 `--retry-failed`로 다시 돌려야 풀린다.
         if category_failed or any(item.reason == "lookup_error" for item in result.results):
             raise AdapterFailure(FailureCause.LOOKUP_FAILED)
     return result

@@ -1247,6 +1247,8 @@ class BuildInput(Contract):
     tally: SubmissionTally = SubmissionTally()
     # 업소 식별자별 업종 원문. 여기 없는 마커는 업종을 모른다(#96).
     categories: dict[Sha256, Text] = Field(default_factory=dict)
+    # 기관 실행에서 같은 업소를 이루는 다른 기관의 도시 판정. 합쳐진 좌표를 낸 레코드일 수 있다.
+    peers: tuple[GeocodeResult, ...] = ()
 
 
 class BuildOutput(Contract):

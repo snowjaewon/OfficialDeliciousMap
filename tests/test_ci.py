@@ -157,6 +157,83 @@ def test_check_data_rejects_an_organization_record_missing_from_city_classificat
     assert "organization classify record not in city" in capsys.readouterr().err
 
 
+def write_geocode_artifact(
+    path: Path, city: str, org: str | None, results: list[dict[str, object]]
+) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "schema_version": 5,
+                "city": city,
+                "org": org,
+                "dependencies": {},
+                "payload": {"results": results},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
+def placed(record_id: str, latitude: float, evidence: str) -> dict[str, object]:
+    return {"record_id": record_id, "latitude": latitude, "evidence": evidence}
+
+
+def test_check_data_names_every_record_the_organization_geocodes_differently(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """사이트는 도시 판정으로 빌드한다. 기관이 다르게 판정한 레코드를 조용히 두지 않는다(#183)."""
+    write_geocode_artifact(
+        tmp_path / "gwangju" / "geocode.json",
+        "gwangju",
+        None,
+        [
+            placed("record-1", 35.1, "provider-cross license+naver"),
+            placed("record-2", 35.3, "single-provider license"),
+        ],
+    )
+    write_geocode_artifact(
+        tmp_path / "gwangju" / "orgs" / "gwangju-buk" / "geocode.json",
+        "gwangju",
+        "gwangju-buk",
+        [
+            placed("record-1", 35.1, "provider-cross license+naver"),
+            placed("record-2", 35.2, "provider-cross license+naver"),
+            placed("record-3", 35.4, "single-provider license"),
+        ],
+    )
+    refined(tmp_path, "gwangju/closure.json")
+
+    assert main(["check-data", "--data-root", str(tmp_path)], cities=(gwangju.CITY,)) == 1
+    assert capsys.readouterr().err.splitlines() == [
+        "check-data: city/organization geocode mismatch: gwangju/gwangju-buk/record-2",
+        "check-data: organization geocode record not in city: gwangju/gwangju-buk/record-3",
+        "check-data: city/organization geocode mismatches: gwangju/gwangju-buk 2",
+    ]
+
+
+def test_check_data_accepts_an_organization_geocode_citing_the_city(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    result = placed("record-1", 35.1, "provider-cross license+naver")
+    write_geocode_artifact(
+        tmp_path / "gwangju" / "geocode.json",
+        "gwangju",
+        None,
+        [result, placed("record-2", 35.3, "single-provider license")],
+    )
+    write_geocode_artifact(
+        tmp_path / "gwangju" / "orgs" / "gwangju-buk" / "geocode.json",
+        "gwangju",
+        "gwangju-buk",
+        [result],
+    )
+    refined(tmp_path, "gwangju/closure.json")
+
+    assert main(["check-data", "--data-root", str(tmp_path)], cities=(gwangju.CITY,)) == 0
+    assert capsys.readouterr().out.split() == ["gwangju"]
+
+
 COMMIT = "c0ffee" + "0" * 34
 SITE_FILES = {
     "index.html",
@@ -311,3 +388,20 @@ def test_a_city_with_only_collection_artifacts_is_not_buildable(tmp_path: Path) 
 
     buildable = publish.buildable_cities(tmp_path, REGISTRY)
     assert [city.slug for city in buildable] == ["gwangju"]
+
+
+def test_check_data_rejects_an_organization_geocode_with_nothing_to_cite(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    write_geocode_artifact(
+        tmp_path / "gwangju" / "orgs" / "gwangju-buk" / "geocode.json",
+        "gwangju",
+        "gwangju-buk",
+        [placed("record-1", 35.1, "provider-cross license+naver")],
+    )
+    refined(tmp_path, "gwangju/closure.json")
+
+    assert main(["check-data", "--data-root", str(tmp_path)], cities=(gwangju.CITY,)) == 1
+    assert capsys.readouterr().err.splitlines() == [
+        "check-data: organization geocode without city geocode: gwangju/gwangju-buk",
+    ]

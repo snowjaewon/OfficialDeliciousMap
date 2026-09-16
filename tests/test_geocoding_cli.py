@@ -933,3 +933,72 @@ def test_a_geocode_artifact_over_the_limit_is_split_into_numbered_parts(
     # 뒤 조각만 바뀐 낡음도 잡는다. 첫 조각만 해시하면 이 변경이 build를 그대로 지나간다.
     storage.write_text(parts[-1], parts[-1].read_text(encoding="utf-8") + "\n")
     assert run_cli(context, "build") == 1
+
+
+def test_organization_geocode_cites_the_city_decision_instead_of_deciding_again(
+    tmp_path: Path,
+) -> None:
+    """기관 실행이 따로 판정하면 조회 시각·합치기 범위에 따라 도시와 갈린다(#183)."""
+    city = prepare(tmp_path)
+    save_input(city, lookup())
+    assert run_cli(city, "geocode") == 0
+
+    organization = prepare(tmp_path, org="test-org")
+    # 기관이 스스로 판정한다면 다른 좌표를 채택했을 입력이다.
+    elsewhere = lookup()
+    elsewhere["candidates"][0]["latitude"] = 35.2
+    save_input(organization, elsewhere)
+    assert run_cli(organization, "geocode") == 0
+
+    assert payload(organization, "geocode")["results"] == payload(city, "geocode")["results"]
+    assert payload(organization, "geocode")["results"][0]["latitude"] == 35.1
+    assert run_cli(organization, "closure") == 0
+
+
+def test_organization_geocode_before_the_city_geocode_fails_naming_the_city_artifact(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    prepare(tmp_path)
+    organization = prepare(tmp_path, org="test-org")
+    save_input(organization, lookup())
+    assert run_cli(organization, "geocode") == 1
+    assert capsys.readouterr().err == (
+        "geocode city=seoul org=test-org cause=io-error error=FileNotFoundError "
+        "errno=ENOENT path=data-root/seoul/geocode.json\n"
+    )
+    assert not (organization.paths.city_dir(organization.target) / "geocode.json").exists()
+
+
+def test_organization_geocode_goes_stale_when_the_city_decision_changes(tmp_path: Path) -> None:
+    city = prepare(tmp_path)
+    save_input(city, lookup())
+    assert run_cli(city, "geocode") == 0
+    organization = prepare(tmp_path, org="test-org")
+    assert run_cli(organization, "geocode") == 0
+
+    moved = lookup()
+    moved["candidates"][0]["latitude"] = 35.2
+    save_input(city, moved)
+    assert run_cli(city, "geocode") == 0
+
+    # 인용한 도시 판정이 바뀌었으니 기관 뒤 단계는 옛 좌표로 진행하지 않는다.
+    assert run_cli(organization, "closure") == 1
+    assert run_cli(organization, "geocode") == 0
+    assert payload(organization, "geocode")["results"][0]["latitude"] == 35.2
+
+
+def test_organization_record_absent_from_the_city_decision_is_not_decided_alone(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    city = prepare(tmp_path)
+    save_input(city, lookup())
+    assert run_cli(city, "geocode") == 0
+    organization = prepare(
+        tmp_path,
+        org="test-org",
+        records=(synthetic_record(), synthetic_record(record_id="r2", merchant="다른 식당")),
+    )
+    assert run_cli(organization, "geocode") == 1
+    assert capsys.readouterr().err == (
+        "geocode city=seoul org=test-org cause=invalid-artifact error=ValueError\n"
+    )
