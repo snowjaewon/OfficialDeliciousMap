@@ -43,7 +43,9 @@ uv run python -c "import json,glob; r=sum((json.load(open(f,encoding='utf-8'))['
 
 울산에는 천단위 쉼표 표기가 없다(0표기). B 초안 가운데 2표기는 한 조각이 울산 후보는 있으나 정확도
 포함도 아니다(`디비디비딥, BCD커피`의 `BCD커피`, `함야집 및 다모디`의 `함야집`). #128과 같이 `evidence`에
-`울산 후보 N건이나 상호가 다름`으로 적었고 그 조각에는 `references`가 없다.
+`울산 후보 N건이나 상호가 다름`으로 적었고 그 조각에는 `references`가 없다. `함야집`은 같은 목록의
+`함양집`(초안 3표기·보류 1표기)의 오기로 읽히지만, 이름 고치기는 `restore.jsonl`의 일이라 원문대로 두었다. PR
+검토에서 확인할 자리다.
 
 ## 3. 초안 규칙
 
@@ -168,13 +170,39 @@ geocode  --org 6개     → closure → build   (기관 geocode는 도시 판정
 
 ## 7. 검증
 
+저장소 루트, Git Bash. 결과는 `0798033`(산출물 재생성 커밋) 작업 트리에서 실행한 값이다.
+
 ```text
-uv run python -m deliciousmap.ci check-data --data-root data
-uv run pytest
-uv run ruff check .
-uv run ruff format --check .
-git diff --check
+uv run python -m deliciousmap.ci check-data --data-root data   # exit 0, gwangju·ulsan 출력
+uv run pytest                                                   # 917 passed
+uv run ruff check .                                             # All checks passed!
+uv run ruff format --check $(git ls-files '*.py' '*.md')        # 176 files already formatted
+git diff --check                                                # 출력 없음
 ```
+
+`uv run ruff format --check .`는 이 PC에서 ruff가 `Expected a ruff source file`로 멈췄다. 다른 도구가 남긴
+권한 잠긴 미추적 폴더 `.pytest-tmp-180`·`.pytest-tmp-180b`를 읽지 못해서이며(os error 5), 그래서 추적
+파일을 명시해 돌렸다. 한글 파일명 `data/참고사항.md`는 셸 인용 때문에 경로 오류로 빠졌고 이 브랜치가
+바꾸지 않은 파일이다.
+
+### 세는 방법
+
+- **2절·4절**(등급·조각 245개·미스 0·보류): fbd0a51의 `geocode.json`·`geocode.002.json`에서
+  `merged_merchant` 레코드를 표기로 묶고, 조각마다 `lookup.request_key`(제공자 stub의 `provider`·
+  `interpretation`·`limit`은 `naver.py`·`licenses.py`의 상수)로 키를 만들어 `storage.read_cache` +
+  `storage.latest_valid`로 읽은 `data/ulsan/geocode-lookup-v1.jsonl`에서 찾았다. 표기 전체 조회는 레코드의
+  `lookup.queries[*].cache.key`를 그대로 읽었다. 울산 소재는 `address_prefixes`, 일치는
+  `merchants.bare_name`·`merchants.name_inclusion`으로 갈랐다. 3절의 줄·참조 수는
+  `data/manual/ulsan/merchants.jsonl`을 `json`으로 읽어 셌다.
+- **5절 parse**: `git show fbd0a51:data/ulsan/records.csv`와 현재 파일을 `csv.DictReader`로 읽어 `record_id`로
+  대조했다. 갈린 레코드는 `expense_id`가 있고 `amount_krw`가 빈 행, "글자까지 같다"는 두 판에 모두 있는
+  `record_id`의 행 사전이 같은 수, 총액은 `merchants.expense_total`과 같은 규칙(금액 없는 행은
+  `expense_amount_krw`를 `expense_id`마다 한 번)이다.
+- **5절 classify**: `data/ulsan/classify.json`의 `payload.decisions`를 위 갈린 `record_id`로 걸러 `status`를 셌다.
+- **5절 geocode**: 전후 `geocode*.json`의 `payload.results`에서 `status`·`reason`을 세고, 갈리지 않은
+  레코드는 `record_id`마다 `(status, reason, business_id, latitude)`를 비교했다. `marker_count`는 각
+  `build.json`의 `payload.marker_count`(전은 `git show fbd0a51:<경로>`)다.
+- **비용**: `deliciousmap.budget.Budget(Path('data/_shared/llm-budget.jsonl')).committed()`를 실행 전후로 읽었다.
 
 ## 8. 남은 일
 
