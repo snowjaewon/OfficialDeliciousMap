@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from deliciousmap.budget import Budget
 from deliciousmap.cli import main
 from deliciousmap.identity import digest
 from deliciousmap.naver import INTERPRETATION_VERSION
@@ -303,14 +304,29 @@ def test_spending_is_reserved_before_the_call_and_settled_with_actual_usage(
     assert entries["settlement"]["entry_id"] == entries["reservation"]["entry_id"]
 
 
-def test_unconfirmed_usage_keeps_the_reservation(tmp_path: Path, configured: None) -> None:
+def test_a_reply_without_usage_keeps_the_reservation(tmp_path: Path, configured: None) -> None:
     context = ready(tmp_path)
     transport = FakeJsonTransport(gemini_body(usage=False))
     assert run_cli(context, "geocode", transport=transport) == 0
     kinds = [item["kind"] for item in ledger(context)]
-    assert kinds.count("reservation") == 1
-    assert "settlement" not in kinds
+    assert kinds == ["prior_usage", "reservation"]
+    reserved = Decimal(ledger(context)[-1]["amount_usd"])
+    assert Budget(context.paths.shared("llm-budget")).committed() == Decimal("2.50") + reserved
     assert proposals(context)[0]["status"] == "proposed"
+
+
+def test_a_call_that_got_no_response_releases_the_reservation(
+    tmp_path: Path, configured: None
+) -> None:
+    context = ready(tmp_path)
+    transport = FakeJsonTransport(TimeoutError("제공자 원문 오류"))
+    assert run_cli(context, "geocode", transport=transport) == 0
+    kinds = [item["kind"] for item in ledger(context)]
+    assert kinds == ["prior_usage", "reservation", "release"]
+    assert ledger(context)[-1]["amount_usd"] == "0"
+    assert ledger(context)[-1]["evidence"] == "usage unavailable: no response received"
+    assert Budget(context.paths.shared("llm-budget")).committed() == Decimal("2.50")
+    assert proposals(context)[0]["reason"] == "unavailable"
 
 
 def test_the_shared_limit_withholds_the_call_while_human_review_continues(
