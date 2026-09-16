@@ -651,7 +651,10 @@ def test_invalid_input_reports_only_safe_failure_code(
     query["error"] = "SECRET raw provider response"
     save_input(context, query)
     assert run_cli(context, "geocode") == 1
-    assert capsys.readouterr().err == "geocode city=seoul org=* cause=invalid-artifact\n"
+    assert (
+        capsys.readouterr().err
+        == "geocode city=seoul org=* cause=invalid-artifact error=ValidationError\n"
+    )
 
 
 def test_oversized_refined_result_is_rejected_before_geocode_history_write(tmp_path: Path) -> None:
