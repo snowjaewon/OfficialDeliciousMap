@@ -173,8 +173,9 @@ class TableParser(HTMLParser):
             raise boards.UnreadableBoard("board listing row never closed")
 
 
-def parse(body: bytes, encoding: str = ENCODING) -> TableParser:
-    parser = TableParser()
+def parse(body: bytes, encoding: str = ENCODING, parser: TableParser | None = None) -> TableParser:
+    """목록을 읽는다. 표시 방식만 다른 게시판은 해석기를 넘겨 같은 계약으로 읽는다."""
+    parser = TableParser() if parser is None else parser
     try:
         parser.feed(body.decode(encoding))
         parser.close()
