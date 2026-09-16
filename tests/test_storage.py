@@ -293,8 +293,7 @@ def test_lookup_cache_does_not_rewrite_the_cache_per_lookup(tmp_path: Path) -> N
     from deliciousmap.storage import LookupCache, append_cache_entries, read_cache
 
     path = tmp_path / "geocode-lookup-v1.jsonl"
-    settled = _lookup_entry("m" * 64)
-    append_cache_entries(path, (settled,))
+    append_cache_entries(path, (_lookup_entry("m" * 64),))
     committed = path.read_bytes()
     with LookupCache(path) as cache:
         for letter in "zab":
@@ -302,7 +301,7 @@ def test_lookup_cache_does_not_rewrite_the_cache_per_lookup(tmp_path: Path) -> N
         assert path.read_bytes() == committed
         assert cache.cached_candidates("z" * 64) is not None
     assert [entry.key for entry in read_cache(path)] == [k * 64 for k in "abmz"]
-    assert not (tmp_path / "geocode-lookup-v1.pending.jsonl").exists()
+    assert not cache.pending.exists()
 
 
 def test_lookup_cache_keeps_lookups_of_an_interrupted_run(tmp_path: Path) -> None:
@@ -313,27 +312,75 @@ def test_lookup_cache_keeps_lookups_of_an_interrupted_run(tmp_path: Path) -> Non
     interrupted = LookupCache(path)
     for letter in "ba":
         interrupted.remember_candidates(letter * 64, ProviderCandidates(status="ok"), "synthetic")
-    pending = tmp_path / "geocode-lookup-v1.pending.jsonl"
     # 프로세스가 줄을 쓰다 죽은 모양이다.
-    with pending.open("ab") as stream:
-        stream.write(b'{"evidence": "synth')
+    with interrupted.pending.open("ab") as stream:
+        stream.write('{"evidence": "가'.encode()[:-1])
+    journal = interrupted.pending.read_bytes()
     resumed = LookupCache(path)
+    # 여는 것만으로는 아무것도 쓰지 않는다. 읽기만 하는 build도 이 캐시를 연다.
+    assert not path.exists()
+    assert interrupted.pending.read_bytes() == journal
     assert resumed.cached_candidates("a" * 64) is not None
-    assert resumed.cached_candidates("b" * 64) is not None
+    with resumed:
+        pass
     assert [entry.key for entry in read_cache(path)] == ["a" * 64, "b" * 64]
-    assert not pending.exists()
+    assert not resumed.pending.exists()
+
+
+def test_lookup_cache_merges_its_own_lookups_even_if_another_run_took_the_journal(
+    tmp_path: Path,
+) -> None:
+    """다른 실행이 대기 파일을 먼저 합쳐 지워도 이번 실행이 받은 조회는 캐시에 남는다."""
+    from deliciousmap.storage import LookupCache, read_cache
+
+    path = tmp_path / "geocode-lookup-v1.jsonl"
+    with LookupCache(path) as cache:
+        cache.remember_candidates("a" * 64, ProviderCandidates(status="ok"), "synthetic")
+        with LookupCache(path):
+            pass
+        cache.remember_candidates("b" * 64, ProviderCandidates(status="ok"), "synthetic")
+        cache.pending.unlink()
+    assert [entry.key for entry in read_cache(path)] == ["a" * 64, "b" * 64]
+
+
+def test_lookup_cache_keeps_the_original_failure_when_merging_also_fails(tmp_path: Path) -> None:
+    """실행을 끊은 원인이 합치기 실패에 가려지지 않는다. 합치지 못한 대기 파일은 남는다."""
+    from deliciousmap.storage import LookupCache, append_cache_entries
+
+    path = tmp_path / "geocode-lookup-v1.jsonl"
+    with pytest.raises(KeyError, match="stage failed"), LookupCache(path) as cache:
+        cache.remember_candidates("a" * 64, ProviderCandidates(status="ok"), "synthetic")
+        # 다른 세션이 같은 revision을 다른 값으로 먼저 남긴 모양이다.
+        append_cache_entries(
+            path,
+            (
+                CacheEntry(
+                    key="a" * 64,
+                    revision=1,
+                    valid=True,
+                    evidence="other",
+                    value=ProviderCandidates(status="error", error="unavailable").model_dump(
+                        mode="json"
+                    ),
+                ),
+            ),
+        )
+        raise KeyError("stage failed")
+    assert cache.pending.exists()
 
 
 def test_lookup_cache_rejects_a_damaged_line_before_the_end_of_the_journal(
     tmp_path: Path,
 ) -> None:
+    """끝이 아닌 줄의 손상은 끊김이 아니다. 줄 번호만 알리고 원문은 싣지 않는다."""
     from deliciousmap.storage import LookupCache
 
     path = tmp_path / "geocode-lookup-v1.jsonl"
     pending = tmp_path / "geocode-lookup-v1.pending.jsonl"
-    pending.write_bytes(b"not json\n")
-    with pytest.raises(ValueError):
+    pending.write_bytes(b"secret-merchant\n")
+    with pytest.raises(ValueError, match="pending.jsonl:1") as raised:
         LookupCache(path)
+    assert "secret-merchant" not in str(raised.value)
     assert pending.exists()
 
 
