@@ -84,7 +84,11 @@ OUTPUT_MODELS: dict[str, type[Contract]] = {
 # 두 변경이 각각 v8을 쓰고 합쳐졌으므로 어느 쪽 v8도 이 산출물을 설명하지 못한다.
 SCHEMA_VERSIONS = {"fetch": 4, "headermap": 2, "parse": 5, "geocode": 5, "closure": 4, "build": 9}
 
-# 제공자 조회 캐시. 확정 업소 판정 이력(geocode-history-v2.jsonl)과 분리해 둔다.
+# 레코드를 담은 장부. parse 산출물은 이 파일과 짝이며 `load`도 둘을 함께 연다.
+RECORD_LEDGER = "records.csv"
+# 확정 업소 판정의 추가형 이력. 조각으로 나뉘며 앞 조각은 다시 쓰지 않는다(ADR-0001·ADR-0003).
+GEOCODE_HISTORY = "geocode-history-v2.jsonl"
+# 제공자 조회 캐시. 확정 업소 판정 이력과 분리해 둔다.
 LOOKUP_CACHE = "geocode-lookup-v1.jsonl"
 # 모델 제안 이력. 사람 확인 입력·업소 판정과 분리해 두며 판정의 의존성에 넣지 않는다.
 PROPOSAL_CACHE = "restore-proposal-v1.jsonl"
@@ -310,13 +314,20 @@ def append_cache(path: Path, entry: CacheEntry) -> None:
     append_cache_entries(path, (entry,))
 
 
-def append_cache_entries(path: Path, additions: tuple[CacheEntry, ...]) -> None:
+def append_cache_entries(
+    path: Path, additions: tuple[CacheEntry, ...], known: tuple[CacheEntry, ...] | None = None
+) -> None:
     """마지막 조각에만 이어 쓴다. 이번 배치가 들어가지 않으면 그 조각을 닫고 새 조각을 연다.
 
     앞 조각은 절대 다시 쓰지 않는다. 마지막 조각은 정렬을 지키려고 통째로 다시 쓴다.
     그래서 조각이 상한에 딱 차지 않을 수 있는데, 커밋된 앞 조각을 다시 쓰지 않는 대가다.
+
+    `known`은 부르는 쪽이 방금 읽어 둔 이 파일의 항목 **전부**다. 넘기면 다시 읽지 않는다.
+    일부만 넘기면 덮어쓰기 금지 검사가 그만큼 헐거워지므로 전부가 아니면 넘기지 않는다.
     """
-    settled = {_cache_order(entry): entry for entry in read_cache(path)}
+    settled = {
+        _cache_order(entry): entry for entry in (read_cache(path) if known is None else known)
+    }
     fresh: dict[tuple[str, int], CacheEntry] = {}
     for entry in additions:
         entry = CacheEntry.model_validate(entry)
@@ -613,6 +624,10 @@ class ArtifactStore:
         self.paths = paths
         self.target = target
         self.directory = paths.city_dir(target)
+        # 이 실행이 읽어 든 산출물과 업소 판정 이력. 같은 파일을 거듭 읽고 다시 검증하던
+        # 자리다(#191). 어느 쪽도 입력이 바뀐 뒤의 값은 쓰지 않는다.
+        self._loaded: dict[str, tuple[str, Contract]] = {}
+        self._history: tuple[CacheEntry, ...] | None = None
 
     def city(self) -> "ArtifactStore":
         """같은 도시 전체를 대상으로 하는 저장소. 기관 실행이 도시 판정을 인용할 때 읽는다."""
@@ -634,10 +649,10 @@ class ArtifactStore:
         # 이력은 산출물보다 먼저 쌓인다. 쓸 수 없는 산출물이면 여기서 먼저 거부한다.
         contents = artifact_contents(envelope, SPLIT_PAYLOAD_FIELD.get(stage))
         if isinstance(output, ParseOutput):
-            write_records(self.directory / "records.csv", output.records)
+            write_records(self.directory / RECORD_LEDGER, output.records)
         if isinstance(output, GeocodeOutput):
-            cache_path = self.directory / "geocode-history-v2.jsonl"
-            latest = latest_valid(read_cache(cache_path))
+            known = self._geocode_history()
+            latest = latest_valid(known)
             additions = []
             for result in output.results:
                 key = result.lookup_key
@@ -658,7 +673,9 @@ class ArtifactStore:
                         ),
                     )
             if additions:
-                append_cache_entries(cache_path, tuple(additions))
+                append_cache_entries(self.directory / GEOCODE_HISTORY, tuple(additions), known)
+                # 덧쓴 뒤의 이력은 이 값이 아니다. 다음에 필요한 쪽이 새로 읽게 버린다.
+                self._history = None
         path = self.directory / f"{stage}.json"
         if path.exists():
             old = path.read_bytes().decode("utf-8")
@@ -675,6 +692,48 @@ class ArtifactStore:
         write_artifact(path, contents)
 
     def load[T: Contract](self, stage: str, model: type[T]) -> T:
+        """이 실행이 이미 읽어 둔 산출물은 다시 해석하지 않는다. 입력이 바뀌면 다시 읽는다.
+
+        한 실행이 같은 산출물을 여러 번 여는 것은 `_validate`가 상류를 열어 대조하기 때문이다.
+        그 읽기가 또 상류를 열어, 도시 geocode 한 번이 parse를 다섯 번 읽고 그때마다 원본
+        11,724건을 다시 검증했다(#191). 지문을 내느라 바이트는 여전히 읽는다 — 아끼는 것은
+        JSON 파싱과 계약 검증이다. 계약은 얼어 있으므로 읽어 둔 값을 그대로 나눠 준다.
+        """
+        signature = self._signature(stage, model)
+        loaded = self._loaded.get(stage)
+        if loaded is not None and loaded[0] == signature and isinstance(loaded[1], model):
+            return loaded[1]
+        output = self._read(stage, model)
+        self._loaded[stage] = (signature, output)
+        return output
+
+    def _signature(self, stage: str, model: type[Contract]) -> str:
+        """`load`의 답이 기대는 전부의 지문. 하나라도 바뀌면 읽어 둔 값을 버린다.
+
+        산출물 자신, 레코드를 담은 장부 CSV, 그리고 낡음 검사가 보는 `dependencies`다. 셋을
+        다 세야 적중이 다시 읽은 것과 같은 답을 낸다 — 상류만 바뀐 산출물도 여기서 갈려
+        `_read`의 `stale artifact`로 간다. 산출물을 먼저 보는 것은 없는 파일을 알리는 차례를
+        `_read`와 맞추기 위해서다.
+        """
+        ledger = self._ledger(model)
+        return json.dumps(
+            {
+                "artifact": artifact_digest(self.directory / f"{stage}.json"),
+                "ledger": None if ledger is None else file_digest(ledger),
+                "dependencies": self._dependencies(stage),
+            },
+            sort_keys=True,
+        )
+
+    def _ledger(self, model: type[Contract]) -> Path | None:
+        """`load`가 산출물과 함께 여는 곁 파일. parse의 레코드만 산출물 밖 장부 CSV에 있다.
+
+        여는 쪽과 지문을 내는 쪽이 같은 판단을 보게 한 곳에 둔다. 갈리면 든 값이 낡은 레코드를
+        계속 내준다.
+        """
+        return self.directory / RECORD_LEDGER if model is ParseOutput else None
+
+    def _read[T: Contract](self, stage: str, model: type[T]) -> T:
         envelope = read_artifact(self.directory / f"{stage}.json", SPLIT_PAYLOAD_FIELD.get(stage))
         if envelope["schema_version"] != schema_version(stage):
             raise RegenerationRequired("rerun the producing stage for the current contract")
@@ -686,8 +745,9 @@ class ArtifactStore:
         if envelope["dependencies"] != self._dependencies(stage):
             raise ValueError("stale artifact; rerun its producing stage")
         payload = envelope["payload"]
-        if model is ParseOutput:
-            payload["records"] = read_records(self.directory / "records.csv")
+        ledger = self._ledger(model)
+        if ledger is not None:
+            payload["records"] = read_records(ledger)
         output = model.model_validate(payload)
         self._validate(output)
         return output
@@ -749,13 +809,17 @@ class ArtifactStore:
                 raise ValueError("unexplained empty fetch")
             if any(item.organization not in organizations for item in output.missing):
                 raise ValueError("missing original organization mismatch")
+            # 원본이 있어야 할 자리는 원본마다 같다. 루프 안에서 다시 풀면 원본 수만큼
+            # 경로를 되짚는다(#191).
+            repository = self.paths.repository.resolve()
+            raw_root = self.paths.raw_root.resolve()
             for source in output.sources:
                 if source.organization not in organizations:
                     raise ValueError("source organization mismatch")
                 source_path = (self.paths.raw_root / source.path).resolve()
-                if source_path.is_relative_to(
-                    self.paths.repository.resolve()
-                ) or not source_path.is_relative_to(self.paths.raw_root.resolve()):
+                if source_path.is_relative_to(repository) or not source_path.is_relative_to(
+                    raw_root
+                ):
                     raise ValueError("source must be outside repository and within raw-root")
                 boards = {
                     board.slug
@@ -928,10 +992,20 @@ class ArtifactStore:
     def previous_geocodes(self) -> tuple[GeocodeResult, ...]:
         return tuple(
             GeocodeResult.model_validate(entry.value)
-            for entry in latest_valid(
-                read_cache(self.directory / "geocode-history-v2.jsonl")
-            ).values()
+            for entry in latest_valid(self._geocode_history()).values()
         )
+
+    def _geocode_history(self) -> tuple[CacheEntry, ...]:
+        """이 실행이 읽어 든 업소 판정 이력. 이 저장소가 덧쓰기 전까지 다시 읽지 않는다(#191).
+
+        앞선 판정을 읽는 쪽·다음 revision을 세는 저장·이력에 덧쓰는 쪽이 같은 파일을 각각
+        열던 자리다. 지문으로 무효화하지 않는 것은 이 파일이 약 258MB라 지문값이 아낀 읽기를
+        도로 먹기 때문이다. 대신 이 파일을 쓰는 곳이 `save` 하나뿐이라는 사실에 기댄다 —
+        거기서 든 값을 버린다.
+        """
+        if self._history is None:
+            self._history = read_cache(self.directory / GEOCODE_HISTORY)
+        return self._history
 
     def scope(self, record: Record) -> EvidenceScope:
         return EvidenceScope(
