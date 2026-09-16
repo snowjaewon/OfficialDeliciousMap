@@ -516,18 +516,67 @@ class LookupCache:
 
     레코드마다 파일을 다시 파싱하면 읽기 비용이 레코드 수 곱하기 캐시 줄 수가 된다. 캐시가
     커질수록 적중뿐인 재실행이 더 느려진다. 이 사전은 그 읽기를 레코드 수 더하기 캐시 줄 수로
-    낮춘다. **쓰기는 그대로다.** 미스마다 `append_cache_entries()`가 파일을 다시 읽으므로
-    새 상호가 많은 실행에서는 미스 수 곱하기 캐시 줄 수가 남는다.
+    낮춘다.
 
-    실행 중 새로 얻은 조회는 파일과 사전 양쪽에 남긴다. 같은 요청이 뒤에 또 나와도 다시 묻지
-    않는다. 대신 실행이 도는 동안 다른 세션이 같은 파일에 쓴 항목은 이 사전에 들어오지 않는다.
-    그 경우 이어 쓰기가 같은 revision을 만나 `cannot overwrite cache history`로 멈춘다.
+    쓰기도 같다. 새로 얻은 조회는 캐시 옆 대기 파일(`<이름>.pending.jsonl`)에 한 줄씩 덧붙이고,
+    `with` 블록을 닫을 때 한 번만 정렬해 캐시에 합친다. 조회마다 캐시를 통째로 다시 쓰면 쓰기가
+    조회 수의 제곱으로 늘고 파일 교체가 다른 프로세스의 읽기와 부딪힌다(#181). 여는 일은 쓰지
+    않는다. 끊긴 실행이 남긴 대기 파일은 읽어 들이기만 하고, 다음에 블록을 닫는 실행이 함께
+    합친다. 쓰다 끊긴 끝 줄은 그 조회를 다시 하면 되므로 버린다.
+
+    실행 중 새로 얻은 조회는 대기 파일과 사전 양쪽에 남기고, 합칠 때는 이번 실행이 얻은 조회를
+    파일이 아니라 메모리에서 다시 넣는다. 다른 실행이 대기 파일을 먼저 합쳐 지워도 잃지 않는다.
+    대신 실행이 도는 동안 다른 세션이 같은 캐시에 쓴 항목은 이 사전에 들어오지 않는다. 그 경우
+    합치기가 같은 revision을 만나 `cannot overwrite cache history`로 멈추고 대기 파일을 남긴다.
     조용히 덮지는 않는다.
     """
 
     def __init__(self, path: Path) -> None:
         self.path = path
-        self._latest = latest_valid(read_cache(path))
+        self.pending = path.with_name(f"{path.stem}.pending{path.suffix}")
+        self._added: list[CacheEntry] = []
+        self._latest = latest_valid((*read_cache(path), *self._read_pending()))
+
+    def __enter__(self) -> "LookupCache":
+        return self
+
+    def __exit__(
+        self, kind: type[BaseException] | None, error: BaseException | None, _: object
+    ) -> None:
+        if error is None:
+            self.merge_pending()
+            return
+        # 실행을 끊은 원인을 합치기 실패로 덮지 않는다. 대기 파일은 다음 실행이 합친다.
+        try:
+            self.merge_pending()
+        except Exception as failure:
+            error.add_note(f"pending lookups not merged: {type(failure).__name__}")
+
+    def merge_pending(self) -> None:
+        """대기 파일과 이번 실행의 조회를 캐시에 합치고 대기 파일을 지운다.
+
+        합친 뒤 지우기 전에 끊겨도 다시 합치면 같은 결과다. 이미 담긴 항목은 건너뛴다.
+        """
+        entries = (*self._read_pending(), *self._added)
+        if entries:
+            append_cache_entries(self.path, entries)
+        self.pending.unlink(missing_ok=True)
+        self._added.clear()
+
+    def _read_pending(self) -> tuple[CacheEntry, ...]:
+        if not self.pending.exists():
+            return ()
+        # 바이트로 먼저 가른다. 쓰다 끊긴 줄은 한글 한 글자 중간에서 끝날 수도 있다.
+        # 마지막 줄바꿈 뒤는 비었거나, 쓰다 끊긴 줄이다.
+        lines = self.pending.read_bytes().split(b"\n")[:-1]
+        entries = []
+        for number, line in enumerate(lines, start=1):
+            try:
+                entries.append(CacheEntry.model_validate_json(line))
+            except ValueError:
+                # 원문에는 상호가 들어 있으므로 위치만 알린다.
+                raise ValueError(f"damaged cache line {self.pending.name}:{number}") from None
+        return tuple(entries)
 
     def cached_candidates(self, key: str) -> CacheEntry | None:
         """그 키의 유효한 최신 항목. 적중 자체는 업소 확정이 아니다."""
@@ -552,7 +601,9 @@ class LookupCache:
             evidence=evidence,
             value=value,
         )
-        append_cache(self.path, entry)
+        with self.pending.open("ab") as stream:
+            stream.write(_jsonl((entry,)).encode("utf-8"))
+        self._added.append(entry)
         self._latest[key] = entry
         return entry.revision
 
@@ -902,12 +953,13 @@ class ArtifactStore:
         """이 실행이 쓸 조회 캐시. 읽기는 여기서 한 번 끝내고 레코드 루프는 사전만 본다.
 
         부를 때마다 파일을 다시 읽는다. 한 실행이 두 번 부르면 읽기가 두 번이 되므로
-        받은 객체를 그 실행 내내 들고 다닌다.
+        받은 객체를 그 실행 내내 들고 다닌다. 조회를 쌓는 실행은 `with`로 열어야 닫을 때
+        캐시에 합친다. 읽기만 하면 `with`가 필요 없다.
         """
         return LookupCache(self.directory / LOOKUP_CACHE)
 
     def category_cache(self) -> LookupCache:
-        """이 실행이 쓸 업종 조회 캐시. 조회 캐시와 같은 규칙으로 한 번 읽어 들고 다닌다."""
+        """이 실행이 쓸 업종 조회 캐시. 조회 캐시와 같은 규칙으로 읽고, 쌓을 때는 `with`로 연다."""
         return LookupCache(self.directory / CATEGORY_CACHE)
 
     def cached_proposal(self, key: str) -> CacheEntry | None:

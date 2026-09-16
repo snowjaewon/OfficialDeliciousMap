@@ -362,12 +362,13 @@ def _execute_one(stage: str, context: ExecutionContext, adapters: Adapters) -> S
     store.save(stage, result, retry_failed=context.retry_failed)
     if isinstance(result, GeocodeOutput):
         # 판정을 저장한 뒤 확정 업소의 업종만 조회한다. 업종은 판정·판정 키를 바꾸지 않는다.
-        category_failed = category.resolve(
-            store.category_cache(),
-            result.results,
-            context.category_sources,
-            retry_failed=context.retry_failed,
-        )
+        with store.category_cache() as category_lookups:
+            category_failed = category.resolve(
+                category_lookups,
+                result.results,
+                context.category_sources,
+                retry_failed=context.retry_failed,
+            )
         if category_failed or any(item.reason == "lookup_error" for item in result.results):
             raise AdapterFailure(FailureCause.LOOKUP_FAILED)
     return result
