@@ -82,4 +82,4 @@ geocode.json은 그 실패보다 먼저 저장되므로 closure·build는 새 ge
 ## 5. 검사
 
 `uv run ruff check .`, `uv run ruff format --check .`, `uv run mypy src`, `uv run pytest`, `git diff --check`를
-같은 작업 트리에서 실행해 모두 통과했다(pytest 730 passed).
+같은 작업 트리에서 실행해 모두 통과했다(`uv run pytest -q`: 932 passed).
