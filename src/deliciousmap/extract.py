@@ -86,8 +86,8 @@ class Extraction:
     candidates: int
     out_of_range: int
     # 레코드가 되지 않은 행의 위치와 사유. 빈 행·반복 헤더·합계·제목은 분모에서도 뺀 것이고,
-    # 선언 표에서 집행일·상호·금액을 읽지 못한 행(`sheet1:R7 spent_on`·`merchant`·`amount_krw`)은
-    # 분모에 남긴 채 여기에만 남는다(폴백 정책: 값을 못 읽었다는 이유로 후보에서 빼지 않는다).
+    # 선언 표에서 행 단위로 뺀 행(`sheet1:R7 spent_on`, 사유는 `ROW_DROPPING_ITEMS`)은 분모에
+    # 남긴 채 여기에만 남는다(폴백 정책: 값을 못 읽었다는 이유로 후보에서 빼지 않는다).
     excluded: tuple[str, ...]
     review: tuple[str, ...]
     total_check: TotalCheck
@@ -135,8 +135,8 @@ def extract(table: Table, mapping: HeaderMap, source: SourceRef) -> Extraction:
             except ValidationFailed as exc:
                 if not _drops_row(mapping, exc):
                     raise
-                # 선언 표에서 집행일·상호·금액을 읽지 못한 줄. 그 줄만 레코드에서 빠지고 표의
-                # 나머지는 살아남는다. 분모에는 남으므로 아래에서 후보 수에 더한다.
+                # 선언 표에서 행 단위로 빼는 줄. 그 줄만 레코드에서 빠지고 표의 나머지는
+                # 살아남는다. 분모에는 남으므로 아래에서 후보 수에 더한다.
                 dropped.append(exc)
                 excluded.append(exc.detail)
             continue
@@ -179,11 +179,11 @@ def _drops_row(mapping: HeaderMap, failure: ValidationFailed) -> bool:
     """이 실패가 표 전체가 아니라 그 줄 하나만 빼는 것인지([ADR-0008](
     ../../docs/adr/0008-declare-html-table-mappings.md)).
 
-    사람이 틀을 확인한 선언 표에서만, 그리고 집행일·상호·금액을 읽지 못한 줄에서만 참이다.
-    기장군 목록은 표 하나가 게시판 전량이라 지출 후보 3,248줄 가운데 집행일 18줄·상호 5줄·금액
-    6줄(2026-09-17 실측)이 나머지 전부를 죽인다. 모델이 매핑한 표는 매핑 자체가 틀렸을 수 있어
-    지금처럼 원본 전체를 미해결로 남긴다. 선언한 천원 표의 원 단위 행(`amount_unit`)도 넓히지
-    않는다 — #145의 보류 결정 그대로 그 원본 전체가 미해결이다(#205).
+    사람이 틀을 확인한 선언 표에서만, 그리고 `ROW_DROPPING_ITEMS`의 값을 읽지 못한 줄에서만
+    참이다. 표 하나가 게시판 전량인 기장군 목록은 몇 줄의 결함이 나머지 전부를 죽였다
+    (../../docs/validation/issue-205.md). 모델이 매핑한 표는 매핑 자체가 틀렸을 수 있어 지금처럼
+    원본 전체를 미해결로 남긴다. 선언한 천원 표의 원 단위 행(`amount_unit`)도 넓히지 않는다 —
+    #145의 보류 결정 그대로 그 원본 전체가 미해결이다(#205).
     """
     return mapping.declared and failure.item in ROW_DROPPING_ITEMS
 
@@ -345,7 +345,7 @@ def parse_sources(value: ParseInput, raw_root: Path) -> ParseOutput:
             status="parsed",
             candidates=candidates,
             records=len(found),
-            # 후보 수에서 레코드 수를 빼지 않는다. 선언 표에서 집행일을 읽지 못한 줄이 후보에
+            # 후보 수에서 레코드 수를 빼지 않는다. 선언 표에서 행 단위로 뺀 줄이 후보에
             # 남아 있어(`excluded`) 그 뺄셈은 기간 밖 지출에 그 줄까지 섞는다.
             out_of_range=sum(result.out_of_range for result in results),
             excluded=excluded,
