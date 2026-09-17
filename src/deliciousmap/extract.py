@@ -28,7 +28,14 @@ from deliciousmap.contracts import (
     SpentOn,
     TotalCheck,
 )
-from deliciousmap.grid import Cell, Table, UnreadableOriginal, UnsupportedFormat, read_tables, text
+from deliciousmap.grid import (
+    Cell,
+    Table,
+    UnreadableOriginal,
+    UnsupportedFormat,
+    read_contents,
+    text,
+)
 from deliciousmap.privacy import PERSONAL_EVENT, REDACTED, scrub, scrub_merchant
 
 # 공백을 지운 셀 글자에 적용한다. `2월 소계`·`합 계`처럼 앞말이 붙거나 띄어 쓴 표기도 있다.
@@ -198,7 +205,7 @@ def _unresolved_denominator(
     if not mappings:
         return None
     try:
-        tables = _tables(path)
+        tables, _ = _tables(path)
     except (UnsupportedFormat, UnreadableOriginal):
         return None
     covered = {mapping.table for mapping in mappings}
@@ -215,8 +222,10 @@ def _unresolved_denominator(
     return _Denominator(candidates, tuple(excluded))
 
 
-def _tables(path: Path) -> dict[str, Table]:
-    return {table.name: table for table in read_tables(path)}
+def _tables(path: Path) -> tuple[dict[str, Table], tuple[str, ...]]:
+    """표 위치마다 표, 그리고 첨부 묶음에서 읽지 못한 항목."""
+    contents = read_contents(path)
+    return {table.name: table for table in contents.tables}, contents.unread
 
 
 def parse_sources(value: ParseInput, raw_root: Path) -> ParseOutput:
@@ -248,7 +257,7 @@ def parse_sources(value: ParseInput, raw_root: Path) -> ParseOutput:
             )
             continue
         try:
-            tables = _tables(raw_root / source.path)
+            tables, unread = _tables(raw_root / source.path)
             results = [
                 extract(tables[mapping.table], mapping, source)
                 for mapping in by_source[source.source_hash]
@@ -281,6 +290,7 @@ def parse_sources(value: ParseInput, raw_root: Path) -> ParseOutput:
                 reason="no_candidates",
                 candidates=0,
                 excluded=excluded,
+                unread=unread,
             )
             continue
         found = [record for result in results for record in result.records]
@@ -299,6 +309,7 @@ def parse_sources(value: ParseInput, raw_root: Path) -> ParseOutput:
             else "ambiguous"
             if "ambiguous" in checks
             else "absent",
+            unread=unread,
         )
     merged = merge_repeats(tuple(records), value.sources, value.confirmations)
     # 사람 확인이 있는 지출만 업소마다 레코드로 갈린다. 재게시를 합친 뒤에 가른다 —

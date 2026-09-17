@@ -479,8 +479,41 @@ def test_recorded_answer_that_fails_validation_leaves_why_in_the_ledger(
     ]
 
 
+def test_bundled_originals_are_parsed_once_and_unread_members_stay_on_the_ledger(
+    tmp_path: Path, configured: None
+) -> None:
+    """대전 서구처럼 게시글의 첨부가 ZIP 하나로 온다. 같은 이름의 PDF는 통합문서의 사본이다."""
+    record_spending(tmp_path)
+    (source,) = publish(
+        tmp_path,
+        (
+            "첨부 묶음.hwpx",
+            bundle(
+                ("1분기 집행내역.pdf", pdf.document(PDF_PAGE)),
+                ("1분기 집행내역.xls", workbook(QUARTER)),
+                ("붙임.txt", b"synthetic"),
+            ),
+        ),
+    )
+    model = FakeModel(headers=[header_answer()])
+    assert run(tmp_path, "headermap", model) == 0
+    assert len(model.calls("headermap")) == 1
+    assert [item["table"] for item in payload(tmp_path, "headermap")["mappings"]] == [
+        "file2.sheet1"
+    ]
+
+    assert run(tmp_path, "parse") == 0
+    assert [(row["merchant"], row["source_location"]) for row in records(tmp_path)] == [
+        ("합성 식당", "file2.sheet1:R4"),
+        ("합성 카페", "file2.sheet1:R5"),
+    ]
+    (report,) = payload(tmp_path, "parse")["sources"]
+    assert (report["source_hash"], report["status"], report["records"]) == (source, "parsed", 2)
+    assert report["unread"] == ["file3 붙임.txt: unsupported_format"]
+
+
 def test_unsupported_original_is_not_sent_to_the_model(tmp_path: Path, configured: None) -> None:
-    """엑셀 통합문서가 없는 ZIP 묶음. 안의 원본을 풀지 않고 사유와 함께 미해결로 남긴다."""
+    """엑셀 통합문서가 없는 ZIP 묶음. 읽는 형식의 항목이 없으면 사유와 함께 미해결로 남긴다."""
     record_spending(tmp_path)
     (source,) = publish(tmp_path, ("첨부 묶음.hwpx", bundle(("붙임.txt", b"synthetic"))))
     model = FakeModel()
