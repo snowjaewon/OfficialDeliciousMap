@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from deliciousmap.cli import main
+from deliciousmap.registry import City, MapBounds
 
 
 @pytest.mark.parametrize(
@@ -30,12 +31,15 @@ def test_invalid_selection_is_rejected_before_execution(
     assert "selection" in capsys.readouterr().err
 
 
+# 게시판을 선언하지 않은 도시. 진짜 도시를 쓰면 이 시험이 기관 서버로 실제 요청을 보낸다.
+# 부산이 게시판을 선언해(#140) 대구로, 대구가 선언해(#173) 인천으로 옮겼고, 인천이 선언해(#174)
+# 일곱 도시가 모두 게시판을 가졌다. 옮길 도시가 더 없으므로 시험이 자기 도시를 만들어 쓴다.
+UNDECLARED = City("nowhere", "선언 전", MapBounds(37.0, 126.0, 38.0, 127.0))
+
+
 def test_real_adapter_is_explicitly_unimplemented(capsys: pytest.CaptureFixture[str]) -> None:
-    # 아직 게시판을 선언하지 않은 도시를 쓴다. 선언한 도시를 쓰면 이 시험이 기관 서버로
-    # 실제 요청을 보낸다. 부산이 게시판을 선언해(#140) 대구로, 대구가 선언해(#173) 인천으로
-    # 옮겼다. 남은 도시는 인천이며, 인천이 게시판을 선언하면 다시 옮긴다.
-    assert main(["fetch", "--city", "incheon"]) == 1
-    assert "fetch city=incheon org=* cause=not-implemented" in capsys.readouterr().err
+    assert main(["fetch", "--city", "nowhere"], cities=(UNDECLARED,)) == 1
+    assert "fetch city=nowhere org=* cause=not-implemented" in capsys.readouterr().err
 
 
 def test_originals_cannot_be_stored_inside_repository(
@@ -82,7 +86,7 @@ def test_every_real_stage_has_a_nonzero_unimplemented_exit(
     stage: str, capsys: pytest.CaptureFixture[str]
 ) -> None:
     # 위와 같은 이유로 게시판을 선언하지 않은 도시를 쓴다.
-    assert main([stage, "--city", "incheon"]) == 1
+    assert main([stage, "--city", "nowhere"], cities=(UNDECLARED,)) == 1
     assert "cause=not-implemented" in capsys.readouterr().err
 
 
