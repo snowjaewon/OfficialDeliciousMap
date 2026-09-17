@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
 from functools import total_ordering
-from pathlib import Path
+from pathlib import Path, PurePath, PureWindowsPath
 from typing import Annotated, Literal
 
 from pydantic import (
@@ -231,10 +231,38 @@ Container = Literal[
 ]
 
 
+def _as_raw_root_relative(value: object) -> object:
+    """원본의 자리를 어느 PC에서나 같은 뜻으로 읽히는 한 가지 글자로 못 박는다(#202).
+
+    드라이브·루트가 붙은 값은 `raw_root / path`에서 왼쪽을 버려 그 PC의 `--raw-root`와 무관하게
+    수집 당시의 경로를 연다. 역슬래시는 Windows 밖에서 구분자가 아니라 파일 이름 한 낱말이
+    되어 열리지 않는다. 둘 다 산출물에 들어가기 전에 막는다.
+
+    경로 값을 준 쪽은 그 PC의 문법으로 적었으므로 먼저 `/` 표기로 옮긴다. Windows에서
+    `Path(r"a\\b")`는 칸 둘이지만 Linux에서는 역슬래시를 담은 이름 하나이고, 옮긴 뒤의 글자가
+    그 차이를 그대로 드러내 뒤쪽 검사에 걸린다. 드라이브는 UNC 경로(`//서버/공유`)도 함께 잡는다.
+    """
+    if isinstance(value, PurePath):
+        value = value.as_posix()
+    if not isinstance(value, str):
+        return value
+    if not value or "\\" in value or PureWindowsPath(value).drive or value[0] == "/":
+        raise ValueError("an original's path must be relative to raw-root and separated by '/'")
+    return value
+
+
+# 원본이 있는 자리. 값은 언제나 `/`로 이은 상대 경로이고, 읽는 쪽이 그 PC의 raw-root에 잇는다.
+RawRootRelative = Annotated[
+    Path,
+    BeforeValidator(_as_raw_root_relative),
+    PlainSerializer(PurePath.as_posix, return_type=str),
+]
+
+
 class SourceRef(Contract):
-    # 원본이 있는 곳. 상대 경로는 `--raw-root` 기준으로 읽는다. 현재 게시판 수집은 수집 PC의
-    # 경로를 그대로 남기므로, 이 값은 산출물을 만든 PC 밖에서 그대로 쓸 수 없다.
-    path: Path
+    # 원본이 있는 곳. `--raw-root` 기준 상대 경로이며 수집은 도시/기관/게시판/이름으로 적는다.
+    # 이어 붙인 자리가 raw-root 안·저장소 밖인지는 산출물을 쓸 때 `ArtifactStore`가 본다.
+    path: RawRootRelative
     source_hash: Sha256
     organization: Text
     board: Text

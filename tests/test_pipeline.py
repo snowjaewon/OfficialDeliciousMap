@@ -349,9 +349,8 @@ def test_original_cannot_be_inside_repo_even_when_raw_root_is_its_parent(tmp_pat
 
     def inside(value: FetchInput, current: ExecutionContext) -> FetchOutput:
         result = fetch(value, current)
-        source = result.sources[0].model_copy(
-            update={"path": current.paths.repository / "inside.xlsx"}
-        )
+        inside_repository = current.paths.repository.relative_to(current.paths.raw_root)
+        source = result.sources[0].model_copy(update={"path": inside_repository / "inside.xlsx"})
         return FetchOutput(sources=(source,))
 
     adapters.fetch = inside

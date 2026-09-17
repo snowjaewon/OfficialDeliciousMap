@@ -47,7 +47,10 @@ uv run python -m deliciousmap geocode --city seoul --retry-failed
 정적 지도 화면·PWA 기본 구성을 함께 만든다. 기관 실행은 데이터 파일만 `orgs/<org>/`에 분리한다.
 [지오코딩 사용법과 계약](docs/geocoding.md)을 따른다.
 `fetch`는 레지스트리에 선언된 게시판을 실제로 훑어 원본을 `--raw-root` 아래에 내려받고
-출처를 기록한다. 매직 바이트로 원본 컨테이너를 판정해 `SourceRef.container`에 남기므로 후속 단계는
+출처를 기록한다. 원본의 자리는 `SourceRef.path`에 `--raw-root` 기준 상대 경로
+(`<도시>/<기관>/<게시판>/<이름>`)로 남으므로, 원본 폴더를 옮기거나 넘겨받은 PC는 자기
+`--raw-root`만 가리키면 같은 산출물로 `headermap`·`parse`를 돌릴 수 있다.
+매직 바이트로 원본 컨테이너를 판정해 `SourceRef.container`에 남기므로 후속 단계는
 게시판이 붙인 확장자가 아니라 이 값을 본다. 어떤 컨테이너도 아닌 응답(200으로 온 HTML 등)은
 저장하지 않고 `unsupported-format`으로 실패한다. 첨부 대신 화면 자체가 집행 표인 게시판(서울
 시청·은평·관악·서대문, 울산 시청·중구·동구)만 스크래퍼가 `.html`을 선언하고, 그 쪽 응답 전체를
@@ -406,7 +409,8 @@ closure는 4, build는 7, 나머지는 1), `city`, `org`, 입력 해시인
 `sources`·`missing`의 각 줄은 게시판 목록이 밝힌 `posted`(게시일)와 `title`(제목)도 싣고,
 `sources`는 목록이 밝힌 작성 부서를 `department`에 싣는다. 원본 표에 부서 열이 없을 때 이 값이
 부서가 된다. 목록 구조를 읽지 않는 스크래퍼는 이 셋을 채우지 않는다. `parse.json`에는 레코드를 중복 저장하지 않는다.
-원본의 내용·개인정보를 메타데이터에 넣지 않는다. fetch 메타데이터의 외부 경로는 수집 PC 기준이다.
+원본의 내용·개인정보를 메타데이터에 넣지 않는다. fetch 메타데이터의 원본 경로는 `--raw-root`
+기준 상대 경로라 수집 PC의 계정명·폴더 배치가 남지 않는다.
 
 레코드 CSV의 열 순서(`storage.RECORD_FIELDS`)는 다음과 같다. UTF-8 BOM 없음, LF 줄바꿈,
 표준 CSV 인용을 사용하며 레코드 순서를 유지한다.

@@ -93,6 +93,7 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
             sources.extend(
                 _sources(
                     directory,
+                    paths.raw_root,
                     collected,
                     listed,
                     organization.slug,
@@ -397,6 +398,7 @@ def _remember_listing(directory: Path, listed: dict[str, Listed]) -> None:
 
 def _sources(
     directory: Path,
+    raw_root: Path,
     collected: dict[str, "Collected"],
     listed: dict[str, Listed],
     organization: str,
@@ -406,7 +408,9 @@ def _sources(
     """수집 기록 전체를 출처로 옮긴다. 이번 실행에서 새로 받은 것만 세지 않는다.
 
     컨테이너는 저장한 원본에서 다시 판정한다. 게시판이 붙인 확장자를 그대로 믿지 않는다.
+    원본의 자리는 이 PC의 절대 경로가 아니라 raw-root 기준 상대 경로로 남긴다(#202).
     """
+    board_dir = directory.relative_to(raw_root)
     references = []
     for post_id, entry in collected.items():
         posted, title, department = Listed.of(listed, post_id)
@@ -417,7 +421,7 @@ def _sources(
             body = path.read_bytes()
             references.append(
                 SourceRef(
-                    path=path,
+                    path=board_dir / name,
                     source_hash=hashlib.sha256(body).hexdigest(),
                     organization=organization,
                     board=board,
