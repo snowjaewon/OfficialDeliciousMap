@@ -173,8 +173,9 @@ class TableParser(HTMLParser):
             raise boards.UnreadableBoard("board listing row never closed")
 
 
-def parse(body: bytes, encoding: str = ENCODING) -> TableParser:
-    parser = TableParser()
+def parse(body: bytes, encoding: str = ENCODING, parser: TableParser | None = None) -> TableParser:
+    """목록을 읽는다. 표시 방식만 다른 게시판은 해석기를 넘겨 같은 계약으로 읽는다."""
+    parser = TableParser() if parser is None else parser
     try:
         parser.feed(body.decode(encoding))
         parser.close()
@@ -211,6 +212,14 @@ def posted_of(row: Row) -> date:
         if DATE_RE.fullmatch(cell.text) or SHORT_DATE_RE.fullmatch(cell.text):
             return posted(cell.text)
     return posted(row.text)
+
+
+def last_page(pages: Iterable[int]) -> int:
+    """쪽 넘김이 밝힌 마지막 쪽. 밝히지 않았으면 쪽 수를 지어내지 않고 읽을 수 없다고 알린다."""
+    found = list(pages)
+    if not found:
+        raise boards.UnreadableBoard("board listing does not declare its page count")
+    return max(found)
 
 
 def has_date(text: str) -> bool:
