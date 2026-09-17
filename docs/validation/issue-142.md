@@ -89,6 +89,12 @@ print('ok',ok,'mismatch',bad,'absent',gone)"
 - 보류는 둘이다: `busan-yeongdo`(`bot_blocked`) · `busan-saha`(`board_lost`). 도시 `fetch.json`의
   `empty_reason`이 이 둘을 이름과 사유로 싣는다.
 
+**받지 못한 원본 330건의 사유**는 기관 `fetch.json`의 `missing[].reason`이 밝힌다 — DRM 329건과
+`not_an_original` 1건(부산진구)이다. DRM은 기관별로 `busan-city` 105 · `busan-nam` 73 ·
+`busan-haeundae` 51 · `busan-buk` 31 · `busan-gangseo` 22 · `busan-sasang` 17 ·
+`busan-busanjin` 15 · `busan-geumjeong` 15이고, 나머지 일곱 기관은 0이다. 같은 수가 저장소 밖
+수집 장부(`<raw-root>/busan/*/*/collected.jsonl`의 `drm`)와도 맞는다.
+
 ## 3. 미해결 원본 — 0건으로 숨기지 않았다
 
 도시 `headermap`의 미해결 947건과 그 사유다. `parse`는 같은 947건에 `no_candidates` 104건을
@@ -407,7 +413,7 @@ uv run python -c "from pathlib import Path; from deliciousmap.budget import Budg
 | --- | --- |
 | 보류가 아닌 기관마다 `parse`부터 `build`까지 끝나고 종료 상태를 기록 | 충족. 15기관 × 6단계 모두 종료 코드 0 (8절). 도중 실패 네 자리도 8절에 남겼다 |
 | 기관·게시판별 원본 해시·레코드·비식당·보류·좌표 실패 수와 사유 | 충족. 1·2·5·8절 |
-| 미지원 형식·미해결 원본·받지 않은 게시글을 기관별 수와 근거로 기록 | 충족. 2·3절. 0건이나 성공으로 숨기지 않았다 |
+| 미지원 형식·미해결 원본·받지 않은 게시글·DRM 첨부를 기관별 수와 근거로 기록 | 충족. 2·3절. DRM 329건도 기관별로 적었다. 0건이나 성공으로 숨기지 않았다 |
 | LLM 호출 수·누적 비용이 장부와 일치하고 USD 15 이내, 네이버 조회 수 기록 | 충족. $8.7502/15, 질의 8,479건 (6·9절) |
 | `data/busan/` 산출물과 `dist/busan/`의 건수·크기, 파일 크기 상한·개인정보 검사 | 충족. 10절 |
 | `build --city busan` 성공, 부산 페이지에서 장부·마커·보류 사유 확인 | 충족. 마커 1,754 · 장부 11,402건 · 보류 2곳 사유 · 기관별 건수를 모두 화면에서 봤다. 지도 타일만 지도 키의 출처 등록 문제로 뜨지 않는다 (12절) |
@@ -475,5 +481,3 @@ gitleaks detect --no-banner --redact --source .
 - **폐업 대조.** 확정 업소 1,754곳이 모두 `unknown`이다.
 - **지도 키의 출처 등록.** `NAVER_MAP_CLIENT_ID`가 `localhost:8765`·`127.0.0.1:8765`에서
   인증에 실패한다. 파이프라인 밖의 콘솔 설정 문제이며 이 이슈에서 고치지 않았다.
-- **DRM 첨부 수.** 이 실행은 기관별 DRM 건수를 따로 세지 않았다. #140이 기관별로 이미
-  실측해 [그 기록](issue-140.md)에 남겼고, 여기서는 그 수를 옮겨 적지 않았다.
