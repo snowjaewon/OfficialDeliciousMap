@@ -32,10 +32,10 @@ def test_invalid_selection_is_rejected_before_execution(
 
 def test_real_adapter_is_explicitly_unimplemented(capsys: pytest.CaptureFixture[str]) -> None:
     # 아직 게시판을 선언하지 않은 도시를 쓴다. 선언한 도시를 쓰면 이 시험이 기관 서버로
-    # 실제 요청을 보낸다. 부산이 게시판을 선언해(#140) 대구로 옮겼다. 남은 도시는
-    # 대구·인천·대전이며, 그 도시가 게시판을 선언하면 다시 옮긴다.
-    assert main(["fetch", "--city", "daegu"]) == 1
-    assert "fetch city=daegu org=* cause=not-implemented" in capsys.readouterr().err
+    # 실제 요청을 보낸다. 부산이 게시판을 선언해(#140) 대구로, 대구가 선언해(#173) 인천으로
+    # 옮겼다. 남은 도시는 인천이며, 인천이 게시판을 선언하면 다시 옮긴다.
+    assert main(["fetch", "--city", "incheon"]) == 1
+    assert "fetch city=incheon org=* cause=not-implemented" in capsys.readouterr().err
 
 
 def test_originals_cannot_be_stored_inside_repository(
@@ -82,7 +82,7 @@ def test_every_real_stage_has_a_nonzero_unimplemented_exit(
     stage: str, capsys: pytest.CaptureFixture[str]
 ) -> None:
     # 위와 같은 이유로 게시판을 선언하지 않은 도시를 쓴다.
-    assert main([stage, "--city", "daegu"]) == 1
+    assert main([stage, "--city", "incheon"]) == 1
     assert "cause=not-implemented" in capsys.readouterr().err
 
 
