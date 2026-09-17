@@ -231,6 +231,13 @@ def test_expense_before_the_data_start_fails_instead_of_being_skipped() -> None:
     assert extract(summary, late, SOURCE).total_check == "matched"
 
 
+def test_a_table_that_ends_before_the_learned_data_start_has_no_expense() -> None:
+    """헤더만 있는 시트(대전 서구 실측)에 다른 표에서 배운 시작 위치가 표 밖을 가리킨다."""
+    late = MAPPING.model_copy(update={"data_start_row": 4})
+    found = extract(table(), late, SOURCE)
+    assert (found.records, found.candidates, found.excluded) == ((), 0, ())
+
+
 def test_each_section_is_checked_against_its_own_total() -> None:
     """한 시트에 헤더를 되풀이한 두 구역이 있고, 구역마다 헤더 바로 아래에 계가 있다."""
     sheet = Table(
@@ -378,6 +385,18 @@ def test_an_original_that_omits_one_day_still_yields_its_other_expenses() -> Non
     assert [str(record.spent_on) for record in result.records] == ["2026.03.", "2026-01-05"]
     assert [record.merchant for record in result.records] == ["개인(성명 비공개)", "합성 식당"]
     assert result.candidates == 2
+
+
+def test_a_yearless_date_takes_its_year_from_the_posting_title() -> None:
+    """표에 제목 행이 없어 모델이 연도를 못 읽은 원본(대전 유성구 PDF 실측)."""
+    yearless = ("구청장", "6월 5일", "합성 식당", "간담회", 62000.0)
+    titled = SOURCE.model_copy(update={"title": "2026년 6월 단체장 업무추진비 집행내역"})
+    result = extract(table(yearless), MAPPING, titled)
+    assert [str(record.spent_on) for record in result.records] == ["2026-06-05"]
+    # 제목이 기간을 밝히지 않으면 연도를 짐작하지 않는다.
+    for title in (None, "업무추진비 집행내역"):
+        with pytest.raises(ValidationFailed, match="spent_on"):
+            extract(table(yearless), MAPPING, SOURCE.model_copy(update={"title": title}))
 
 
 def test_a_month_only_expense_outside_the_period_is_kept_out_of_range() -> None:

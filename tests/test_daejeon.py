@@ -8,7 +8,8 @@ import pytest
 
 from deliciousmap import boards
 from deliciousmap.collection import collect
-from deliciousmap.contracts import FetchOutput
+from deliciousmap.contracts import FetchOutput, PlaceCandidate
+from deliciousmap.identity import city_places
 from deliciousmap.paths import Paths
 from deliciousmap.registry import CITIES, Board, select_target
 from deliciousmap.scrapers.daejeon import ArticleBoard, BbsBoard, DptBoard, ZipBbsBoard
@@ -604,6 +605,48 @@ def test_daejeon_registry_declares_the_city_and_five_districts() -> None:
         ("daejeon-seo", 2),
         ("daejeon-yuseong", 1),
         ("daejeon-daedeok", 5),
+    ]
+
+
+def test_daejeon_registry_declares_measured_city_prefix_and_district_halls() -> None:
+    """청사는 원본을 받는 다섯 자치구에만 적는다. 수집 보류인 시청은 레코드가 없다."""
+    city = select_target(CITIES, "daejeon", None).city
+
+    assert city.address_prefixes == ("대전광역시",)
+    assert city.halls == {
+        "daejeon-dong": (36.312169, 127.454884),
+        "daejeon-jung": (36.3256593, 127.4215464),
+        "daejeon-seo": (36.355504, 127.383844),
+        "daejeon-yuseong": (36.3623219, 127.3562683),
+        "daejeon-daedeok": (36.346735, 127.415502),
+    }
+
+
+def test_daejeon_city_prefix_accepts_daejeon_candidates_only() -> None:
+    city = select_target(CITIES, "daejeon", None).city
+
+    def candidate(address: str) -> PlaceCandidate:
+        return PlaceCandidate(
+            merchant="합성 식당",
+            branch="본점",
+            address=address,
+            latitude=36.35,
+            longitude=127.38,
+            source={
+                "provider": "naver",
+                "source_id": address,
+                "reference": "https://example.invalid",
+            },
+        )
+
+    places = city_places(
+        [candidate("대전광역시 서구 둔산로 100"), candidate("서울특별시 중구 세종대로 1")],
+        "합성 식당",
+        city.address_prefixes,
+    )
+
+    assert [[item.address for item in place] for place in places] == [
+        ["대전광역시 서구 둔산로 100"]
     ]
 
 

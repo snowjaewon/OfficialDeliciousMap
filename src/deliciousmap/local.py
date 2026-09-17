@@ -31,6 +31,7 @@ from deliciousmap.identity import (
     reconcile_coordinates,
 )
 from deliciousmap.pipeline import AdapterFailure, ExecutionContext, FailureCause
+from deliciousmap.registry import Target
 from deliciousmap.site import (
     SourceScope,
     category_groups,
@@ -40,6 +41,8 @@ from deliciousmap.site import (
 )
 
 # 원본·표마다 받은 헤더 매핑 답의 이력. 도시 무관 서명 캐시와 달리 원본에 묶인다.
+# 도시에 하나만 둔다. 기관 실행도 이 이력을 읽고 쓴다 — 기관마다 따로 두면 도시가 이미 물은
+# 표를 다시 물어 답이 갈리고, 도시에 없는 기관 레코드가 생긴다(#175).
 HEADERMAP_ANSWERS = "headermap-answers-v1.jsonl"
 
 
@@ -52,7 +55,7 @@ class LocalAdapters:
             value.sources,
             context.paths.raw_root,
             context.paths.shared("headermap"),
-            context.paths.city_dir(context.target) / HEADERMAP_ANSWERS,
+            context.paths.city_dir(Target(context.target.city)) / HEADERMAP_ANSWERS,
             Budget(context.paths.shared("llm-budget")),
             context.header_mapper,
             {
