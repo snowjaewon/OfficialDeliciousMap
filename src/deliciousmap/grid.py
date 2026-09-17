@@ -8,7 +8,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import date, datetime, time
 from html.parser import HTMLParser
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from xml.etree import ElementTree
 
 import openpyxl
@@ -32,6 +32,11 @@ MAX_TABLE_CELLS = 1_000_000
 MAIN = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
 DOCUMENT = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
 WORKBOOK_RELS = "xl/_rels/workbook.xml.rels"
+# 문서 형식의 ZIP 표식(OOXML 문서·ODF). 이런 ZIP은 첨부 묶음으로 풀지 않는다 — docx 안의
+# 내장 워크시트는 원본의 표가 아니다.
+DOCUMENT_MARKERS = frozenset({"[Content_Types].xml", "mimetype"})
+# ZIP 항목 이름의 UTF-8 표시 비트. 없으면 한국 게시판 묶음은 cp949로 이름을 적는다.
+UTF8_NAME = 0x800
 # 괘선 좌표가 소수점 아래에서 어긋나는 것을 견디는 폭(포인트).
 RULE_TOLERANCE = 1.0
 # ISO/IEC 29500 Strict 이름공간과 같은 뜻의 Transitional 이름공간. 관계 유형은 접두어로 바뀐다.
@@ -86,7 +91,7 @@ HTML_LABEL_TAGS = frozenset({"h1", "h2", "h3", "h4", "h5", "h6", "p"})
 
 
 class UnsupportedFormat(Exception):
-    """이번 구현이 읽지 않는 형식(HWP·ZIP 묶음 등). 자동으로 LLM에 넘기지 않는다."""
+    """이번 구현이 읽지 않는 형식(HWP, 묶음 안의 묶음 등). 자동으로 LLM에 넘기지 않는다."""
 
 
 class UnreadableOriginal(Exception):
@@ -154,14 +159,40 @@ def is_html(content: bytes) -> bool:
     return head.startswith(b"<") and any(marker in head for marker in HTML_MARKERS)
 
 
+@dataclass(frozen=True)
+class Contents:
+    """원본 하나에서 읽은 표. 첨부 묶음이면 읽지 못한 항목을 함께 싣는다."""
+
+    tables: tuple[Table, ...]
+    # 첨부 묶음에서 읽지 못한 항목(`file3 별지.pdf: unreadable`). 묶음이 아니면 비어 있다.
+    unread: tuple[str, ...] = ()
+
+
 def read_tables(path: Path) -> tuple[Table, ...]:
     """통합문서는 시트마다, PDF는 괘선으로 나뉜 표마다, HWPX는 `<hp:tbl>`마다, HTML 쪽은
     `<table>`마다 표 하나다.
 
     내용이 없는 시트·표는 표가 아니며 뒤쪽의 빈 칸·빈 행은 잘라 낸다. 위치 표기는
-    통합문서가 `sheet1`, PDF·HWPX·HTML이 `table1`이다.
+    통합문서가 `sheet1`, PDF·HWPX·HTML이 `table1`이다. 첨부 묶음 ZIP은 `read_contents`를 따른다.
+    """
+    return read_contents(path).tables
+
+
+def read_contents(path: Path) -> Contents:
+    """첨부 묶음 ZIP(대전 서구 실측)은 항목마다 읽고 위치 표기 앞에 항목 순번을 붙인다.
+
+    위치 표기(`file2.sheet1`)는 공백을 담지 못해 항목 이름 대신 묶음 안의 순번을 쓴다.
+    한 항목을 읽지 못해도 나머지 항목은 읽고, 읽지 못한 항목은 `Contents.unread`에 남긴다.
+    어느 항목도 읽지 못한 묶음은 빈 원본이 아니라 읽기 실패다.
     """
     content = path.read_bytes()
+    members = _bundle(content) if content.startswith(ZIP) else None
+    if members is None:
+        return Contents(_tables(content))
+    return _read_bundle(members)
+
+
+def _tables(content: bytes) -> tuple[Table, ...]:
     if content.startswith(OLE2):
         prefix, blocks = "sheet", _legacy(content)
     elif content.startswith(ZIP):
@@ -226,22 +257,120 @@ def _legacy_spans(sheet: xlrd.sheet.Sheet) -> tuple[Span, ...]:
 
 def _zip(content: bytes) -> tuple[str, list[Block]]:
     """ZIP 컨테이너는 엑셀 통합문서이거나 HWPX 본문이다. 둘 다 아니면 읽지 않는다."""
-    try:
-        with zipfile.ZipFile(io.BytesIO(content)) as archive:
-            names = archive.namelist()
-    except zipfile.BadZipFile:
-        raise UnsupportedFormat("broken ZIP container") from None
+    names = _names(content)
     if "xl/workbook.xml" in names:
         return "sheet", _xlsx(content)
-    sections = sorted(
-        (int(found.group(1)), name)
-        for name in names
-        if (found := SECTION.fullmatch(name)) is not None
-    )
+    sections = _sections(names)
     if not sections:
-        # 게시판의 첨부 묶음 등 엑셀도 HWPX도 아닌 ZIP 컨테이너.
+        # 첨부 묶음 안에 든 첨부 묶음. 서구 316건에는 없어 풀지 않는다(2026-09-17 실측).
         raise UnsupportedFormat("ZIP container without an Excel workbook or an HWPX body")
-    return "table", _hwpx(content, [name for _, name in sections])
+    return "table", _hwpx(content, sections)
+
+
+def _names(content: bytes) -> list[str]:
+    try:
+        with zipfile.ZipFile(io.BytesIO(content)) as archive:
+            return archive.namelist()
+    except zipfile.BadZipFile:
+        raise UnsupportedFormat("broken ZIP container") from None
+
+
+def _sections(names: list[str]) -> list[str]:
+    found = sorted(
+        (int(match.group(1)), name)
+        for name in names
+        if (match := SECTION.fullmatch(name)) is not None
+    )
+    return [name for _, name in found]
+
+
+def _bundle(content: bytes) -> list[tuple[str, bytes | None]] | None:
+    """첨부 묶음의 항목과 내용. 엑셀 통합문서·HWPX 본문인 ZIP은 묶음이 아니다(`None`).
+
+    내용을 꺼내지 못한 항목(암호·손상)은 내용 자리가 `None`이다.
+    """
+    names = _names(content)
+    if "xl/workbook.xml" in names or _sections(names) or DOCUMENT_MARKERS & set(names):
+        return None
+    members: list[tuple[str, bytes | None]] = []
+    with zipfile.ZipFile(io.BytesIO(content)) as archive:
+        for item in archive.infolist():
+            if item.is_dir():
+                continue
+            try:
+                data: bytes | None = archive.read(item)
+            except Exception:
+                data = None
+            members.append((_member_name(item), data))
+    return members
+
+
+def _member_name(item: zipfile.ZipInfo) -> str:
+    """`zipfile`은 UTF-8 표시가 없는 이름을 cp437로 읽는다. 그 바이트를 cp949로 다시 읽는다."""
+    if item.flag_bits & UTF8_NAME:
+        return item.filename
+    try:
+        return item.filename.encode("cp437").decode("cp949")
+    except UnicodeError:
+        return item.filename
+
+
+def _read_bundle(members: list[tuple[str, bytes | None]]) -> Contents:
+    """같은 이름의 PDF와 통합문서가 함께 들면 PDF는 통합문서를 옮긴 사본이다.
+
+    서구 실측(2026-09-17)에서 pdf가 든 묶음 9건은 모두 같은 이름의 xlsx와 짝이다. 통합문서에서
+    표를 읽었으면 PDF는 읽지 않아 같은 집행이 두 번 레코드가 되지 않는다. 통합문서를 읽지
+    못했거나 표가 없으면 PDF를 읽는다.
+    """
+    read: dict[int, tuple[Table, ...]] = {}
+    failed: dict[int, str] = {}
+    # 통합문서를 먼저 읽어야 짝인 PDF를 건너뛸지 안다.
+    order = sorted(range(len(members)), key=lambda index: _is_pdf(members[index]))
+    for index in order:
+        name, data = members[index]
+        if _is_pdf(members[index]) and any(
+            _is_workbook(read.get(other, ())) for other in _same_stem(members, name)
+        ):
+            continue
+        try:
+            if data is None:
+                raise UnreadableOriginal("bundle member could not be extracted")
+            read[index] = _tables(data)
+        except UnsupportedFormat:
+            failed[index] = "unsupported_format"
+        except UnreadableOriginal:
+            failed[index] = "unreadable"
+    if not read:
+        # 모든 항목을 읽지 못한 묶음. 하나라도 형식은 맞았다면 읽기 실패로 남긴다.
+        if "unreadable" in failed.values():
+            raise UnreadableOriginal("no bundle member could be read")
+        raise UnsupportedFormat("ZIP bundle without a supported member")
+    tables = [
+        Table(f"file{index + 1}.{table.name}", table.label, table.rows, table.spans)
+        for index in sorted(read)
+        for table in read[index]
+    ]
+    unread = [f"file{index + 1} {members[index][0]}: {failed[index]}" for index in sorted(failed)]
+    return Contents(tuple(tables), tuple(unread))
+
+
+def _is_workbook(tables: tuple[Table, ...]) -> bool:
+    """표를 하나 이상 낸 통합문서. 통합문서의 표만 위치 표기가 `sheet`로 시작한다."""
+    return bool(tables) and all(table.name.startswith("sheet") for table in tables)
+
+
+def _is_pdf(member: tuple[str, bytes | None]) -> bool:
+    return member[1] is not None and member[1].startswith(PDF)
+
+
+def _same_stem(members: list[tuple[str, bytes | None]], name: str) -> list[int]:
+    """확장자만 다른 항목. 폴더가 다르면 같은 이름이어도 짝이 아니다."""
+    stem = PurePosixPath(name).with_suffix("")
+    return [
+        index
+        for index, (other, _) in enumerate(members)
+        if other != name and PurePosixPath(other).with_suffix("") == stem
+    ]
 
 
 def _xlsx(content: bytes) -> list[Block]:

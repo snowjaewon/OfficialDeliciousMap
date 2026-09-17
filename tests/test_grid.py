@@ -10,7 +10,7 @@ import openpyxl
 import pytest
 import xlwt
 
-from deliciousmap.grid import UnreadableOriginal, UnsupportedFormat, read_tables
+from deliciousmap.grid import UnreadableOriginal, UnsupportedFormat, read_contents, read_tables
 from tests import hwpx, pdf
 from tests.gwangju import bundle, workbook
 
@@ -44,6 +44,159 @@ def test_xlsx_is_read_by_content_and_trims_formatted_empty_ranges(tmp_path: Path
         ("사용자", "사용일시", "시각", "금액"),
         ("합성과장", datetime(2026, 2, 3), "12:04", 93000.0),
     )
+
+
+def xlsx(*rows: tuple[object, ...], title: str = "집행내역") -> bytes:
+    book = openpyxl.Workbook()
+    book.active.title = title
+    for row in rows:
+        book.active.append(row)
+    stream = io.BytesIO()
+    book.save(stream)
+    return stream.getvalue()
+
+
+EXPENSE = (("사용일자", "사용장소", "사용금액"), ("2026-01-05", "합성 식당", 62000))
+EXPENSE_PAGE = [("사용일자", "사용장소", "사용금액"), ("2026-01-05", "합성 식당", "62,000")]
+
+
+def test_bundle_member_tables_are_named_by_the_member_they_came_from(tmp_path: Path) -> None:
+    """대전 서구의 첨부 묶음 ZIP. 위치 표기는 공백이 없어야 하므로 파일 이름 대신 순번을 쓴다."""
+    path = tmp_path / "게시글.zip"
+    path.write_bytes(bundle(("2026년 8월 집행내역.xlsx", xlsx(*EXPENSE))))
+
+    (table,) = read_tables(path)
+
+    assert (table.name, table.label) == ("file1.sheet1", "집행내역")
+    assert table.rows == (
+        ("사용일자", "사용장소", "사용금액"),
+        ("2026-01-05", "합성 식당", 62000.0),
+    )
+    assert read_contents(path).unread == ()
+
+
+def test_bundle_numbers_every_member_in_archive_order(tmp_path: Path) -> None:
+    path = tmp_path / "게시글.zip"
+    path.write_bytes(
+        bundle(
+            ("4월.xlsx", xlsx(*EXPENSE)),
+            ("5월.xls", workbook([("사용일자", "사용장소"), ("2026-05-02", "합성 찻집")])),
+            ("6월.pdf", pdf.document(EXPENSE_PAGE)),
+        )
+    )
+    assert [table.name for table in read_tables(path)] == [
+        "file1.sheet1",
+        "file2.sheet1",
+        "file3.table1",
+    ]
+
+
+def test_a_pdf_rendition_of_a_bundled_workbook_is_not_read_twice(tmp_path: Path) -> None:
+    """서구 실측: 한 게시글에 같은 이름의 pdf와 xlsx가 함께 든다. 같은 집행을 두 번 내지 않는다."""
+    path = tmp_path / "게시글.zip"
+    path.write_bytes(
+        bundle(
+            ("2026년 8월 집행내역.pdf", pdf.document(EXPENSE_PAGE)),
+            ("2026년 8월 집행내역.xlsx", xlsx(*EXPENSE)),
+        )
+    )
+    contents = read_contents(path)
+    assert [table.name for table in contents.tables] == ["file2.sheet1"]
+    assert contents.unread == ()
+
+
+@pytest.mark.parametrize(
+    "twin",
+    [
+        # 표를 내지 않은 통합문서는 PDF를 대신하지 못한다.
+        ("집행내역.xlsx", xlsx()),
+        # 통합문서가 아닌 같은 이름의 항목은 PDF의 원본이 아니다.
+        ("집행내역.hwpx", hwpx.document([("붙임",), ("공문",)])),
+        # 폴더가 다르면 이름이 같아도 짝이 아니다.
+        ("2월/집행내역.xlsx", xlsx(*EXPENSE)),
+    ],
+)
+def test_a_bundled_pdf_is_read_unless_a_workbook_twin_gave_tables(
+    tmp_path: Path, twin: tuple[str, bytes]
+) -> None:
+    path = tmp_path / "게시글.zip"
+    path.write_bytes(bundle(twin, ("집행내역.pdf", pdf.document(EXPENSE_PAGE))))
+    assert "file2.table1" in [table.name for table in read_tables(path)]
+
+
+def test_an_office_document_zip_is_not_opened_as_a_bundle(tmp_path: Path) -> None:
+    """docx 안의 내장 워크시트를 원본의 표로 읽지 않는다."""
+    path = tmp_path / "공문.docx"
+    path.write_bytes(
+        bundle(
+            ("[Content_Types].xml", b"<Types/>"),
+            ("word/document.xml", b"<w:document/>"),
+            ("word/embeddings/Microsoft_Excel_Worksheet.xlsx", xlsx(*EXPENSE)),
+        )
+    )
+    with pytest.raises(UnsupportedFormat):
+        read_tables(path)
+
+
+def test_bundle_member_names_without_the_utf8_flag_are_read_as_cp949(tmp_path: Path) -> None:
+    """한국 게시판 묶음은 UTF-8 표시 없이 cp949로 이름을 적기도 한다."""
+    name = "별지.pdf".encode("cp949")
+    placeholder = b"x" * (len(name) - 4) + b".pdf"
+    content = bundle((placeholder.decode(), b"%PDF-1.7 synthetic"), ("a.xlsx", xlsx(*EXPENSE)))
+    path = tmp_path / "게시글.zip"
+    path.write_bytes(content.replace(placeholder, name))
+    assert read_contents(path).unread == ("file1 별지.pdf: unreadable",)
+
+
+def test_a_bundled_pdf_is_read_when_its_workbook_could_not_be(tmp_path: Path) -> None:
+    path = tmp_path / "게시글.zip"
+    path.write_bytes(
+        bundle(
+            ("집행내역.pdf", pdf.document(EXPENSE_PAGE)),
+            ("집행내역.xlsx", b"PK\x03\x04broken"),
+        )
+    )
+    contents = read_contents(path)
+    assert [table.name for table in contents.tables] == ["file1.table1"]
+    assert contents.unread == ("file2 집행내역.xlsx: unsupported_format",)
+
+
+def test_unreadable_bundle_members_are_left_on_the_ledger_and_the_rest_is_read(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "게시글.zip"
+    path.write_bytes(
+        bundle(
+            ("붙임.hwp", hwp("BodyText/Section0")),
+            ("집행내역.xlsx", xlsx(*EXPENSE)),
+            ("별지.pdf", b"%PDF-1.7 synthetic"),
+            ("안쪽 묶음.zip", bundle(("집행내역.xlsx", xlsx(*EXPENSE)))),
+        )
+    )
+    contents = read_contents(path)
+    assert [table.name for table in contents.tables] == ["file2.sheet1"]
+    assert contents.unread == (
+        "file1 붙임.hwp: unsupported_format",
+        "file3 별지.pdf: unreadable",
+        "file4 안쪽 묶음.zip: unsupported_format",
+    )
+
+
+@pytest.mark.parametrize(
+    ("members", "error"),
+    [
+        ((("별지.pdf", b"%PDF-1.7 synthetic"), ("붙임.txt", b"synthetic")), UnreadableOriginal),
+        ((("붙임.txt", b"synthetic"), ("붙임.hwp", b"HWP Document File")), UnsupportedFormat),
+        ((), UnsupportedFormat),
+    ],
+)
+def test_a_bundle_without_any_readable_member_is_not_reported_as_empty(
+    tmp_path: Path, members: tuple[tuple[str, bytes], ...], error: type[Exception]
+) -> None:
+    path = tmp_path / "게시글.zip"
+    path.write_bytes(bundle(*members))
+    with pytest.raises(error):
+        read_tables(path)
 
 
 def test_vertically_merged_cells_are_marked_without_changing_the_grid(tmp_path: Path) -> None:
