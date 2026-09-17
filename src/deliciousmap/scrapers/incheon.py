@@ -5,8 +5,9 @@
 같은 계열이라도 목록을 표로 그리는 기관(서해·계양·강화·옹진·검단·제물포)과 목록으로 그리는
 기관(남동·부평)이 있어, 게시글 하나를 `<tr>`·`<li>` 어느 쪽으로도 읽는다.
 
-시청과 미추홀·연수·영종은 계열이 달라 따로 둔다. 목록 구조가 다를 뿐 계약은 같다 — 목록에서
-게시글을, 본문에서 첨부를 읽고 저장과 형식 판정은 하지 않는다.
+나머지 넷은 계열이 달라 따로 둔다. 시청은 `CityBoard`, 미추홀·영종은 한 계열이라 `KeyedBoard`
+한 벌을 나눠 쓰고, 연수는 `YeonsuBoard`다. 목록 구조가 다를 뿐 계약은 같다 — 목록에서 게시글을,
+본문에서 첨부를 읽고 저장과 형식 판정은 하지 않는다.
 """
 
 import re
@@ -289,7 +290,11 @@ class CityBoard:
     111쪽으로 준다) 목록 요청을 그만큼 줄인다. 첨부 이름은 링크에 없고 그 앞 칸에 있다.
     """
 
-    published_suffixes = PUBLISHED_SUFFIXES
+    # 이 게시판만 집행내역을 스캔본으로도 공개한다(2026-09-17 실측: 2026년 첨부 가운데 본청
+    # 실국과장 5건·소방 14건이 `.jpg`·`.png`이고, 받은 내용도 JPEG·PNG였다). 서울 용산과 같은
+    # 모양이라 컨테이너는 이미 실측 목록에 있다. 표를 읽는 일은 이 이슈 밖이고, 여기서는 받은
+    # 형식을 그대로 센다. 다른 인천 게시판에서는 이 확장자를 실측하지 않았다.
+    published_suffixes = PUBLISHED_SUFFIXES | {".jpg", ".jpeg", ".png"}
 
     def __init__(self, board: "Board", transport: Transport) -> None:
         # 의회가 쓴 줄. 시청 게시판에서는 2026년 게시글에 없었지만, 도시 안의 다른 게시판이
@@ -646,6 +651,7 @@ __all__ = [
     "PUBLISHED_SUFFIXES",
     "BbsBoard",
     "CityBoard",
+    "KeyedBoard",
     "MichuholBoard",
     "YeongjongBoard",
     "YeonsuBoard",
