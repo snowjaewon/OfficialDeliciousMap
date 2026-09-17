@@ -387,6 +387,18 @@ def test_an_original_that_omits_one_day_still_yields_its_other_expenses() -> Non
     assert result.candidates == 2
 
 
+def test_a_yearless_date_takes_its_year_from_the_posting_title() -> None:
+    """표에 제목 행이 없어 모델이 연도를 못 읽은 원본(대전 유성구 PDF 실측)."""
+    yearless = ("구청장", "6월 5일", "합성 식당", "간담회", 62000.0)
+    titled = SOURCE.model_copy(update={"title": "2026년 6월 단체장 업무추진비 집행내역"})
+    result = extract(table(yearless), MAPPING, titled)
+    assert [str(record.spent_on) for record in result.records] == ["2026-06-05"]
+    # 제목이 기간을 밝히지 않으면 연도를 짐작하지 않는다.
+    for title in (None, "업무추진비 집행내역"):
+        with pytest.raises(ValidationFailed, match="spent_on"):
+            extract(table(yearless), MAPPING, SOURCE.model_copy(update={"title": title}))
+
+
 def test_a_month_only_expense_outside_the_period_is_kept_out_of_range() -> None:
     """달 단위 집행일도 대상 기간으로 가른다. 그 달의 구간이 겹쳐야 레코드가 된다."""
     result = extract(

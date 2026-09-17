@@ -606,15 +606,28 @@ def _payee(table: Table, mapping: HeaderMap, row: int) -> str:
     return REDACTED if PERSONAL_EVENT.search(_purpose(table, mapping, row)) else ""
 
 
+def _year_hint(mapping: HeaderMap, source: SourceRef) -> int | None:
+    """연도 없는 집행일의 연도 근거. 표가 밝힌 연도가 먼저이고, 없으면 게시글 제목이 밝힌 해다.
+
+    표에 제목 행이 없는 원본(대전 유성구 PDF 실측)은 모델이 연도를 읽을 곳이 없다. 게시글
+    제목이 한 해의 기간을 밝히면 그 원본의 지출은 그 해의 것이다(2026-09-17 사용자 결정).
+    """
+    if mapping.year_hint is not None:
+        return mapping.year_hint
+    span = period.declared(source.title)
+    return span.start.year if span is not None and span.start.year == span.end.year else None
+
+
 def _candidate(table: Table, mapping: HeaderMap, source: SourceRef, row: int) -> _Candidate:
     """지출 1건의 값을 읽는다. 세로 병합이 덮은 칸은 병합이 담은 값이다(`Table.value`)."""
     columns = mapping.columns
+    year_hint = _year_hint(mapping, source)
     spent_on: SpentOn | None
     if "spent_on" in columns:
-        spent_on = parse_spent_on(table.value(row, columns["spent_on"]), mapping.year_hint)
+        spent_on = parse_spent_on(table.value(row, columns["spent_on"]), year_hint)
     elif {"month", "day"} <= columns.keys():
         spent_on = _month_day(
-            table.value(row, columns["month"]), table.value(row, columns["day"]), mapping.year_hint
+            table.value(row, columns["month"]), table.value(row, columns["day"]), year_hint
         )
     else:
         # 날짜 열이 없는 표. `_dated`가 상세 키의 날이 있을 때만 여기까지 보낸다.
