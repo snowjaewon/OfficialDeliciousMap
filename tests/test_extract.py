@@ -237,6 +237,50 @@ def test_total_row_with_only_an_amount_is_recognized_and_checked() -> None:
         )  # fmt: skip
 
 
+@pytest.mark.parametrize(
+    ("last_subtotal", "last_spend"),
+    [
+        (("", "", "", "1건", 27000.0), (spend(6, "합성 국밥", 27000.0),)),
+        # 집행이 없는 마지막 구역의 소계(`0건 | 0`).
+        (("", "", "", "0건", 0.0), ()),
+    ],
+)
+def test_an_unlabeled_row_matching_the_spending_since_the_last_subtotal_is_a_subtotal(
+    last_subtotal: tuple[Cell, ...], last_spend: tuple[tuple[Cell, ...], ...]
+) -> None:
+    """2026-09-17 수성구 실측: 구분마다 `소계`를 적다가 마지막 구분의 소계만 딱지를 빠뜨린다.
+
+    그 행은 표 전체 합과 맞지 않지만 앞 소계 뒤의 지출 합과는 맞는다. 소계로 보고 넘긴다.
+    """
+    whole = 62000.0 + sum(float(row[4]) for row in last_spend)  # type: ignore[arg-type]
+    result = extract(
+        table(
+            spend(5, "합성 식당", 62000.0),
+            ("", "소계", "", "1건", 62000.0),
+            *last_spend,
+            last_subtotal,
+            ("", "총 계", "", "", whole),
+        ),
+        MAPPING,
+        SOURCE,
+    )
+    assert (result.candidates, result.total_check) == (1 + len(last_spend), "matched")
+
+
+def test_an_unlabeled_row_matching_neither_the_table_nor_the_last_segment_fails() -> None:
+    with pytest.raises(ValidationFailed, match="sheet1:R6 total amount mismatch"):
+        extract(
+            table(
+                spend(5, "합성 식당", 62000.0),
+                ("", "소계", "", "1건", 62000.0),
+                spend(6, "합성 국밥", 27000.0),
+                ("", "", "", "1건", 26000.0),
+            ),
+            MAPPING,
+            SOURCE,
+        )
+
+
 def test_stale_count_in_the_total_row_does_not_fail_a_matching_amount() -> None:
     result = extract(
         table(spend(5, "합성 식당", 62000.0), spend(6, "합성 국밥", 27000.0),

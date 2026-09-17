@@ -135,7 +135,9 @@ def extract(table: Table, mapping: HeaderMap, source: SourceRef) -> Extraction:
         kind = _kind(table, mapping, headers, row)
         if kind == "candidate":
             try:
-                sections[-1].candidates.append(_candidate(table, mapping, source, row))
+                found = _candidate(table, mapping, source, row)
+                sections[-1].candidates.append(found)
+                sections[-1].segment += found.amount
             except ValidationFailed as exc:
                 if not _drops_row(mapping, exc):
                     raise
@@ -145,6 +147,10 @@ def extract(table: Table, mapping: HeaderMap, source: SourceRef) -> Extraction:
                 excluded.append(exc.detail)
             continue
         excluded.append(f"{table.name}:R{row} {kind}")
+        if kind == "total" and not _labeled_total(table, row):
+            sections[-1].segments[row] = sections[-1].segment
+        if kind in ("subtotal", "total", "unclear_total"):
+            sections[-1].segment = Decimal(0)
         if kind == "header":
             sections.append(_Section())
         elif kind == "total":
@@ -664,6 +670,9 @@ class _Section:
     totals: list[tuple[int, Decimal | None]] = field(default_factory=list)
     # 범위를 확정할 수 없는 누계·기간 합계가 있었다.
     unclear: bool = False
+    # 앞 소계·합계 뒤로 쌓인 지출 합. 딱지 없는 합계 행이 그 자리에서 본 값을 행 번호로 남긴다.
+    segment: Decimal = Decimal(0)
+    segments: dict[int, Decimal] = field(default_factory=dict)
 
 
 RowKind = Literal["blank", "header", "subtotal", "total", "unclear_total", "note", "candidate"]
@@ -704,6 +713,10 @@ def _kind(table: Table, mapping: HeaderMap, headers: set[tuple[str, ...]], row: 
     return "candidate"
 
 
+def _labeled_total(table: Table, row: int) -> bool:
+    return any(TOTAL.fullmatch(compact(value)) for value in table.rows[row - 1])
+
+
 def _no_spending(table: Table, mapping: HeaderMap, row: int, joined: str) -> bool:
     """집행이 없다는 표기만 있는 행인지. 집행일이 읽히거나 금액이 0보다 크면 지출로 둔다."""
     if not NO_SPENDING.search(joined):
@@ -736,7 +749,11 @@ def _check_totals(table: Table, sections: list[_Section], multiplier: Decimal) -
             readable = False
             continue
         own = sum((item.amount for item in section.candidates), Decimal(0))
-        if amount * multiplier not in (own, whole):
+        # 딱지 없는 합계 행은 앞 소계 뒤의 지출 합과 맞으면 소계다(수성구 실측: 마지막 구분의
+        # 소계만 `소계`를 빠뜨린다). 딱지가 있는 합계는 지금처럼 구역·표 전체와만 대조한다.
+        segment = section.segments.get(row)
+        allowed = (own, whole) if segment is None else (own, whole, segment)
+        if amount * multiplier not in allowed:
             raise ValidationFailed(f"{table.name}:R{row} total amount mismatch")
     return "matched" if readable else "ambiguous"
 
