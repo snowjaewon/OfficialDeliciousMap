@@ -46,6 +46,10 @@ UNCLEAR_TOTAL = re.compile(rf"{PERIOD}?누계|{PERIOD}(합계|총계|계)")
 SUBTOTAL = re.compile(r".{0,6}소계")
 # 표 끝을 알리는 행. 원본에서는 글자마다 칸을 나눠 적기도 한다(`이 | 하 | 빈 | 칸`).
 TERMINATOR = re.compile(r"(이하)?(빈칸|여백|없음)\.?")
+# 구역에 집행이 없다는 표기. 구역 딱지·연번 옆에 적거나 글자마다 칸을 나눠 적는다(2026-09-17
+# 대구 실측: `시책추진 (203-03) | 해 | 당 | 없 | 음`, `차 및 음료 등 | 해당없음 | 0`,
+# `회의 및 간담회 | 집 | 행 | 내 | 역 | 없 | 음`, `업무추진회의 행사, 간담회 등 | 이하 빈칸`).
+NO_SPENDING = re.compile(r"(해당(사항)?|내용|(집행|사용)(내역)?)?없음|(이하)?(빈칸|여백)")
 # 연도 뒤에 오는 월·일. 구분자는 거듭 찍히기도 한다(`2026..03.24.` 동구 실측).
 AFTER_YEAR = r"(?:\s*[-./년])+\s*(\d{1,2})(?:\s*[-./월])+\s*(\d{1,2})(?!\d)"
 # 선언한 천원 표의 값으로 볼 수 없는 크기(천원). 울산 시청 표는 헤더가 `금액(천원)`인데 몇 행을
@@ -131,7 +135,9 @@ def extract(table: Table, mapping: HeaderMap, source: SourceRef) -> Extraction:
         kind = _kind(table, mapping, headers, row)
         if kind == "candidate":
             try:
-                sections[-1].candidates.append(_candidate(table, mapping, source, row))
+                found = _candidate(table, mapping, source, row)
+                sections[-1].candidates.append(found)
+                sections[-1].since_subtotal += found.amount
             except ValidationFailed as exc:
                 if not _drops_row(mapping, exc):
                     raise
@@ -141,6 +147,10 @@ def extract(table: Table, mapping: HeaderMap, source: SourceRef) -> Extraction:
                 excluded.append(exc.detail)
             continue
         excluded.append(f"{table.name}:R{row} {kind}")
+        if kind == "total" and not _labeled_total(table, row):
+            sections[-1].unlabeled_totals[row] = sections[-1].since_subtotal
+        if kind in ("subtotal", "total", "unclear_total"):
+            sections[-1].since_subtotal = Decimal(0)
         if kind == "header":
             sections.append(_Section())
         elif kind == "total":
@@ -660,6 +670,9 @@ class _Section:
     totals: list[tuple[int, Decimal | None]] = field(default_factory=list)
     # 범위를 확정할 수 없는 누계·기간 합계가 있었다.
     unclear: bool = False
+    # 앞 소계·합계 뒤로 쌓인 지출 합. 딱지 없는 합계 행이 그 자리에서 본 값을 행 번호로 남긴다.
+    since_subtotal: Decimal = Decimal(0)
+    unlabeled_totals: dict[int, Decimal] = field(default_factory=dict)
 
 
 RowKind = Literal["blank", "header", "subtotal", "total", "unclear_total", "note", "candidate"]
@@ -680,6 +693,8 @@ def _kind(table: Table, mapping: HeaderMap, headers: set[tuple[str, ...]], row: 
         return "unclear_total"
     columns = mapping.columns
     date_columns = [columns[role] for role in ("spent_on", "month", "day") if role in columns]
+    if _no_spending(table, mapping, row, joined):
+        return "note"
     identity = [*date_columns, columns["merchant"]]
     # 집행일시·사용장소가 비어 있으면 지출 1건이 아니다. 금액만 남은 행은 딱지가 없어도
     # 합계로 보고 그 값을 대조한다(2026-09-13 광산구 실측). 맞지 않으면 대조가 알린다.
@@ -698,6 +713,26 @@ def _kind(table: Table, mapping: HeaderMap, headers: set[tuple[str, ...]], row: 
     return "candidate"
 
 
+def _labeled_total(table: Table, row: int) -> bool:
+    return any(TOTAL.fullmatch(compact(value)) for value in table.rows[row - 1])
+
+
+def _no_spending(table: Table, mapping: HeaderMap, row: int, joined: str) -> bool:
+    """집행이 없다는 표기만 있는 행인지. 날짜 칸에 숫자가 있거나 금액이 0이 아니면 지출로 둔다.
+
+    날짜가 읽히는지는 연도 근거에 따라 갈리므로 여기서 읽지 않는다. 숫자가 있으면 지출 후보로
+    남겨 읽지 못한 날짜는 집행일 실패로 알린다.
+    """
+    if not NO_SPENDING.search(joined):
+        return False
+    columns = mapping.columns
+    amount = _amount(table.cell(row, columns["amount_krw"]))
+    if amount is not None and amount != 0:
+        return False
+    dates = [columns[role] for role in ("spent_on", "month", "day") if role in columns]
+    return not any(re.search(r"\d", text(table.value(row, column))) for column in dates)
+
+
 def _check_totals(table: Table, sections: list[_Section], multiplier: Decimal) -> TotalCheck:
     """합계 행은 제 구역의 합이나 표 전체의 합과 정확히 같아야 한다. 소계는 더하지 않는다.
 
@@ -714,7 +749,11 @@ def _check_totals(table: Table, sections: list[_Section], multiplier: Decimal) -
             readable = False
             continue
         own = sum((item.amount for item in section.candidates), Decimal(0))
-        if amount * multiplier not in (own, whole):
+        # 딱지 없는 합계 행은 앞 소계 뒤의 지출 합과 맞으면 소계다(수성구 실측: 마지막 구분의
+        # 소계만 `소계`를 빠뜨린다). 딱지가 있는 합계는 지금처럼 구역·표 전체와만 대조한다.
+        since_subtotal = section.unlabeled_totals.get(row)
+        allowed = (own, whole) if since_subtotal is None else (own, whole, since_subtotal)
+        if amount * multiplier not in allowed:
             raise ValidationFailed(f"{table.name}:R{row} total amount mismatch")
     return "matched" if readable else "ambiguous"
 
