@@ -162,6 +162,55 @@ def test_section_title_in_the_date_column_is_not_an_expense() -> None:
     assert (result.candidates, result.excluded) == (2, ("sheet1:R4 note",))
 
 
+@pytest.mark.parametrize(
+    "row",
+    [
+        # 2026-09-17 대구 실측. 구역에 집행이 없다는 표기를 글자마다 칸을 나눠 적거나
+        # 구역 딱지·연번과 함께 적는다. 금액이 없거나 0이고 집행일도 없다.
+        ("1", "해", "당", "없", "음"),
+        ("시책추진 (203-03)", "해", "당", "없", "음"),
+        ("차 및 음료 등", "", "해당없음", "", 0.0),
+        ("업무추진회의 행사, 간담회 등", "", "이하 빈칸", "", ""),
+        ("", "내", "용", "없", "음"),
+        ("회의 및 간담회", "집", "행내", "역없", "음"),
+        ("회의 및 간담회", "-", "없음", "-", 0.0),
+    ],
+)
+def test_a_no_spending_note_beside_a_section_label_is_not_an_expense(
+    row: tuple[Cell, ...],
+) -> None:
+    result = extract(
+        table(spend(5, "합성 식당", 62000.0), row, ("", "합 계", "", "", 62000.0)),
+        MAPPING,
+        SOURCE,
+    )
+    assert (result.candidates, result.excluded, result.total_check) == (
+        1,
+        ("sheet1:R4 note", "sheet1:R5 total"),
+        "matched",
+    )
+
+
+@pytest.mark.parametrize(
+    ("row", "item"),
+    [
+        # 집행일이 읽히면 지출이다. 상호에 `없음`이 들어 있어도 지운 행으로 보지 않는다.
+        (("과장", "2026-01-06 12:00", "걱정없음 식당", "간담회", 0.0), None),
+        # 금액이 있으면 집행 없음 표기가 아니다. 날짜를 못 읽은 지출로 남는다.
+        (("과장", "", "해당없음", "간담회", 27000.0), "spent_on"),
+    ],
+)
+def test_a_no_spending_phrase_does_not_hide_a_dated_or_paid_row(
+    row: tuple[Cell, ...], item: str | None
+) -> None:
+    sheet = table(spend(5, "합성 식당", 62000.0), row)
+    if item is None:
+        assert extract(sheet, MAPPING, SOURCE).candidates == 2
+    else:
+        with pytest.raises(ValidationFailed, match=f"R4 {item}"):
+            extract(sheet, MAPPING, SOURCE)
+
+
 def test_total_row_with_only_an_amount_is_recognized_and_checked() -> None:
     """2026-09-13 광산구 실측: 헤더 바로 아래에 금액만 적은 합계 행이 온다. 딱지도 건수도 없다.
 
