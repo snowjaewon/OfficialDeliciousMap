@@ -747,3 +747,27 @@ def test_the_won_amount_hold_applies_only_to_a_declared_thousand_won_table() -> 
     ]
     with pytest.raises(ValidationFailed, match="sheet1:R4 amount_unit"):
         extract(rows, thousand.model_copy(update={"declared": True}), SOURCE)
+
+
+def test_a_declared_table_drops_only_the_row_whose_use_date_is_unreadable() -> None:
+    """선언 표(ADR-0008)는 한 줄이 읽히지 않는다고 표 전체를 죽이지 않는다(기장군 실측).
+
+    빠진 줄은 후보 수(분모)에 그대로 남는다 — 날짜를 못 읽었다는 이유로 후보에서 빼지 않는
+    것이 폴백 정책이다. 레코드가 되지 않은 자리와 사유는 제외 목록에 남는다.
+    """
+    rows = table(
+        spend(5, "합성 식당", 62000.0),
+        ("과장", "6.27.(금)", "합성 찻집", "간담회", 27000.0),
+        spend(7, "합성 국밥", 31000.0),
+    )
+    result = extract(rows, MAPPING.model_copy(update={"declared": True}), SOURCE)
+    assert [record.merchant for record in result.records] == ["합성 식당", "합성 국밥"]
+    assert (result.candidates, result.out_of_range) == (3, 0)
+    assert result.excluded == ("sheet1:R4 spent_on",)
+
+
+def test_a_declared_table_still_fails_whole_on_an_unreadable_amount() -> None:
+    """행 단위로 빼는 것은 집행일 실패뿐이다. 금액·상호 실패는 지금 계약 그대로 원본 전체다."""
+    rows = table(spend(5, "합성 식당", 62000.0), ("과장", "2026-01-06 12:00", "합성 찻집", "", ""))
+    with pytest.raises(ValidationFailed, match="sheet1:R4 amount_krw"):
+        extract(rows, MAPPING.model_copy(update={"declared": True}), SOURCE)
