@@ -1,4 +1,9 @@
-"""인허가 조회를 실제 어댑터로 수행하고 외부 응답만 주입해 공개 CLI로 관찰한다."""
+"""인허가 조회와 그 후보의 채택을 공개 CLI로 관찰한다.
+
+조회를 보는 시험은 실제 어댑터로 수행하고 외부 응답만 주입한다. 채택을 보는 시험은
+후보를 담당자 입력으로 준다(`both`) — 네이버 우선 순서에서는 두 제공자의 후보가 함께
+놓인 자리를 운영 조회가 만들지 않기 때문이다(`docs/adr/0011-ask-providers-in-order.md`).
+"""
 
 import json
 from pathlib import Path
@@ -31,14 +36,14 @@ from tests.test_naver_lookup_cli import (
 
 SERVICE_KEY = "합성-인허가-서비스키"
 # 중부원점TM(EPSG:5174) 좌표 한 쌍과 그 WGS84 변환 결과. 네이버 좌표(35.1, 129.1)에서 약 300 m
-# 북쪽이라 허용 오차 200 m 밖이다. 오차 안의 좌표는 아래 NEARBY_X, NEARBY_Y다.
+# 북쪽이라 허용 오차 200 m 밖이다. 오차 안의 좌표는 `NEARBY`다.
 LICENSE_X, LICENSE_Y = "391413.5", "180197.3"
 LATITUDE, LONGITUDE = 35.10270223741562, 129.10006886326784
 # 같은 pyproj·PROJ라도 플랫폼 수학 라이브러리에 따라 변환값의 마지막 자리(1 ULP)가 다르다.
 # Windows는 위 값, Linux CI는 위도 끝자리가 3이다. 1e-9도는 약 0.1 mm라 좌표 비교는 이 오차로 본다.
 COORDINATE_TOLERANCE = 1e-9
-# 네이버 좌표에서 수 cm 떨어진 인허가 좌표. 같은 건물의 변환 오차 수준이다.
-NEARBY_X, NEARBY_Y = "391413.5", "179897.3"
+# 네이버 좌표에서 약 9 m 북동쪽. 허용 오차 200 m 안이라 같은 건물로 본다.
+NEARBY = 35.10006
 
 
 @pytest.fixture
@@ -239,8 +244,7 @@ def test_license_coordinates_within_the_tolerance_agree_and_naver_coordinates_wi
 ) -> None:
     """변환 오차 수준으로 어긋난 두 좌표는 같은 업소다. 마커는 원값인 네이버 좌표를 쓴다."""
     context = prepare(tmp_path)
-    # 네이버 좌표에서 약 7 m 북쪽. 인허가 좌표계 변환 오차 수준이다.
-    save_input(context, both(naver_candidate(), license_candidate(latitude=35.10006)))
+    save_input(context, both(naver_candidate(), license_candidate(latitude=NEARBY)))
     assert run_cli(context, "geocode") == 0
     result = geocoded(context)
     assert result["reason"] == "matched"
