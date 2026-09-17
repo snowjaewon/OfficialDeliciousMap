@@ -492,7 +492,9 @@ def test_collection_counts_drm_and_keeps_the_unlocked_attachments(tmp_path: Path
         None,
         "2026년 1분기 업무추진비 집행내역(시장, 부시장)",
     )
-    _remember(directory, posting, [posting.attachments[0]], [], [], [posting.attachments[1]], [])
+    _remember(
+        directory, posting, [posting.attachments[0]], [], [], [posting.attachments[1]], [], []
+    )
     collected, gone = _ledger(directory)
     assert collected["21481"].files == ("21481-2.xlsx",)
     assert gone["21481"].files == (("21481-3.xlsx", "drm"),)

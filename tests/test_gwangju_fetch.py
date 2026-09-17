@@ -479,15 +479,23 @@ def test_fetch_reports_a_listing_that_lost_its_page_count(
     assert "cause=adapter-failed" in capsys.readouterr().err
 
 
-def test_fetch_reports_a_response_too_large_to_read_whole(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
+def test_fetch_records_a_response_too_large_to_read_whole(tmp_path: Path) -> None:
+    """한 번에 읽어 둘 수 없는 원본은 받지 못한 것으로 장부에 남긴다(인천시청 33MB 실측).
+
+    잘라 쓰지 않고, 크기 초과를 형식 미지원으로 바꾸지도 않으며, 그 하나 때문에 같은 게시글의
+    다른 첨부와 뒤따르는 게시글까지 잃지 않는다.
+    """
     paths = paths_at(tmp_path)
     responses = board_responses()
     responses[download(11024, 1)] = OLE2 + b"\x00" * boards.MAX_RESPONSE_BYTES
-    assert run_fetch(paths, BoardTransport(responses)) == 1
-    # 잘라 쓰지 않고, 크기 초과를 형식 미지원으로 바꾸지도 않는다.
-    assert "cause=adapter-failed" in capsys.readouterr().err
+    assert run_fetch(paths, BoardTransport(responses)) == 0
+    artifact = fetch_artifact(paths)
+    assert [item["reason"] for item in artifact["missing"]] == ["too_large"]
+    assert artifact["missing"][0]["filename"] == "11024-1.xls"
+    assert [Path(item["path"]).name for item in artifact["sources"]] == [
+        "11024-2.xlsx",
+        "11022-1.xls",
+    ]
 
 
 def test_board_declaration_must_carry_its_board_identifier() -> None:
