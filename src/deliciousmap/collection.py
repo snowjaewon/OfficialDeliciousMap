@@ -204,7 +204,7 @@ def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
                 # 이번 수집이 받지 않는 게시글. 장부에 남기지 않으므로 기간을 넓히면 다시 받는다.
                 uncollected += 1
                 continue
-            stored, lost, empty, locked, stray = [], [], [], [], []
+            stored, lost, empty, locked, stray, oversize = [], [], [], [], [], []
             published = scraper.published_suffixes
             unknown = [item for item in posting.attachments if item.suffix not in published]
             unmeasured.extend(_note(item, "format not measured for this board") for item in unknown)
@@ -229,6 +229,10 @@ def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
                     # 편집 도구가 만든 부속 파일이다. 형식을 선언해도 표가 생기지 않으므로
                     # 사람이 볼 목록이 아니라 장부에 남기고 다음 첨부로 간다.
                     stray.append(attachment)
+                except boards.OversizeOriginal:
+                    # 한 번에 읽어 둘 수 있는 크기를 넘는다. 잘라 쓰면 원본이 아니므로
+                    # 사람이 볼 목록이 아니라 장부에 남기고 다음 첨부로 간다.
+                    oversize.append(attachment)
                 except boards.UnsupportedOriginal as reason:
                     # 내용이 실측한 컨테이너와 다르다. 사람이 봐야 하므로 모아서 알린다.
                     rejected.append(_note(attachment, str(reason)))
@@ -239,7 +243,7 @@ def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
                 unmeasured.extend(rejected)
                 continue
             # 게시글을 끝낸 뒤에만 기록한다. 중간에 멈추면 그 게시글은 다시 수집한다.
-            _remember(directory, posting, stored, lost, empty, locked, stray)
+            _remember(directory, posting, stored, lost, empty, locked, stray, oversize)
         # 끝까지 훑었다. 다음 실행은 새로 올라온 게시글을 보도록 1쪽부터 훑는다.
         (directory / LISTING_PROGRESS).unlink(missing_ok=True)
     except boards.UnsupportedOriginal:
@@ -464,6 +468,7 @@ def _ledger(directory: Path) -> tuple[dict[str, Collected], dict[str, Gone]]:
             lost += tuple(
                 (str(name), "not_an_original") for name in entry.get("not_an_original", ())
             )
+            lost += tuple((str(name), "too_large") for name in entry.get("too_large", ()))
         except (ValueError, KeyError, TypeError):
             continue
         if files:
@@ -502,6 +507,7 @@ def _remember(
     empty: list[boards.Attachment],
     locked: list[boards.Attachment],
     stray: list[boards.Attachment],
+    oversize: list[boards.Attachment],
 ) -> None:
     if not posting.attachments:
         return
@@ -513,6 +519,7 @@ def _remember(
         "empty": [item.name for item in empty],
         "drm": [item.name for item in locked],
         "not_an_original": [item.name for item in stray],
+        "too_large": [item.name for item in oversize],
     }
     directory.mkdir(parents=True, exist_ok=True)
     with (directory / LEDGER).open("a", encoding="utf-8", newline="\n") as stream:
@@ -546,11 +553,15 @@ def _store(
     if destination.exists():
         return
     body = boards.request(transport, *boards.endpoint(attachment.url), attachment.referer)
+    if isinstance(scraper, boards.VerifiesOriginal):
+        # 게시판이 내용으로 먼저 가린다. 매직 바이트가 없는 원본을 실측한 표식으로 가르는 일
+        # (서울 화면 게시판)과, 원본 대신 자기 화면을 200으로 주는 일(인천 옹진군 실측)이
+        # 둘 다 여기서 갈린다. 컨테이너 판정보다 먼저 묻는 것은 뒤엣것 때문이다 — 화면은
+        # 실측하지 않은 형식이 아니라 받을 원본이 없다는 뜻이고, 사람이 볼 목록이 아니라
+        # 장부에 남아야 한다.
+        scraper.verify(body)
     # 원본으로 받아들일 수 있는지만 확인한다. 무슨 컨테이너였는지는 출처를 만들 때 다시 읽는다.
     boards.container_of(body, html=_html(scraper.published_suffixes))
-    if isinstance(scraper, boards.VerifiesOriginal):
-        # 매직 바이트가 없는 원본은 게시판이 실측한 표식으로 한 번 더 가른다.
-        scraper.verify(body)
     _write(destination, body)
 
 

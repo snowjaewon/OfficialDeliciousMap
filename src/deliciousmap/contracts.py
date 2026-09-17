@@ -930,10 +930,13 @@ class MissingOriginal(Contract):
     # 근거가 되는 게시글 주소와 게시판이 밝힌 파일 이름.
     url: Text
     filename: Text
-    # gone: 기관이 404로 답한다. empty: 200이지만 내용이 없다. drm: 200이지만 기관이
+    # gone: 기관이 404로 답하거나 원본 대신 게시판 화면을 준다(인천 옹진군 실측: 목록·본문이
+    # 11KByte `.xlsx`를 밝히지만 내려받기가 302로 본문 화면을 가리킨다).
+    # empty: 200이지만 내용이 없다. drm: 200이지만 기관이
     # 잠가 두었다. not_an_original: 표 대신 편집 도구의 부속 파일이 올라와 있다.
-    # 모두 받을 것이 없고, drm과 not_an_original은 기관이 고치면 달라진다.
-    reason: Literal["gone", "empty", "drm", "not_an_original"]
+    # too_large: 200이지만 한 번에 읽어 둘 수 있는 크기를 넘는다(`boards.MAX_RESPONSE_BYTES`).
+    # 모두 받을 것이 없고, drm·not_an_original·too_large는 기관이 고치면 달라진다.
+    reason: Literal["gone", "empty", "drm", "not_an_original", "too_large"]
     # 어느 기간의 장부가 빈 것인지 알 수 있도록 출처와 같은 값을 남긴다.
     posted: date | None = None
     title: Text | None = None

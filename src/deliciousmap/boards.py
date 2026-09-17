@@ -60,6 +60,15 @@ class UnreadableBoard(Exception):
     """응답이 실측한 구조와 다르거나 온전히 받지 못했다. 형식 문제와 구별한다."""
 
 
+class OversizeOriginal(UnreadableBoard):
+    """한 번에 읽어 둘 수 있는 크기를 넘는 응답. 잘라 쓰면 원본이 아니므로 받지 못한 것으로 둔다.
+
+    목록·본문이 이만큼 크면 그 게시판을 읽지 못한 것이라 `UnreadableBoard`를 그대로 물려받고,
+    첨부일 때만 수집이 이 이름으로 가려 장부에 남긴다(인천시청 실측: 본청실국과장 게시글
+    3087017의 `.xlsx` 하나가 상한을 넘는다).
+    """
+
+
 class OriginalGone(Exception):
     """게시판이 링크한 원본이 기관 쪽에 없다. 다시 요청해도 달라지지 않는다."""
 
@@ -322,7 +331,7 @@ def request(transport: Transport, url: str, params: Mapping[str, str], referer: 
     except Exception:
         raise BoardUnavailable("board request failed") from None
     if len(body) > MAX_RESPONSE_BYTES:
-        raise UnreadableBoard("board response exceeds the size that can be read whole")
+        raise OversizeOriginal("board response exceeds the size that can be read whole")
     return body
 
 

@@ -200,3 +200,26 @@ def test_an_unmeasured_format_still_stops_the_collection(tmp_path: Path) -> None
 
     with pytest.raises(AdapterFailure):
         collect(_target(_PdfScraper), _paths(tmp_path), Unknown())  # type: ignore[arg-type]
+
+
+class _Big:
+    """상한을 넘는 원본을 주는 제공자. 인천시청 실측(33,016,108바이트)의 축소판이다."""
+
+    def fetch(self, url: str, params: dict[str, str], headers: dict[str, str]) -> bytes:
+        return b"%PDF-1.4 " + b"0" * 64
+
+
+def test_an_oversize_original_is_a_ledger_entry_not_a_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """한 번에 읽어 둘 수 없는 원본 하나가 기관 전체 수집을 실패로 만들지 않는다.
+
+    실측(2026-09-17 인천시청 3087017): `.xlsx` 하나가 33MB라 상한을 넘고, 그 하나 때문에
+    시청 다섯 게시판이 통째로 실패했다. 잘라 쓰지 않되 사유는 장부에 남긴다.
+    상한을 낮춰 같은 자리를 지나간다 — 테스트가 33MB를 만들지 않기 위해서다.
+    """
+    monkeypatch.setattr(boards, "MAX_RESPONSE_BYTES", 8)
+    output = collect(_target(_PdfScraper), _paths(tmp_path), _Big())  # type: ignore[arg-type]
+    assert output.sources == ()
+    assert [item.reason for item in output.missing] == ["too_large"]
+    assert output.missing[0].filename == "1-1.pdf"
