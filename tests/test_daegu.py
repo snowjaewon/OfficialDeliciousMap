@@ -561,6 +561,20 @@ def test_daegu_registry_declares_measured_city_prefix_and_halls() -> None:
     }
 
 
+def test_daegu_map_bounds_reach_gunwi() -> None:
+    """2023년 편입한 군위군의 청사와 실측 업소가 지도 이동 한계 안에 든다(2026-09-18 실측)."""
+    bounds = select_target(CITIES, "daegu", None).city.map_bounds
+    measured = [
+        *select_target(CITIES, "daegu", None).city.halls.values(),
+        (36.3210767, 128.4561697),  # 군위군 소보면 사계길 219-10 (사리2리마을회관)
+        (36.1232628, 128.7954303),  # 군위군 삼국유사면 삼국유사로 438-16
+    ]
+    assert all(
+        bounds.south <= lat <= bounds.north and bounds.west <= lon <= bounds.east
+        for lat, lon in measured
+    )
+
+
 @pytest.mark.parametrize("org", ["daegu-jung", "daegu-buk", "daegu-dalseo"])
 def test_daegu_held_organizations_are_never_requested(tmp_path: Path, org: str) -> None:
     class Unused:
