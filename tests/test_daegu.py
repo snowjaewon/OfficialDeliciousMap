@@ -545,6 +545,22 @@ def test_daegu_registry_declares_the_city_and_nine_districts() -> None:
     ]
 
 
+def test_daegu_registry_declares_measured_city_prefix_and_halls() -> None:
+    """청사는 원본을 받는 일곱 기관에만 적는다. 수집 보류인 세 구는 레코드가 없다."""
+    city = select_target(CITIES, "daegu", None).city
+
+    assert city.address_prefixes == ("대구광역시",)
+    assert city.halls == {
+        "daegu-city": (35.8713898, 128.601763),
+        "daegu-dong": (35.8866639, 128.6356089),
+        "daegu-seo": (35.8717569, 128.559175),
+        "daegu-nam": (35.8459999, 128.597486),
+        "daegu-suseong": (35.8581653, 128.630625),
+        "daegu-dalseong": (35.7745999, 128.431445),
+        "daegu-gunwi": (36.2429449, 128.572657),
+    }
+
+
 @pytest.mark.parametrize("org", ["daegu-jung", "daegu-buk", "daegu-dalseo"])
 def test_daegu_held_organizations_are_never_requested(tmp_path: Path, org: str) -> None:
     class Unused:
