@@ -114,22 +114,44 @@ git diff --check
 - 이 `fetch.json`은 `sources` 경로가 `C:\Temp\odm-raw-154` 아래라서 커밋하지 않았다(2026-09-15 사용자
   결정). 원본은 그 경로에 그대로 있다.
 
-## 남은 일 — 서울 담당 PC의 재수집
+## 서울 담당 PC의 재수집 — 2026-09-17 실측 (커밋한 실행)
 
-**이 PR은 중랑 `fetch.json`을 바꾸지 않는다.** 완료 기준 1·2는 커밋된 `fetch.json`으로 확인된다.
-커밋된 서울 25개 기관 `fetch.json`의 `sources` 경로는 모두 서울 담당 PC의 원본 루트를 가리키므로
-(`issue-141.md` 수집 장부 표의 25개 기관), 다른 PC에서 받으면 중랑만 경로 루트가 달라진다.
-2026-09-15 사용자 결정으로 재수집은 서울 담당 PC에서 한다.
-
-그 PC에서 저장소 루트 기준으로(PowerShell) 경고가 사라질 때까지 되풀이한다.
+위 실측은 재개 경로를 거치지 않은 한 번의 실행이었고, 커밋한 `fetch.json`도 아니었다. 2026-09-17에
+서울 담당 PC에서 이 저장소의 원본 루트로 다시 받았다. **이 실행이 재개 경로를 실제로 거쳤고, 그
+결과가 커밋된 `fetch.json`이다.**
 
 ```powershell
-uv run python -m deliciousmap fetch --city seoul --org seoul-jungnang --raw-root "<서울 원본 루트>"
+uv run python -m deliciousmap fetch --city seoul --org seoul-jungnang --raw-root "C:\Users\pc\orca\workspaces\OfficialDeliciousMap\deliciousmap-raw"
 ```
 
-- 첫 실행은 진행 기록이 없어 1쪽부터다. 끊기면 그 뒤 실행이 끊긴 쪽부터 잇는다.
-- 끝나면 `data/seoul/orgs/seoul-jungnang/fetch.json`의 `empty_reason`에
-  `collection failures`가 없고, `<서울 원본 루트>\seoul\seoul-jungnang\expenses\listing-progress.json`이
-  없어야 한다.
-- `uncollected_postings`·`filtered_postings`를 `docs/validation/issue-141.md` 수집 장부 표의
-  중랑 줄과 합계에 반영한다. 위 실측(7,981·0)과 크게 다르면 원인을 적는다.
+| 값 | 측정 | 출처 |
+| --- | --- | --- |
+| 실행 횟수 | 2회. 1회차가 264쪽에서 `service-unavailable`로 끊기고, 2회차가 265쪽부터 이어 853쪽까지 | 1회차 뒤 `listing-progress.json`의 `next_page` 265 |
+| 1회차 | 264쪽까지, 17:10:04 종료. 그때 목록 색인 2,640줄, `uncollected_postings` 2,091, `empty_reason`에 `collection failures` | 1회차가 쓴 `fetch.json`·`listing.jsonl`, 진행 기록 |
+| 2회차 | 남은 589쪽을 17:10~17:39:40에 약 29분(쪽당 약 3.0초)만에 마쳤다 | 1회차 종료 시각과 `listing.jsonl` 마지막 쓰기 시각 |
+| 전체 쪽 수 | 853쪽 — 목록 색인 8,530줄 ÷ 한 쪽 10줄 | `wc -l listing.jsonl` |
+| `empty_reason` | 없음 — `collection failures`가 남지 않았다 | 커밋한 `fetch.json` |
+| `uncollected_postings` | 7,981 | 같음 |
+| `filtered_postings` | 0 | 같음 |
+| `sources` | 581건 (`ole2 10 · ooxml 31 · pdf 540`) | 같음 |
+| `missing` | 0건 | 같음 |
+| 수집 기록 | 547줄(게시글) | `wc -l collected.jsonl` |
+| 진행 기록 | 끝난 뒤 남지 않았다 | `listing-progress.json` 없음 |
+
+- **재개가 완주를 만들었다.** 1회차 혼자서는 264쪽에서 끝났고, 이어 간 2회차가 남은 589쪽을 마쳤다.
+  전에는 이 지점에서 다음 실행이 1쪽부터 다시 훑었다.
+- `uncollected_postings` 7,981은 위 Codex PC 실측과 같은 값이고 게시글 단위다. `issue-141.md`
+  수집 장부 표의 중랑 줄과 합계에 반영했다.
+- 원본이 574건에서 581건으로 늘었다. 두 `fetch.json`의 `source_hash` 집합을 비교하면 574건은
+  전부 그대로 있고 7건이 더해졌다. 그 7건은 게시일이 2026-09-15~17인 새 게시글
+  (`167689`·`167698`·`167701`·`167702`·`167703`·`167705`·`167706`)이며, `period.collects`가
+  게시일의 해로 자르므로 2026년 게시글은 받는다. 제목이 밝힌 지출 기간이 대상 기간 밖인지는
+  `parse` 이후가 가른다.
+- **재시도 횟수·백오프·호스트 간격은 이 재수집에서도 바꾸지 않았다.** 그래서 그 값의 효과를
+  측정한 수는 여전히 없다.
+
+### 한 번에 끝나지 않으면
+
+`empty_reason`에 `collection failures`가 남아 있으면 같은 명령을 다시 실행한다. 다음 실행은 끊긴
+쪽부터 잇는다. 끝난 표시는 두 가지다 — `empty_reason`에 `collection failures`가 없고,
+`<원본 루트>\seoul\seoul-jungnang\expenses\listing-progress.json`이 없다.
