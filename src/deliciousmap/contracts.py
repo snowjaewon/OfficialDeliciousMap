@@ -1036,6 +1036,9 @@ class SourceReport(Contract):
     # 원본에 실제로 있는 0원·음수처럼 재검증 리포트에서 사람이 볼 레코드의 위치와 사유.
     review: tuple[Text, ...] = ()
     total_check: TotalCheck | None = None
+    # 첨부 묶음에서 읽지 못한 항목과 사유(`file3 별지.pdf: unreadable`). 이 항목의 지출은
+    # `candidates`에 들지 않는다. 묶음이 아닌 원본은 비어 있고, 비어 있으면 장부에 쓰지 않는다.
+    unread: tuple[Text, ...] = Field(default=(), exclude_if=lambda value: not value)
 
     @model_validator(mode="after")
     def consistent_report(self) -> "SourceReport":
