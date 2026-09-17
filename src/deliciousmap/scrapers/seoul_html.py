@@ -227,12 +227,15 @@ class CityExpenseBoard:
                         self.filtered += 1
                         continue
                     page_url = urllib.parse.urljoin(self.list_url, f"/expense/{post_id}")
+                    opened = not skipped(post_id, posted)
                     attachments = (
-                        ()
-                        if skipped(post_id, posted)
-                        else (boards.Attachment(post_id, "1", ".html", page_url, page_url),)
+                        (boards.Attachment(post_id, "1", ".html", page_url, page_url),)
+                        if opened
+                        else ()
                     )
-                    yield boards.Posting(post_id, attachments, posted, title)
+                    yield boards.Posting(
+                        post_id, attachments, posted, title, url=page_url if opened else ""
+                    )
                 page += 1
 
     def _excluded(self, title: str) -> bool:

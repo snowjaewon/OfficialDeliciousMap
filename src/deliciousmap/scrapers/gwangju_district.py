@@ -89,7 +89,7 @@ class GwangjuDistrictBoard:
                     page_url=page_url,
                 )
             )
-        return row.posting(tuple(attachments))
+        return row.posting(tuple(attachments), page_url)
 
     def _listing(self, page: int) -> "_Listing":
         params = {**self.params, PAGE_PARAMETER: str(page)}
@@ -107,8 +107,11 @@ class _Row:
     department: str
     filed: bool
 
-    def posting(self, attachments: tuple[boards.Attachment, ...]) -> boards.Posting:
-        return boards.Posting(self.post_id, attachments, self.posted, self.title, self.department)
+    def posting(self, attachments: tuple[boards.Attachment, ...], url: str = "") -> boards.Posting:
+        # 주소는 본문까지 열어 첨부를 확인한 게시글만 싣는다(`boards.Posting.url`).
+        return boards.Posting(
+            self.post_id, attachments, self.posted, self.title, self.department, url=url
+        )
 
 
 class _View(boards.Document):

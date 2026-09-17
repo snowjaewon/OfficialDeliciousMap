@@ -308,7 +308,7 @@ class ListingBoard:
                 if skipped(entry.post_id, entry.posted):
                     yield entry.posting(())
                     continue
-                yield entry.posting(self.attachments(entry, row))
+                yield entry.posting(self.attachments(entry, row), entry.page_url)
             if page >= self.page_count(listing, decode(body, self.encoding)):
                 return
             # 이 줄에는 호출자가 이 쪽의 마지막 게시글까지 처리한 뒤에야 온다. 그 게시글의
@@ -380,8 +380,11 @@ class Entry:
     department: str
     page_url: str
 
-    def posting(self, attachments: tuple[boards.Attachment, ...]) -> boards.Posting:
-        return boards.Posting(self.post_id, attachments, self.posted, self.title, self.department)
+    def posting(self, attachments: tuple[boards.Attachment, ...], url: str = "") -> boards.Posting:
+        # 주소는 본문까지 열어 첨부를 확인한 게시글만 싣는다(`boards.Posting.url`).
+        return boards.Posting(
+            self.post_id, attachments, self.posted, self.title, self.department, url=url
+        )
 
 
 class BbsNoBoard(ListingBoard):

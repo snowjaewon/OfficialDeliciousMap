@@ -136,10 +136,11 @@ class IcmsBoard:
                         "nttId": post_id,
                     },
                 )
-                attachments = (
-                    () if skipped(post_id, posted) else self._attachments(post_id, page_url)
+                opened = not skipped(post_id, posted)
+                attachments = self._attachments(post_id, page_url) if opened else ()
+                yield boards.Posting(
+                    post_id, attachments, posted, title, department, url=page_url if opened else ""
                 )
-                yield boards.Posting(post_id, attachments, posted, title, department)
             if page >= listing.page_count(parser, link_keys=("pageIndex",)):
                 return
             page += 1
@@ -253,10 +254,9 @@ class OfficialTableBoard:
                 self.filtered += 1
                 continue
             title = PurePosixPath(files[0][1]).stem.strip()
+            opened = not skipped(post_id, None)
             attachments = (
-                ()
-                if skipped(post_id, None)
-                else tuple(
+                tuple(
                     boards.Attachment(
                         post_id,
                         str(index),
@@ -268,8 +268,12 @@ class OfficialTableBoard:
                     )
                     for index, (serial, filename) in enumerate(files, start=1)
                 )
+                if opened
+                else ()
             )
-            yield boards.Posting(post_id, attachments, None, title, name)
+            yield boards.Posting(
+                post_id, attachments, None, title, name, url=page_url if opened else ""
+            )
 
 
 class GunwiBoard:
@@ -308,10 +312,11 @@ class GunwiBoard:
                 page_url = boards.address(
                     self.list_url, {**self.params, GUNWI_ARTICLE: post_id, "cmd": "258"}
                 )
-                attachments = (
-                    () if skipped(post_id, posted) else self._attachments(post_id, page_url)
+                opened = not skipped(post_id, posted)
+                attachments = self._attachments(post_id, page_url) if opened else ()
+                yield boards.Posting(
+                    post_id, attachments, posted, title, department, url=page_url if opened else ""
                 )
-                yield boards.Posting(post_id, attachments, posted, title, department)
             if page >= listing.page_count(parser):
                 return
             page += 1

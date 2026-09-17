@@ -244,6 +244,46 @@ def test_bbs_reads_the_table_listing_and_the_detail_attachments() -> None:
     assert attachment.url == f"{BBS_DOWN}?bcd=clean_cost&msg_seq=4735&fileno=1"
 
 
+def test_bbs_carries_the_posting_address_when_the_body_links_no_original() -> None:
+    """집행이 없었다는 알림은 본문에 내려받기 링크가 없다(부평 실측 #174: 159건 중 146건이
+    제목에 `(해당없음)`을 단다). 수집이 그 게시글을 장부에 남기도록 주소를 싣는다."""
+    transport = FakeTransport(
+        dict(
+            [
+                response(
+                    BBS_LIST,
+                    bbs_page(1),
+                    bbs_listing(
+                        bbs_row("4736", "2026년 6월 업무추진비 사용내역(해당없음)", "2026.07.15")
+                    ),
+                ),
+                response(BBS_DETAIL, {"bcd": "clean_cost", "msg_seq": "4736"}, bbs_detail("4736")),
+            ]
+        )
+    )
+    postings = list(BbsBoard(board(BBS_URL, BbsBoard), transport).postings(collected))
+    assert postings[0].attachments == ()
+    assert postings[0].url == f"{BBS_DETAIL}?bcd=clean_cost&msg_seq=4736"
+
+
+def test_bbs_leaves_the_address_empty_for_a_posting_it_did_not_open() -> None:
+    """넘기기로 한 게시글에는 주소를 싣지 않는다. 첨부가 없다고 확인한 것이 아니기 때문이다."""
+    transport = FakeTransport(
+        dict(
+            [
+                response(
+                    BBS_LIST,
+                    bbs_page(1),
+                    bbs_listing(bbs_row("4737", "2026년 6월 업무추진비 사용내역", "2026.07.15")),
+                ),
+            ]
+        )
+    )
+    postings = list(BbsBoard(board(BBS_URL, BbsBoard), transport).postings(lambda *_: True))
+    assert postings[0].attachments == ()
+    assert postings[0].url == ""
+
+
 def test_bbs_reads_the_list_rendering_that_leaves_a_tag_unclosed() -> None:
     """남동·부평은 목록으로 그리고 닫는 태그를 하나 빠뜨린다(실측). 요소 경계로 가르지 않는다."""
     url = "https://www.icbp.go.kr/main/bbs/bbsMsgList.do?bcd=cost&cate1=d"

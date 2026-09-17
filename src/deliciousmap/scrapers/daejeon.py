@@ -115,10 +115,11 @@ class BbsBoard:
                     continue
                 posted = listing.posted(_cell(row, "regDate"))
                 page_url = boards.address(self.view_url, {"nttId": ntt_id})
-                attachments = (
-                    () if skipped(post_id, posted) else self._attachments(post_id, page_url)
+                opened = not skipped(post_id, posted)
+                attachments = self._attachments(post_id, page_url) if opened else ()
+                yield boards.Posting(
+                    post_id, attachments, posted, title, department, url=page_url if opened else ""
                 )
-                yield boards.Posting(post_id, attachments, posted, title, department)
             if page >= listing.page_count(parser):
                 return
             page += 1
@@ -260,11 +261,15 @@ class ArticleBoard:
                     continue
                 posted = listing.posted(item.get("date", ""))
                 page_url = f"{self.list_url}/{post_id}"
-                attachments = (
-                    () if skipped(post_id, posted) else self._attachments(post_id, page_url)
-                )
+                opened = not skipped(post_id, posted)
+                attachments = self._attachments(post_id, page_url) if opened else ()
                 yield boards.Posting(
-                    post_id, attachments, posted, item.get("subject", ""), item.get("writer", "")
+                    post_id,
+                    attachments,
+                    posted,
+                    item.get("subject", ""),
+                    item.get("writer", ""),
+                    url=page_url if opened else "",
                 )
             if page >= _article_page_count(body):
                 return
@@ -357,10 +362,15 @@ class DptBoard:
                     raise boards.UnreadableBoard("board listing row does not declare its board")
                 posted = listing.posted_of(row)
                 page_url = boards.address(self.view_url, {"boardId": board_id, "ntatcSeq": post_id})
-                attachments = (
-                    () if skipped(post_id, posted) else self._attachments(post_id, page_url)
+                opened = not skipped(post_id, posted)
+                attachments = self._attachments(post_id, page_url) if opened else ()
+                yield boards.Posting(
+                    post_id,
+                    attachments,
+                    posted,
+                    listing.title_of(row, href),
+                    url=page_url if opened else "",
                 )
-                yield boards.Posting(post_id, attachments, posted, listing.title_of(row, href))
             last = listing.last_page(
                 int(value) for link in parser.links for value in DPT_PAGE.findall(link.onclick)
             )
