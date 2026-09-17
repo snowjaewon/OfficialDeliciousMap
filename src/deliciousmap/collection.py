@@ -553,10 +553,14 @@ def _store(
     if destination.exists():
         return
     body = boards.request(transport, *boards.endpoint(attachment.url), attachment.referer)
+    # 빈 응답·잠긴 응답·부속 파일은 게시판을 가리지 않고 같은 뜻이라 먼저 가린다. 이것을
+    # 게시판의 판정보다 뒤에 두면 서울 화면 게시판의 빈 응답이 장부의 `empty`가 아니라
+    # 사람이 볼 목록으로 간다.
+    boards.reject_unusable(body)
     if isinstance(scraper, boards.VerifiesOriginal):
-        # 게시판이 내용으로 먼저 가린다. 매직 바이트가 없는 원본을 실측한 표식으로 가르는 일
-        # (서울 화면 게시판)과, 원본 대신 자기 화면을 200으로 주는 일(인천 옹진군 실측)이
-        # 둘 다 여기서 갈린다. 컨테이너 판정보다 먼저 묻는 것은 뒤엣것 때문이다 — 화면은
+        # 그다음은 게시판이 내용으로 가린다. 매직 바이트가 없는 원본을 실측한 표식으로 가르는
+        # 일(서울 화면 게시판)과, 원본 대신 자기 화면을 200으로 주는 일(인천 옹진군 실측)이
+        # 둘 다 여기서 갈린다. 컨테이너 판정보다 먼저 묻는 것은 뒤엣것 때문이다 — 그 화면은
         # 실측하지 않은 형식이 아니라 받을 원본이 없다는 뜻이고, 사람이 볼 목록이 아니라
         # 장부에 남아야 한다.
         scraper.verify(body)
