@@ -41,6 +41,10 @@ DECLARATION = re.compile(
     r"|제?\s*(?P<quarter>[1-4])\s*분기"
     rf"|{MONTHS}"
     r"|(?P<half>[상하])\s*반기"
+    # 해 뒤 마침표에 달만 붙여 괄호를 닫는 표기. 대구 수성구 만촌1동장(2026-09-17 실측 8건,
+    # `(2026.1)`~`(2026.8)`)이다. 마침표 바로 뒤이고 괄호가 바로 닫혀야 달로 읽어
+    # 날짜(`2026.1.5`)와 섞지 않는다.
+    r"|(?<=\.)(?P<dotted_month>1[0-2]|[1-9])(?=\))"
     r")?"
 )
 
@@ -131,7 +135,7 @@ def contains(spent_on: SpentOn) -> bool:
     return span(spent_on).overlaps(REPORTING)
 
 
-# 대상에서 빠진 사유. 게시일을 읽지 못한 게시글은 `posted_out_of_range`로 센다.
+# 대상에서 빠진 사유. 게시일도 제목의 해도 없는 게시글은 `posted_out_of_range`로 센다.
 ExclusionReason = Literal["posted_out_of_range", "declared_out_of_range", "undeclared_in_year"]
 
 
@@ -167,7 +171,14 @@ def exclusion(
     """
     if posted is None and title is None and spent_on is None:
         return None
-    if posted is None or not collects(posted):
+    if posted is None:
+        # 게시일이 없는 게시판(대구 수성구의 해마다 화면, 2026-09-17 사용자 결정)은 제목이 밝힌
+        # 해와 기간으로 가른다. 해를 밝히지 않은 제목은 가를 근거가 없어 게시일 갈래로 센다.
+        span = declared(title)
+        if span is None:
+            return "posted_out_of_range"
+        return None if span.overlaps(REPORTING) else "declared_out_of_range"
+    if not collects(posted):
         return "posted_out_of_range"
     if spent_on is not None:
         return None if Span(spent_on, spent_on).overlaps(REPORTING) else "declared_out_of_range"
@@ -212,7 +223,7 @@ def _months(found: re.Match[str]) -> tuple[int, int]:
         return _quarter(int(groups["quarter"]), int(groups["quarter"]))
     if groups.get("first_month"):
         return int(groups["first_month"]), int(groups["last_month"])
-    month = groups.get("month") or groups.get("bracketed_month")
+    month = groups.get("month") or groups.get("bracketed_month") or groups.get("dotted_month")
     if month:
         return int(month), int(month)
     if groups.get("half"):
