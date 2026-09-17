@@ -52,6 +52,8 @@ TERMINATOR = re.compile(r"(이하)?(빈칸|여백|없음)\.?")
 NO_SPENDING = re.compile(r"(해당(사항)?|내용|(집행|사용)(내역)?)?없음|(이하)?(빈칸|여백)")
 # 연도 뒤에 오는 월·일. 구분자는 거듭 찍히기도 한다(`2026..03.24.` 동구 실측).
 AFTER_YEAR = r"(?:\s*[-./년])+\s*(\d{1,2})(?:\s*[-./월])+\s*(\d{1,2})(?!\d)"
+# 줄을 나눌 자리에만 보이는 서식 글자. PDF가 날짜의 이음표 자리에 싣는다(북구 실측).
+SOFT_HYPHEN = "­"
 # 선언한 천원 표의 값으로 볼 수 없는 크기(천원). 울산 시청 표는 헤더가 `금액(천원)`인데 몇 행을
 # 원으로 적었다(`187,000`). 그 값을 곱하면 한 끼가 1억 8,700만 원이 된다. 원본 결함을 고쳐
 # 읽지 않고 그 원본을 미해결로 남긴다(ADR-0008). 2026년 상반기 시청 3,688행은 3,500 이하와
@@ -794,7 +796,8 @@ def parse_spent_on(value: Cell, year_hint: int | None = None) -> SpentOn | None:
         # 두 자리 연도를 붙여 쓴 표기는 숫자 칸으로도 온다. 판정은 글자와 같다.
         return _packed(text(value), year_hint) if value.is_integer() else None
     # 엑셀에서 문자로 적으려고 붙인 따옴표(`'25. 10. 17.`)는 값이 아니다.
-    raw = text(value).lstrip("'‘’`")
+    # 보이지 않는 이음표(U+00AD)도 값이 아니다. 줄을 나눌 때만 보이는 서식 글자다(북구 실측).
+    raw = text(value).replace(SOFT_HYPHEN, "").lstrip("'‘’`")
     full = re.match(r"(\d{4})" + AFTER_YEAR, raw)
     if full:
         return _spent_on(int(full[1]), int(full[2]), int(full[3]))
