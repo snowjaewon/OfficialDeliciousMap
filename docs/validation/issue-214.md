@@ -4,6 +4,8 @@
 2026-09-17에 했다. `origin/develop` `54e7cdf` 기준이고, 모델 키를 설정하지 않아 **LLM 호출은
 0회**다. `.env`를 읽지 않았고 `GEMINI_API_KEY`는 실행 내내 설정하지 않았다.
 
+이 문서의 모든 수치는 `docs/validation/issue-214/`의 세 스크립트가 낸다(2절).
+
 ## 1. 결론
 
 **에이전트 CLI가 새로 판정해야 할 표는 17,000개다.** 이슈가 갈랐던 "수백 건인지 1만 건인지"의
@@ -12,58 +14,78 @@
 | 값 | 수 | 단위 |
 | --- | --- | --- |
 | 헤더 매핑이 연 표 | 17,493 | 표 |
-| ├ 캐시 적중(판정 재사용) | 493 (2.8%) | 표 |
-| ├ 캐시 적중했으나 검증 실패 | 34 (0.2%) | 표 |
-| └ 캐시 미적중 | 16,966 (97.0%) | 표 |
+| ├ 서명이 맞은 표 | 527 (3.0%) | 표 |
+| │ ├ 검증까지 통과해 **판정을 재사용** | 493 (2.8%) | 표 |
+| │ └ 검증에 걸려 **쓰지 못함** | 34 (0.2%) | 표 |
+| └ 서명이 맞지 않음(캐시 미적중) | 16,966 (97.0%) | 표 |
 | **신규 판정 필요** | **17,000** | **표** |
 
-검증에 실패한 34표는 서명은 맞았으나 `extract()`가 후보를 못 냈다. 이 원본에서는 쓰지 않으므로
-신규 판정 필요에 넣는다(`src/deliciousmap/headermap.py:196-206`).
+**이 문서에서 "적중"은 서명이 맞고 코드 검증까지 통과해 판정을 재사용한 493표만 가리킨다.**
+서명만 맞은 표까지 세면 527표(3.0%)다. 검증에 걸린 34표는 코드 검증(`ValidationFailed`)을
+통과하지 못해 그 원본에서 쓰지 않으므로(`src/deliciousmap/headermap.py:196-206`) 신규 판정
+필요에 넣는다.
 
 ### API 경로로는 감당하지 못한다
 
-표당 API 단가는 USD 0.001792(`data/_shared/llm-budget.jsonl`의 `header_mapping` settlement
-6.03364275 ÷ 3,367건)이고, 한도 15 중 잔여는 6.39318075다.
+표당 API 단가는 **USD 0.003769**다. 지난 `header_mapping` 지출 6.03364275를 그 돈으로 판정한
+**표 1,601개**로 나눈 값이다. 한도 15 중 잔여는 6.39318075다.
 
 | 항목 | 값 |
 | --- | --- |
-| 17,000표를 API로 전량 판정 | USD 30.46 |
-| 잔여 예산이 감당하는 표 | 3,567표 (전체의 21.0%) |
-| 초과 배수 | 잔여 예산의 4.77배 |
+| 17,000표를 API로 전량 판정 | USD 64.07 |
+| 잔여 예산이 감당하는 표 | 1,696표 (필요량의 10.0%) |
+| 초과 배수 | 잔여 예산의 10.02배 |
 
 그러므로 [폴백 정책](../specs/header-mapping-fallback.md)의 `### 헤더 매핑 판정 경로`대로
 에이전트 CLI 경로로 판정한다. API 직접 호출은 CLI로 처리할 수 없는 건에만 쓴다.
 
 ## 2. 실행
 
-```bash
-# Git Bash, 저장소 루트
-ls data/seoul/orgs | xargs -P 10 -I {} \
-  uv run python -m deliciousmap headermap --city seoul --org {}
+원본이 있는지 먼저 확인했다. 아래 셋은 모두 Git Bash·PowerShell 공통이고 저장소 루트에서 돈다.
+
+```text
+uv run python docs/validation/issue-214/rawcheck.py
 ```
 
-기관 25곳 모두 종료 코드 0이다. `--org`가 있으므로 산출물은
-`data/seoul/orgs/<org>/headermap.json`으로 갈라졌고 도시 단위 `data/seoul/headermap.json`은
-만들지 않았다.
+`--raw-root`는 기본값 `../deliciousmap-raw`
+(`C:\Users\pc\orca\workspaces\OfficialDeliciousMap\deliciousmap-raw`)이고, 대상 원본
+**11,600개가 모두 있었다**(없는 파일 0개). 원본이 없어 못 연 기관은 없다.
 
-실제 실행에는 위 명령에 표 단위 관찰만 덧붙인 스크립트를 썼다. `headermap.json`의 `unresolved`는
-원본 단위라 표 단위 수를 담지 못하기 때문이다(3절). 관찰은 `_map_table()`의 결과를 세기만 하고
-판정·저장 경로를 바꾸지 않았다.
+이어서 기관 25곳을 동시 10개로 돌렸다(Git Bash).
+
+```text
+ls data/seoul/orgs | xargs -P 10 -I {} \
+  uv run python docs/validation/issue-214/measure.py {} .measure/{}.jsonl
+```
+
+`measure.py`는 `python -m deliciousmap headermap --city seoul --org <기관>`을 그대로 부르고
+표 단위 결과만 따로 센다. `headermap.json`의 `unresolved`가 원본 단위라 표 수를 담지 못하기
+때문이다(3.2절). 관찰은 `_map_table()`의 결과를 기록만 하며 판정·저장 경로를 바꾸지 않는다.
+25곳 모두 종료 코드 0이다.
+
+산출물은 `--org`가 있으므로 `data/seoul/orgs/<org>/headermap.json`으로 갈라졌고 도시 단위
+`data/seoul/headermap.json`은 만들지 않았다.
+
+마지막으로 25개 산출물과 표 단위 기록을 합쳤다. 4·5절의 모든 표와 1절의 단가·예산 계산이
+이 명령의 출력이다.
+
+```text
+uv run python docs/validation/issue-214/aggregate.py .measure
+```
 
 - 소요: 전체 약 15분. 가장 큰 `seoul-city`(원본 2,488개)가 단독으로 886.9초를 썼고 나머지
   24곳은 그 안에 끝났다.
-- `--raw-root`는 기본값 `../deliciousmap-raw`
-  (`C:\Users\pc\orca\workspaces\OfficialDeliciousMap\deliciousmap-raw`)이고, 대상 원본
-  **11,600개가 모두 있었다**(없는 파일 0개). 경로가 없어 못 읽은 원본은 없다.
+- 동시 수 10은 이슈가 정한 값이다. `pdfplumber` 표 추출이 CPU 바운드이고 작업 PC 코어가 12개다.
 
 ### LLM 호출 0건 확인
 
-`data/_shared`의 두 파일을 실행 전후로 대조했다. 줄 수·SHA-256·누적액이 모두 같다.
+`data/_shared`의 두 파일을 실행 전후로 대조했다(`sha256sum data/_shared/*.jsonl`과 `wc -l`).
+줄 수·SHA-256이 모두 같다.
 
 | 파일 | 실행 전후 줄 수 | SHA-256 |
 | --- | --- | --- |
-| `data/_shared/llm-budget.jsonl` | 7,556 (동일) | `483177bdd57c8e28…` (동일) |
-| `data/_shared/headermap.jsonl` | 938 (동일) | `9a6a17abb0c53b22…` (동일) |
+| `data/_shared/llm-budget.jsonl` | 7,556 (동일) | `483177bdd57c8e28b903eb3e4be4e12445ef7c3abc1804a2eb54d3de576de4d3` |
+| `data/_shared/headermap.jsonl` | 938 (동일) | `9a6a17abb0c53b22f97187aa38aec3d50937339c8f77f9fad199dd748bf80284` |
 
 누적 settlement 합계도 USD 8.60681925로 실행 전후가 같다. `_map_table()`이 `_ask()` 이전에
 `Unresolved("model_not_configured")`를 던지므로 예산 장부에 예약조차 들어가지 않는다
@@ -73,7 +95,7 @@ ls data/seoul/orgs | xargs -P 10 -I {} \
 공통 캐시에 줄을 더하는 경로(`_accept`)는 answers 이력이 있어야 타므로, 25개 프로세스가 전부
 읽기만 했다. 병렬 실행이 안전했던 근거는 이슈 본문의 표 그대로다.
 
-## 3. 이슈 본문의 전제 두 가지가 실측과 달랐다
+## 3. 이슈 본문의 전제 세 가지가 실측과 달랐다
 
 ### 3.1 헤더 매핑이 여는 원본은 15,265개가 아니라 11,600개다
 
@@ -109,6 +131,23 @@ ls data/seoul/orgs | xargs -P 10 -I {} \
 미적중이면 그 판정은 `unresolved_mappings`로 간다. 적중 493표 중 386표만 `mappings`에 남은
 이유다(386 + 107 = 493, 나머지 34는 검증 실패분이라 `unresolved_mappings` 141을 채운다).
 
+### 3.3 표당 API 단가는 0.001792가 아니라 0.003769다
+
+이슈는 `header_mapping` settlement 6.03364275를 **settlement 3,367줄**로 나눠 표당
+0.001792를 냈다. 그 3,367은 **호출** 수다. `entry_id`가
+`header_mapping:<원본 앞 16자>:<표>:<호출 uuid>`라 같은 표에 다시 물은 줄이 따로 실린다
+(`headermap.py:424`). 고유 `(원본, 표)` 키로 세면 **1,601표**이고, 표마다 호출은 1회 584 ·
+2회 575 · 3회 150 · 4회 283 · 5회 3 · 6회 6이다.
+
+| 단위 | 계산 | USD |
+| --- | --- | --- |
+| 호출당 | 6.03364275 ÷ 3,367 호출 | 0.001792 |
+| **표당** | 6.03364275 ÷ 1,601 표 | **0.003769** |
+
+신규 판정 필요를 표로 세므로 표당 단가를 쓴다. 이 정정으로 1절의 전량 API 비용은 30.46이
+아니라 64.07이고, 잔여 예산이 감당하는 몫은 21.0%가 아니라 10.0%다. **결론의 방향은 바뀌지
+않는다.**
+
 ## 4. 기관별 신규 판정 필요 표 수
 
 | 기관 | 연 표 | 적중 | 적중률 | **신규 판정 필요** | 미해결 원본 |
@@ -140,6 +179,9 @@ ls data/seoul/orgs | xargs -P 10 -I {} \
 | seoul-seodaemun | 0 | 0 | — | 0 | 1,040 |
 | **합계** | **17,493** | **493** | **2.8%** | **17,000** | **11,228** |
 
+`연 표`·`적중`·`신규 판정 필요`는 표 단위이고 `미해결 원본`만 원본 단위다. 한 원본의 표
+일부만 미적중이어도 그 원본은 미해결 한 줄이므로 두 단위를 더하거나 견주지 않는다.
+
 `seoul-city` 한 곳이 신규 판정 필요의 43.4%(7,381 / 17,000)를 차지한다. `seoul-seodaemun`은
 표를 하나도 열지 못했다(5.2절).
 
@@ -154,6 +196,8 @@ ls data/seoul/orgs | xargs -P 10 -I {} \
 | ooxml | 1,337 | 1,545 | 1.16 | 100 | 7 | 1,438 | **6.5%** |
 | ole2 | 239 | 274 | 1.15 | 6 | 0 | 268 | **2.2%** |
 | 합계 | 10,024 | 17,493 | 1.75 | 493 | 34 | 16,966 | **2.8%** |
+
+`원본` 열만 원본 단위이고 나머지는 모두 표 단위다. 적중률은 표 단위로 낸다.
 
 공통 캐시 938줄은 광주 428 · 부산 385 · 대전 125줄이고(각 줄의 `evidence`가 인용한 원본
 해시를 도시별 `fetch.json`과 대조해 셌다. 울산은 0줄로, 다른 도시의 캐시만 재사용했다),
@@ -180,11 +224,14 @@ html 적중률 0.0%는 표가 많아서만은 아니다. html 원본 하나가 �
 
 11,600 − 10,024 = 1,576이고, 미해결 원본 11,228의 14.0%다.
 
-**`seoul-seodaemun`의 1,040개가 한 사유로 전부 걸렸다.** 이 게시판의 html 쪽은 EUC-KR인데
-(`<meta charset=euc-kr>`, 실측) `grid.HTML_ENCODING`이 `"utf-8"`로 고정돼 있어
-`_html()`이 `UnicodeDecodeError`를 `UnreadableOriginal`로 바꾼다
-(`src/deliciousmap/grid.py:71`과 `grid.py:655-658`). 인코딩 문제이므로 판정 건수가 아니라 읽기 코드의 문제다. 고치면 표가 새로 열리고
-신규 판정 필요 표 수도 그만큼 늘어난다. 이 이슈의 17,000은 **고치기 전 기준**이다.
+**`seoul-seodaemun`의 1,040개가 한 사유로 전부 걸렸다.** 이 게시판이 EUC-KR인 것은 이미
+아는 사실이다([issue-141.md](issue-141.md)의 기관별 표와
+`src/deliciousmap/scrapers/seoul_html.py:136`의 `encoding = "euc-kr"`). 이 측정이 더하는
+사실은 **읽는 쪽이 그 인코딩을 쓰지 않는다**는 것이다. `grid.HTML_ENCODING`이 `"utf-8"`로
+고정돼 있어 `_html()`이 `UnicodeDecodeError`를 `UnreadableOriginal`로 바꾼다
+(`src/deliciousmap/grid.py:71`과 `grid.py:655-658`). 판정 건수가 아니라 읽기 코드의 문제다.
+고치면 표가 새로 열리고 신규 판정 필요 표 수도 그만큼 늘어난다. **이 이슈의 17,000은 고치기
+전 기준이다.**
 
 ## 6. 산출물을 커밋하지 않기로 했다 (2026-09-17 사용자 결정)
 
@@ -192,17 +239,18 @@ html 적중률 0.0%는 표가 많아서만은 아니다. html 원본 하나가 �
 
 - 판정이 17,493표 중 386표(2.2%)뿐인 부분 상태다. [#143](https://github.com/snowjaewon/OfficialDeliciousMap/issues/143)이
   25개 파일을 전량 다시 쓰므로 리베이스마다 충돌만 남긴다.
-- 재측정 비용이 15분으로 작다.
+- 재측정 비용이 15분으로 작고, 2절의 세 스크립트를 커밋했으므로 같은 수치가 다시 나온다.
 - [ADR-0001](../adr/0001-commit-refined-artifacts.md)의 커밋 방침과, 부산·대전·광주·울산이 같은
-  자리에 커밋한 `headermap.json` 35개(도시 단위 파일 포함, `git ls-files '*headermap.json'`)의
-  선례를 알고도 이번만 따르지 않는 것이다. 20MB 상한에는 걸리지 않는다.
+  자리에 커밋한 `headermap.json` 35개(도시 단위 파일 포함)의 선례를 알고도 이번만 따르지 않는
+  것이다. 20MB 상한에는 걸리지 않는다.
 
-이 문서의 수치가 측정 결과로 남는 것이고, 산출물 파일은 남기지 않는다.
+이 문서의 수치와 `docs/validation/issue-214/`의 스크립트가 측정 결과로 남는 것이고, 산출물
+파일은 남기지 않는다.
 
 ## 7. #143에 넘기는 값
 
 - 신규 판정 필요: **17,000표** / 미해결 원본 11,228개. `seoul-city`가 표의 43.4%다.
-- 판정 경로: 에이전트 CLI. API 전량은 USD 30.46으로 잔여 예산 6.39의 4.77배다.
+- 판정 경로: 에이전트 CLI. API 전량은 USD 64.07로 잔여 예산 6.39의 10.02배다.
 - 착수 전에 정리할 것 둘. 어느 쪽도 이 이슈의 범위가 아니다.
   1. `seoul-seodaemun` html 1,040개의 EUC-KR 읽기(5.2절). 서울 미해결 원본의 9.3%다.
   2. 서울 html 게시판의 `DeclaredTable` 선언(5.1절). html 표 7,396개의 판정 대상을 줄인다.
