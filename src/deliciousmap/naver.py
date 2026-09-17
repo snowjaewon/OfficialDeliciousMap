@@ -30,7 +30,7 @@ RESULT_LIMIT = 5
 # 지역검색은 `[`·`]`가 든 질의를 400으로 거부하고 소괄호는 받는다(2026-09-17 대구 실측). 원본이
 # 상호 칸에 주소를 대괄호로 적은 표기(`최고집 [대구광역시 중구 …]`)는 소괄호로 바꿔 보낸다. 그런
 # 질의는 전에 모두 실패로만 캐시됐으므로 해석 버전을 올리지 않는다.
-BRACKETS = str.maketrans("[]", "()")
+SQUARE_TO_ROUND = str.maketrans("[]", "()")
 # 지역검색은 WGS84를 10^7배한 정수를 준다.
 COORDINATE_SCALE = 1e7
 
@@ -87,7 +87,7 @@ class NaverPlaceSearch:
     def _fetch(self, query: str) -> bytes:
         return self.transport.fetch(
             SEARCH_URL,
-            {"query": query.translate(BRACKETS), "display": str(self.limit), "start": "1"},
+            {"query": query.translate(SQUARE_TO_ROUND), "display": str(self.limit), "start": "1"},
             {
                 KEY_ID_HEADER: self.credentials.key_id,
                 KEY_HEADER: self.credentials.key,

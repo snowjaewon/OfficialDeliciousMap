@@ -137,7 +137,7 @@ def extract(table: Table, mapping: HeaderMap, source: SourceRef) -> Extraction:
             try:
                 found = _candidate(table, mapping, source, row)
                 sections[-1].candidates.append(found)
-                sections[-1].segment += found.amount
+                sections[-1].since_subtotal += found.amount
             except ValidationFailed as exc:
                 if not _drops_row(mapping, exc):
                     raise
@@ -148,9 +148,9 @@ def extract(table: Table, mapping: HeaderMap, source: SourceRef) -> Extraction:
             continue
         excluded.append(f"{table.name}:R{row} {kind}")
         if kind == "total" and not _labeled_total(table, row):
-            sections[-1].segments[row] = sections[-1].segment
+            sections[-1].unlabeled_totals[row] = sections[-1].since_subtotal
         if kind in ("subtotal", "total", "unclear_total"):
-            sections[-1].segment = Decimal(0)
+            sections[-1].since_subtotal = Decimal(0)
         if kind == "header":
             sections.append(_Section())
         elif kind == "total":
@@ -671,8 +671,8 @@ class _Section:
     # 범위를 확정할 수 없는 누계·기간 합계가 있었다.
     unclear: bool = False
     # 앞 소계·합계 뒤로 쌓인 지출 합. 딱지 없는 합계 행이 그 자리에서 본 값을 행 번호로 남긴다.
-    segment: Decimal = Decimal(0)
-    segments: dict[int, Decimal] = field(default_factory=dict)
+    since_subtotal: Decimal = Decimal(0)
+    unlabeled_totals: dict[int, Decimal] = field(default_factory=dict)
 
 
 RowKind = Literal["blank", "header", "subtotal", "total", "unclear_total", "note", "candidate"]
@@ -718,19 +718,19 @@ def _labeled_total(table: Table, row: int) -> bool:
 
 
 def _no_spending(table: Table, mapping: HeaderMap, row: int, joined: str) -> bool:
-    """집행이 없다는 표기만 있는 행인지. 집행일이 읽히거나 금액이 0보다 크면 지출로 둔다."""
+    """집행이 없다는 표기만 있는 행인지. 날짜 칸에 숫자가 있거나 금액이 0이 아니면 지출로 둔다.
+
+    날짜가 읽히는지는 연도 근거에 따라 갈리므로 여기서 읽지 않는다. 숫자가 있으면 지출 후보로
+    남겨 읽지 못한 날짜는 집행일 실패로 알린다.
+    """
     if not NO_SPENDING.search(joined):
         return False
     columns = mapping.columns
     amount = _amount(table.cell(row, columns["amount_krw"]))
     if amount is not None and amount != 0:
         return False
-    if "spent_on" in columns:
-        return parse_spent_on(table.value(row, columns["spent_on"]), 2000) is None
-    return not all(role in columns for role in ("month", "day")) or (
-        _month_day(table.value(row, columns["month"]), table.value(row, columns["day"]), 2000)
-        is None
-    )
+    dates = [columns[role] for role in ("spent_on", "month", "day") if role in columns]
+    return not any(re.search(r"\d", text(table.value(row, column))) for column in dates)
 
 
 def _check_totals(table: Table, sections: list[_Section], multiplier: Decimal) -> TotalCheck:
@@ -751,8 +751,8 @@ def _check_totals(table: Table, sections: list[_Section], multiplier: Decimal) -
         own = sum((item.amount for item in section.candidates), Decimal(0))
         # 딱지 없는 합계 행은 앞 소계 뒤의 지출 합과 맞으면 소계다(수성구 실측: 마지막 구분의
         # 소계만 `소계`를 빠뜨린다). 딱지가 있는 합계는 지금처럼 구역·표 전체와만 대조한다.
-        segment = section.segments.get(row)
-        allowed = (own, whole) if segment is None else (own, whole, segment)
+        since_subtotal = section.unlabeled_totals.get(row)
+        allowed = (own, whole) if since_subtotal is None else (own, whole, since_subtotal)
         if amount * multiplier not in allowed:
             raise ValidationFailed(f"{table.name}:R{row} total amount mismatch")
     return "matched" if readable else "ambiguous"
