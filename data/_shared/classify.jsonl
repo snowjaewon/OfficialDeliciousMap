@@ -8092,6 +8092,7 @@
 {"evidence": "gemini-3.6-flash/classify-1", "key": "하남수산", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "수산물 판매 업소", "status": "non_restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "하남회포장", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "횟집 및 회 포장점", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "하남회포장/나무", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "횟집 및 음식점", "status": "restaurant"}}
+{"evidence": "gemini-3.6-flash/classify-1", "key": "하냄돼지집", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "돼지고기 구이 전문 식당", "status": "restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "하늘마을 마을관리 사회적협동조합", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "협동조합/기관", "status": "non_restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "하늘마을마을관리사회적협동조합", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "사회적협동조합 단체", "status": "non_restaurant"}}
 {"evidence": "gemini-3.6-flash/classify-1", "key": "하늘마을마을관리사회적협동조합(쉼)", "revision": 1, "schema_version": 1, "valid": true, "value": {"reason": "사회적협동조합 단체", "status": "non_restaurant"}}
