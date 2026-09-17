@@ -8,6 +8,7 @@ from deliciousmap.registry.models import (
     Board,
     City,
     DeclaredTable,
+    Hall,
     MapBounds,
     Organization,
 )
@@ -19,6 +20,25 @@ from deliciousmap.scrapers.busan import (
     Rfc3Board,
     YhLibBoard,
 )
+
+# 청사 좌표. 2026-09-17에 네이버 지역검색으로 기관 이름 하나씩 조회해 실측했고, 상호 칸이
+# 그 청사 이름이고 주소가 `부산광역시`로 시작하는 후보만 받았다(`docs/validation/issue-142.md`).
+# 쓰임은 하나다 — 같은 상호가 도시 안 여러 곳에 있을 때 고르는 기준점이다(ADR-0010).
+CITY_HALL = Hall(35.1798159, 129.0750223)  # 연제구 중앙대로 1001
+JUNG_HALL = Hall(35.1062139, 129.032352)  # 중구 중구로 120
+SEO_HALL = Hall(35.097932, 129.0244125)  # 서구 구덕로 120
+# 지역검색이 `부산동구청`으로 적어 다른 열둘과 달리 이름이 정확히 같지는 않다. 주소·좌표가
+# 동구청 소재지(구청로 1)를 가리키는 것을 보고 받았다.
+DONG_HALL = Hall(35.1292745, 129.0453253)  # 동구 구청로 1
+BUSANJIN_HALL = Hall(35.1629129, 129.053157)  # 부산진구 시민공원로 30
+DONGNAE_HALL = Hall(35.2051554, 129.0836898)  # 동래구 충렬대로237번길 93
+BUK_HALL = Hall(35.1972644, 128.990181)  # 북구 낙동대로1570번길 33
+HAEUNDAE_HALL = Hall(35.1631769, 129.163634)  # 해운대구 중동2로 11
+GEUMJEONG_HALL = Hall(35.2430679, 129.0920999)  # 금정구 중앙대로 1777
+YEONJE_HALL = Hall(35.1762419, 129.079764)  # 연제구 연제로 2
+SUYEONG_HALL = Hall(35.1456939, 129.113186)  # 수영구 남천동로 100
+SASANG_HALL = Hall(35.1526239, 128.99125)  # 사상구 학감대로 242
+GIJANG_HALL = Hall(35.2444979, 129.2223119)  # 기장군 기장읍 기장대로 560
 
 # 시청은 `schBizNo`로 게시판을 가른다. 46은 시장·부시장, 45는 4급 이상 공무원이 장인 부서다.
 # 199(지방공기업 임원)는 넣지 않는다 — 그 게시판은 공표방법이 `링크`이고, 2014-09-23에 올린
@@ -73,6 +93,7 @@ CITY = City(
                 Board("expenses-mayor", f"{CITY_LIST}?schBizNo=46", CityBoard),
                 Board("expenses-director", f"{CITY_LIST}?schBizNo=45", CityBoard),
             ),
+            hall=CITY_HALL,
         ),
         Organization(
             "busan-jung",
@@ -84,16 +105,19 @@ CITY = City(
                     MixedRfc3Board,
                 ),
             ),
+            hall=JUNG_HALL,
         ),
         Organization(
             "busan-seo",
             "부산광역시 서구",
             (Board("expenses", _rfc3("bsseogu.go.kr", "bsseogu", "BBS_0000151"), Rfc3Board),),
+            hall=SEO_HALL,
         ),
         Organization(
             "busan-dong",
             "부산광역시 동구",
             (Board("expenses", _rfc3("bsdonggu.go.kr", "donggu", "BBS_0000254"), Rfc3Board),),
+            hall=DONG_HALL,
         ),
         # 영도구: 목록은 열리지만 본문이 우리 UA에 400을 돌려준다. 2026년 상반기 게시글
         # 표본 10건 중 7건이 실패했고, 45초를 쉬고 8초 간격으로 다시 물어도 같았다
@@ -119,11 +143,13 @@ CITY = City(
                     Rfc3Board,
                 ),
             ),
+            hall=BUSANJIN_HALL,
         ),
         Organization(
             "busan-dongnae",
             "부산광역시 동래구",
             (Board("expenses", _rfc3("dongnae.go.kr", "dongnae", "BBS_0000200"), Rfc3Board),),
+            hall=DONGNAE_HALL,
         ),
         # 남구: `robots.txt`는 여전히 `User-agent: *`에 `Disallow: /`를 선언한다(Yeti만 허용,
         # 2026-09-17 재실측). #140은 그 선언을 따라 보류로 두었으나, 2026-09-17 사용자가
@@ -147,6 +173,7 @@ CITY = City(
             "busan-buk",
             "부산광역시 북구",
             (Board("expenses", _rfc3("bsbukgu.go.kr", "bsbukgu", "BBS_0000030"), Rfc3Board),),
+            hall=BUK_HALL,
         ),
         Organization(
             "busan-haeundae",
@@ -155,6 +182,7 @@ CITY = City(
             # 게시글 가운데 `보건소 수의계약내역, 신용카드 사용내역 알림` 13건이 그것이고,
             # 거르지 않으면 수의계약 표가 집행내역으로 들어온다.
             (Board("expenses", _rfc3("haeundae.go.kr", "do", "BBS_0000004"), MixedRfc3Board),),
+            hall=HAEUNDAE_HALL,
         ),
         # 사하구: 옛 게시판(`portal/bbs/list.do?ptIdx=29`)이 "삭제되었거나 존재하지 않습니다"를
         # 돌려준다. 같은 호스트의 `robots.txt`가 `Disallow: /*bbs*`를 선언해 새 게시판을
@@ -164,6 +192,7 @@ CITY = City(
             "busan-geumjeong",
             "부산광역시 금정구",
             (Board("expenses", _rfc3("geumjeong.go.kr", "geumj", "BBS_0000331"), Rfc3Board),),
+            hall=GEUMJEONG_HALL,
         ),
         # 강서구: `robots.txt`는 여전히 `User-agent:*`에 `Disallow:/`를 선언한다(2026-09-17
         # 재실측). #140은 그 선언을 따라 보류로 두었으나, 2026-09-17 사용자가 업무추진비 공개
@@ -201,6 +230,7 @@ CITY = City(
                     EgovPortalBoard,
                 ),
             ),
+            hall=YEONJE_HALL,
         ),
         Organization(
             "busan-suyeong",
@@ -212,11 +242,13 @@ CITY = City(
                     MixedRfc3Board,
                 ),
             ),
+            hall=SUYEONG_HALL,
         ),
         Organization(
             "busan-sasang",
             "부산광역시 사상구",
             (Board("expenses", _rfc3("sasang.go.kr", "sasang", "BBS_0000175"), Rfc3Board),),
+            hall=SASANG_HALL,
         ),
         Organization(
             "busan-gijang",
@@ -235,6 +267,11 @@ CITY = City(
                     GIJANG_TABLE,
                 ),
             ),
+            hall=GIJANG_HALL,
         ),
     ),
+    # 도시 안으로 보는 후보 주소의 접두(ADR-0009·ADR-0010). 2026-09-17 부산 조회 캐시 실측:
+    # 주소를 밝힌 후보 32,932건 가운데 6,222건이 이 접두로 시작한다. 두 제공자 모두 부산
+    # 주소를 이 한 가지로 적는다.
+    address_prefixes=("부산광역시",),
 )
