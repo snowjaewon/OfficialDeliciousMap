@@ -1,4 +1,9 @@
-"""인허가 조회를 실제 어댑터로 수행하고 외부 응답만 주입해 공개 CLI로 관찰한다."""
+"""인허가 조회와 그 후보의 채택을 공개 CLI로 관찰한다.
+
+조회를 보는 시험은 실제 어댑터로 수행하고 외부 응답만 주입한다. 채택을 보는 시험은
+후보를 담당자 입력으로 준다(`both`) — 네이버 우선 순서에서는 두 제공자의 후보가 함께
+놓인 자리를 운영 조회가 만들지 않기 때문이다(`docs/adr/0011-ask-providers-in-order.md`).
+"""
 
 import json
 from pathlib import Path
@@ -31,14 +36,14 @@ from tests.test_naver_lookup_cli import (
 
 SERVICE_KEY = "합성-인허가-서비스키"
 # 중부원점TM(EPSG:5174) 좌표 한 쌍과 그 WGS84 변환 결과. 네이버 좌표(35.1, 129.1)에서 약 300 m
-# 북쪽이라 허용 오차 200 m 밖이다. 오차 안의 좌표는 아래 NEARBY_X, NEARBY_Y다.
+# 북쪽이라 허용 오차 200 m 밖이다. 오차 안의 좌표는 `NEARBY`다.
 LICENSE_X, LICENSE_Y = "391413.5", "180197.3"
 LATITUDE, LONGITUDE = 35.10270223741562, 129.10006886326784
 # 같은 pyproj·PROJ라도 플랫폼 수학 라이브러리에 따라 변환값의 마지막 자리(1 ULP)가 다르다.
 # Windows는 위 값, Linux CI는 위도 끝자리가 3이다. 1e-9도는 약 0.1 mm라 좌표 비교는 이 오차로 본다.
 COORDINATE_TOLERANCE = 1e-9
-# 네이버 좌표에서 수 cm 떨어진 인허가 좌표. 같은 건물의 변환 오차 수준이다.
-NEARBY_X, NEARBY_Y = "391413.5", "179897.3"
+# 네이버 좌표에서 약 9 m 북동쪽. 허용 오차 200 m 안이라 같은 건물로 본다.
+NEARBY = 35.10006
 
 
 @pytest.fixture
@@ -85,6 +90,51 @@ def licensed_place(name: str = "같은 식당 부산점", **fields: str) -> dict
 
 def sources(context: ExecutionContext) -> list[str]:
     return [item["source"]["provider"] for item in geocoded(context)["lookup"]["candidates"]]
+
+
+def naver_candidate(**fields: object) -> dict:
+    return {
+        "source": {
+            "provider": "naver",
+            "source_id": "naver-place",
+            "reference": "https://example.invalid/naver/1",
+        },
+        "merchant": "같은 식당",
+        "branch": "부산점",
+        "address": ROAD_ADDRESS,
+        "latitude": 35.1,
+        "longitude": 129.1,
+        **fields,
+    }
+
+
+def license_candidate(**fields: object) -> dict:
+    return {
+        "source": {
+            "provider": "license",
+            "source_id": "3250000-101-2026-00001",
+            "reference": "https://example.invalid/license/1",
+        },
+        "merchant": "같은 식당",
+        "branch": "부산점",
+        "address": ROAD_ADDRESS,
+        "latitude": LATITUDE,
+        "longitude": LONGITUDE,
+        **fields,
+    }
+
+
+def both(*candidates: dict) -> dict:
+    """두 제공자의 후보가 함께 놓인 입력. 조회가 아니라 준비된 후보로 만든다.
+
+    네이버 우선 순서에서는 네이버가 후보를 낸 레코드를 인허가에 다시 묻지 않으므로
+    (`tests/test_provider_order_cli.py`), 두 제공자의 후보가 함께 놓인 자리는 운영 조회로
+    만들어지지 않는다. 담당자 후보 파일·캐시로는 그대로 생기며, 아래 시험이 보는 것은
+    조회 순서가 아니라 후보를 맞대는 규칙이다.
+    """
+    query = evidence_only()
+    query["candidates"] = list(candidates)
+    return query
 
 
 def test_license_candidates_convert_coordinates_and_reach_the_marker(
@@ -170,22 +220,18 @@ def test_local_and_license_supplied_facts_reach_the_same_business_and_marker(
 
 
 def test_license_coordinates_complete_a_naver_candidate_without_usable_ones(
-    tmp_path: Path, licensed: None, searched: None
+    tmp_path: Path,
 ) -> None:
     context = prepare(tmp_path)
-    save_input(context, evidence_only())
     # 네이버 후보의 좌표계를 확인할 수 없다. 같은 업소의 인허가 좌표로 보강한다.
-    naver = FakeTransport(naver_body(matching_place() | {"mapx": "443000", "mapy": "128000"}))
-    licenses = FakeLicenseTransport(license_body(licensed_place()))
-    assert run_cli(context, "geocode", licenses=licenses, naver=naver) == 0
+    save_input(context, both(naver_candidate(latitude=None, longitude=None), license_candidate()))
+    assert run_cli(context, "geocode") == 0
     result = geocoded(context)
     assert result["status"] == "success"
     assert (result["latitude"], result["longitude"]) == pytest.approx(
         (LATITUDE, LONGITUDE), abs=COORDINATE_TOLERANCE
     )
     assert sources(context) == ["naver", "license"]
-    # 일치·충돌 근거는 출처별로 보존한다.
-    assert [item["provider"] for item in result["lookup"]["queries"]] == ["naver", "license"]
     assert result["lookup"]["candidates"][0]["latitude"] is None
     assert result["evidence"] == "name-branch-address-agreement license+naver"
     for stage in ("closure", "build"):
@@ -194,16 +240,12 @@ def test_license_coordinates_complete_a_naver_candidate_without_usable_ones(
 
 
 def test_license_coordinates_within_the_tolerance_agree_and_naver_coordinates_win(
-    tmp_path: Path, licensed: None, searched: None
+    tmp_path: Path,
 ) -> None:
     """변환 오차 수준으로 어긋난 두 좌표는 같은 업소다. 마커는 원값인 네이버 좌표를 쓴다."""
     context = prepare(tmp_path)
-    save_input(context, evidence_only())
-    naver = FakeTransport(naver_body(matching_place()))
-    licenses = FakeLicenseTransport(
-        license_body(license_item("같은 식당 부산점", ROAD_ADDRESS, x=NEARBY_X, y=NEARBY_Y))
-    )
-    assert run_cli(context, "geocode", licenses=licenses, naver=naver) == 0
+    save_input(context, both(naver_candidate(), license_candidate(latitude=NEARBY)))
+    assert run_cli(context, "geocode") == 0
     result = geocoded(context)
     assert result["reason"] == "matched"
     assert (result["latitude"], result["longitude"]) == (35.1, 129.1)
@@ -211,13 +253,11 @@ def test_license_coordinates_within_the_tolerance_agree_and_naver_coordinates_wi
 
 
 def test_conflicting_provider_coordinates_wait_for_a_scoped_confirmation(
-    tmp_path: Path, licensed: None, searched: None
+    tmp_path: Path,
 ) -> None:
     context = prepare(tmp_path)
-    save_input(context, evidence_only())
-    naver = FakeTransport(naver_body(matching_place()))
-    licenses = FakeLicenseTransport(license_body(licensed_place()))
-    assert run_cli(context, "geocode", licenses=licenses, naver=naver) == 0
+    save_input(context, both(naver_candidate(), license_candidate()))
+    assert run_cli(context, "geocode") == 0
     result = geocoded(context)
     assert result["reason"] == "conflicting_evidence"
     assert result["business_id"] is None
@@ -243,7 +283,7 @@ def test_conflicting_provider_coordinates_wait_for_a_scoped_confirmation(
         )
         + "\n",
     )
-    assert run_cli(context, "geocode", licenses=licenses, naver=naver) == 0
+    assert run_cli(context, "geocode") == 0
     confirmed = geocoded(context)
     assert confirmed["reason"] == "human_confirmed"
     assert (confirmed["latitude"], confirmed["longitude"]) == (35.1, 129.1)
@@ -326,16 +366,12 @@ def test_indistinguishable_candidates_from_one_provider_stay_ambiguous(
 
 
 def test_provider_spellings_and_identifiers_do_not_decide_identity(
-    tmp_path: Path, licensed: None, searched: None
+    tmp_path: Path,
 ) -> None:
     context = prepare(tmp_path)
-    save_input(context, evidence_only())
-    naver = FakeTransport(naver_body(matching_place()))
     # 같은 관리번호라도 표기가 근거와 다르면 같은 업소로 보지 않는다.
-    licenses = FakeLicenseTransport(
-        license_body(license_item("같은 식당 부산점", "부산 합성동 1-2"))
-    )
-    assert run_cli(context, "geocode", licenses=licenses, naver=naver) == 0
+    save_input(context, both(naver_candidate(), license_candidate(address="부산 합성동 1-2")))
+    assert run_cli(context, "geocode") == 0
     result = geocoded(context)
     assert result["status"] == "success"
     assert (result["latitude"], result["longitude"]) == (35.1, 129.1)
@@ -374,7 +410,7 @@ def test_unreadable_license_coordinates_are_never_guessed(
         ("<html>제공자 오류 문서</html>".encode(), "invalid_response"),
     ],
 )
-def test_license_failure_is_not_hidden_by_a_successful_naver_lookup(
+def test_license_failure_after_an_empty_naver_lookup_is_not_hidden(
     tmp_path: Path,
     licensed: None,
     searched: None,
@@ -382,9 +418,10 @@ def test_license_failure_is_not_hidden_by_a_successful_naver_lookup(
     response: bytes | Exception,
     error: str,
 ) -> None:
+    """네이버가 못 찾아 인허가에 물은 뒤의 실패를 빈 후보로 덮지 않는다."""
     context = prepare(tmp_path)
     save_input(context, evidence_only())
-    naver = FakeTransport(naver_body(matching_place()))
+    naver = FakeTransport(naver_body())
     licenses = FakeLicenseTransport(response, license_body(licensed_place()))
     assert run_cli(context, "geocode", licenses=licenses, naver=naver) == 1
     assert capsys.readouterr().err == "geocode city=seoul org=* cause=lookup-failed\n"
@@ -392,8 +429,8 @@ def test_license_failure_is_not_hidden_by_a_successful_naver_lookup(
     assert result["reason"] == "lookup_error"
     assert result["lookup"]["error"] == error
     assert [item["status"] for item in result["lookup"]["queries"]] == ["ok", "error"]
-    # 성공한 조회의 후보는 남지만 자동 채택하지 않는다.
-    assert sources(context) == ["naver"]
+    # 두 제공자 모두 후보를 주지 못했고, 실패는 실패로 남는다.
+    assert sources(context) == []
     assert result["business_id"] is None
     for stage in ("closure", "build"):
         assert run_cli(context, stage) == 0
@@ -406,7 +443,7 @@ def test_provider_caches_stay_separate_and_reused_until_an_explicit_retry(
 ) -> None:
     context = prepare(tmp_path)
     save_input(context, evidence_only())
-    naver = FakeTransport(naver_body(matching_place()))
+    naver = FakeTransport(naver_body())
     licenses = FakeLicenseTransport(
         TimeoutError("제공자 원문 오류"), license_body(licensed_place())
     )
@@ -424,7 +461,8 @@ def test_provider_caches_stay_separate_and_reused_until_an_explicit_retry(
     assert run_cli(context, "geocode", "--retry-failed", licenses=licenses, naver=naver) == 0
     assert len(naver.requests) == 1
     assert [url.rstrip("/").split("/")[-2] for url in licenses.urls[1:]] == list(LICENSE_SERVICES)
-    assert geocoded(context)["reason"] == "conflicting_evidence"
+    # 네이버가 비운 자리를 인허가가 채웠고, 그 후보만 담당자 근거와 맞는다.
+    assert geocoded(context)["reason"] == "matched"
     # 실패한 인허가 조회만 새 revision을 얻고 네이버는 처음 결과를 그대로 쓴다.
     # 줄 순서는 키 해시를 따르므로 제공자별로 모아 본다.
     revisions: dict[str, list[int]] = {}

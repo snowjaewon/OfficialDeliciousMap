@@ -48,78 +48,91 @@ def resolve(
     *,
     retry_failed: bool = False,
 ) -> tuple[CandidateLookup, ...]:
-    """담당자가 후보를 주지 않은 레코드만 조회한다. 기록된 조회 실패는 덮지 않는다."""
-    if not providers:
-        return supplied
-    # 조회 캐시는 여기서 한 번만 읽는다. 레코드 루프가 파일을 다시 파싱하지 않는다.
-    # 블록을 닫을 때 이번 실행의 조회를 캐시에 한 번 합친다. 예외로 끊겨도 합친다.
+    """담당자가 후보를 주지 않은 레코드만 조회한다. 기록된 조회 실패는 덮지 않는다.
+
+    제공자는 하나씩 레코드 전부를 돈다. 앞 제공자가 후보를 낸 레코드는 다음 차례에서 이미
+    채워져 있으므로 뒤 제공자에게 묻지 않는다. 제공자마다 응답 시간이 크게 다를 때(2026-09-17
+    부산 실측: 인허가 중앙값 3.43초, 네이버 0.27초) 느린 쪽에 묻는 횟수가 도시 한 곳을 도는
+    시간을 지배하기 때문이다. 순서는 호출자가 정한 제공자 순서 그대로다.
+    """
+    # 조회 캐시는 실행마다 한 번만 읽는다(`ArtifactStore.lookup_cache`). 제공자마다 열면
+    # 제공자 수만큼 파일을 다시 파싱하고 다시 합친다. 블록을 닫을 때 이번 실행의 조회를
+    # 캐시에 한 번 합친다. 예외로 끊겨도 합친다.
     with store.lookup_cache() as cache:
         restored = {item.record_id: item.restored_merchant for item in restorations}
-        resolved = []
-        for record, prepared in zip(records, supplied, strict=True):
-            recorded_failure = prepared.status == "error" and prepared.error != "not_supplied"
-            if prepared.candidates or recorded_failure:
-                resolved.append(prepared)
-                continue
-            # 확정 복원명이 있으면 그 이름을, 없으면 꼬리말을 뗀 첫 업소의 이름을 조회한다.
-            # 사람 확인이 규칙보다 앞선다. 도시·기관 맥락은 질의에 넣지 않는다.
-            query = merchants.chosen_name(record.merchant, restored.get(record.record_id))
-            # 사람이 이미 업소별로 본 지출은 나누어 조회할 것이 없다.
-            # 확인이 없는 표기만 더 조회한다.
-            resolved.append(
-                _merge_provider_lookups(
-                    cache,
-                    prepared,
-                    query,
-                    providers,
-                    retry_failed=retry_failed,
-                    probe=record.expense is None,
-                )
+        resolved = supplied
+        for provider in providers:
+            resolved = _one_provider(
+                cache, records, resolved, restored, provider, retry_failed=retry_failed
             )
-        return tuple(resolved)
+        return resolved
 
 
-def _merge_provider_lookups(
+def _one_provider(
+    cache: LookupCache,
+    records: tuple[Record, ...],
+    supplied: tuple[CandidateLookup, ...],
+    restored: dict[str, str],
+    provider: CandidateProvider,
+    *,
+    retry_failed: bool,
+) -> tuple[CandidateLookup, ...]:
+    """제공자 하나에게 레코드 전부를 묻는다. 이미 후보가 있는 레코드는 묻지 않는다."""
+    resolved = []
+    for record, prepared in zip(records, supplied, strict=True):
+        recorded_failure = prepared.status == "error" and prepared.error != "not_supplied"
+        if prepared.candidates or recorded_failure:
+            resolved.append(prepared)
+            continue
+        # 확정 복원명이 있으면 그 이름을, 없으면 꼬리말을 뗀 첫 업소의 이름을 조회한다.
+        # 사람 확인이 규칙보다 앞선다. 도시·기관 맥락은 질의에 넣지 않는다.
+        query = merchants.chosen_name(record.merchant, restored.get(record.record_id))
+        # 사람이 이미 업소별로 본 지출은 나누어 조회할 것이 없다.
+        # 확인이 없는 표기만 더 조회한다.
+        resolved.append(
+            _add_provider_lookup(
+                cache,
+                prepared,
+                query,
+                provider,
+                retry_failed=retry_failed,
+                probe=record.expense is None,
+            )
+        )
+    return tuple(resolved)
+
+
+def _add_provider_lookup(
     cache: LookupCache,
     prepared: CandidateLookup,
     query: str,
-    providers: tuple[CandidateProvider, ...],
+    provider: CandidateProvider,
     *,
     retry_failed: bool,
     probe: bool,
 ) -> CandidateLookup:
-    """제공자마다 조회하고 후보를 출처와 함께 모은다. 한 곳의 실패도 성공으로 숨기지 않는다."""
-    candidates = list(prepared.candidates)
-    queries = list(prepared.queries)
-    status: str = "ok"
-    error: str | None = None
-    for provider in providers:
-        found, cache_ref = _reuse_or_search(cache, provider, query, retry_failed=retry_failed)
-        candidates.extend(found.candidates)
-        if probe:
-            _probe_merged(cache, provider, query, retry_failed=retry_failed)
-        queries.append(
-            ProviderQuery.model_validate(
-                {
-                    "provider": provider.provider,
-                    "request": query,
-                    "interpretation": provider.interpretation,
-                    "status": found.status,
-                    "error": found.error,
-                    "cache": cache_ref,
-                }
-            )
-        )
-        if found.status == "error" and status != "error":
-            status, error = "error", found.error
+    """제공자 하나를 조회해 후보를 출처와 함께 더한다. 실패를 성공으로 숨기지 않는다."""
+    found, cache_ref = _reuse_or_search(cache, provider, query, retry_failed=retry_failed)
+    if probe:
+        _probe_merged(cache, provider, query, retry_failed=retry_failed)
+    asked = ProviderQuery.model_validate(
+        {
+            "provider": provider.provider,
+            "request": query,
+            "interpretation": provider.interpretation,
+            "status": found.status,
+            "error": found.error,
+            "cache": cache_ref,
+        }
+    )
     return CandidateLookup.model_validate(
         {
             "scope": prepared.scope,
-            "status": status,
-            "error": error,
+            "status": found.status,
+            "error": found.error,
             "facts": prepared.facts,
-            "candidates": tuple(candidates),
-            "queries": tuple(queries),
+            "candidates": (*prepared.candidates, *found.candidates),
+            "queries": (*prepared.queries, asked),
         }
     )
 
