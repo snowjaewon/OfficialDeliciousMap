@@ -37,6 +37,10 @@ REQUEST_INTERVAL = 0.2
 # 받아 모두 200이었다. 중랑은 간격을 1.0초로 넓혀도 853쪽 순회가 끝나지 않아(≈190쪽에서
 # 끊김) 느리게 하는 것이 답이 아니었다. 재지 않은 값을 효과가 있는 것처럼 두지 않는다.
 HOST_INTERVALS: dict[str, float] = {}
+# 공통 기다림 안에 응답을 주지 못한다고 실측한 호스트만 둔다. 기장군은 게시판 전량(3,297줄,
+# 2.96MB)을 한 응답으로 만들어 주느라 2026-09-17 실측에서 116초가 걸렸다. 쪽을 나누면 새 줄이
+# 위에 쌓여 내용이 밀리므로(ADR-0008) 나누는 대신 그 게시판에서만 넉넉히 기다린다.
+HOST_TIMEOUTS: dict[str, float] = {"www.gijang.go.kr": 300.0}
 # 서명만으로 갈리지 않는 형식이 있어 앞부분에서 표식을 함께 찾는다. 이만큼만 본다.
 MARKER_WINDOW = 4096
 # 수집 주체를 밝힌다. 브라우저를 가장하지 않는다.
@@ -150,6 +154,15 @@ class Attachment:
     def name(self) -> str:
         """저장 이름. 게시판이 준 파일명은 경로로 쓰지 않는다."""
         return f"{self.post_id}-{self.file_id}{self.suffix}"
+
+
+def html_original(post_id: str, url: str, skipped: bool) -> tuple[Attachment, ...]:
+    """HTML 표 게시글의 원본 참조 하나. 받은 쪽 주소가 곧 출처다. 넘길 게시글이면 없다.
+
+    집행내역을 HTML 표로 내는 게시판이 모두 같은 참조를 만든다(ADR-0008). 도시마다 따로
+    두면 저장 이름과 출처 주소가 도시별로 갈릴 수 있어 여기 한 자리에 둔다.
+    """
+    return () if skipped else (Attachment(post_id, "1", HTML_SUFFIX, url, url),)
 
 
 @dataclass(frozen=True)
@@ -266,6 +279,7 @@ def default_transport() -> HttpTransport:
         backoff=REQUEST_BACKOFF,
         session=True,
         host_intervals=HOST_INTERVALS,
+        host_timeouts=HOST_TIMEOUTS,
     )
 
 

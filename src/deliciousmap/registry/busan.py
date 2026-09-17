@@ -4,7 +4,13 @@
 `docs/validation/issue-140.md`에 있다.
 """
 
-from deliciousmap.registry.models import Board, City, MapBounds, Organization
+from deliciousmap.registry.models import (
+    Board,
+    City,
+    DeclaredTable,
+    MapBounds,
+    Organization,
+)
 from deliciousmap.scrapers.busan import (
     CityBoard,
     EgovPortalBoard,
@@ -33,6 +39,26 @@ YHLIB = "https://www.bsgangseo.go.kr/portal/board/post/list.do?bcIdx={bcidx}&mid
 
 def _yhlib(bcidx: str, mid: str) -> str:
     return YHLIB.format(bcidx=bcidx, mid=mid)
+
+
+# 기장군 목록 표의 열(2026-09-17 실측, 전량 3,297줄). 목록이 곧 집행내역이고 헤더가 `(원)`이라
+# 금액 배수는 1이다. `사용자`·`대상인원(명)`·`사용방법`에는 역할을 주지 않는다. 마지막 두 열의
+# 연도·월은 사람이 적은 분류라 3,215건 중 64건이 사용일자와 어긋나 집행일로 쓰지 않는다.
+GIJANG_TABLE = DeclaredTable(
+    header=(
+        "부서",
+        "사용자",
+        "사용일자(일시)",
+        "사용장소(가맹점)",
+        "사용목적(내역)",
+        "사용금액(원)",
+        "대상인원(명)",
+        "사용방법",
+        "연도",
+        "월",
+    ),
+    columns={"department": 0, "spent_on": 2, "merchant": 3, "purpose": 4, "amount_krw": 5},
+)
 
 
 CITY = City(
@@ -206,6 +232,7 @@ CITY = City(
                     _rfc3("gijang.go.kr", "gijang", "BBS_0000147")
                     + "&menuCd=DOM_000000101002014000&paging=ok",
                     GijangBoard,
+                    GIJANG_TABLE,
                 ),
             ),
         ),

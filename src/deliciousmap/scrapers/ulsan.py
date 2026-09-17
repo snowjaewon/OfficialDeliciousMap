@@ -445,7 +445,9 @@ class JungguMayorBoard:
                 raise boards.UnreadableBoard("fiscal-year listing no longer fits one page")
             post_id = str(year)
             url = boards.address(self.list_url, params)
-            yield boards.Posting(post_id, _html_original(post_id, url, skipped(post_id, None)))
+            yield boards.Posting(
+                post_id, boards.html_original(post_id, url, skipped(post_id, None))
+            )
 
 
 class DongguMayorBoard:
@@ -493,7 +495,7 @@ class DongguMayorBoard:
                 url = boards.address(self.view_url, {"ymd2": post_id})
                 yield boards.Posting(
                     post_id,
-                    _html_original(post_id, url, skipped(post_id, posted)),
+                    boards.html_original(post_id, url, skipped(post_id, posted)),
                     posted,
                     link.text,
                     "",
@@ -612,7 +614,7 @@ class CityTransferBoard:
                 url = boards.address(self.list_url, {**self.params, "useDe": key})
                 yield boards.Posting(
                     post_id,
-                    _html_original(post_id, url, skipped(post_id, posted)),
+                    boards.html_original(post_id, url, skipped(post_id, posted)),
                     posted,
                     detail.text,
                     "",
@@ -621,11 +623,6 @@ class CityTransferBoard:
             if page >= _page_count(parser, link_keys=("curPage",)):
                 return
             page += 1
-
-
-def _html_original(post_id: str, url: str, skipped: bool) -> tuple[boards.Attachment, ...]:
-    """HTML 표 게시글의 원본 참조 하나. 받은 쪽 주소가 곧 출처다. 넘길 게시글이면 없다."""
-    return () if skipped else (boards.Attachment(post_id, "1", boards.HTML_SUFFIX, url, url),)
 
 
 class BukguBoard:

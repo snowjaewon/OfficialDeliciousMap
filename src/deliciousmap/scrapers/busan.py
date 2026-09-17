@@ -8,7 +8,6 @@
 import re
 import urllib.parse
 from collections.abc import Iterator
-from datetime import date
 from typing import TYPE_CHECKING
 
 from deliciousmap import boards
@@ -44,8 +43,6 @@ YHLIB_INDEX = "req-get-p-idx"
 SIZE = re.compile(r"\s*\[[^\]]*\]\s*$")
 # 목록이 제목에 붙이는 아이콘 글자. 제목의 일부가 아니라 화면 표시다.
 BADGES = ("새글",)
-# 기장군 사용일자의 구분자 없는 표기. 실측 3,283줄 가운데 131줄이 이 모양이다.
-COMPACT_DATE = re.compile(r"(\d{4})(\d{2})(\d{2})")
 
 
 def names_of(link: listing.Link) -> tuple[str, ...]:
@@ -233,71 +230,43 @@ class MixedRfc3Board(Rfc3Board):
 
 
 class GijangBoard:
-    """기장군 게시판. 첨부가 없고 목록의 표 자체가 집행내역이다.
+    """기장군 게시판. 첨부가 없고 목록의 표 자체가 집행내역이다([ADR-0008](
+    ../../../docs/adr/0008-declare-html-table-mappings.md)).
 
-    한 줄이 집행 한 건이라 게시글·첨부가 없다. 이 이슈는 표에서 집행내역을 뽑지 않으므로
-    (#140 제외 범위) 받은 원본이 0건인 것이 맞다. 그 사실을 조용한 0건으로 두지 않도록
-    줄은 그대로 게시글로 내고, 첨부가 없다는 것을 선언으로 밝힌다.
+    한 줄이 집행 한 건이라 게시글도 첨부도 없다. 공개된 행 수 조건으로 표 전량을 한 응답에
+    받고, 그 응답 전체를 `.html` 원본 하나로 둔다. 새 줄이 위에 쌓여 둘째 쪽부터 내용이
+    밀리므로, 한 쪽에 담기지 않으면 쪽을 짐작해 나누지 않고 읽지 못한 게시판으로 알린다 —
+    울산 중구 회계연도 목록과 같은 규칙.
+
+    게시글 번호는 게시판 하나를 가리키는 고정 값이다. 줄 위치로 매기면 새 줄이 쌓일 때마다
+    같은 번호가 다른 줄을 가리킨다. 한 번 받은 원본은 다시 받지 않으므로, 그 뒤에 붙은 줄은
+    그 원본을 치우고 다시 수집해야 들어온다(ADR-0008).
     """
 
-    published_suffixes: frozenset[str] = frozenset()
-    # 실측한 열 차례: 부서·사용자·사용일자·사용장소·사용목적·사용금액·대상인원·사용방법·연도·월.
-    COLUMNS = 10
-    DEPARTMENT, SPENT_ON, PURPOSE = 0, 2, 4
+    published_suffixes = frozenset({boards.HTML_SUFFIX})
+    # 이 게시판 하나를 가리키는 게시글 번호. 표의 줄에는 번호가 없고, 원본도 하나다.
+    post_id = "expenses"
+    # 한 쪽에 실을 줄 수. 실측 2026-09-17: 표 전량이 3,297줄이라 그보다 넉넉히 잡는다.
+    page_size = "4000"
 
     def __init__(self, board: "Board", transport: Transport) -> None:
         self.list_url, self.params, self.site_key = rfc3_endpoint(board.url)
         self.transport = transport
 
     def postings(self, skipped: boards.Skipped) -> Iterator[boards.Posting]:
-        page = 1
-        while True:
-            parser = listing.parse(
-                boards.request(
-                    self.transport, self.list_url, {**self.params, "startPage": str(page)}
-                )
-            )
-            ordinal = 0
-            for row in parser.rows:
-                if row.header or len(row.cells) != self.COLUMNS:
-                    # 머리글 줄이거나 열 수가 다른 줄. 집행 줄만 센다.
-                    continue
-                ordinal += 1
-                posted = _spent_on(row.cells[self.SPENT_ON].text)
-                post_id = f"{page:04d}{ordinal:02d}"
-                skipped(post_id, posted)
-                # 집행 한 줄에는 제목이 없다. 목적 칸을 제목 자리에 그대로 옮긴다.
-                yield boards.Posting(
-                    post_id,
-                    (),
-                    posted,
-                    row.cells[self.PURPOSE].text,
-                    row.cells[self.DEPARTMENT].text,
-                )
-            if page >= listing.last_page(
-                listed_pages(parser, f"list.{self.site_key}", "startPage")
-            ):
-                return
-            page += 1
-
-
-def _spent_on(text: str) -> date | None:
-    """집행 줄이 밝힌 사용일자. 읽지 못하면 밝히지 않은 것으로 둔다.
-
-    이 칸은 자유 입력이라 실측에서 97가지 모양이 나왔다(`2026. 8. 20.`, `2026.06.28.`,
-    `20260628`, `26.6.11.`, `6.27.(금)`, 빈 칸). 읽히는 모양만 읽고 나머지는 짐작하지 않는다.
-    옆 칸의 연도·월은 사람이 적은 분류라 3,215건 중 64건이 사용일자와 어긋나 대신 쓰지 않는다.
-    """
-    compact = COMPACT_DATE.fullmatch(text.strip())
-    if compact is not None:
-        try:
-            return date(*(int(part) for part in compact.groups()))
-        except ValueError:
-            return None
-    try:
-        return listing.posted(text)
-    except boards.UnreadableBoard:
-        return None
+        # 부서(`categoryCode1`)·연도(`categoryCode2`)·월(`categoryCode3`) 조건은 붙이지 않는다.
+        # 부서 조건은 3,297줄 중 530줄만 남기고, 연도·월은 사람이 적은 분류라 3,215건 중
+        # 64건이 사용일자와 어긋난다(실측 2026-09-14). 기간은 받은 뒤 사용일자 열로 가른다.
+        # `listRow`만 보내면 게시판이 무시하고 열 줄을 준다. `listCel=1`을 함께 보내야 행 수
+        # 조건이 열린다(실측 2026-09-17).
+        params = {**self.params, "listCel": "1", "listRow": self.page_size, "startPage": "1"}
+        parser = listing.parse(boards.request(self.transport, self.list_url, params))
+        if listing.page_count(parser, link_keys=("startPage",)) != 1:
+            raise boards.UnreadableBoard("expense listing no longer fits one page")
+        url = boards.address(self.list_url, params)
+        yield boards.Posting(
+            self.post_id, boards.html_original(self.post_id, url, skipped(self.post_id, None))
+        )
 
 
 class EgovPortalBoard:

@@ -10,6 +10,7 @@ from pathlib import Path
 
 from deliciousmap.cli import main
 from deliciousmap.registry import Board, City, DeclaredTable, MapBounds, Organization
+from deliciousmap.scrapers.busan import GijangBoard
 from deliciousmap.scrapers.ulsan import CityTransferBoard, DongguMayorBoard, JungguMayorBoard
 
 DATA = Path("저장소") / "data"
@@ -47,12 +48,18 @@ def city(*boards: Board) -> City:
     )
 
 
-def run(root: Path, stage: str, cities: tuple[City, ...], board: FakeTransport | None) -> int:
+def run(
+    root: Path,
+    stage: str,
+    cities: tuple[City, ...],
+    board: FakeTransport | None,
+    slug: str = "ulsan",
+) -> int:
     return main(
         [
             stage,
             "--city",
-            "ulsan",
+            slug,
             "--raw-root",
             str(root / "외부 원본"),
             "--data-root",
@@ -65,13 +72,13 @@ def run(root: Path, stage: str, cities: tuple[City, ...], board: FakeTransport |
     )
 
 
-def payload(root: Path, stage: str) -> dict:
-    path = root / DATA / "ulsan" / f"{stage}.json"
+def payload(root: Path, stage: str, slug: str = "ulsan") -> dict:
+    path = root / DATA / slug / f"{stage}.json"
     return json.loads(path.read_text(encoding="utf-8"))["payload"]
 
 
-def records(root: Path) -> list[dict[str, str]]:
-    with (root / DATA / "ulsan" / "records.csv").open(encoding="utf-8", newline="") as stream:
+def records(root: Path, slug: str = "ulsan") -> list[dict[str, str]]:
+    with (root / DATA / slug / "records.csv").open(encoding="utf-8", newline="") as stream:
         return list(csv.DictReader(stream))
 
 
@@ -497,3 +504,149 @@ def test_a_page_with_the_declared_header_twice_is_not_guessed(tmp_path: Path) ->
 def _first_table(page: str) -> str:
     start = page.index("<table>")
     return page[start : page.index("</table>", start) + len("</table>")]
+
+
+GIJANG_LIST = "https://example.invalid/board/list.gijang"
+GIJANG_URL = f"{GIJANG_LIST}?boardId=BBS_0000147&paging=ok"
+# 기장군 목록 표의 열(2026-09-17 실측). 목록 전량이 한 쪽이고 금액은 원이다.
+GIJANG_HEADER = (
+    "부서",
+    "사용자",
+    "사용일자(일시)",
+    "사용장소(가맹점)",
+    "사용목적(내역)",
+    "사용금액(원)",
+    "대상인원(명)",
+    "사용방법",
+    "연도",
+    "월",
+)
+GIJANG_TABLE = DeclaredTable(
+    header=GIJANG_HEADER,
+    columns={"department": 0, "spent_on": 2, "merchant": 3, "purpose": 4, "amount_krw": 5},
+)
+
+
+def busan(*boards: Board) -> City:
+    return City(
+        "busan",
+        "부산",
+        MapBounds(34.879908, 128.738436, 35.395936, 129.314776),
+        (Organization("busan-gijang", "합성군", boards),),
+    )
+
+
+def gijang_listing(*rows: tuple[str, ...], pages: str = "1/1") -> str:
+    head = "".join(f"<th>{cell}</th>" for cell in GIJANG_HEADER)
+    body = "".join("<tr>" + "".join(f"<td>{cell}</td>" for cell in row) + "</tr>" for row in rows)
+    return (
+        f"<html><body><p>총게시물 <b>{len(rows)}</b>건 <span>｜</span> 페이지 : {pages}</p>"
+        f"<table><caption>업무 추진비 공개 게시판 리스트</caption>"
+        f"<thead><tr>{head}</tr></thead><tbody>{body}</tbody></table>"
+        '<div class="page"><a href="/board/list.gijang?startPage=1">1</a></div></body></html>'
+    )
+
+
+def gijang_board(page: str) -> FakeTransport:
+    params = {
+        "boardId": "BBS_0000147",
+        "paging": "ok",
+        "listCel": "1",
+        "listRow": GijangBoard.page_size,
+        "startPage": "1",
+    }
+    return FakeTransport({(GIJANG_LIST, frozenset(params.items())): page})
+
+
+def gijang_row(spent: str, merchant: str, amount: str) -> tuple[str, ...]:
+    return ("행정지원과", "군수", spent, merchant, "합성 간담회", amount, "2", "카드", "", "")
+
+
+def test_the_gijang_table_becomes_records_read_by_its_use_date_column(tmp_path: Path) -> None:
+    """첨부 없는 HTML 표에서 집행 줄을 레코드로 뽑는다. 선언 매핑만 쓰고 모델은 부르지 않는다."""
+    cities = (busan(Board("expenses", GIJANG_URL, GijangBoard, GIJANG_TABLE)),)
+    board = gijang_board(
+        gijang_listing(
+            gijang_row("2026. 3. 20.", "합성식당", "176,800"),
+            gijang_row("20260628", "합성갈비", "521,400"),
+            gijang_row("26.6.11.", "합성카페", "60,000"),
+            gijang_row("2025. 3. 20.", "합성국밥", "50,000"),
+        )
+    )
+
+    assert run(tmp_path, "fetch", cities, board, "busan") == 0
+    assert run(tmp_path, "headermap", cities, None, "busan") == 0
+    assert run(tmp_path, "parse", cities, None, "busan") == 0
+
+    fetched = payload(tmp_path, "fetch", "busan")
+    assert fetched["empty_reason"] is None
+    (source,) = fetched["sources"]
+    assert (source["container"], source["spent_on"]) == ("html", None)
+    (report,) = payload(tmp_path, "parse", "busan")["sources"]
+    assert (report["candidates"], report["records"], report["out_of_range"]) == (4, 3, 1)
+    assert [
+        (row["spent_on"], row["merchant"], row["amount_krw"], row["department"])
+        for row in records(tmp_path, "busan")
+    ] == [
+        ("2026-03-20", "합성식당", "176800", "행정지원과"),
+        ("2026-06-28", "합성갈비", "521400", "행정지원과"),
+        ("2026-06-11", "합성카페", "60000", "행정지원과"),
+    ]
+
+
+def test_a_gijang_row_without_a_use_date_leaves_the_rest_of_the_table(tmp_path: Path) -> None:
+    """사용일자 칸은 자유 입력이라 읽지 못하는 줄이 섞인다(실측 지출 후보 3,248줄 중 18줄).
+
+    그 줄만 레코드에서 빠지고 위치와 사유가 제외 목록에 남는다. 후보 수에서는 사라지지 않는다.
+    """
+    cities = (busan(Board("expenses", GIJANG_URL, GijangBoard, GIJANG_TABLE)),)
+    board = gijang_board(
+        gijang_listing(
+            gijang_row("2026. 3. 20.", "합성식당", "176,800"),
+            gijang_row("", "합성찻집", "27,000"),
+            gijang_row("6.27.(금)", "합성분식", "31,000"),
+            gijang_row("2026. 4. 2.", "합성국밥", "50,000"),
+        )
+    )
+
+    assert run(tmp_path, "fetch", cities, board, "busan") == 0
+    assert run(tmp_path, "headermap", cities, None, "busan") == 0
+    assert run(tmp_path, "parse", cities, None, "busan") == 0
+
+    (report,) = payload(tmp_path, "parse", "busan")["sources"]
+    assert report["status"] == "parsed"
+    assert (report["candidates"], report["records"], report["out_of_range"]) == (4, 2, 0)
+    assert report["excluded"] == ["table1:R3 spent_on", "table1:R4 spent_on"]
+    assert [row["merchant"] for row in records(tmp_path, "busan")] == ["합성식당", "합성국밥"]
+
+
+def test_a_gijang_header_that_no_longer_matches_stays_unresolved(tmp_path: Path) -> None:
+    """틀이 바뀐 표는 짐작해 맞추지 않는다. 모델이 없어도 선언만으로 이 판정이 난다."""
+    cities = (busan(Board("expenses", GIJANG_URL, GijangBoard, GIJANG_TABLE)),)
+    changed = gijang_listing(gijang_row("2026. 3. 20.", "합성식당", "176,800")).replace(
+        "<th>사용일자(일시)</th>", "<th>사용일자</th>"
+    )
+
+    assert run(tmp_path, "fetch", cities, gijang_board(changed), "busan") == 0
+    assert run(tmp_path, "headermap", cities, None, "busan") == 0
+    assert run(tmp_path, "parse", cities, None, "busan") == 0
+
+    (report,) = payload(tmp_path, "parse", "busan")["sources"]
+    assert (report["status"], report["reason"], report["detail"]) == (
+        "unresolved",
+        "validation_failed",
+        "declared header not found",
+    )
+    assert records(tmp_path, "busan") == []
+
+
+def test_a_gijang_table_beyond_one_page_is_reported_not_collected(tmp_path: Path) -> None:
+    """전량이 한 쪽에 담기지 않으면 조용한 부분 수집 대신 읽지 못한 게시판으로 실패한다."""
+    cities = (busan(Board("expenses", GIJANG_URL, GijangBoard, GIJANG_TABLE)),)
+    board = gijang_board(
+        gijang_listing(gijang_row("2026. 3. 20.", "합성식당", "176,800"), pages="1/2")
+    )
+
+    # 부산은 게시판 장애를 이어 가지 않는 도시라(#140) 수집 자체가 실패로 끝난다.
+    assert run(tmp_path, "fetch", cities, board, "busan") == 1
+    assert not (tmp_path / DATA / "busan" / "fetch.json").exists()
