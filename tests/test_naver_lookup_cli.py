@@ -468,3 +468,19 @@ def test_a_confirmed_restored_name_is_asked_for_as_written(
     result = geocoded(context)
     assert result["lookup"]["queries"][0]["request"] == FULL_NAME
     assert (result["status"], result["confirmed_merchant"]) == ("success", FULL_NAME)
+
+
+def test_square_brackets_are_sent_as_parentheses_the_search_accepts(
+    tmp_path: Path, configured: None
+) -> None:
+    """네이버 지역검색은 `[`·`]`가 든 질의를 400으로 거부한다(2026-09-17 대구 실측 7건).
+
+    소괄호는 받는다. 보내는 글자만 바꾸고 장부의 질의는 원본 표기 그대로 남긴다.
+    """
+    context = prepare_many(tmp_path, ("같은 식당 [부산 합성로 10]",))
+    save_input(context, evidence_only())
+    transport = FakeTransport(naver_body(matching_place()))
+    assert run_cli(context, "geocode", transport=transport) == 0
+
+    assert transport.requests[0]["query"] == "같은 식당 (부산 합성로 10)"
+    assert geocoded(context)["lookup"]["queries"][0]["request"] == "같은 식당 [부산 합성로 10]"
