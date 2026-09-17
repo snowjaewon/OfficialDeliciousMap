@@ -153,6 +153,28 @@ def test_icms_board_reads_the_extension_before_the_size_and_the_icon() -> None:
     assert [item.suffix for item in postings[0].attachments] == [".xlsx"]
 
 
+def test_icms_board_keeps_a_bracketed_name_without_a_size() -> None:
+    """시청 본문은 크기를 적지 않는다. 이름 앞의 `[붙임]`을 크기로 보고 자르지 않는다."""
+    transport = FakeTransport(
+        dict(
+            [
+                response(
+                    CITY_INDEX,
+                    {**LIST_PARAMS, "pageIndex": "1"},
+                    icms_listing(icms_row("8", "2026년 8월", "총무과", "2026-09-15", "F8")),
+                ),
+                response(*city_view("8"), icms_detail(("F8", "0", "[붙임] 8월 집행내역.xlsx"))),
+            ]
+        )
+    )
+    postings = list(IcmsBoard(board(CITY_BOARD, IcmsBoard), transport).postings(never))
+    assert [item.suffix for item in postings[0].attachments] == [".xlsx"]
+
+
+def test_daegu_yhlib_boards_declare_only_the_measured_extensions() -> None:
+    assert CouncilFilteredYhLibBoard.published_suffixes == frozenset({".xls", ".xlsx", ".pdf"})
+
+
 def test_icms_board_reads_the_department_column_by_its_header() -> None:
     """남구는 부서 열 이름이 `담당부서`다. 열 차례가 아니라 머리글로 찾는다."""
     transport = FakeTransport(

@@ -379,7 +379,11 @@ class YhLibBoard:
             page += 1
 
     def keeps(self, title: str, department: str) -> bool:
-        """목록 행을 게시글로 받을지. 강서구는 모두 받는다. 거르는 기관은 하위 클래스가 정한다."""
+        """목록 행을 게시글로 받을지. 강서구는 모두 받는다.
+
+        같은 계열을 쓰는 대구 동구·서구는 구의회 글을 섞어 싣는다. 그 하위 클래스가 여기서 거르고
+        거른 수를 센다(`boards.FiltersRows`) — 판정과 계수가 한 자리에 있어야 수가 어긋나지 않는다.
+        """
         return True
 
     def _attachments(self, post_id: str, page_url: str) -> tuple[boards.Attachment, ...]:

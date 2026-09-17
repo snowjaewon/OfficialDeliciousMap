@@ -20,8 +20,8 @@ from deliciousmap.transport import Transport
 if TYPE_CHECKING:
     from deliciousmap.registry.models import Board
 
-# 2026-09-17 실측한 첨부 확장자. 수집이 이 선언과 대조한다. 시청·남구·달성군·수성구·군위군의
-# 2026년 원본 1,496개가 모두 이 셋이었다(한글 문서는 없었다).
+# 2026-09-17 실측한 첨부 확장자. 수집이 이 선언과 대조한다. 수집한 일곱 기관의 2026년 원본
+# 2,074개가 모두 이 셋이었다(한글 문서는 없었다).
 PUBLISHED_SUFFIXES = frozenset({".xls", ".xlsx", ".pdf"})
 # ICMS 목록이 게시글을 여는 호출. 주소는 `javascript:;`이고 번호는 이 호출에만 있다.
 ICMS_VIEW = re.compile(r"fn_icms_navi_common\(\s*'view'\s*,\s*'(?P<id>\d+)'")
@@ -35,8 +35,9 @@ ICMS_DOWNLOAD = "/icms/cmm/fms/FileDown.do"
 # 부서 열의 이름. 시청·달성군은 `부서명`, 남구는 `담당부서`다.
 DEPARTMENT_HEADERS = frozenset({"부서명", "담당부서"})
 # 첨부 이름 뒤의 크기 표기(`… .xlsx [16934 byte]`). 이름과 가르는 자리다. 남구는 그 뒤에
-# 아이콘(`alt="첨부파일"`)을 같은 링크 안에 두므로 마지막 `[…]` 뒤의 글자까지 뗀다.
-SIZE = re.compile(r"\s*\[[^\[\]]*\][^\[\]]*$")
+# 아이콘(`alt="첨부파일"`)을 같은 링크 안에 두므로 크기 뒤의 글자까지 뗀다. 시청은 크기를 적지
+# 않으므로 크기 모양인 괄호만 본다 — 이름의 `[붙임]`에서 자르면 확장자를 잃는다.
+SIZE = re.compile(r"\s*\[\s*[\d.,]+\s*(?:byte|[KMG]?B)\s*\][^\[\]]*$", re.IGNORECASE)
 # 수성구 집행표 화면. 대상자를 고르면 사이트가 이 주소로 폼을 보낸다(`fn_searchBoe`).
 OFFICIAL_LINK = "/front/businessOperatingExpense/icmsOperatingExpenseFront.do"
 # 수성구 대상자 목록의 구분선(`------------------`). 사람이 아니다.
@@ -45,7 +46,7 @@ SEPARATOR = re.compile(r"-+")
 GUNWI_ARTICLE = "bod_uid"
 GUNWI_FILE = re.compile(r"^/board_download\.do\?file_uid=(?P<id>\d+)$")
 # 군위군 작성자 열의 이름. 부서가 적힌다.
-WRITER_HEADER = "작성자"
+WRITER_HEADERS = frozenset({"작성자"})
 
 # 구의회 글을 가르는 글자. 구청 게시판에 의회 사무국 집행내역이 섞이고(대전 동구·서구 선례),
 # 수성구는 대상자 목록에 `의회사무국장`을 둔다. 의회는 집행기관이 아니라서 걸러 내고 센다.
@@ -163,6 +164,9 @@ class CouncilFilteredYhLibBoard(YhLibBoard):
     실측 2026-09-17: 동구는 `…집행내역(의회사무국장)`(2025년 게시), 서구는 `2026년 8월
     의회사무국장 업무추진비 집행내역`처럼 제목에 밝힌다. 서구 목록은 작성 부서 칸도 있다.
     """
+
+    # 부산 강서구 선언보다 좁다. 동구는 pdf·xlsx·xls, 서구는 xlsx만 실측했다.
+    published_suffixes = PUBLISHED_SUFFIXES
 
     def __init__(self, board: "Board", transport: Transport) -> None:
         super().__init__(board, transport)
@@ -290,7 +294,7 @@ class GunwiBoard:
             parser = listing.parse(
                 boards.request(self.transport, self.list_url, {**self.params, "pageNo": str(page)})
             )
-            writer_at = _column(parser.rows, frozenset({WRITER_HEADER}))
+            writer_at = _column(parser.rows, WRITER_HEADERS)
             for row in parser.rows:
                 article = listing.article_link(row, "", GUNWI_ARTICLE)
                 if article is None:
@@ -302,7 +306,7 @@ class GunwiBoard:
                     continue
                 posted = listing.posted_of(row)
                 page_url = boards.address(
-                    self.list_url, {**self.params, "bod_uid": post_id, "cmd": "258"}
+                    self.list_url, {**self.params, GUNWI_ARTICLE: post_id, "cmd": "258"}
                 )
                 attachments = (
                     () if skipped(post_id, posted) else self._attachments(post_id, page_url)
