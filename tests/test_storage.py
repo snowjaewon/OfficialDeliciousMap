@@ -288,6 +288,19 @@ def test_a_slow_host_gets_its_own_request_interval() -> None:
     assert transport.interval_for("https://www.songpa.go.kr/www/list.do") == 0.2
 
 
+def test_a_board_that_renders_its_whole_table_gets_its_own_timeout() -> None:
+    """한 응답에 게시판 전량을 담는 호스트는 공통 기다림 안에 답하지 못한다(#198).
+
+    기장군 실측(2026-09-17): 3,297줄 2.96MB 한 쪽에 116초가 걸린다. 공통 30초로는 네 번 모두
+    끊기고, 쪽을 나누면 새 줄이 위에 쌓여 내용이 밀린다(ADR-0008). 그 호스트만 넉넉히 기다린다.
+    """
+    from deliciousmap.transport import HttpTransport
+
+    transport = HttpTransport(timeout=30.0, host_timeouts={"www.gijang.go.kr": 300.0})
+    assert transport.timeout_for("https://www.gijang.go.kr/board/list.gijang") == 300.0
+    assert transport.timeout_for("https://www.songpa.go.kr/www/list.do") == 30.0
+
+
 def test_lookup_cache_does_not_rewrite_the_cache_per_lookup(tmp_path: Path) -> None:
     """조회 한 건이 캐시 파일을 다시 쓰지 않는다. 쌓인 조회는 실행을 닫을 때 한 번 합친다(#181)."""
     from deliciousmap.storage import LookupCache, append_cache_entries, read_cache

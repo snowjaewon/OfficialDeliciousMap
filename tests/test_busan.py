@@ -704,6 +704,26 @@ GIJANG_LIST = "https://www.gijang.go.kr/board/list.gijang"
 GIJANG_URL = f"{GIJANG_LIST}?boardId=BBS_0000147"
 
 
+GIJANG_HEADER = (
+    "부서",
+    "사용자",
+    "사용일자(일시)",
+    "사용장소(가맹점)",
+    "사용목적(내역)",
+    "사용금액(원)",
+    "대상인원(명)",
+    "사용방법",
+    "연도",
+    "월",
+)
+GIJANG_PARAMS = {
+    "boardId": "BBS_0000147",
+    "listCel": "1",
+    "listRow": GijangBoard.page_size,
+    "startPage": "1",
+}
+
+
 def gijang_row(department: str, spent: str, purpose: str) -> str:
     """실측한 기장군 목록 행. 한 줄이 집행 한 건이고 게시글도 첨부도 없다."""
     return (
@@ -713,55 +733,59 @@ def gijang_row(department: str, spent: str, purpose: str) -> str:
     )
 
 
-def test_gijang_board_keeps_every_spending_row_without_an_attachment() -> None:
-    """표가 곧 집행내역이라 받을 원본이 없다. 그 사실을 조용한 0건으로 두지 않는다."""
-    transport = FakeTransport(
-        dict(
-            [
-                response(
-                    GIJANG_LIST,
-                    {"boardId": "BBS_0000147", "startPage": "1"},
-                    "<html><body><table><thead>"
-                    + "<tr>"
-                    + "".join(
-                        f"<th>{name}</th>"
-                        for name in (
-                            "부서",
-                            "사용자",
-                            "사용일자(일시)",
-                            "사용장소(가맹점)",
-                            "사용목적(내역)",
-                            "사용금액(원)",
-                            "대상인원(명)",
-                            "사용방법",
-                            "연도",
-                            "월",
-                        )
-                    )
-                    + "</tr></thead><tbody>"
-                    + gijang_row("행정지원과(군수)", "2026. 3. 20.", "직원 경조사비")
-                    + gijang_row("행정지원과(군수)", "2026. 3. 21.", "간담회")
-                    + "</tbody></table>"
-                    + '<div class="page"><a href="/board/list.gijang?startPage=1">1</a></div>'
-                    + "</body></html>",
-                )
-            ]
+def gijang_listing(*rows: str, pages: str = "1/1") -> str:
+    """실측한 기장군 목록 한 쪽. 쪽 수는 표 위의 총게시물 줄이 밝힌다."""
+    head = "".join(f"<th>{name}</th>" for name in GIJANG_HEADER)
+    return (
+        f"<html><body><p>총게시물 <b>{len(rows)}</b>건 <span>｜</span> 페이지 : {pages}</p>"
+        f"<table><caption>업무 추진비 공개 게시판 리스트</caption>"
+        f"<thead><tr>{head}</tr></thead><tbody>{''.join(rows)}</tbody></table>"
+        '<div class="page"><a href="/board/list.gijang?startPage=1">1</a></div>'
+        "</body></html>"
+    )
+
+
+def gijang_transport(page: str) -> FakeTransport:
+    return FakeTransport(dict([response(GIJANG_LIST, GIJANG_PARAMS, page)]))
+
+
+def test_gijang_publishes_the_whole_table_as_one_html_original() -> None:
+    """표가 곧 집행내역이라 게시글이 없다. 게시판 전량 한 쪽이 원본 하나다(ADR-0008)."""
+    transport = gijang_transport(
+        gijang_listing(
+            gijang_row("행정지원과(군수)", "2026. 3. 20.", "직원 경조사비"),
+            gijang_row("행정지원과(군수)", "2026. 3. 21.", "간담회"),
         )
     )
-    postings = list(
+    (posting,) = list(
         GijangBoard(board(GIJANG_URL, GijangBoard), transport).postings(lambda *_: False)
     )
-    assert [item.posted.isoformat() for item in postings if item.posted] == [
-        "2026-03-20",
-        "2026-03-21",
-    ]
-    assert all(item.attachments == () for item in postings)
-    assert [item.title for item in postings] == ["직원 경조사비", "간담회"]
-    assert postings[0].department == "행정지원과(군수)"
-    # 열 이름 줄은 집행 줄이 아니다. 머리글이 `사용목적(내역)`이라는 게시글로 새지 않는다.
-    assert "사용목적(내역)" not in [item.title for item in postings]
-    # 게시글 번호가 없는 표라 집행일과 자리로 만든다. 같은 날 두 건이 겹치지 않아야 한다.
-    assert len({item.post_id for item in postings}) == 2
+    (attachment,) = posting.attachments
+    assert attachment.suffix == ".html"
+    # 원본 주소가 곧 출처다. 부서·연도·월 조건은 붙이지 않는다.
+    assert attachment.url == attachment.page_url
+    assert dict(transport.calls[0][1]) == GIJANG_PARAMS
+    # 게시글 번호는 줄 위치가 아니라 게시판 하나를 가리키는 고정 값이다.
+    assert posting.post_id == "expenses"
+    assert posting.posted is None and posting.spent_on is None
+
+
+def test_gijang_original_is_not_requested_again_once_collected() -> None:
+    """이미 받은 게시판은 목록만 읽고 원본을 다시 달지 않는다."""
+    transport = gijang_transport(gijang_listing(gijang_row("행정지원과", "2026. 3. 20.", "간담회")))
+    (posting,) = list(
+        GijangBoard(board(GIJANG_URL, GijangBoard), transport).postings(lambda *_: True)
+    )
+    assert posting.attachments == ()
+
+
+def test_a_gijang_table_beyond_one_page_is_not_guessed() -> None:
+    """새 줄은 위에 쌓여 둘째 쪽부터 내용이 밀린다. 한 쪽에 담기지 않으면 알린다."""
+    transport = gijang_transport(
+        gijang_listing(gijang_row("행정지원과", "2026. 3. 20.", "간담회"), pages="1/2")
+    )
+    with pytest.raises(boards.UnreadableBoard, match="one page"):
+        list(GijangBoard(board(GIJANG_URL, GijangBoard), transport).postings(lambda *_: False))
 
 
 def test_rfc3_reads_every_measured_date_format() -> None:

@@ -62,8 +62,11 @@ class HttpTransport:
         backoff: float = 0.0,
         session: bool = False,
         host_intervals: Mapping[str, float] | None = None,
+        host_timeouts: Mapping[str, float] | None = None,
     ) -> None:
         self.timeout = timeout
+        # 공통 기다림으로는 응답을 다 받지 못한다고 실측한 호스트만 여기서 따로 정한다.
+        self.host_timeouts = dict(host_timeouts or {})
         # 조회 응답과 원본 첨부는 크기가 달라 상한을 호출자가 정한다.
         self.limit = limit
         # 한 기관에 연달아 요청할 때의 최소 간격. 0이면 기다리지 않는다.
@@ -82,6 +85,10 @@ class HttpTransport:
         """이 주소에 둘 간격. 실측으로 따로 정한 호스트가 아니면 공통 간격이다."""
         return self.host_intervals.get(urllib.parse.urlsplit(url).hostname or "", self.interval)
 
+    def timeout_for(self, url: str) -> float:
+        """이 주소를 기다릴 시간. 실측으로 따로 정한 호스트가 아니면 공통 기다림이다."""
+        return self.host_timeouts.get(urllib.parse.urlsplit(url).hostname or "", self.timeout)
+
     def fetch(self, url: str, params: Mapping[str, str], headers: Mapping[str, str]) -> bytes:
         request = urllib.request.Request(f"{url}?{query(params)}", headers=dict(headers))
         return self._send(request)
@@ -93,13 +100,14 @@ class HttpTransport:
     def _send(self, request: urllib.request.Request) -> bytes:
         """일시적 실패만 다시 시도한다. 없는 자원과 잘못된 요청은 그대로 알린다."""
         interval = self.interval_for(request.full_url)
+        timeout = self.timeout_for(request.full_url)
         for attempt in range(1, self.attempts + 1):
             if interval > 0:
                 time.sleep(interval)
             try:
                 if self.cookies is not None:
                     self.cookies.add_cookie_header(request)
-                with urllib.request.urlopen(request, timeout=self.timeout) as response:
+                with urllib.request.urlopen(request, timeout=timeout) as response:
                     if self.cookies is not None:
                         self.cookies.extract_cookies(response, request)
                     return bytes(response.read(self.limit + 1))
