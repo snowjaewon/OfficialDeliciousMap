@@ -42,7 +42,7 @@
 | 매핑 원본 | 517 | 1,009 | +492 |
 | 미해결 원본 | 622 | 130 | −492 |
 
-레코드가 71% 늘었는데 마커는 22%만 늘었다. 이유는 6절의 좌표 손실이다 — 같은 실행에서
+레코드가 71% 늘었는데 마커는 22%만 늘었다. 이유는 5절의 좌표 손실이다 — 같은 실행에서
 이전에 있던 좌표 559건(고유 업소 242곳)이 [ADR-0011](../adr/0011-ask-providers-in-order.md)
 때문에 보류로 내려앉았다.
 
@@ -134,7 +134,17 @@ ADR-0011이 적어 둔 손실은 ADR-0009의 제공자 합의였고, ADR-0010의
 가리키는 후보가 인허가 것인데 그 제공자를 묻지 않아 후보 목록에 없다. 확정 줄
 (`data/manual/ulsan/geocode.jsonl`)은 그대로 있고 산출물의 `confirmation`도 그대로 실린다.
 
-이 손실은 이 이슈에서 고치지 않는다(2026-09-18 사용자 결정). 후속 이슈로 올린다.
+이 손실은 이 이슈에서 고치지 않는다(2026-09-18 사용자 결정). 후속 이슈
+[#234](https://github.com/snowjaewon/OfficialDeliciousMap/issues/234)로 올렸다.
+
+### 제외 범위인데 움직인 것
+
+- **`conflicting_evidence` 18건.** 이슈는 이 18건의 사람 판정을 제외 범위로 뒀다. 사람이 판정한
+  것이 아니라 [ADR-0011](../adr/0011-ask-providers-in-order.md)로 제공자 후보가 한쪽만 놓이면서
+  다툼이 사라져 `matched`가 됐다(5절). 사람이 볼 일이 18건 줄었다.
+- **다른 도시 산출물.** 4절의 `extract` 고침은 모든 도시가 함께 쓰는 파싱 동작이다. 대구·대전·
+  광주·부산 산출물은 다시 내지 않았으므로 그만큼 코드보다 옛 판정을 담고 있다. 다음 재실행에서
+  전에 미해결이던 원본 일부가 매핑될 수 있다. #176이 남긴 것과 같은 상태다.
 
 ## 6. 남긴 것
 
@@ -153,11 +163,19 @@ ADR-0011이 적어 둔 손실은 ADR-0009의 제공자 합의였고, ADR-0010의
 | `validation_failed` missing required roles | 2 | 중구 2 |
 | `validation_failed` merchant | 1 | 중구 1 |
 
+이슈 본문의 실측은 `validation_failed` 36건이었고 이번에 53건이 됐다. 셈은 36 − 2 + 19 = 53이다.
+옛 36건 중 2건(`amount_krw`)은 풀렸고(4절), 새로 판정한 509개 중 19건이 코드 검증에 걸려
+새 미해결이 됐다. 옛 34건은 모두 시청 `amount_unit`이고 그대로다. `no_table` 63 ·
+`unsupported_format` 14도 그대로다.
+
 열어 본 원인은 다음과 같다. 모두 원본 결함이거나 지금 추출 구조가 읽지 못하는 모양이라
 고쳐 읽지 않았다(폴백 정책).
 
 - **`no_table` 63건.** PDF 51개 중 47개는 글자 층이 없는 스캔본이라 `pdfplumber`가 글자를
   0자로 읽는다(OCR은 범위 밖). 글자가 있는 PDF는 4개, zip은 12개다.
+  **판정이 없던 509개와 형식은 겹치지만 원본은 겹치지 않는다.** 509개도 pdf 501 · zip 7 ·
+  ooxml 1이었고 그중 격자가 나오지 않은 것은 없다(571표를 모두 열었다). `no_table`은 형식이
+  아니라 그 파일에 표가 없어서 갈린 것이다.
 - **`unsupported_format` 14건.** 중구 zip 안이 OLE2(구 HWP)다. 파서 선택은 별도 티켓이다.
 - **amount_unit 34건.** 시청 `금액(천원)` 표에 원 단위 행이 섞여 있다. [#145](issue-145.md)의
   보류 결정 그대로 그 원본 전체를 미해결로 둔다(ADR-0008).
@@ -186,26 +204,27 @@ ADR-0011이 적어 둔 손실은 ADR-0009의 제공자 합의였고, ADR-0010의
 
 ## 8. 명령
 
-Git Bash, 저장소 루트에서 실행했다. 보조 스크립트는 `run.py` 하나다 — `.env`를 읽고(첫 인자가
-`1`이면 GEMINI 포함, `0`이면 제외) 나머지 인자로 `cli.main`을 부른다. `--raw-root`는 항상
-`C:\Users\설재원\deliciousmap-raw`다.
+Git Bash, 저장소 루트에서 실행했다. 모든 단계에 `--raw-root C:/Users/설재원/deliciousmap-raw`를
+붙였다. `.env`는 자동으로 읽히지 않으므로 키가 필요한 단계는 먼저 환경변수로 넣었다 —
+classify만 `GEMINI_*`를 넣고, geocode·closure·build는 `NAVER_SEARCH_*`·`NAVER_MAP_*`·
+`DATA_GO_KR_KEY`만 넣었다. headermap은 키 없이 돌려 답변 이력만 읽게 했다.
 
 ```text
-uv run python -m deliciousmap headermap --city ulsan       # 모델 없음, 답변 이력 검증 (5분 34초)
-uv run python -m deliciousmap parse --city ulsan           # 3분 0초
-run.py 1 classify --city ulsan                             # 5분 13초
-run.py 0 geocode --city ulsan                              # 11분, 종료 코드 0
-run.py 0 closure --city ulsan
-run.py 0 build --city ulsan
-# 기관마다(시청·중구·남구·동구·북구·울주군)
-run.py 0 headermap|parse --city ulsan --org <slug>
-run.py 1 classify --city ulsan --org <slug>
-run.py 0 geocode|closure|build --city ulsan --org <slug>
+# 도시
+uv run python -m deliciousmap headermap --city ulsan --raw-root "$RAW"   # 키 없음, 5분 34초
+uv run python -m deliciousmap parse    --city ulsan --raw-root "$RAW"    # 3분 0초
+uv run python -m deliciousmap classify --city ulsan --raw-root "$RAW"    # GEMINI, 5분 13초
+uv run python -m deliciousmap geocode  --city ulsan --raw-root "$RAW"    # NAVER, 11분, 종료 코드 0
+uv run python -m deliciousmap closure  --city ulsan --raw-root "$RAW"
+uv run python -m deliciousmap build    --city ulsan --raw-root "$RAW"
+# 기관마다(ulsan-city·ulsan-junggu·ulsan-namgu·ulsan-donggu·ulsan-bukgu·ulsan-ulju)
+uv run python -m deliciousmap <단계> --city ulsan --org <slug> --raw-root "$RAW"
 uv run python -m deliciousmap.ci check-data --data-root data
 ```
 
-판정 초안·저장에 쓴 스크립트는 저장소에 남기지 않았다. 판정 결과는
-`data/ulsan/headermap-answers-v1.jsonl`에 그대로 있고, 그 파일만으로 headermap을 다시 낼 수 있다.
+환경변수를 넣고 `cli.main`을 부르는 실행기(`run.py`)와 판정 초안·저장 스크립트는 저장소에 남기지
+않았다. 판정 결과는 `data/ulsan/headermap-answers-v1.jsonl`에 그대로 있고, 그 파일만으로
+headermap을 다시 낼 수 있다.
 
 ## 9. 검사 (완료 기준 6)
 
@@ -218,8 +237,9 @@ uv run python -m deliciousmap.ci check-data --data-root data
 | `uv run ruff format --check . --extend-exclude ".pytest-tmp-180,.pytest-tmp-180b"` | 206 files already formatted |
 | `git diff --check` | 출력 없음 |
 | `uv run python -m deliciousmap.ci check-data --data-root data` | 종료 코드 0 (완료 기준 3) |
-| `gitleaks git --log-opts="develop..HEAD"` | 9절 아래 |
+| `gitleaks git --log-opts="origin/develop..HEAD"` | 4 commits, no leaks found |
 
 `--extend-exclude`는 다른 세션이 남긴 접근 불가 폴더(`.pytest-tmp-180*`) 때문이다.
-산출물에서 가장 큰 파일은 `geocode-history-v2.002.jsonl` 19,985,922바이트이고 모두 ADR-0001의
-20MB 안이다.
+울산 산출물에서 가장 큰 파일은 `data/ulsan/geocode-history-v2.002.jsonl` 19,985,922바이트다.
+`data/` 전체에서 가장 큰 파일은 `data/gwangju/geocode-history-v2.015.jsonl` 19,999,653바이트이며
+이번 변경과 무관하다. 둘 다 ADR-0001의 20MB 안이다.

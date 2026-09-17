@@ -404,13 +404,13 @@ def test_month_and_day_with_a_time_are_not_read_as_a_two_digit_year() -> None:
 
 
 def test_soft_hyphens_are_not_part_of_a_date() -> None:
-    """2026-09-18 북구 실측: PDF가 `2026­04­14 12:40`처럼 보이지 않는 이음표를 싣는다.
+    """2026-09-18 북구 실측: PDF가 `2026\u00ad04\u00ad14 12:40`처럼 보이지 않는 이음표를 싣는다.
 
     U+00AD는 줄을 나눌 때만 보이는 서식 글자다. 원본에 적힌 날짜는 2026년 4월 14일이며
     이 글자를 값으로 읽으면 그 원본 전체가 집행일 실패로 남는다.
     """
-    assert parse_spent_on("2026­04­14 12:40") == SpentOn(2026, 4, 14)
-    assert parse_spent_on("2026.­04.14.") == SpentOn(2026, 4, 14)
+    assert parse_spent_on("2026\u00ad04\u00ad14 12:40") == SpentOn(2026, 4, 14)
+    assert parse_spent_on("2026.\u00ad04.14.") == SpentOn(2026, 4, 14)
 
 
 def test_repeated_separators_read_the_same_date() -> None:
