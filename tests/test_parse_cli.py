@@ -356,6 +356,23 @@ def test_rerun_reuses_recorded_answers_instead_of_asking_again(
     assert source[:16] in entries[0]["evidence"]
 
 
+def test_organization_run_reuses_the_city_answers_instead_of_asking_again(
+    tmp_path: Path, configured: None
+) -> None:
+    """기관 실행이 도시가 받은 답을 다시 묻지 않는다(대전 #175 실측: 기관마다 다시 물어 답이
+    갈리고, 도시에 없는 기관 레코드가 생겼다). 답 이력은 도시에 하나다."""
+    record_spending(tmp_path)
+    (source,) = publish(tmp_path, ("1분기.xls", workbook(QUARTER)))
+    assert publish(tmp_path, ("1분기.xls", workbook(QUARTER)), org=ORG) == [source]
+    wrong = header_answer(spent_on=4)
+    assert run(tmp_path, "headermap", FakeModel(headers=[wrong, wrong])) == 0
+    again = FakeModel(headers=[header_answer()])
+    assert run(tmp_path, "headermap", again, org=ORG) == 0
+    assert again.prompts == []
+    assert payload(tmp_path, "headermap", org=ORG) == payload(tmp_path, "headermap")
+    assert not (tmp_path / DATA / "gwangju" / "orgs" / ORG / "headermap-answers-v1.jsonl").exists()
+
+
 def test_truncated_reply_is_recorded_and_not_asked_again_automatically(
     tmp_path: Path, configured: None
 ) -> None:
