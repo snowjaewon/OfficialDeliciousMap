@@ -237,13 +237,16 @@ def _as_raw_root_relative(value: object) -> object:
     드라이브·루트가 붙은 값은 `raw_root / path`에서 왼쪽을 버려 그 PC의 `--raw-root`와 무관하게
     수집 당시의 경로를 연다. 역슬래시는 Windows 밖에서 구분자가 아니라 파일 이름 한 낱말이
     되어 열리지 않는다. 둘 다 산출물에 들어가기 전에 막는다.
+
+    경로 값을 준 쪽은 그 PC의 문법으로 적었으므로 먼저 `/` 표기로 옮긴다. Windows에서
+    `Path(r"a\\b")`는 칸 둘이지만 Linux에서는 역슬래시를 담은 이름 하나이고, 옮긴 뒤의 글자가
+    그 차이를 그대로 드러내 뒤쪽 검사에 걸린다. 드라이브는 UNC 경로(`//서버/공유`)도 함께 잡는다.
     """
     if isinstance(value, PurePath):
         value = value.as_posix()
     if not isinstance(value, str):
         return value
-    windows = PureWindowsPath(value)
-    if not value or "\\" in value or windows.drive or windows.is_absolute() or value[0] == "/":
+    if not value or "\\" in value or PureWindowsPath(value).drive or value[0] == "/":
         raise ValueError("an original's path must be relative to raw-root and separated by '/'")
     return value
 
@@ -257,7 +260,8 @@ RawRootRelative = Annotated[
 
 
 class SourceRef(Contract):
-    # 원본이 있는 곳. `--raw-root` 기준 상대 경로이며 도시/기관/게시판/이름으로 적는다.
+    # 원본이 있는 곳. `--raw-root` 기준 상대 경로이며 수집은 도시/기관/게시판/이름으로 적는다.
+    # 이어 붙인 자리가 raw-root 안·저장소 밖인지는 산출물을 쓸 때 `ArtifactStore`가 본다.
     path: RawRootRelative
     source_hash: Sha256
     organization: Text

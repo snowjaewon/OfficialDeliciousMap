@@ -421,7 +421,7 @@ def _sources(
             body = path.read_bytes()
             references.append(
                 SourceRef(
-                    path=(board_dir / name).as_posix(),
+                    path=board_dir / name,
                     source_hash=hashlib.sha256(body).hexdigest(),
                     organization=organization,
                     board=board,

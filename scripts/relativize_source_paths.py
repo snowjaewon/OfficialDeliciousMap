@@ -42,15 +42,14 @@ def _move_fetch(path: Path) -> bool:
     envelope = _envelope(path)
     city = envelope["city"]
     sources = envelope["payload"].get("sources") or []
-    moved = [
-        {
-            **source,
-            "path": relative_original(
-                source["path"], city, source["organization"], source["board"]
-            ),
-        }
-        for source in sources
-    ]
+    moved = []
+    for source in sources:
+        try:
+            place = relative_original(source["path"], city, source["organization"], source["board"])
+        except ValueError as exc:
+            # 경로 자체는 알리지 않는다. 어느 레코드인지는 원본 해시로 가리킨다.
+            raise ValueError(f"{path.as_posix()} {source['source_hash']}: {exc}") from exc
+        moved.append({**source, "path": place})
     if moved == sources:
         return False
     envelope["payload"]["sources"] = moved
@@ -58,19 +57,25 @@ def _move_fetch(path: Path) -> bool:
     return True
 
 
-def _resign_headermap(path: Path, fetch: Path) -> bool:
+def _signed_fetch(path: Path) -> str | None:
+    """headermap 봉투가 서명해 둔 fetch 해시. headermap이 없으면 서명도 없다."""
+    return None if not path.exists() else _envelope(path)["dependencies"].get("fetch.json")
+
+
+def _resign_headermap(path: Path, fetch: Path) -> None:
     """headermap 봉투가 서명한 fetch 해시를 옮긴 뒤의 값으로 갱신한다."""
     envelope = _envelope(path)
-    digest = artifact_digest(fetch)
-    if envelope["dependencies"].get("fetch.json") == digest:
-        return False
-    envelope["dependencies"]["fetch.json"] = digest
+    envelope["dependencies"]["fetch.json"] = artifact_digest(fetch)
     write_text(path, artifact_text(envelope))
-    return True
 
 
 def migrate(data_root: Path) -> tuple[Path, ...]:
-    """바꾼 파일을 돌려준다. 이미 옮긴 저장소에 다시 돌리면 빈 값이고 파일도 그대로다."""
+    """바꾼 파일을 돌려준다. 이미 옮긴 저장소에 다시 돌리면 빈 값이고 파일도 그대로다.
+
+    이관이 만든 변화만 봉인한다. 옮기기 전부터 서명이 어긋난 headermap은 이 도구가 낡게 한
+    것이 아니므로 새 해시로 덮지 않는다 — 덮으면 `storage`가 내야 할 `stale artifact` 거부를
+    이 도구가 지나가게 한다.
+    """
     changed: list[Path] = []
     orphans = {
         path
@@ -80,10 +85,15 @@ def migrate(data_root: Path) -> tuple[Path, ...]:
     if orphans:
         raise ValueError(f"headermap without its fetch artifact: {len(orphans)} files")
     for fetch in sorted(data_root.rglob("fetch.json")):
-        if _move_fetch(fetch):
-            changed.append(fetch)
         headermap = fetch.parent / "headermap.json"
-        if headermap.exists() and _resign_headermap(headermap, fetch):
+        signed = _signed_fetch(headermap)
+        if signed is not None and signed != artifact_digest(fetch):
+            raise ValueError(f"{headermap.as_posix()}: already stale before this migration")
+        if not _move_fetch(fetch):
+            continue
+        changed.append(fetch)
+        if signed is not None:
+            _resign_headermap(headermap, fetch)
             changed.append(headermap)
     return tuple(changed)
 

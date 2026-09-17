@@ -33,8 +33,8 @@ def source(path: str) -> dict[str, str]:
 @pytest.mark.parametrize(
     "path",
     [
-        r"C:\Users\pc\deliciousmap-raw\busan\busan-city\expenses-mayor\21945-1.xlsx",
-        "C:/Users/pc/deliciousmap-raw/busan/busan-city/expenses-mayor/21945-1.xlsx",
+        r"C:\Users\합성계정\deliciousmap-raw\busan\busan-city\expenses-mayor\21945-1.xlsx",
+        "C:/Users/합성계정/deliciousmap-raw/busan/busan-city/expenses-mayor/21945-1.xlsx",
         "/raw/busan/busan-city/expenses-mayor/21945-1.xlsx",
         r"busan\busan-city\expenses-mayor\21945-1.xlsx",
         "",
@@ -48,7 +48,7 @@ def test_an_original_outside_the_one_notation_is_refused(path: str) -> None:
 
 def test_a_fetch_artifact_carrying_an_absolute_original_is_refused() -> None:
     """산출물 검증도 같은 계약을 쓴다. 절대 경로를 담은 fetch는 저장소에 닿지 못한다."""
-    absolute = r"C:\Users\pc\deliciousmap-raw\busan\busan-city\expenses-mayor\21945-1.xlsx"
+    absolute = r"C:\Users\합성계정\deliciousmap-raw\busan\busan-city\expenses-mayor\21945-1.xlsx"
     with pytest.raises(ValidationError, match="relative to raw-root"):
         FetchOutput.model_validate({"sources": [source(absolute)]})
 
@@ -100,7 +100,7 @@ def envelope(path: Path) -> dict:
 def test_migration_strips_the_collecting_pc_prefix_from_every_original(tmp_path: Path) -> None:
     fetch, _ = committed(
         tmp_path / "data",
-        r"C:\Users\pc\orca\deliciousmap-raw\busan\busan-city\expenses-mayor\21945-1.xlsx",
+        r"C:\Users\합성계정\orca\deliciousmap-raw\busan\busan-city\expenses-mayor\21945-1.xlsx",
         r"C:\Users\상대\deliciousmap-raw\busan\busan-city\expenses-mayor\21945-2.xlsx",
     )
     assert migrate(tmp_path / "data") == (fetch, fetch.parent / "headermap.json")
@@ -114,7 +114,7 @@ def test_migration_signs_the_moved_fetch_in_the_headermap_envelope(tmp_path: Pat
     """두 가지를 같이 하지 않으면 그 사이 저장소 상태에서 parse가 `stale artifact`로 멈춘다."""
     fetch, headermap = committed(
         tmp_path / "data",
-        r"C:\Users\pc\orca\deliciousmap-raw\busan\busan-city\expenses-mayor\21945-1.xlsx",
+        r"C:\Users\합성계정\orca\deliciousmap-raw\busan\busan-city\expenses-mayor\21945-1.xlsx",
     )
     before = envelope(headermap)["dependencies"]["fetch.json"]
     migrate(tmp_path / "data")
@@ -125,7 +125,7 @@ def test_migration_signs_the_moved_fetch_in_the_headermap_envelope(tmp_path: Pat
 def test_migration_changes_nothing_on_a_second_run(tmp_path: Path) -> None:
     fetch, headermap = committed(
         tmp_path / "data",
-        r"C:\Users\pc\orca\deliciousmap-raw\busan\busan-city\expenses-mayor\21945-1.xlsx",
+        r"C:\Users\합성계정\orca\deliciousmap-raw\busan\busan-city\expenses-mayor\21945-1.xlsx",
     )
     migrate(tmp_path / "data")
     moved = (fetch.read_bytes(), headermap.read_bytes())
@@ -135,6 +135,22 @@ def test_migration_changes_nothing_on_a_second_run(tmp_path: Path) -> None:
 
 def test_migration_refuses_an_original_that_is_not_under_its_own_board(tmp_path: Path) -> None:
     """도시·기관·게시판으로 끝나지 않으면 접두사를 뗄 자리를 알 수 없다. 조용히 넘기지 않는다."""
-    committed(tmp_path / "data", r"C:\Users\pc\deliciousmap-raw\어딘가\21945-1.xlsx")
+    committed(tmp_path / "data", r"C:\Users\합성계정\deliciousmap-raw\어딘가\21945-1.xlsx")
     with pytest.raises(ValueError, match="busan/busan-city/expenses-mayor"):
         migrate(tmp_path / "data")
+
+
+def test_migration_does_not_sign_a_headermap_that_was_already_stale(tmp_path: Path) -> None:
+    """이관이 낡게 한 것이 아닌 서명은 덮지 않는다. 덮으면 `stale artifact` 거부를 지나간다."""
+    fetch, headermap = committed(
+        tmp_path / "data",
+        r"C:\Users\합성계정\deliciousmap-raw\busan\busan-city\expenses-mayor\21945-1.xlsx",
+    )
+    stale = envelope(headermap)
+    stale["dependencies"]["fetch.json"] = "f" * 64
+    artifact(headermap, stale)
+    before = fetch.read_bytes()
+    with pytest.raises(ValueError, match="already stale before this migration"):
+        migrate(tmp_path / "data")
+    assert fetch.read_bytes() == before
+    assert envelope(headermap)["dependencies"]["fetch.json"] == "f" * 64
