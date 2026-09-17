@@ -66,6 +66,10 @@ parse 산출물의 `excluded`에 `table1:R<행> spent_on`으로 남으며, 지�
 
 ## 4. 이 구현으로 돌린 결과 — 원본은 받았고 레코드는 아직 0건이다
 
+> 아래는 #198 구현 시점의 값이다. 뒤의 11줄(상호 5·금액 6)도 행 단위로 빼기로
+> [#205](https://github.com/snowjaewon/OfficialDeliciousMap/issues/205)에서 정했고, 그 뒤 다시 흘린
+> 값은 [issue-205.md](issue-205.md)에 있다(`records=421`).
+
 2026-09-17에 세 단계를 실제로 돌렸다(`data/busan/orgs/busan-gijang/`).
 
 - `fetch`: `.html` 원본 1건(2,959,657 B, `container=html`), `empty_reason` 없음,
