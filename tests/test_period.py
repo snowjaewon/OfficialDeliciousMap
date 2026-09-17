@@ -57,10 +57,10 @@ from deliciousmap.period import (
         ("2026년 제1분기 업무추진비 집행내역(합성과)", Span(date(2026, 1, 1), date(2026, 3, 31))),
         ("2026년 제3분기 업무추진비 집행내역(합성과)", Span(date(2026, 7, 1), date(2026, 9, 30))),
         ("합성과 2026년도 2분기 업무추진비 내역", Span(date(2026, 4, 1), date(2026, 6, 30))),
-        # 대구 수성구 만촌1동장은 해 뒤 마침표에 달을 붙여 제목 끝 괄호에 둔다(2026-09-17 실측
-        # 8건, `(2026.1)`~`(2026.8)`). 그 해 전체로 읽으면 7·8월이 상반기 대상으로 들어온다.
-        ("합성동장업무추진비(2026.1)", Span(date(2026, 1, 1), date(2026, 1, 31))),
-        ("합성동장업무추진비(2026.8)", Span(date(2026, 8, 1), date(2026, 8, 31))),
+        # 해 뒤 마침표에 달을 붙여 제목 끝 괄호에 둔 표기(대구 수성구 만촌1동장 8건 ·
+        # 부산 중구 1건, 2026-09-17 실측)는 게시일이 없는 게시판에서만 읽는다. 게시일이 있으면
+        # 지금처럼 그 해 전체다(아래 `test_a_dotted_month_is_read_only_without_a_posting_date`).
+        ("합성동장업무추진비(2026.1)", Span(date(2026, 1, 1), date(2026, 12, 31))),
     ],
 )
 def test_title_declares_the_measured_spending_period(title: str, expected: Span) -> None:
@@ -168,6 +168,16 @@ def test_an_unreadable_title_is_left_out_even_when_posted_in_the_target_year() -
     assert targets(date(2026, 5, 1), "합성과 업무추진비 집행내역") is False
 
 
+def test_a_dotted_month_is_read_only_without_a_posting_date() -> None:
+    """게시일이 있는 게시판의 같은 표기(부산 중구 실측 1건)는 읽지 않는다.
+
+    읽으면 커밋된 부산 산출물이 코드와 어긋난다. 부산은 다른 담당자 영역이라 이 규칙을 넓히는
+    일은 후속 이슈로 남긴다(2026-09-18 사용자 결정).
+    """
+    assert exclusion(date(2026, 9, 1), "합성과과장급이상업무추진비사용내역(2026.7)") is None
+    assert exclusion(None, "합성과과장급이상업무추진비사용내역(2026.7)") == "declared_out_of_range"
+
+
 def test_a_period_that_ends_before_it_starts_is_not_read() -> None:
     """거꾸로 적힌 범위는 뒤집어 고치지 않는다. 밝히지 않은 것으로 둔다."""
     assert declared("2026년 4~1분기 업무추진비 집행내역(합성과)") is None
@@ -187,6 +197,9 @@ def test_a_period_that_ends_before_it_starts_is_not_read() -> None:
         # 대구 수성구 461건).
         (None, "2026년 1분기 업무추진비 집행내역(합성과)", None),
         (None, "2017. 4월 업무추진비 집행내역 공개", "declared_out_of_range"),
+        # 게시일이 없는 게시판(대구 수성구)의 `(2026.N)`은 그 달로 읽는다.
+        (None, "합성동장업무추진비(2026.3)", None),
+        (None, "합성동장업무추진비(2026.8)", "declared_out_of_range"),
         # 해가 없는 제목은 게시일 없이 해를 정할 수 없다. 게시일을 읽지 못한 갈래로 센다.
         (None, "6월 업무추진비 사용 내역", "posted_out_of_range"),
         (None, "업무추진비 공개 안내", "posted_out_of_range"),

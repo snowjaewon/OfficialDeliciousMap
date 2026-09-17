@@ -41,12 +41,15 @@ DECLARATION = re.compile(
     r"|제?\s*(?P<quarter>[1-4])\s*분기"
     rf"|{MONTHS}"
     r"|(?P<half>[상하])\s*반기"
-    # 해 뒤 마침표에 달만 붙여 괄호를 닫는 표기. 대구 수성구 만촌1동장(2026-09-17 실측 8건,
-    # `(2026.1)`~`(2026.8)`)이다. 마침표 바로 뒤이고 괄호가 바로 닫혀야 달로 읽어
-    # 날짜(`2026.1.5`)와 섞지 않는다.
-    r"|(?<=\.)(?P<dotted_month>1[0-2]|[1-9])(?=\))"
     r")?"
 )
+
+# 해 뒤 마침표에 달만 붙여 괄호를 닫는 표기. 대구 수성구 만촌1동장(2026-09-17 실측 8건,
+# `(2026.1)`~`(2026.8)`)이다. 마침표 바로 뒤이고 괄호가 바로 닫혀야 달로 읽어 날짜(`2026.1.5`)와
+# 섞지 않는다. 게시일이 없는 게시판에서만 읽는다 — 게시일이 있는 게시판에도 같은 표기가 있으나
+# (부산 중구 실측 1건) 거기까지 넓히면 커밋된 부산 산출물이 코드와 어긋난다. 부산은 다른 담당자
+# 영역이라 넓히는 일은 후속 이슈로 남긴다(2026-09-18 사용자 결정).
+DOTTED_MONTH = re.compile(r"(?<!\d)(?P<year>\d{4})\.(?P<month>1[0-2]|[1-9])\)")
 
 # `년` 없이 제목 맨 앞에 적은 네 자리 해. 서울 구로 게시판(2026-09-14 실측 28건)의
 # `2026 3월 …`(3건)과 `2026 …집행내역(4월)`(25건)이고, 광주 게시판에도 앞 모양이 8종 11건
@@ -174,7 +177,7 @@ def exclusion(
     if posted is None:
         # 게시일이 없는 게시판(대구 수성구의 해마다 화면, 2026-09-17 사용자 결정)은 제목이 밝힌
         # 해와 기간으로 가른다. 해를 밝히지 않은 제목은 가를 근거가 없어 게시일 갈래로 센다.
-        span = declared(title)
+        span = _dotted_month(title) or declared(title)
         if span is None:
             return "posted_out_of_range"
         return None if span.overlaps(REPORTING) else "declared_out_of_range"
@@ -186,6 +189,15 @@ def exclusion(
     if span is None:
         return "undeclared_in_year"
     return None if span.overlaps(REPORTING) else "declared_out_of_range"
+
+
+def _dotted_month(title: str | None) -> Span | None:
+    """제목 끝 괄호의 `해.달` 표기가 가리키는 달. 게시일이 없는 게시판에서만 읽는다."""
+    found = DOTTED_MONTH.search(title or "")
+    if found is None:
+        return None
+    year, month = int(found["year"]), int(found["month"])
+    return Span(date(year, month, 1), date(year, month, calendar.monthrange(year, month)[1]))
 
 
 def _yearless_month(title: str | None, posted: date) -> Span | None:
@@ -223,7 +235,7 @@ def _months(found: re.Match[str]) -> tuple[int, int]:
         return _quarter(int(groups["quarter"]), int(groups["quarter"]))
     if groups.get("first_month"):
         return int(groups["first_month"]), int(groups["last_month"])
-    month = groups.get("month") or groups.get("bracketed_month") or groups.get("dotted_month")
+    month = groups.get("month") or groups.get("bracketed_month")
     if month:
         return int(month), int(month)
     if groups.get("half"):
