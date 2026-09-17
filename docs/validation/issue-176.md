@@ -273,3 +273,24 @@ run.py 1 classify --city daegu --org <slug>
 run.py 0 geocode|closure|build --city daegu --org <slug>      # 동구·서구는 geocode --retry-failed
 uv run python -m deliciousmap.ci check-data --data-root data
 ```
+
+## 11. 검사 (완료 기준 9)
+
+2026-09-18 브랜치 끝(`0b171f8`)에서 저장소 루트, Git Bash로 돌렸다.
+
+| 명령 | 결과 |
+| --- | --- |
+| `uv run pytest` | 1093 passed |
+| `uv run ruff check . --extend-exclude ".pytest-tmp-180,.pytest-tmp-180b"` | All checks passed |
+| `uv run ruff format --check . --extend-exclude ".pytest-tmp-180,.pytest-tmp-180b"` | 205 files already formatted |
+| `git diff --check` | 출력 없음 |
+| `gitleaks git --log-opts="develop..HEAD"` | 11 commits, no leaks found |
+| `uv run python -m deliciousmap.ci check-data --data-root data` | 종료 코드 0 |
+
+`--extend-exclude`는 다른 세션이 남긴 접근 불가 폴더(`.pytest-tmp-180*`) 때문이다.
+
+코드 리뷰 뒤 `_no_spending`이 날짜를 임의의 해로 읽던 것을 "날짜 칸에 숫자가 없음"으로 바꿨다.
+바뀐 코드로 임시 `--data-root`에서 도시 parse를 다시 돌렸고, `parse.json`·`records.csv`가 커밋본과
+바이트 단위로 같았다. 같은 도시 headermap을 한 번 더 돌리면 미해결 109건과 매핑 수는 같다. 다만
+첫 실행이 공통 캐시에 쌓은 같은 헤더의 다른 변형(첫 지출 행이 다른 판정)을 먼저 집어
+`cache` 참조와 `data_start_row`가 바뀐다. 그래서 커밋본은 첫 실행 결과로 두었다.
