@@ -17,6 +17,7 @@ from deliciousmap.scrapers.busan import (
     GijangBoard,
     MixedRfc3Board,
     Rfc3Board,
+    YhLibBoard,
 )
 
 
@@ -289,8 +290,6 @@ def test_busan_held_organizations_declare_a_reason_and_no_board() -> None:
     held = {org.slug: org.hold_reason for org in target.organizations if org.hold_reason}
     assert held == {
         "busan-yeongdo": "bot_blocked",
-        "busan-nam": "bot_blocked",
-        "busan-gangseo": "bot_blocked",
         "busan-saha": "board_lost",
     }
     assert all(not org.boards for org in target.organizations if org.hold_reason is not None)
@@ -304,14 +303,14 @@ def test_busan_collection_records_the_hold_reason_of_every_held_organization(
         def fetch(self, url: str, params: dict[str, str], headers: dict[str, str]) -> bytes:
             raise AssertionError("a held organization must not be requested")
 
-    target = select_target(CITIES, "busan", "busan-nam")
+    target = select_target(CITIES, "busan", "busan-yeongdo")
     output = collect(
         target,
         Paths(Path.cwd(), tmp_path / "raw", tmp_path / "data", tmp_path / "output"),
         Unused(),  # type: ignore[arg-type]
     )
     assert output.sources == ()
-    assert output.empty_reason == "collection held: busan-nam=bot_blocked"
+    assert output.empty_reason == "collection held: busan-yeongdo=bot_blocked"
 
 
 YEONJE_LIST = "https://www.yeonje.go.kr/portal/bbs/list.do"
@@ -1080,3 +1079,172 @@ def test_a_failed_walk_still_reports_what_it_already_read(tmp_path: Path) -> Non
     assert walked.failure is FailureCause.SERVICE_UNAVAILABLE
     # 끊기기 전까지 읽은 목록도 남는다. 다음 실행이 목록을 다시 만들지 않아도 된다.
     assert (tmp_path / "raw" / "listing.jsonl").exists()
+
+
+def test_listing_captures_data_attributes_of_a_link() -> None:
+    """실측(강서구 yhLib): 게시글 번호가 `href`·`onclick`이 아니라 `data-req-get-p-idx`에 있다."""
+    from deliciousmap.scrapers import listing as listing_module
+
+    parser = listing_module.parse(
+        b"<table><tr><td class='list_tit'>"
+        b"<a href='#' onclick=\"yhLib.inline.post(this); return false;\" "
+        b"data-req-get-p-idx='409627'>expense posting</a>"
+        b"</td></tr></table>"
+    )
+    link = parser.rows[0].cells[0].links[0]
+    assert dict(link.data)["req-get-p-idx"] == "409627"
+
+
+GS_LIST = "https://www.bsgangseo.go.kr/portal/board/post/list.do"
+GS_VIEW = "https://www.bsgangseo.go.kr/portal/board/post/view.do"
+GS_DOWN = "https://www.bsgangseo.go.kr/common/file/download.do"
+GS_IDS = {"bcIdx": "534", "mid": "0503030100"}
+GS_URL = f"{GS_LIST}?bcIdx=534&mid=0503030100"
+
+
+def gs_row(post_id: str, title: str, dept: str, posted: str) -> str:
+    """실측한 강서구 yhLib 목록 행. 게시글 번호는 `data-req-get-p-idx` 속성에만 있다."""
+    return (
+        "<tr>"
+        "<td class='list_num'>2720</td>"
+        "<td class='list_tit'>"
+        f"<a href='#' onclick=\"yhLib.inline.post(this); return false;\" "
+        f"data-req-get-p-idx='{post_id}'>{title}</a></td>"
+        "<td class='list_file'><img src='/common/img/board/xls.gif' alt='엑셀 파일'/></td>"
+        f"<td class='list_write'>{dept}</td>"
+        f"<td class='list_date'>{posted}</td>"
+        "<td class='list_hit'>13</td>"
+        "</tr>"
+    )
+
+
+def gs_listing(*rows: str, last_page: int = 1) -> str:
+    """실측한 강서구 목록. 쪽 넘김이 `goPage(N)` 호출로 마지막 쪽을 밝힌다."""
+    pages = "".join(
+        f"<a href='#' onclick='goPage({page}); return false;'>{page}</a>"
+        for page in range(1, last_page + 1)
+    )
+    return (
+        f"<html><body><table>{''.join(rows)}</table>"
+        f"<div class='paginate'>{pages}"
+        f"<a href='#' onclick='goPage({last_page}); return false;' class='btn_last'>맨끝</a>"
+        "</div></body></html>"
+    )
+
+
+def gs_detail(*files: tuple[str, str, str]) -> str:
+    """실측한 강서구 본문. 첨부는 내려받기와 전용뷰어 링크가 쌍으로 붙는다."""
+    return (
+        "<html><body><dl class='view_file'><dd><ul class='file_list'>"
+        + "".join(
+            "<li class='file-item'>"
+            f"<a href='#' onclick=\"yhLib.file.download('{file_id}','{serial}'); return false;\" "
+            f"class='download'><span class='mR5'>{name}</span>"
+            "<span class='file_size'>[0.02MB]</span></a>"
+            f"<a href='#' onclick=\"yhLib.file.preview('{file_id}','{serial}'); return false;\" "
+            "class='btn_preview'><span class='blank'>바로 보기</span></a>"
+            "</li>"
+            for file_id, serial, name in files
+        )
+        + "</ul></dd></dl></body></html>"
+    )
+
+
+def test_yhlib_reads_the_listing_and_opens_the_detail_for_attachments() -> None:
+    file_id = "070430853006FC7C69451C317715E0A2F45A57715DB42714313ADE79CF0E22FA"
+    serial = "125EB0AE64ED2AE7001CFD6CFA9E31E8"
+    transport = FakeTransport(
+        dict(
+            [
+                response(
+                    GS_LIST,
+                    {**GS_IDS, "page": "1"},
+                    gs_listing(
+                        gs_row(
+                            "409627",
+                            "2026년 8월 관광전략추진단 업무추진비 사용내역",
+                            "관광전략추진단",
+                            "2026-09-08",
+                        )
+                    ),
+                ),
+                response(
+                    GS_VIEW,
+                    {**GS_IDS, "idx": "409627"},
+                    gs_detail(
+                        (file_id, serial, "관광전략추진단 업무추진비 사용내역(2026년8월).xlsx")
+                    ),
+                ),
+            ]
+        )
+    )
+    postings = list(YhLibBoard(board(GS_URL, YhLibBoard), transport).postings(lambda *_: False))
+    assert [item.post_id for item in postings] == ["409627"]
+    assert postings[0].title == "2026년 8월 관광전략추진단 업무추진비 사용내역"
+    assert postings[0].department == "관광전략추진단"
+    assert postings[0].posted is not None
+    assert postings[0].posted.isoformat() == "2026-09-08"
+    attachment = postings[0].attachments[0]
+    assert attachment.suffix == ".xlsx"
+    assert f"atchFileId={file_id}" in attachment.url
+    assert f"fileSn={serial}" in attachment.url
+    assert "common/file/download.do" in attachment.url
+
+
+def test_yhlib_walks_every_page_the_listing_declares() -> None:
+    transport = FakeTransport(
+        dict(
+            [
+                response(
+                    GS_LIST,
+                    {**GS_IDS, "page": "1"},
+                    gs_listing(gs_row("1", "8월 총무과", "총무과", "2026-09-01"), last_page=3),
+                ),
+                response(
+                    GS_LIST,
+                    {**GS_IDS, "page": "2"},
+                    gs_listing(gs_row("2", "7월 총무과", "총무과", "2026-08-01"), last_page=3),
+                ),
+                response(
+                    GS_LIST,
+                    {**GS_IDS, "page": "3"},
+                    gs_listing(gs_row("3", "6월 총무과", "총무과", "2026-07-01"), last_page=3),
+                ),
+            ]
+        )
+    )
+    postings = list(YhLibBoard(board(GS_URL, YhLibBoard), transport).postings(lambda *_: True))
+    assert [item.post_id for item in postings] == ["1", "2", "3"]
+    assert [url for url, _ in transport.calls] == [GS_LIST] * 3
+
+
+def test_yhlib_keeps_a_posting_that_has_no_attachment() -> None:
+    transport = FakeTransport(
+        dict(
+            [
+                response(
+                    GS_LIST,
+                    {**GS_IDS, "page": "1"},
+                    gs_listing(gs_row("500", "자료 없음", "감사담당관", "2026-09-02")),
+                ),
+                response(GS_VIEW, {**GS_IDS, "idx": "500"}, gs_detail()),
+            ]
+        )
+    )
+    postings = list(YhLibBoard(board(GS_URL, YhLibBoard), transport).postings(lambda *_: False))
+    assert postings[0].attachments == ()
+
+
+def test_yhlib_requires_the_board_and_menu_identifiers() -> None:
+    with pytest.raises(ValueError):
+        YhLibBoard(board(f"{GS_LIST}?bcIdx=534", YhLibBoard), FakeTransport({}))
+
+
+def test_busan_gangseo_declares_two_boards_without_the_council_board() -> None:
+    """강서구는 부서별·과장급 두 게시판만 수집한다. 의회 업무추진비는 집행기관이 아니라 뺀다."""
+    target = select_target(CITIES, "busan", "busan-gangseo")
+    gangseo = target.organizations[0]
+    assert gangseo.hold_reason is None
+    mids = sorted(boards.endpoint(b.url)[1]["mid"] for b in gangseo.boards)
+    assert mids == ["0503030100", "0503030200"]
+    assert all(b.scraper is YhLibBoard for b in gangseo.boards)
