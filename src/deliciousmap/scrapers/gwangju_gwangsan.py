@@ -88,7 +88,7 @@ class GwangsanInfoOpenBoard:
             )
             for file_id, suffix, href in _files(data)
         )
-        return row.posting(attachments)
+        return row.posting(attachments, page_url)
 
     def _listing_form(self, page: int) -> dict[str, str]:
         return {
@@ -136,8 +136,11 @@ class _Row:
     title: str
     department: str
 
-    def posting(self, attachments: tuple[boards.Attachment, ...]) -> boards.Posting:
-        return boards.Posting(self.post_id, attachments, self.posted, self.title, self.department)
+    def posting(self, attachments: tuple[boards.Attachment, ...], url: str = "") -> boards.Posting:
+        # 주소는 본문까지 열어 첨부를 확인한 게시글만 싣는다(`boards.Posting.url`).
+        return boards.Posting(
+            self.post_id, attachments, self.posted, self.title, self.department, url=url
+        )
 
 
 def _document(body: bytes) -> dict[str, object]:

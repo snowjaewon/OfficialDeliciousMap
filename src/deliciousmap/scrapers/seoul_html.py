@@ -227,6 +227,7 @@ class CityExpenseBoard:
                         self.filtered += 1
                         continue
                     page_url = urllib.parse.urljoin(self.list_url, f"/expense/{post_id}")
+                    # 상세 화면이 곧 원본이라 첨부 없는 게시글이 없다. 주소를 싣지 않는다.
                     attachments = (
                         ()
                         if skipped(post_id, posted)

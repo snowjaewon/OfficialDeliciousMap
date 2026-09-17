@@ -305,11 +305,15 @@ class EgovBoard:
                 post_id, href = article
                 posted = _posted(row.text)
                 page_url = urllib.parse.urljoin(self.list_url, href)
-                attachments = (
-                    () if skipped(post_id, posted) else self._attachments(row, post_id, page_url)
-                )
+                opened = not skipped(post_id, posted)
+                attachments = self._attachments(row, post_id, page_url) if opened else ()
                 yield boards.Posting(
-                    post_id, attachments, posted, _title(row, href), _department(row)
+                    post_id,
+                    attachments,
+                    posted,
+                    _title(row, href),
+                    _department(row),
+                    url=page_url if opened else "",
                 )
             total = _page_count(listing, link_keys=("pageIndex",))
             if page >= total:
@@ -379,11 +383,15 @@ class JungguBoard(EgovBoard):
                 post_id, href = article
                 posted = _posted(row.text)
                 page_url = urllib.parse.urljoin(self.list_url, href)
-                attachments = (
-                    () if skipped(post_id, posted) else self._attachments(row, post_id, page_url)
-                )
+                opened = not skipped(post_id, posted)
+                attachments = self._attachments(row, post_id, page_url) if opened else ()
                 yield boards.Posting(
-                    post_id, attachments, posted, _title(row, href), _department(row)
+                    post_id,
+                    attachments,
+                    posted,
+                    _title(row, href),
+                    _department(row),
+                    url=page_url if opened else "",
                 )
             if page >= _page_count(parser, link_keys=("startPage",)):
                 return
@@ -533,10 +541,16 @@ class CityMarketBoard:
                 post_id, href = article
                 posted = _posted(row.text)
                 page_url = urllib.parse.urljoin(self.list_url, href)
-                attachments = (
-                    () if skipped(post_id, posted) else self._attachments(post_id, page_url, href)
+                opened = not skipped(post_id, posted)
+                attachments = self._attachments(post_id, page_url, href) if opened else ()
+                yield boards.Posting(
+                    post_id,
+                    attachments,
+                    posted,
+                    _title(row, href),
+                    "",
+                    url=page_url if opened else "",
                 )
-                yield boards.Posting(post_id, attachments, posted, _title(row, href), "")
             if page >= _market_page_count(parser):
                 return
             page += 1
@@ -655,11 +669,15 @@ class BukguBoard:
                 post_id, href = article
                 posted = _posted(row.text)
                 page_url = urllib.parse.urljoin(self.list_url, href)
-                attachments = (
-                    () if skipped(post_id, posted) else self._attachments(post_id, page_url, href)
-                )
+                opened = not skipped(post_id, posted)
+                attachments = self._attachments(post_id, page_url, href) if opened else ()
                 yield boards.Posting(
-                    post_id, attachments, posted, _title(row, href), _department(row)
+                    post_id,
+                    attachments,
+                    posted,
+                    _title(row, href),
+                    _department(row),
+                    url=page_url if opened else "",
                 )
             if page >= _page_count(parser, link_keys=("cpage",)):
                 return
@@ -722,9 +740,8 @@ class UljuBoard:
                         "ptIdx": self.params.get("ptIdx", "117"),
                     },
                 )
-                attachments = (
-                    () if skipped(post_id, posted) else self._attachments(post_id, page_url)
-                )
+                opened = not skipped(post_id, posted)
+                attachments = self._attachments(post_id, page_url) if opened else ()
                 title = next(
                     (
                         link.title.strip() or link.text
@@ -734,7 +751,9 @@ class UljuBoard:
                     ),
                     "",
                 )
-                yield boards.Posting(post_id, attachments, posted, title, "")
+                yield boards.Posting(
+                    post_id, attachments, posted, title, "", url=page_url if opened else ""
+                )
             if page >= _page_count(parser):
                 return
             page += 1

@@ -67,7 +67,7 @@ class SeoguExpenseBoard:
                 )
                 for file_id, href in row.files
             )
-            yield row.posting(attachments)
+            yield row.posting(attachments, page_url)
 
 
 @dataclass(frozen=True)
@@ -79,9 +79,10 @@ class _Row:
     title: str
     files: tuple[tuple[str, str], ...]
 
-    def posting(self, attachments: tuple[boards.Attachment, ...]) -> boards.Posting:
+    def posting(self, attachments: tuple[boards.Attachment, ...], url: str = "") -> boards.Posting:
         # 이 게시판은 작성 부서를 밝히지 않는다. 부서는 원본 표에서 읽는다.
-        return boards.Posting(self.post_id, attachments, self.posted, self.title)
+        # 주소는 본문까지 열어 첨부를 확인한 게시글만 싣는다(`boards.Posting.url`).
+        return boards.Posting(self.post_id, attachments, self.posted, self.title, url=url)
 
 
 class _Listing(boards.Document):

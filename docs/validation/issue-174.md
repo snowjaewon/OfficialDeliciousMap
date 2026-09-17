@@ -249,14 +249,16 @@ Referer를 붙여도, 여러 첨부를 묶어 주는 주소(`bbsMsgFileDownCompr
 
 ### 5.3 장부에 남지 않는 것
 
-첨부가 하나도 없는 게시글은 지금 장부의 어느 수에도 남지 않는다. `collection._remember`가
-`if not posting.attachments: return`으로 그런 게시글을 기록하지 않고, `missing`은 링크된 원본을
-받지 못한 것만, `uncollected_postings`는 기간 밖 게시글만 센다. 위 표의 「첨부 없는 게시글」
-379건이 그것이며, 이 수는 목록 색인(`listing.jsonl`)과 수집 기록(`collected.jsonl`)을 맞대어
-따로 센 것이다.
+첨부가 하나도 없는 게시글은 이 실측 시점의 장부 어느 수에도 남지 않았다.
+`collection._remember`가 `if not posting.attachments: return`으로 그런 게시글을 기록하지 않았고,
+`missing`은 링크된 원본을 받지 못한 것만, `uncollected_postings`는 기간 밖 게시글만 셌다.
+위 표의 「첨부 없는 게시글」 569건이 그것이며(같은 표의 4,139 − 3,570), 이 수는 목록
+색인(`listing.jsonl`)과 수집 기록(`collected.jsonl`)을 맞대어 따로 센 것이다.
 
-이것은 인천에서 생긴 문제가 아니라 모든 도시가 함께 쓰는 계약의 빈자리다. 고치면 다른 도시의
-산출물도 바뀌므로 이 이슈에서 손대지 않고 사실만 남긴다.
+이것은 인천에서 생긴 문제가 아니라 모든 도시가 함께 쓰는 계약의 빈자리라 이 이슈에서 손대지
+않고 사실만 남겼다. #212가 `FetchOutput.unattached_postings`와 첨부 없는 게시글의 장부 줄로
+고쳤다. 위 표의 수는 그 전에 따로 센 것이므로, 다시 흘리기 전까지 인천 `fetch.json`의 새 칸은
+0으로 남는다.
 
 ### 5.4 실행 중 관찰한 것
 
@@ -334,6 +336,7 @@ gitleaks dir <경로> --redact --no-banner --config .gitleaks.toml
   보는 주소 접두(`address_prefixes`)도 넣지 않았다 — 둘 다 조회 캐시를 실측해야 적을 수 있는
   값이고, 인천은 아직 그 캐시가 없다.
 - **첨부 없는 게시글을 세는 자리**: 5.3에 적은 계약의 빈자리. 모든 도시가 함께 쓰는 자리라 이
-  이슈에서 손대지 않았다.
+  이슈에서 손대지 않았고, #212가 `FetchOutput.unattached_postings`로 채웠다. 인천 열두 기관을
+  다시 흘리는 차례는 아직 정해지지 않았다.
 - **저장소 안에 남은 남의 원본**: 작업을 시작할 때부터 `gwangju-city/expenses/`가 저장소 루트에
   추적되지 않은 채 있었다(0바이트 `.xlsx` 하나). 이번 작업이 만든 것이 아니라 지우지 않았다.

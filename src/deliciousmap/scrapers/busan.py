@@ -160,7 +160,13 @@ class Rfc3Board:
                 if skipped(post_id, posted) or not self._collects(title):
                     yield boards.Posting(post_id, (), posted, title)
                     continue
-                yield boards.Posting(post_id, self._attachments(post_id, page_url), posted, title)
+                yield boards.Posting(
+                    post_id,
+                    self._attachments(post_id, page_url),
+                    posted,
+                    title,
+                    url=page_url,
+                )
             if page >= self._page_count(parser):
                 return
             page += 1
@@ -301,15 +307,15 @@ class EgovPortalBoard:
                 post_id = found.group("id")
                 posted = listing.posted(_cell(row, "list_date"))
                 page_url = boards.address(self.view_url, {**self.params, "bIdx": post_id})
-                attachments = (
-                    () if skipped(post_id, posted) else self._attachments(post_id, page_url)
-                )
+                opened = not skipped(post_id, posted)
+                attachments = self._attachments(post_id, page_url) if opened else ()
                 yield boards.Posting(
                     post_id,
                     attachments,
                     posted,
                     _title(row),
                     _cell(row, "list_write"),
+                    url=page_url if opened else "",
                 )
             if page >= _script_page_count(parser):
                 return
@@ -370,10 +376,11 @@ class YhLibBoard:
                     continue
                 posted = listing.posted(_cell(row, "list_date"))
                 page_url = boards.address(self.view_url, {**self.params, "idx": post_id})
-                attachments = (
-                    () if skipped(post_id, posted) else self._attachments(post_id, page_url)
+                opened = not skipped(post_id, posted)
+                attachments = self._attachments(post_id, page_url) if opened else ()
+                yield boards.Posting(
+                    post_id, attachments, posted, title, department, url=page_url if opened else ""
                 )
-                yield boards.Posting(post_id, attachments, posted, title, department)
             if page >= _script_page_count(parser):
                 return
             page += 1
@@ -440,15 +447,15 @@ class CityBoard:
                 page_url = boards.address(
                     self.view_url, {"schCommand": "Expense", "schIndx": post_id}
                 )
-                attachments = (
-                    () if skipped(post_id, posted) else self._attachments(post_id, page_url)
-                )
+                opened = not skipped(post_id, posted)
+                attachments = self._attachments(post_id, page_url) if opened else ()
                 yield boards.Posting(
                     post_id,
                     attachments,
                     posted,
                     listing.title_of(row, href),
                     _cell(row, "txtLeft"),
+                    url=page_url if opened else "",
                 )
             if page >= _city_page_count(parser):
                 return

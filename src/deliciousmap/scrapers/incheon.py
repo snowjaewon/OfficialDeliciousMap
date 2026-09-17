@@ -328,10 +328,11 @@ class CityBoard:
                     continue
                 posted = listing.posted_of(row)
                 page_url = f"{self.list_url}/{post_id}"
-                attachments = (
-                    () if skipped(post_id, posted) else self._attachments(post_id, page_url)
+                opened = not skipped(post_id, posted)
+                attachments = self._attachments(post_id, page_url) if opened else ()
+                yield boards.Posting(
+                    post_id, attachments, posted, title, department, url=page_url if opened else ""
                 )
-                yield boards.Posting(post_id, attachments, posted, title, department)
             hrefs = (link.href for link in parser.links)
             if page >= listing.last_page(
                 pages_of(hrefs, self.list_url, self.board_path, "curPage")
@@ -415,10 +416,15 @@ class BbsBoard:
                     continue
                 posted = posted_in(item.text)
                 page_url = boards.address(self.detail_url, {**self.params, "msg_seq": post_id})
-                attachments = (
-                    () if skipped(post_id, posted) else self._attachments(post_id, page_url)
+                opened = not skipped(post_id, posted)
+                attachments = self._attachments(post_id, page_url) if opened else ()
+                yield boards.Posting(
+                    post_id,
+                    attachments,
+                    posted,
+                    title_of(item.title),
+                    url=page_url if opened else "",
                 )
-                yield boards.Posting(post_id, attachments, posted, title_of(item.title))
             pages = pages_of(parser.hrefs, self.list_url, "bbsMsgList.do", "pgno")
             if page >= listing.last_page(pages):
                 return
@@ -517,10 +523,11 @@ class KeyedBoard:
                     continue
                 posted = listing.posted_of(row)
                 page_url = boards.address(self.view_url, {**self.params, self.article_key: post_id})
-                attachments = (
-                    () if skipped(post_id, posted) else self._attachments(post_id, page_url)
+                opened = not skipped(post_id, posted)
+                attachments = self._attachments(post_id, page_url) if opened else ()
+                yield boards.Posting(
+                    post_id, attachments, posted, title, department, url=page_url if opened else ""
                 )
-                yield boards.Posting(post_id, attachments, posted, title, department)
             if page >= listing.last_page(script_pages(parser.links)):
                 return
             page += 1
@@ -612,10 +619,11 @@ class YeonsuBoard:
                     continue
                 posted = listing.posted_of(row)
                 page_url = boards.address(self.list_url, {"page": "v", "idx": post_id})
-                attachments = (
-                    () if skipped(post_id, posted) else self._attachments(post_id, page_url)
+                opened = not skipped(post_id, posted)
+                attachments = self._attachments(post_id, page_url) if opened else ()
+                yield boards.Posting(
+                    post_id, attachments, posted, title, department, url=page_url if opened else ""
                 )
-                yield boards.Posting(post_id, attachments, posted, title, department)
             if page >= listing.last_page(self._pages(parser)):
                 return
             page += 1

@@ -136,10 +136,11 @@ class IcmsBoard:
                         "nttId": post_id,
                     },
                 )
-                attachments = (
-                    () if skipped(post_id, posted) else self._attachments(post_id, page_url)
+                opened = not skipped(post_id, posted)
+                attachments = self._attachments(post_id, page_url) if opened else ()
+                yield boards.Posting(
+                    post_id, attachments, posted, title, department, url=page_url if opened else ""
                 )
-                yield boards.Posting(post_id, attachments, posted, title, department)
             if page >= listing.page_count(parser, link_keys=("pageIndex",)):
                 return
             page += 1
@@ -253,6 +254,7 @@ class OfficialTableBoard:
                 self.filtered += 1
                 continue
             title = PurePosixPath(files[0][1]).stem.strip()
+            # 묶음은 파일이 하나 이상이라 첨부 없는 게시글이 나오지 않는다. 주소를 싣지 않는다.
             attachments = (
                 ()
                 if skipped(post_id, None)
@@ -308,10 +310,11 @@ class GunwiBoard:
                 page_url = boards.address(
                     self.list_url, {**self.params, GUNWI_ARTICLE: post_id, "cmd": "258"}
                 )
-                attachments = (
-                    () if skipped(post_id, posted) else self._attachments(post_id, page_url)
+                opened = not skipped(post_id, posted)
+                attachments = self._attachments(post_id, page_url) if opened else ()
+                yield boards.Posting(
+                    post_id, attachments, posted, title, department, url=page_url if opened else ""
                 )
-                yield boards.Posting(post_id, attachments, posted, title, department)
             if page >= listing.page_count(parser):
                 return
             page += 1
