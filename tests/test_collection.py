@@ -66,9 +66,12 @@ def _paths(tmp_path: Path) -> Paths:
 
 
 def test_html_board_stores_the_page_it_received_as_the_original(tmp_path: Path) -> None:
-    output = collect(_target(_Scraper), _paths(tmp_path), _Transport())
+    paths = _paths(tmp_path)
+    output = collect(_target(_Scraper), paths, _Transport())
     assert [item.container for item in output.sources] == ["html"]
-    assert output.sources[0].path.read_bytes() == PAGE
+    # 산출물이 적는 자리는 raw-root 기준 상대 경로다(#202).
+    assert output.sources[0].path == Path("testcity/test-org/expenses/1-1.html")
+    assert (paths.raw_root / output.sources[0].path).read_bytes() == PAGE
     assert output.sources[0].source_hash == hashlib.sha256(PAGE).hexdigest()
 
 

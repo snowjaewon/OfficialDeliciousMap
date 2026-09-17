@@ -190,13 +190,14 @@ def test_fetch_stores_every_attachment_outside_the_repository(tmp_path: Path) ->
     transport = BoardTransport(board_responses())
     assert run_fetch(paths, transport) == 0
     sources = fetch_artifact(paths)["sources"]
-    assert [Path(item["path"]).name for item in sources] == [
-        "11024-1.xls",
-        "11024-2.xlsx",
-        "11022-1.xls",
+    # 산출물이 적는 자리는 이 PC의 절대 경로가 아니라 raw-root 기준 상대 경로다(#202).
+    assert [item["path"] for item in sources] == [
+        "gwangju/gwangju-city/expenses/11024-1.xls",
+        "gwangju/gwangju-city/expenses/11024-2.xlsx",
+        "gwangju/gwangju-city/expenses/11022-1.xls",
     ]
     for item in sources:
-        stored = Path(item["path"])
+        stored = (paths.raw_root / item["path"]).resolve()
         assert stored.is_relative_to(paths.raw_root.resolve())
         assert not stored.is_relative_to(Path.cwd())
         assert stored.read_bytes()[:4] in {OLE2[:4], OOXML[:4]}
@@ -662,7 +663,7 @@ def test_fetch_accepts_an_xls_that_is_really_spreadsheetml(tmp_path: Path) -> No
     responses = board_responses()
     responses[download(11024, 1)] = SPREADSHEETML
     assert run_fetch(paths, BoardTransport(responses)) == 0
-    stored = Path(fetch_artifact(paths)["sources"][0]["path"])
+    stored = paths.raw_root / fetch_artifact(paths)["sources"][0]["path"]
     assert stored.name == "11024-1.xls"
     assert stored.read_bytes().startswith(b"<?xml")
 

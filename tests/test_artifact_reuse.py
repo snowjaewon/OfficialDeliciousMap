@@ -173,10 +173,11 @@ def source_at(path: Path) -> FetchOutput:
 
 
 def test_a_source_outside_raw_root_is_refused(tmp_path: Path) -> None:
+    """상대 경로라도 거슬러 올라가면 raw-root 밖이다. 이어 붙인 자리를 보고 판정한다."""
     context = context_at(tmp_path)
     store = ArtifactStore(context.paths, context.target)
     with pytest.raises(ValueError, match="outside repository and within raw-root"):
-        store.save("fetch", source_at(tmp_path / "바깥" / "원본.xlsx"))
+        store.save("fetch", source_at(Path("..") / "바깥" / "원본.xlsx"))
 
 
 def test_a_source_inside_a_repository_under_raw_root_is_refused(tmp_path: Path) -> None:
@@ -186,5 +187,5 @@ def test_a_source_inside_a_repository_under_raw_root_is_refused(tmp_path: Path) 
     paths = Paths(repository, raw_root, repository / "data", tmp_path / "출력 폴더")
     store = ArtifactStore(paths, context_at(tmp_path).target)
     with pytest.raises(ValueError, match="outside repository and within raw-root"):
-        store.save("fetch", source_at(repository / "원본.xlsx"))
-    store.save("fetch", source_at(raw_root / "원본.xlsx"))
+        store.save("fetch", source_at(Path("저장소") / "원본.xlsx"))
+    store.save("fetch", source_at(Path("원본.xlsx")))

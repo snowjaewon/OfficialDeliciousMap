@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
 from functools import total_ordering
-from pathlib import Path
+from pathlib import Path, PurePath, PureWindowsPath
 from typing import Annotated, Literal
 
 from pydantic import (
@@ -231,10 +231,34 @@ Container = Literal[
 ]
 
 
+def _as_raw_root_relative(value: object) -> object:
+    """원본의 자리를 어느 PC에서나 같은 뜻으로 읽히는 한 가지 글자로 못 박는다(#202).
+
+    드라이브·루트가 붙은 값은 `raw_root / path`에서 왼쪽을 버려 그 PC의 `--raw-root`와 무관하게
+    수집 당시의 경로를 연다. 역슬래시는 Windows 밖에서 구분자가 아니라 파일 이름 한 낱말이
+    되어 열리지 않는다. 둘 다 산출물에 들어가기 전에 막는다.
+    """
+    if isinstance(value, PurePath):
+        value = value.as_posix()
+    if not isinstance(value, str):
+        return value
+    windows = PureWindowsPath(value)
+    if not value or "\\" in value or windows.drive or windows.is_absolute() or value[0] == "/":
+        raise ValueError("an original's path must be relative to raw-root and separated by '/'")
+    return value
+
+
+# 원본이 있는 자리. 값은 언제나 `/`로 이은 상대 경로이고, 읽는 쪽이 그 PC의 raw-root에 잇는다.
+RawRootRelative = Annotated[
+    Path,
+    BeforeValidator(_as_raw_root_relative),
+    PlainSerializer(PurePath.as_posix, return_type=str),
+]
+
+
 class SourceRef(Contract):
-    # 원본이 있는 곳. 상대 경로는 `--raw-root` 기준으로 읽는다. 현재 게시판 수집은 수집 PC의
-    # 경로를 그대로 남기므로, 이 값은 산출물을 만든 PC 밖에서 그대로 쓸 수 없다.
-    path: Path
+    # 원본이 있는 곳. `--raw-root` 기준 상대 경로이며 도시/기관/게시판/이름으로 적는다.
+    path: RawRootRelative
     source_hash: Sha256
     organization: Text
     board: Text

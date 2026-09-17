@@ -47,7 +47,10 @@ uv run python -m deliciousmap geocode --city seoul --retry-failed
 정적 지도 화면·PWA 기본 구성을 함께 만든다. 기관 실행은 데이터 파일만 `orgs/<org>/`에 분리한다.
 [지오코딩 사용법과 계약](docs/geocoding.md)을 따른다.
 `fetch`는 레지스트리에 선언된 게시판을 실제로 훑어 원본을 `--raw-root` 아래에 내려받고
-출처를 기록한다. 매직 바이트로 원본 컨테이너를 판정해 `SourceRef.container`에 남기므로 후속 단계는
+출처를 기록한다. 원본의 자리는 `SourceRef.path`에 `--raw-root` 기준 상대 경로
+(`<도시>/<기관>/<게시판>/<이름>`)로 남으므로, 원본 폴더를 옮기거나 넘겨받은 PC는 자기
+`--raw-root`만 가리키면 같은 산출물로 `headermap`·`parse`를 돌릴 수 있다.
+매직 바이트로 원본 컨테이너를 판정해 `SourceRef.container`에 남기므로 후속 단계는
 게시판이 붙인 확장자가 아니라 이 값을 본다. 어떤 컨테이너도 아닌 응답(200으로 온 HTML 등)은
 저장하지 않고 `unsupported-format`으로 실패한다. 첨부 대신 화면 자체가 집행 표인 게시판(서울
 시청·은평·관악·서대문, 울산 시청·중구·동구)만 스크래퍼가 `.html`을 선언하고, 그 쪽 응답 전체를
