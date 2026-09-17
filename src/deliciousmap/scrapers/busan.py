@@ -365,21 +365,26 @@ class YhLibBoard:
                 post_id = _yhlib_index(row)
                 if post_id is None or not boards.is_identifier(post_id):
                     continue
+                title, department = _title(row), _cell(row, "list_write")
+                if not self.keeps(title, department):
+                    continue
                 posted = listing.posted(_cell(row, "list_date"))
                 page_url = boards.address(self.view_url, {**self.params, "idx": post_id})
                 attachments = (
                     () if skipped(post_id, posted) else self._attachments(post_id, page_url)
                 )
-                yield boards.Posting(
-                    post_id,
-                    attachments,
-                    posted,
-                    _title(row),
-                    _cell(row, "list_write"),
-                )
+                yield boards.Posting(post_id, attachments, posted, title, department)
             if page >= _script_page_count(parser):
                 return
             page += 1
+
+    def keeps(self, title: str, department: str) -> bool:
+        """목록 행을 게시글로 받을지. 강서구는 모두 받는다.
+
+        같은 계열을 쓰는 대구 동구·서구는 구의회 글을 섞어 싣는다. 그 하위 클래스가 여기서 거르고
+        거른 수를 센다(`boards.FiltersRows`) — 판정과 계수가 한 자리에 있어야 수가 어긋나지 않는다.
+        """
+        return True
 
     def _attachments(self, post_id: str, page_url: str) -> tuple[boards.Attachment, ...]:
         parser = listing.parse(boards.request(self.transport, *boards.endpoint(page_url)))
@@ -507,11 +512,21 @@ def _cell(row: listing.Row, name: str) -> str:
 
 
 def _yhlib_index(row: listing.Row) -> str | None:
-    """강서구 목록 행이 밝힌 게시글 번호. 값은 게시글 링크의 `data-req-get-p-idx`에 있다."""
+    """yhLib 목록 행이 밝힌 게시글 번호.
+
+    강서구·대구 동구는 게시글 링크의 `data-req-get-p-idx`에, 대구 서구는 링크 주소
+    (`view.do?…&idx=`)에 싣는다(실측 2026-09-17). data 속성이 있으면 그것을 쓴다.
+    """
     for link in row.links:
         value = dict(link.data).get(YHLIB_INDEX)
         if value:
             return value
+    for link in row.links:
+        parts = urllib.parse.urlsplit(link.href)
+        if parts.path.endswith("/view.do"):
+            value = urllib.parse.parse_qs(parts.query).get("idx", [""])[0]
+            if value:
+                return value
     return None
 
 
