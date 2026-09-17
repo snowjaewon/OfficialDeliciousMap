@@ -70,6 +70,11 @@ class ValidationFailed(Exception):
         self.item = item
         super().__init__(detail)
 
+    @classmethod
+    def at(cls, table: str, row: int, item: str) -> "ValidationFailed":
+        """행 하나가 걸린 실패. 사유 글자와 갈림에 쓰는 이름이 어긋나지 않게 한자리에서 만든다."""
+        return cls(f"{table}:R{row} {item}", item)
+
 
 @dataclass(frozen=True)
 class Extraction:
@@ -115,7 +120,7 @@ def extract(table: Table, mapping: HeaderMap, source: SourceRef) -> Extraction:
         elif kind == "unclear_total":
             sections[0].unclear = True
     excluded: list[str] = []
-    undated = 0
+    undated: list[ValidationFailed] = []
     for row in range(mapping.data_start_row, len(table.rows) + 1):
         kind = _kind(table, mapping, headers, row)
         if kind == "candidate":
@@ -126,7 +131,7 @@ def extract(table: Table, mapping: HeaderMap, source: SourceRef) -> Extraction:
                     raise
                 # 선언 표에서 집행일을 읽지 못한 줄. 그 줄만 레코드에서 빠지고 표의 나머지는
                 # 살아남는다. 분모에는 남으므로 아래에서 후보 수에 더한다.
-                undated += 1
+                undated.append(exc)
                 excluded.append(exc.detail)
             continue
         excluded.append(f"{table.name}:R{row} {kind}")
@@ -137,6 +142,10 @@ def extract(table: Table, mapping: HeaderMap, source: SourceRef) -> Extraction:
         elif kind == "unclear_total":
             sections[-1].unclear = True
     candidates = [item for section in sections for item in section.candidates]
+    if undated and not candidates:
+        # 한 줄도 읽지 못했다면 그것은 한 줄의 문제가 아니라 틀의 문제다. 행 단위 제외가
+        # "후보는 있는데 레코드는 0건"을 조용히 통과시키지 않게 원본 전체를 미해결로 남긴다.
+        raise undated[0]
     check = _check_totals(table, sections, mapping.amount_multiplier)
     records = tuple(
         _record(table, mapping, source, candidate)
@@ -147,7 +156,7 @@ def extract(table: Table, mapping: HeaderMap, source: SourceRef) -> Extraction:
         records=records,
         # 집행일을 읽지 못한 줄도 원본이 실은 지출 후보다. 날짜를 못 읽었다는 이유로 후보에서
         # 빼면 분모가 줄어 100% 검증이 그만큼 헐거워진다(폴백 정책).
-        candidates=len(candidates) + undated,
+        candidates=len(candidates) + len(undated),
         out_of_range=len(candidates) - len(records),
         excluded=tuple(excluded),
         # 원본에 실제로 있는 0원·음수는 추출 오류로 단정하지 않고 재검증 리포트의 검토 대상이다.
@@ -165,9 +174,10 @@ def _drops_row(mapping: HeaderMap, failure: ValidationFailed) -> bool:
     ../../docs/adr/0008-declare-html-table-mappings.md)).
 
     사람이 틀을 확인한 선언 표에서만, 그리고 집행일을 읽지 못한 줄에서만 참이다. 기장군 목록은
-    사용일자 칸이 자유 입력이라 3,297줄 가운데 몇 줄이 읽히지 않는데(2026-09-17 실측), 표 하나가
-    게시판 전량이라 그 한 줄이 나머지 전부를 죽인다. 모델이 매핑한 표는 매핑 자체가 틀렸을 수
-    있어 지금처럼 원본 전체를 미해결로 남긴다 — 선언한 천원 표의 단위 보류와 같은 갈림이다.
+    사용일자 칸이 자유 입력이라 지출 후보 3,248줄 가운데 18줄이 읽히지 않는데(2026-09-17 실측),
+    표 하나가 게시판 전량이라 그 열여덟 줄이 나머지 전부를 죽인다. 모델이 매핑한 표는 매핑 자체가
+    틀렸을 수 있어 지금처럼 원본 전체를 미해결로 남긴다 — 선언한 천원 표의 단위 보류와 같은
+    갈림이다.
     """
     return mapping.declared and failure.item == "spent_on"
 
@@ -608,20 +618,20 @@ def _candidate(table: Table, mapping: HeaderMap, source: SourceRef, row: int) ->
         # 날짜 열이 없는 표. `_dated`가 상세 키의 날이 있을 때만 여기까지 보낸다.
         spent_on = SpentOn.of(source.spent_on) if source.spent_on else None
     if spent_on is None:
-        raise ValidationFailed(f"{table.name}:R{row} spent_on", "spent_on")
+        raise ValidationFailed.at(table.name, row, "spent_on")
     amount = _amount(table.value(row, columns["amount_krw"]))
     if amount is None:
-        raise ValidationFailed(f"{table.name}:R{row} amount_krw", "amount_krw")
+        raise ValidationFailed.at(table.name, row, "amount_krw")
     if (
         mapping.declared
         and mapping.amount_multiplier == THOUSAND
         and abs(amount) >= THOUSAND_WON_CEILING
     ):
         # 선언한 천원 표에 원으로 적은 값이다. 헤더대로 곱하지도, 원으로 고쳐 읽지도 않는다.
-        raise ValidationFailed(f"{table.name}:R{row} amount_unit", "amount_unit")
+        raise ValidationFailed.at(table.name, row, "amount_unit")
     merchant = text(table.value(row, columns["merchant"])) or _payee(table, mapping, row)
     if not merchant:
-        raise ValidationFailed(f"{table.name}:R{row} merchant", "merchant")
+        raise ValidationFailed.at(table.name, row, "merchant")
     return _Candidate(row, spent_on, merchant, amount * mapping.amount_multiplier)
 
 

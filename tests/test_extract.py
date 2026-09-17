@@ -771,3 +771,17 @@ def test_a_declared_table_still_fails_whole_on_an_unreadable_amount() -> None:
     rows = table(spend(5, "합성 식당", 62000.0), ("과장", "2026-01-06 12:00", "합성 찻집", "", ""))
     with pytest.raises(ValidationFailed, match="sheet1:R4 amount_krw"):
         extract(rows, MAPPING.model_copy(update={"declared": True}), SOURCE)
+
+
+def test_a_declared_table_whose_every_row_is_undated_still_fails_whole() -> None:
+    """한 줄도 읽지 못했다면 그것은 한 줄의 문제가 아니라 틀의 문제다.
+
+    행 단위 제외가 "후보는 있는데 레코드는 0건"을 조용히 통과시키지 않게 한다(폴백 정책:
+    설명되지 않은 0건은 실패다).
+    """
+    rows = table(
+        ("과장", "6.27.(금)", "합성 찻집", "간담회", 27000.0),
+        ("과장", "5.20.(화)", "합성 국밥", "간담회", 31000.0),
+    )
+    with pytest.raises(ValidationFailed, match="sheet1:R3 spent_on"):
+        extract(rows, MAPPING.model_copy(update={"declared": True}), SOURCE)

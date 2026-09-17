@@ -595,7 +595,7 @@ def test_the_gijang_table_becomes_records_read_by_its_use_date_column(tmp_path: 
 
 
 def test_a_gijang_row_without_a_use_date_leaves_the_rest_of_the_table(tmp_path: Path) -> None:
-    """사용일자 칸은 자유 입력이라 읽지 못하는 줄이 섞인다(실측 3,297줄 중 67줄).
+    """사용일자 칸은 자유 입력이라 읽지 못하는 줄이 섞인다(실측 지출 후보 3,248줄 중 18줄).
 
     그 줄만 레코드에서 빠지고 위치와 사유가 제외 목록에 남는다. 후보 수에서는 사라지지 않는다.
     """

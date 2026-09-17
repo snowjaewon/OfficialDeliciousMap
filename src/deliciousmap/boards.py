@@ -156,6 +156,15 @@ class Attachment:
         return f"{self.post_id}-{self.file_id}{self.suffix}"
 
 
+def html_original(post_id: str, url: str, skipped: bool) -> tuple[Attachment, ...]:
+    """HTML 표 게시글의 원본 참조 하나. 받은 쪽 주소가 곧 출처다. 넘길 게시글이면 없다.
+
+    집행내역을 HTML 표로 내는 게시판이 모두 같은 참조를 만든다(ADR-0008). 도시마다 따로
+    두면 저장 이름과 출처 주소가 도시별로 갈릴 수 있어 여기 한 자리에 둔다.
+    """
+    return () if skipped else (Attachment(post_id, "1", HTML_SUFFIX, url, url),)
+
+
 @dataclass(frozen=True)
 class Posting:
     """게시글 하나와 거기 달린 원본 첨부 전부. 수집 기록의 단위다.

@@ -248,8 +248,6 @@ class GijangBoard:
     post_id = "expenses"
     # 한 쪽에 실을 줄 수. 실측 2026-09-17: 표 전량이 3,297줄이라 그보다 넉넉히 잡는다.
     page_size = "4000"
-    # 행 수 조건을 여는 짝. `listRow`만 보내면 게시판이 무시하고 열 줄을 준다(실측 2026-09-17).
-    page_column = "1"
 
     def __init__(self, board: "Board", transport: Transport) -> None:
         self.list_url, self.params, self.site_key = rfc3_endpoint(board.url)
@@ -259,24 +257,16 @@ class GijangBoard:
         # 부서(`categoryCode1`)·연도(`categoryCode2`)·월(`categoryCode3`) 조건은 붙이지 않는다.
         # 부서 조건은 3,297줄 중 530줄만 남기고, 연도·월은 사람이 적은 분류라 3,215건 중
         # 64건이 사용일자와 어긋난다(실측 2026-09-14). 기간은 받은 뒤 사용일자 열로 가른다.
-        params = {
-            **self.params,
-            "listCel": self.page_column,
-            "listRow": self.page_size,
-            "startPage": "1",
-        }
+        # `listRow`만 보내면 게시판이 무시하고 열 줄을 준다. `listCel=1`을 함께 보내야 행 수
+        # 조건이 열린다(실측 2026-09-17).
+        params = {**self.params, "listCel": "1", "listRow": self.page_size, "startPage": "1"}
         parser = listing.parse(boards.request(self.transport, self.list_url, params))
         if listing.page_count(parser, link_keys=("startPage",)) != 1:
             raise boards.UnreadableBoard("expense listing no longer fits one page")
         url = boards.address(self.list_url, params)
         yield boards.Posting(
-            self.post_id, _html_original(self.post_id, url, skipped(self.post_id, None))
+            self.post_id, boards.html_original(self.post_id, url, skipped(self.post_id, None))
         )
-
-
-def _html_original(post_id: str, url: str, skipped: bool) -> tuple[boards.Attachment, ...]:
-    """HTML 표 게시판의 원본 참조 하나. 받은 쪽 주소가 곧 출처다. 넘길 게시글이면 없다."""
-    return () if skipped else (boards.Attachment(post_id, "1", boards.HTML_SUFFIX, url, url),)
 
 
 class EgovPortalBoard:
