@@ -249,14 +249,16 @@ Referer를 붙여도, 여러 첨부를 묶어 주는 주소(`bbsMsgFileDownCompr
 
 ### 5.3 장부에 남지 않는 것
 
-첨부가 하나도 없는 게시글은 지금 장부의 어느 수에도 남지 않는다. `collection._remember`가
-`if not posting.attachments: return`으로 그런 게시글을 기록하지 않고, `missing`은 링크된 원본을
-받지 못한 것만, `uncollected_postings`는 기간 밖 게시글만 센다. 위 표의 「첨부 없는 게시글」
-379건이 그것이며, 이 수는 목록 색인(`listing.jsonl`)과 수집 기록(`collected.jsonl`)을 맞대어
-따로 센 것이다.
+첨부가 하나도 없는 게시글은 이 실측 시점의 장부 어느 수에도 남지 않았다.
+`collection._remember`가 `if not posting.attachments: return`으로 그런 게시글을 기록하지 않았고,
+`missing`은 링크된 원본을 받지 못한 것만, `uncollected_postings`는 기간 밖 게시글만 셌다.
+위 표의 「첨부 없는 게시글」 569건이 그것이며(같은 표의 4,139 − 3,570), 이 수는 목록
+색인(`listing.jsonl`)과 수집 기록(`collected.jsonl`)을 맞대어 따로 센 것이다.
 
-이것은 인천에서 생긴 문제가 아니라 모든 도시가 함께 쓰는 계약의 빈자리다. 고치면 다른 도시의
-산출물도 바뀌므로 이 이슈에서 손대지 않고 사실만 남긴다.
+이것은 인천에서 생긴 문제가 아니라 모든 도시가 함께 쓰는 계약의 빈자리라 이 이슈에서 손대지
+않고 사실만 남겼다. #212가 `FetchOutput.unattached_postings`와 첨부 없는 게시글의 장부 줄로
+고쳤다. 위 표의 수는 그 전에 따로 센 것이므로, 다시 흘리기 전까지 인천 `fetch.json`의 새 칸은
+0으로 남는다.
 
 ### 5.4 실행 중 관찰한 것
 
