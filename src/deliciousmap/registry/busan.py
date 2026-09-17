@@ -11,6 +11,7 @@ from deliciousmap.scrapers.busan import (
     GijangBoard,
     MixedRfc3Board,
     Rfc3Board,
+    YhLibBoard,
 )
 
 # 시청은 `schBizNo`로 게시판을 가른다. 46은 시장·부시장, 45는 4급 이상 공무원이 장인 부서다.
@@ -24,6 +25,14 @@ RFC3 = "https://www.{host}/board/list.{key}?boardId={board}"
 
 def _rfc3(host: str, key: str, board: str) -> str:
     return RFC3.format(host=host, key=key, board=board)
+
+
+# 강서구 yhLib portal. `bcIdx`(게시판)·`mid`(메뉴) 없이 부르면 목록이 열리지 않아 함께 선언한다.
+YHLIB = "https://www.bsgangseo.go.kr/portal/board/post/list.do?bcIdx={bcidx}&mid={mid}"
+
+
+def _yhlib(bcidx: str, mid: str) -> str:
+    return YHLIB.format(bcidx=bcidx, mid=mid)
 
 
 CITY = City(
@@ -90,9 +99,24 @@ CITY = City(
             "부산광역시 동래구",
             (Board("expenses", _rfc3("dongnae.go.kr", "dongnae", "BBS_0000200"), Rfc3Board),),
         ),
-        # 남구: `robots.txt`가 `User-agent: *`에 `Disallow: /`를 선언한다(Yeti만 허용).
-        # 게시판 주소도 그 아래다. robots 정책을 바꾸지 않고 보류로 남긴다.
-        Organization("busan-nam", "부산광역시 남구", hold_reason="bot_blocked"),
+        # 남구: `robots.txt`는 여전히 `User-agent: *`에 `Disallow: /`를 선언한다(Yeti만 허용,
+        # 2026-09-17 재실측). #140은 그 선언을 따라 보류로 두었으나, 2026-09-17 사용자가
+        # 업무추진비 공개 원본을 받는 쪽을 골라 보류를 풀었다. 우리는 robots의 요청은 따르지
+        # 않되 신분은 위장하지 않는다 — 요청은 프로젝트 UA 그대로 나간다. 기술적 차단은 없다.
+        Organization(
+            "busan-nam",
+            "부산광역시 남구",
+            (
+                Board(
+                    "expenses",
+                    # 부산진구와 파라미터 구성이 같은 rfc3 전용 게시판이다(실측 2026-09-17:
+                    # 목록 630쪽, 제목이 모두 `…업무추진비 등 클린카드 사용내역(부서)`).
+                    _rfc3("bsnamgu.go.kr", "namgu", "BBS_0000149")
+                    + "&menuCd=DOM_000000105005009000&contentsSid=1310",
+                    Rfc3Board,
+                ),
+            ),
+        ),
         Organization(
             "busan-buk",
             "부산광역시 북구",
@@ -115,8 +139,31 @@ CITY = City(
             "부산광역시 금정구",
             (Board("expenses", _rfc3("geumjeong.go.kr", "geumj", "BBS_0000331"), Rfc3Board),),
         ),
-        # 강서구: `robots.txt`가 `User-agent:*`에 `Disallow:/`를 선언한다. 남구와 같은 사유다.
-        Organization("busan-gangseo", "부산광역시 강서구", hold_reason="bot_blocked"),
+        # 강서구: `robots.txt`는 여전히 `User-agent:*`에 `Disallow:/`를 선언한다(2026-09-17
+        # 재실측). #140은 그 선언을 따라 보류로 두었으나, 2026-09-17 사용자가 업무추진비 공개
+        # 원본을 받는 쪽을 골라 보류를 풀었다. 목록·본문·첨부 모두 GET으로 열린다(실측).
+        # yhLib portal 계열이라 게시글 번호가 링크의 `data-req-get-p-idx`에, 첨부는 본문의
+        # `yhLib.file.download('<64자>','<32자>')` 호출에 있다.
+        #
+        # 게시판 셋 가운데 부서별(534)·과장급(535) 둘만 넣는다. 의회 업무추진비(536, 26건)는
+        # 집행기관이 아니라 걸러 낸다 — 서울 시청 의회사무처와 같은 사유다(CONTEXT.md 「걸러 낸
+        # 게시글」). 표본 5건 중 1건이 Fasoo DRM이었고, DRM 아닌 첨부는 그대로 받는다.
+        Organization(
+            "busan-gangseo",
+            "부산광역시 강서구",
+            (
+                Board(
+                    "expenses-department",
+                    _yhlib("534", "0503030100"),
+                    YhLibBoard,
+                ),
+                Board(
+                    "expenses-director",
+                    _yhlib("535", "0503030200"),
+                    YhLibBoard,
+                ),
+            ),
+        ),
         Organization(
             "busan-yeonje",
             "부산광역시 연제구",

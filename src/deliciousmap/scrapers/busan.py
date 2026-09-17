@@ -34,6 +34,12 @@ VIEW_CALL = re.compile(r"goTo\.view\(\s*'[^']*'\s*,\s*'(?P<id>[^']+)'")
 PAGE_CALL = re.compile(r"goPage\(\s*(\d+)\s*\)")
 # 연제구 첨부. `fileSn`이 정수가 아니라 32자리 토큰이라 값을 지어내지 못한다.
 DOWN_CALL = re.compile(r"fn_egov_downFile\(\s*'(?P<file>[^']+)'\s*,\s*'(?P<serial>[^']+)'")
+# 강서구 첨부. `atchFileId`는 64자, `fileSn`은 32자 토큰이라 값을 지어내지 못한다. 본문에는
+# 내려받기(`download`)와 전용뷰어(`preview`)가 쌍으로 붙으므로 내려받기 호출만 고른다.
+YHLIB_DOWN = re.compile(r"yhLib\.file\.download\(\s*'(?P<file>[^']+)'\s*,\s*'(?P<serial>[^']+)'")
+# 강서구 목록이 게시글 번호를 싣는 자리. 주소는 `#`, `onclick`은 `yhLib.inline.post(this)`라
+# 번호가 없고, `data-req-get-p-idx` 속성에만 있다.
+YHLIB_INDEX = "req-get-p-idx"
 # 연제구 첨부 이름 뒤에 붙는 크기 표기. 이름과 가르는 자리다.
 SIZE = re.compile(r"\s*\[[^\]]*\]\s*$")
 # 목록이 제목에 붙이는 아이콘 글자. 제목의 일부가 아니라 화면 표시다.
@@ -362,6 +368,72 @@ class EgovPortalBoard:
         return tuple(found)
 
 
+class YhLibBoard:
+    """강서구 yhLib portal 게시판. 게시글 번호는 링크의 data 속성에, 첨부는 본문의
+    `yhLib.file.download` 호출에 있다. 목록·본문·첨부 모두 GET으로 열린다(실측 2026-09-17).
+
+    `bcIdx`(게시판)·`mid`(메뉴) 없이 부르면 목록이 열리지 않는다. 그래서 레지스트리가
+    선언한 두 조건을 쪽마다 그대로 싣고, 빠져 있으면 훑기 전에 거절한다.
+    """
+
+    published_suffixes = frozenset({".xlsx", ".xls", ".hwpx", ".hwp", ".pdf"})
+
+    def __init__(self, board: "Board", transport: Transport) -> None:
+        self.list_url, self.params = boards.endpoint(board.url)
+        if not all(boards.is_identifier(self.params.get(name, "")) for name in ("bcIdx", "mid")):
+            raise ValueError("board url must declare bcIdx and mid")
+        self.view_url = urllib.parse.urljoin(self.list_url, "view.do")
+        self.download_url = urllib.parse.urljoin(self.list_url, "/common/file/download.do")
+        self.transport = transport
+
+    def postings(self, skipped: boards.Skipped) -> Iterator[boards.Posting]:
+        page = 1
+        while True:
+            parser = listing.parse(
+                boards.request(self.transport, self.list_url, {**self.params, "page": str(page)})
+            )
+            for row in parser.rows:
+                post_id = _yhlib_index(row)
+                if post_id is None or not boards.is_identifier(post_id):
+                    continue
+                posted = listing.posted(_cell(row, "list_date"))
+                page_url = boards.address(self.view_url, {**self.params, "idx": post_id})
+                attachments = (
+                    () if skipped(post_id, posted) else self._attachments(post_id, page_url)
+                )
+                yield boards.Posting(
+                    post_id,
+                    attachments,
+                    posted,
+                    _title(row),
+                    _cell(row, "list_write"),
+                )
+            if page >= _script_page_count(parser):
+                return
+            page += 1
+
+    def _attachments(self, post_id: str, page_url: str) -> tuple[boards.Attachment, ...]:
+        parser = listing.parse(boards.request(self.transport, *boards.endpoint(page_url)))
+        found: list[boards.Attachment] = []
+        for link in parser.links:
+            call = YHLIB_DOWN.search(link.onclick)
+            if call is None:
+                continue
+            file_id, serial = call.group("file"), call.group("serial")
+            if not (boards.is_identifier(file_id) and boards.is_identifier(serial)):
+                raise boards.UnreadableBoard("board supplied an unusable attachment identifier")
+            found.append(
+                boards.Attachment(
+                    post_id,
+                    str(len(found) + 1),
+                    boards.suffix_of(SIZE.sub("", link.text)),
+                    boards.address(self.download_url, {"atchFileId": file_id, "fileSn": serial}),
+                    page_url,
+                )
+            )
+        return tuple(found)
+
+
 class CityBoard:
     """부산시청 `ghopen12` 게시판. 본문에서 첨부를 읽고 잠긴 첨부는 수집이 따로 센다.
 
@@ -465,6 +537,15 @@ def _cell(row: listing.Row, name: str) -> str:
     return ""
 
 
+def _yhlib_index(row: listing.Row) -> str | None:
+    """강서구 목록 행이 밝힌 게시글 번호. 값은 게시글 링크의 `data-req-get-p-idx`에 있다."""
+    for link in row.links:
+        value = dict(link.data).get(YHLIB_INDEX)
+        if value:
+            return value
+    return None
+
+
 def _title(row: listing.Row) -> str:
     """게시글 제목. 목록이 붙인 아이콘 글자는 제목이 아니므로 뗀다."""
     title = _cell(row, "list_tit")
@@ -487,4 +568,5 @@ __all__ = [
     "GijangBoard",
     "MixedRfc3Board",
     "Rfc3Board",
+    "YhLibBoard",
 ]

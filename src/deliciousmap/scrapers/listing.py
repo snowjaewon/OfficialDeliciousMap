@@ -39,6 +39,9 @@ class Link:
     text: str
     title: str
     onclick: str
+    # `data-*` 속성. 게시글 번호를 `href`·`onclick`이 아니라 `data-req-get-p-idx`에 싣는
+    # 게시판(강서구 yhLib)이 있어 이름(접두사 `data-`를 뗀)과 값의 쌍으로 남긴다.
+    data: tuple[tuple[str, str], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -76,6 +79,7 @@ class TableParser(HTMLParser):
         self._cell_classes: frozenset[str] = frozenset()
         self._cell_links: list[Link] = []
         self._link_attrs: dict[str, str] | None = None
+        self._link_data: tuple[tuple[str, str], ...] = ()
         self._link_text: list[str] = []
         self._pagination = False
         self.pagination_pages: list[int] = []
@@ -109,6 +113,11 @@ class TableParser(HTMLParser):
                 "title": raw.get("title") or "",
                 "onclick": raw.get("onclick") or "",
             }
+            self._link_data = tuple(
+                (name[len("data-") :], value or "")
+                for name, value in attrs
+                if name.startswith("data-")
+            )
             self._link_text = []
         elif tag == "img":
             alt = dict(attrs).get("alt") or ""
@@ -126,6 +135,7 @@ class TableParser(HTMLParser):
                 " ".join(" ".join(self._link_text).split()),
                 self._link_attrs["title"],
                 self._link_attrs["onclick"],
+                self._link_data,
             )
             self.links.append(link)
             if self._pagination:
@@ -133,6 +143,7 @@ class TableParser(HTMLParser):
             if self._cell is not None:
                 self._cell_links.append(link)
             self._link_attrs = None
+            self._link_data = ()
             self._link_text = []
         elif tag in {"td", "th"} and self._cell is not None:
             self._cell = None
