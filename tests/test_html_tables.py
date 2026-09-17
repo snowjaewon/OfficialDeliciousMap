@@ -369,6 +369,7 @@ def test_a_daily_detail_reads_values_past_the_repeated_column_labels(tmp_path: P
 
 def test_a_detail_row_without_an_amount_is_not_filled_in(tmp_path: Path) -> None:
     # 동구 상세에는 금액 칸이 빈 채 첨부만 단 행이 있다(2026-02-09 실측). 채우지 않는다.
+    # 선언 표라 그 줄만 빠지고 나머지 줄은 레코드가 된다(ADR-0008, #205). 빠진 줄은 분모에 남는다.
     cities = (city(Board("expenses-mayor", DONGGU_LIST, DongguMayorBoard, DONGGU_TABLE)),)
     board = donggu_board(
         (
@@ -396,13 +397,10 @@ def test_a_detail_row_without_an_amount_is_not_filled_in(tmp_path: Path) -> None
     assert run(tmp_path, "parse", cities, None) == 0
 
     (report,) = payload(tmp_path, "parse")["sources"]
-    assert (report["status"], report["reason"], report["detail"]) == (
-        "unresolved",
-        "validation_failed",
-        "table1:R3 amount_krw",
-    )
-    assert report["candidates"] == 2
-    assert records(tmp_path) == []
+    assert (report["status"], report["records"], report["candidates"]) == ("parsed", 1, 2)
+    assert report["excluded"] == ["table1:R3 amount_krw"]
+    (record,) = records(tmp_path)
+    assert (record["source_location"], record["amount_krw"]) == ("table1:R2", "1220000")
 
 
 def test_a_page_whose_header_differs_from_the_declaration_stays_unresolved(tmp_path: Path) -> None:

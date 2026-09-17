@@ -66,6 +66,10 @@ parse 산출물의 `excluded`에 `table1:R<행> spent_on`으로 남으며, 지�
 
 ## 4. 이 구현으로 돌린 결과 — 원본은 받았고 레코드는 아직 0건이다
 
+> 아래는 #198 구현 시점의 값이다. 뒤의 11줄(상호 5·금액 6)도 행 단위로 빼기로
+> [#205](https://github.com/snowjaewon/OfficialDeliciousMap/issues/205)에서 정했고, 그 뒤 다시 흘린
+> 값은 [issue-205.md](issue-205.md)에 있다(`records=421`).
+
 2026-09-17에 세 단계를 실제로 돌렸다(`data/busan/orgs/busan-gijang/`).
 
 - `fetch`: `.html` 원본 1건(2,959,657 B, `container=html`), `empty_reason` 없음,
@@ -86,8 +90,8 @@ parse 산출물의 `excluded`에 `table1:R<행> spent_on`으로 남으며, 지�
 | --- | --- |
 | 값이 다 읽힌 줄 | 3,219 (그중 대상 기간 421) |
 | 집행일을 읽지 못한 줄 → 이번 구현이 행 단위로 뺀다 | 18 |
-| 사용장소가 빈 줄 → 원본 전체 `validation_failed` | 5 |
-| 금액 칸에 숫자 대신 `원`을 적은 줄 → 원본 전체 `validation_failed` | 6 |
+| 사용장소가 빈 줄 → 원본 전체 `validation_failed` (#205 뒤에는 행 단위 제외) | 5 |
+| 금액 칸에 숫자 대신 `원`을 적은 줄 → 원본 전체 `validation_failed` (#205 뒤에는 행 단위 제외) | 6 |
 
 뒤의 11줄은 원본 자체의 결함이다(`R365` 몽골 방문단 환송연·`R2372`·`R2844`·`R2849` 격려금 지급은
 사용장소가 비어 있고, `R3071`~ 정관읍 여섯 줄은 금액 칸이 `원`, 인원 칸이 `명`이다). 금액·상호
