@@ -11,7 +11,7 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Protocol
 
-from deliciousmap import grid, period
+from deliciousmap import grid
 from deliciousmap.budget import Budget, BudgetUnavailable
 from deliciousmap.contracts import (
     CachedHeaderMap,
@@ -367,8 +367,6 @@ def _cached(source: SourceRef, table: grid.Table, cache_path: Path) -> list[Head
                 layout="table",
                 header_rows=rows,
                 data_start_row=max(rows) + value.data_offset,
-                # 캐시가 싣지 않는 연도 근거는 이 원본에서 다시 읽는다.
-                year_hint=period.hinted_year(source.posted, source.title, source.spent_on),
                 columns=value.columns,
                 amount_multiplier=value.amount_multiplier,
                 cache=CacheRef(key=entry.key, revision=entry.revision),
