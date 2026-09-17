@@ -95,10 +95,10 @@
 
 | 항목 | 값 | 도출 |
 | --- | --- | --- |
-| 호출 | 4건 | `data/_shared/llm-budget.jsonl` 7,556 → 7,564줄(예약·정산 각 4) |
+| 호출 | 4건 | `data/_shared/llm-budget.jsonl`에 예약·정산 각 4줄. 2026-09-18 `develop` 리베이스 뒤 7,844 → 7,852줄 |
 | 예약 | USD 0.044820 | 같은 줄의 `kind: reservation` 합 |
 | 정산 | USD 0.006894 | 같은 줄의 `kind: settlement` 합 |
-| 누적 정산 | USD 8.613713 | 장부 전체의 `settlement` 합 (한도 15) |
+| 누적 정산 | USD 9.462395 | 리베이스 뒤 장부 전체의 `settlement` 합 (한도 15). 리베이스 전에는 8.613713이었고, 늘어난 0.848682는 인천(#218)의 `classification` 288줄이다 |
 | 새 답변 | 4건 | `data/busan/headermap-answers-v1.jsonl` 1,062 → 1,066줄, 모두 `gemini-3.6-flash` |
 
 호출이 난 자리는 재수집이 새로 가져온 부산진구 원본 2건이다.
@@ -125,7 +125,7 @@ uv run python -c "import json, pathlib; from deliciousmap import grid, headermap
 ```
 
 멈춘 뒤의 도시 단위 `headermap`은 모델 자격증명 없이 돌려 추가 호출이 생길 수 없게 했다. 그
-실행 뒤 예산 장부 7,564줄 · 답변 장부 1,066줄 · 공통 캐시 938줄로 세 장부가 모두 그대로였다.
+실행 뒤 예산 장부·답변 장부(1,066줄)·공통 캐시(938줄)의 줄 수가 모두 그대로였다.
 
 ## `headermap` 낡음
 
