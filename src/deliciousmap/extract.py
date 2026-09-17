@@ -60,13 +60,17 @@ SERIAL_RANGE = (36526, 73051)
 EXCEL_EPOCH = datetime(1899, 12, 30)
 
 
+# 선언 표에서 그 줄만 빼는 실패 항목. 금액 단위(`amount_unit`)는 들지 않는다(ADR-0008, #205).
+ROW_DROPPING_ITEMS = frozenset({"spent_on", "merchant", "amount_krw"})
+
+
 class ValidationFailed(Exception):
     """표가 코드 검증을 통과하지 못했다. 사유는 위치와 항목만 담고 원본 값은 담지 않는다."""
 
     def __init__(self, detail: str, item: str = "") -> None:
         self.detail = detail
         # 검증이 걸린 역할 이름(`spent_on`·`amount_krw`…). 행 하나를 읽다 걸린 것이 아니면
-        # 비어 있다. 선언 표의 집행일 실패만 행 단위로 가르므로 호출자가 이 값으로 갈린다.
+        # 비어 있다. 선언 표는 이 값으로 행 단위 제외와 원본 전체 실패를 가른다(`_drops_row`).
         self.item = item
         super().__init__(detail)
 
@@ -82,8 +86,8 @@ class Extraction:
     candidates: int
     out_of_range: int
     # 레코드가 되지 않은 행의 위치와 사유. 빈 행·반복 헤더·합계·제목은 분모에서도 뺀 것이고,
-    # 선언 표에서 집행일을 읽지 못한 행(`sheet1:R7 spent_on`)은 분모에 남긴 채 여기에만 남는다
-    # (폴백 정책: 날짜를 못 읽었다는 이유로 후보에서 빼지 않는다).
+    # 선언 표에서 집행일·상호·금액을 읽지 못한 행(`sheet1:R7 spent_on`·`merchant`·`amount_krw`)은
+    # 분모에 남긴 채 여기에만 남는다(폴백 정책: 값을 못 읽었다는 이유로 후보에서 빼지 않는다).
     excluded: tuple[str, ...]
     review: tuple[str, ...]
     total_check: TotalCheck
@@ -122,7 +126,7 @@ def extract(table: Table, mapping: HeaderMap, source: SourceRef) -> Extraction:
         elif kind == "unclear_total":
             sections[0].unclear = True
     excluded: list[str] = []
-    undated: list[ValidationFailed] = []
+    dropped: list[ValidationFailed] = []
     for row in range(mapping.data_start_row, len(table.rows) + 1):
         kind = _kind(table, mapping, headers, row)
         if kind == "candidate":
@@ -131,9 +135,9 @@ def extract(table: Table, mapping: HeaderMap, source: SourceRef) -> Extraction:
             except ValidationFailed as exc:
                 if not _drops_row(mapping, exc):
                     raise
-                # 선언 표에서 집행일을 읽지 못한 줄. 그 줄만 레코드에서 빠지고 표의 나머지는
-                # 살아남는다. 분모에는 남으므로 아래에서 후보 수에 더한다.
-                undated.append(exc)
+                # 선언 표에서 집행일·상호·금액을 읽지 못한 줄. 그 줄만 레코드에서 빠지고 표의
+                # 나머지는 살아남는다. 분모에는 남으므로 아래에서 후보 수에 더한다.
+                dropped.append(exc)
                 excluded.append(exc.detail)
             continue
         excluded.append(f"{table.name}:R{row} {kind}")
@@ -144,10 +148,10 @@ def extract(table: Table, mapping: HeaderMap, source: SourceRef) -> Extraction:
         elif kind == "unclear_total":
             sections[-1].unclear = True
     candidates = [item for section in sections for item in section.candidates]
-    if undated and not candidates:
+    if dropped and not candidates:
         # 한 줄도 읽지 못했다면 그것은 한 줄의 문제가 아니라 틀의 문제다. 행 단위 제외가
         # "후보는 있는데 레코드는 0건"을 조용히 통과시키지 않게 원본 전체를 미해결로 남긴다.
-        raise undated[0]
+        raise dropped[0]
     check = _check_totals(table, sections, mapping.amount_multiplier)
     records = tuple(
         _record(table, mapping, source, candidate)
@@ -156,9 +160,9 @@ def extract(table: Table, mapping: HeaderMap, source: SourceRef) -> Extraction:
     )
     return Extraction(
         records=records,
-        # 집행일을 읽지 못한 줄도 원본이 실은 지출 후보다. 날짜를 못 읽었다는 이유로 후보에서
-        # 빼면 분모가 줄어 100% 검증이 그만큼 헐거워진다(폴백 정책).
-        candidates=len(candidates) + len(undated),
+        # 행 단위로 뺀 줄도 원본이 실은 지출 후보다. 값을 못 읽었다는 이유로 후보에서 빼면
+        # 분모가 줄어 100% 검증이 그만큼 헐거워진다(폴백 정책).
+        candidates=len(candidates) + len(dropped),
         out_of_range=len(candidates) - len(records),
         excluded=tuple(excluded),
         # 원본에 실제로 있는 0원·음수는 추출 오류로 단정하지 않고 재검증 리포트의 검토 대상이다.
@@ -175,13 +179,13 @@ def _drops_row(mapping: HeaderMap, failure: ValidationFailed) -> bool:
     """이 실패가 표 전체가 아니라 그 줄 하나만 빼는 것인지([ADR-0008](
     ../../docs/adr/0008-declare-html-table-mappings.md)).
 
-    사람이 틀을 확인한 선언 표에서만, 그리고 집행일을 읽지 못한 줄에서만 참이다. 기장군 목록은
-    사용일자 칸이 자유 입력이라 지출 후보 3,248줄 가운데 18줄이 읽히지 않는데(2026-09-17 실측),
-    표 하나가 게시판 전량이라 그 열여덟 줄이 나머지 전부를 죽인다. 모델이 매핑한 표는 매핑 자체가
-    틀렸을 수 있어 지금처럼 원본 전체를 미해결로 남긴다 — 선언한 천원 표의 단위 보류와 같은
-    갈림이다.
+    사람이 틀을 확인한 선언 표에서만, 그리고 집행일·상호·금액을 읽지 못한 줄에서만 참이다.
+    기장군 목록은 표 하나가 게시판 전량이라 지출 후보 3,248줄 가운데 집행일 18줄·상호 5줄·금액
+    6줄(2026-09-17 실측)이 나머지 전부를 죽인다. 모델이 매핑한 표는 매핑 자체가 틀렸을 수 있어
+    지금처럼 원본 전체를 미해결로 남긴다. 선언한 천원 표의 원 단위 행(`amount_unit`)도 넓히지
+    않는다 — #145의 보류 결정 그대로 그 원본 전체가 미해결이다(#205).
     """
-    return mapping.declared and failure.item == "spent_on"
+    return mapping.declared and failure.item in ROW_DROPPING_ITEMS
 
 
 @dataclass(frozen=True)

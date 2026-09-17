@@ -1032,8 +1032,8 @@ class SourceReport(Contract):
     # 둘을 더하면 이 원본이 실제로 실은 대상 기간 레코드 수다.
     repeated: int = Field(default=0, ge=0)
     # 레코드가 되지 않은 행의 위치와 사유(`sheet1:R7 total`). 빈 행·반복 헤더·합계처럼 지출
-    # 1건이 아닌 행은 분모에서도 뺀 것이고, 선언 표(ADR-0008)에서 집행일을 읽지 못한 행
-    # (`table1:R9 spent_on`)은 `candidates`에 남긴 채 여기에만 적는다.
+    # 1건이 아닌 행은 분모에서도 뺀 것이고, 선언 표(ADR-0008)에서 집행일·상호·금액을 읽지 못한
+    # 행(`table1:R9 spent_on`·`merchant`·`amount_krw`)은 `candidates`에 남긴 채 여기에만 적는다.
     excluded: tuple[Text, ...] = ()
     # 원본에 실제로 있는 0원·음수처럼 재검증 리포트에서 사람이 볼 레코드의 위치와 사유.
     review: tuple[Text, ...] = ()

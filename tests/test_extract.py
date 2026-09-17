@@ -785,10 +785,78 @@ def test_a_declared_table_drops_only_the_row_whose_use_date_is_unreadable() -> N
     assert result.excluded == ("sheet1:R4 spent_on",)
 
 
-def test_a_declared_table_still_fails_whole_on_an_unreadable_amount() -> None:
-    """행 단위로 빼는 것은 집행일 실패뿐이다. 금액·상호 실패는 지금 계약 그대로 원본 전체다."""
-    rows = table(spend(5, "합성 식당", 62000.0), ("과장", "2026-01-06 12:00", "합성 찻집", "", ""))
-    with pytest.raises(ValidationFailed, match="sheet1:R4 amount_krw"):
+def test_a_declared_table_drops_only_the_row_whose_amount_is_unreadable() -> None:
+    """금액 칸에 숫자 대신 `원`을 적은 줄(기장군 정관읍 실측)도 집행일 실패와 같이 그 줄만 뺀다.
+
+    #205 사용자 결정. 값을 고쳐 읽지 않고(`원`을 0으로 읽지 않는다) 자리와 사유만 남긴다.
+    """
+    rows = table(
+        spend(5, "합성 식당", 62000.0),
+        ("과장", "2026-01-06 12:00", "합성 찻집", "간담회", "원"),
+        spend(7, "합성 국밥", 31000.0),
+    )
+    result = extract(rows, MAPPING.model_copy(update={"declared": True}), SOURCE)
+    assert [record.merchant for record in result.records] == ["합성 식당", "합성 국밥"]
+    assert (result.candidates, result.out_of_range) == (3, 0)
+    assert result.excluded == ("sheet1:R4 amount_krw",)
+
+
+def test_a_declared_table_drops_only_the_row_whose_merchant_is_blank() -> None:
+    """상호가 빈 격려금·축의금 줄(기장군 R365 실측)도 그 줄만 뺀다. 사용목적으로 채우지 않는다."""
+    rows = table(
+        spend(5, "합성 식당", 62000.0),
+        ("과장", "2026-01-06 12:00", "", "방문단 환송연 격려금", 258000.0),
+        spend(7, "합성 국밥", 31000.0),
+    )
+    result = extract(rows, MAPPING.model_copy(update={"declared": True}), SOURCE)
+    assert [record.merchant for record in result.records] == ["합성 식당", "합성 국밥"]
+    assert (result.candidates, result.out_of_range) == (3, 0)
+    assert result.excluded == ("sheet1:R4 merchant",)
+
+
+def test_a_declared_table_keeps_every_dropped_row_in_the_denominator() -> None:
+    """세 사유가 섞여도 `records + out_of_range + 행 단위 제외 = candidates`다(ADR-0008)."""
+    rows = table(
+        spend(5, "합성 식당", 62000.0),
+        ("과장", "6.27.(금)", "합성 찻집", "간담회", 27000.0),
+        ("과장", "2026-01-06 12:00", "", "간담회", 9000.0),
+        ("과장", "2026-01-07 12:00", "합성 국밥", "간담회", "원"),
+        ("과장", "2025-12-30 12:00", "합성 분식", "간담회", 8000.0),
+    )
+    result = extract(rows, MAPPING.model_copy(update={"declared": True}), SOURCE)
+    assert [record.merchant for record in result.records] == ["합성 식당"]
+    assert result.excluded == (
+        "sheet1:R4 spent_on",
+        "sheet1:R5 merchant",
+        "sheet1:R6 amount_krw",
+    )
+    assert result.candidates == len(result.records) + result.out_of_range + len(result.excluded)
+    assert (result.candidates, result.out_of_range) == (5, 1)
+
+
+@pytest.mark.parametrize(
+    ("row", "item"),
+    [
+        (("과장", "6.27.(금)", "합성 찻집", "간담회", 27000.0), "spent_on"),
+        (("과장", "2026-01-06 12:00", "", "간담회", 9000.0), "merchant"),
+        (("과장", "2026-01-06 12:00", "합성 찻집", "간담회", "원"), "amount_krw"),
+    ],
+)
+def test_a_model_mapped_table_fails_whole_on_any_row(row: tuple[Cell, ...], item: str) -> None:
+    """모델이 매핑한 표는 매핑 자체가 틀렸을 수 있어 한 줄만 떼어 낼 근거가 없다(ADR-0008)."""
+    rows = table(spend(5, "합성 식당", 62000.0), row)
+    with pytest.raises(ValidationFailed, match=f"sheet1:R4 {item}"):
+        extract(rows, MAPPING, SOURCE)
+
+
+def test_a_declared_table_whose_every_row_fails_for_mixed_reasons_still_fails_whole() -> None:
+    """상호·금액·집행일이 섞여 한 줄도 읽지 못했어도 틀의 문제로 보아 원본 전체를 남긴다."""
+    rows = table(
+        ("과장", "2026-01-06 12:00", "", "간담회", 9000.0),
+        ("과장", "2026-01-07 12:00", "합성 국밥", "간담회", "원"),
+        ("과장", "6.27.(금)", "합성 찻집", "간담회", 27000.0),
+    )
+    with pytest.raises(ValidationFailed, match="sheet1:R3 merchant"):
         extract(rows, MAPPING.model_copy(update={"declared": True}), SOURCE)
 
 
