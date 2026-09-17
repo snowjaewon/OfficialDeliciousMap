@@ -134,6 +134,25 @@ def test_icms_board_reads_the_listing_and_every_detail_attachment() -> None:
     assert posting.attachments[0].page_url == boards.address(view_url, view_params)
 
 
+def test_icms_board_reads_the_extension_before_the_size_and_the_icon() -> None:
+    """남구 본문은 이름·크기 뒤에 아이콘(`alt="첨부파일"`)을 같은 링크 안에 둔다."""
+    name = '2026년 8월 보건행정과.xlsx&nbsp;[16934&nbsp;byte] <img alt="첨부파일" src="/ico.jpg">'
+    transport = FakeTransport(
+        dict(
+            [
+                response(
+                    CITY_INDEX,
+                    {**LIST_PARAMS, "pageIndex": "1"},
+                    icms_listing(icms_row("7", "2026년 8월", "보건행정과", "2026-09-15", "F7")),
+                ),
+                response(*city_view("7"), icms_detail(("72FDFC6C", "202E3B74", name))),
+            ]
+        )
+    )
+    postings = list(IcmsBoard(board(CITY_BOARD, IcmsBoard), transport).postings(never))
+    assert [item.suffix for item in postings[0].attachments] == [".xlsx"]
+
+
 def test_icms_board_reads_the_department_column_by_its_header() -> None:
     """남구는 부서 열 이름이 `담당부서`다. 열 차례가 아니라 머리글로 찾는다."""
     transport = FakeTransport(
@@ -448,7 +467,7 @@ def test_gunwi_board_reads_the_listing_and_the_detail_downloads() -> None:
                 response(
                     GUNWI_PAGE,
                     {"mnu_uid": "160", "bod_uid": "141036", "cmd": "258"},
-                    gunwi_detail(("180131", "군위군수(기관).pdf"), ("180132", "군위군수.hwp")),
+                    gunwi_detail(("180131", "군위군수(기관).pdf"), ("180132", "군위군수.xlsx")),
                 ),
                 response(
                     GUNWI_PAGE,
@@ -469,7 +488,7 @@ def test_gunwi_board_reads_the_listing_and_the_detail_downloads() -> None:
     assert scraper.filtered == 1
     assert [(item.file_id, item.suffix, item.url) for item in postings[0].attachments] == [
         ("180131", ".pdf", "https://www.gunwi.go.kr/board_download.do?file_uid=180131"),
-        ("180132", ".hwp", "https://www.gunwi.go.kr/board_download.do?file_uid=180132"),
+        ("180132", ".xlsx", "https://www.gunwi.go.kr/board_download.do?file_uid=180132"),
     ]
     assert postings[0].attachments[0].page_url == (
         f"{GUNWI_PAGE}?mnu_uid=160&bod_uid=141036&cmd=258"

@@ -20,8 +20,9 @@ from deliciousmap.transport import Transport
 if TYPE_CHECKING:
     from deliciousmap.registry.models import Board
 
-# 2026-09-17 실측한 첨부 확장자. 수집이 이 선언과 대조한다.
-PUBLISHED_SUFFIXES = frozenset({".xls", ".xlsx", ".hwp", ".hwpx", ".pdf"})
+# 2026-09-17 실측한 첨부 확장자. 수집이 이 선언과 대조한다. 시청·남구·달성군·수성구·군위군의
+# 2026년 원본 1,496개가 모두 이 셋이었다(한글 문서는 없었다).
+PUBLISHED_SUFFIXES = frozenset({".xls", ".xlsx", ".pdf"})
 # ICMS 목록이 게시글을 여는 호출. 주소는 `javascript:;`이고 번호는 이 호출에만 있다.
 ICMS_VIEW = re.compile(r"fn_icms_navi_common\(\s*'view'\s*,\s*'(?P<id>\d+)'")
 # ICMS의 내려받기 호출. 미리보기(`filePreview`)는 같은 파일을 변환해 보여 주므로 세지 않는다.
@@ -33,8 +34,9 @@ ICMS_ARTICLE = "/icms/bbs/selectBoardArticle.do"
 ICMS_DOWNLOAD = "/icms/cmm/fms/FileDown.do"
 # 부서 열의 이름. 시청·달성군은 `부서명`, 남구는 `담당부서`다.
 DEPARTMENT_HEADERS = frozenset({"부서명", "담당부서"})
-# 첨부 이름 뒤의 크기 표기(`… .xlsx [16934 byte]`). 이름과 가르는 자리다.
-SIZE = re.compile(r"\s*\[[^\[\]]*\]\s*$")
+# 첨부 이름 뒤의 크기 표기(`… .xlsx [16934 byte]`). 이름과 가르는 자리다. 남구는 그 뒤에
+# 아이콘(`alt="첨부파일"`)을 같은 링크 안에 두므로 마지막 `[…]` 뒤의 글자까지 뗀다.
+SIZE = re.compile(r"\s*\[[^\[\]]*\][^\[\]]*$")
 # 수성구 집행표 화면. 대상자를 고르면 사이트가 이 주소로 폼을 보낸다(`fn_searchBoe`).
 OFFICIAL_LINK = "/front/businessOperatingExpense/icmsOperatingExpenseFront.do"
 # 수성구 대상자 목록의 구분선(`------------------`). 사람이 아니다.
