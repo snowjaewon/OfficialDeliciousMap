@@ -1,4 +1,14 @@
 record_id,spent_on,organization,department,merchant,purpose,amount_krw,source_hash,source_location,repeats,expense_id,expense_amount_krw
+40cd32952fb725e9-table1-R2,2026-06-08,ulsan-city,,-,경조금 지급,50000,40cd32952fb725e94d22eaf6405a762171f7565b5e0f3176def72788baebc836,table1:R2,,,
+40cd32952fb725e9-table1-R3,2026-06-17,ulsan-city,,봉계숯불갈비,시정 현안 홍보 및 의견수렴 간담회,1480000,40cd32952fb725e94d22eaf6405a762171f7565b5e0f3176def72788baebc836,table1:R3,,,
+40cd32952fb725e9-table1-R4,2026-06-19,ulsan-city,,-,경조금 지급,50000,40cd32952fb725e94d22eaf6405a762171f7565b5e0f3176def72788baebc836,table1:R4,,,
+40cd32952fb725e9-table1-R5,2026-06-19,ulsan-city,,-,경조금 지급,50000,40cd32952fb725e94d22eaf6405a762171f7565b5e0f3176def72788baebc836,table1:R5,,,
+40cd32952fb725e9-table1-R6,2026-06-22,ulsan-city,,봉계숯불갈비,시정 현안 홍보 및 의견수렴 간담회,790000,40cd32952fb725e94d22eaf6405a762171f7565b5e0f3176def72788baebc836,table1:R6,,,
+40cd32952fb725e9-table1-R7,2026-06-23,ulsan-city,,이조장어,시정 현안 홍보 및 의견수렴 간담회,940000,40cd32952fb725e94d22eaf6405a762171f7565b5e0f3176def72788baebc836,table1:R7,,,
+40cd32952fb725e9-table1-R8,2026-06-24,ulsan-city,,봉계숯불갈비,시정 현안 홍보 및 의견수렴 간담회,745000,40cd32952fb725e94d22eaf6405a762171f7565b5e0f3176def72788baebc836,table1:R8,,,
+40cd32952fb725e9-table1-R9,2026-06-26,ulsan-city,,연미정식당,시정 현안 홍보 및 의견수렴 간담회,240000,40cd32952fb725e94d22eaf6405a762171f7565b5e0f3176def72788baebc836,table1:R9,,,
+40cd32952fb725e9-table1-R10,2026-06-29,ulsan-city,,이조장어,퇴직공무원 격려 간담회,588000,40cd32952fb725e94d22eaf6405a762171f7565b5e0f3176def72788baebc836,table1:R10,,,
+40cd32952fb725e9-table1-R11,2026-06-30,ulsan-city,,과일소풍,민선8기 업무성과 토의 티타임 다과 구입,235000,40cd32952fb725e94d22eaf6405a762171f7565b5e0f3176def72788baebc836,table1:R11,,,
 195959ca9e26745b-table1-R2,2026-06-30,ulsan-city,,원플레이트,AI 데이터센터 산업 육성 간담회,199000,195959ca9e26745b2532c894bc332671aef4592fe92ac6ef0a5334f3fb2731d4,table1:R2,,,
 195959ca9e26745b-table1-R3#1,2026-06-30,ulsan-city,,더다이닝빌라,지역 동향 관리 유관기관 업무협조 간담회,,195959ca9e26745b2532c894bc332671aef4592fe92ac6ef0a5334f3fb2731d4,table1:R3,,195959ca9e26745b-table1-R3,175000
 195959ca9e26745b-table1-R3#2,2026-06-30,ulsan-city,,머머랩,지역 동향 관리 유관기관 업무협조 간담회,,195959ca9e26745b2532c894bc332671aef4592fe92ac6ef0a5334f3fb2731d4,table1:R3,,195959ca9e26745b-table1-R3,175000
