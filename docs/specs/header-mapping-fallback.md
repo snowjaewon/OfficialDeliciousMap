@@ -51,7 +51,7 @@ status: accepted
 | 사람 | `human` | 적용하지 않는다 |
 
 - **이 결정 이후의 판정은 에이전트 CLI(Claude Code·Codex CLI 등)가 착수한다.** 모델 API 직접 호출은 CLI 경로로 처리할 수 없는 건에만 쓰고, 그 사유를 해당 도시의 검증 문서에 남긴다.
-- **이 결정 이전에 낸 산출물은 그대로 둔다. 소급해 다시 판정하지 않는다.** 2026-09-17 `origin/develop` 기준으로 부산 1,062건과 대전 320건은 전부 `gemini-3.6-flash` API 판정이고, 광주 602건은 CLI 499건·API 102건·사람 1건이 섞여 있다(각 도시 `headermap-answers-v1.jsonl`을 `value.model`로 집계). 이 도시들의 API 단독 판정은 이 결정 이전의 작업이다.
+- **이 결정 이전에 낸 산출물은 그대로 둔다. 소급해 다시 판정하지 않는다.** 2026-09-17 `origin/develop` 기준으로 부산 1,062건과 대전 320건은 전부 `gemini-3.6-flash` API 판정이고, 광주 602건은 CLI 499건·API 102건·사람 1건이 섞여 있다(각 도시 `headermap-answers-v1.jsonl`을 `value.model`로 집계). 이 도시들의 API 단독 판정은 이 결정 이전의 작업이다. 예외가 하나 있다 — 2026-09-18 부산 재수집(#217)이 이 결정 이후에 API 경로로 4건을 더 냈다. `headermap`을 모델이 구성된 채로 돌린 실수이며, 사유와 실측은 [`docs/validation/issue-217.md`](../validation/issue-217.md)의 「모델 API 판정 4건과 그 사유」에 있다. 2026-09-18 사용자 결정으로 되돌리지 않는다.
 - 경로별 건수는 `data/_shared/llm-budget.jsonl`이 아니라 `headermap-answers-v1.jsonl`에서 센다. 장부는 과금된 API 호출만 싣기 때문에 CLI·사람 판정이 빠진 수가 나온다. 검증 문서에 "헤더 매핑 몇 건"을 적을 때 장부 한 곳만 세지 않는다.
 - 경로가 무엇이든 판정은 코드가 다시 검증한다. 검증 기준과 표당 재호출 한도는 위 "코드 검증"·"재호출과 폴백 진입"과 같으며 경로에 따라 완화하지 않는다.
 - 판정 주체는 정제 산출물에만 남기고 사이트로 내보내지 않는다. `Record`는 `source_hash`·`source_location`으로 원본 위치를 싣고 `model`을 싣지 않는다.
