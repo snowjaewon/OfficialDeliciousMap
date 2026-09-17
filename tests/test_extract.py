@@ -231,6 +231,13 @@ def test_expense_before_the_data_start_fails_instead_of_being_skipped() -> None:
     assert extract(summary, late, SOURCE).total_check == "matched"
 
 
+def test_a_table_that_ends_before_the_learned_data_start_has_no_expense() -> None:
+    """헤더만 있는 시트(대전 서구 실측)에 다른 표에서 배운 시작 위치가 표 밖을 가리킨다."""
+    late = MAPPING.model_copy(update={"data_start_row": 4})
+    found = extract(table(), late, SOURCE)
+    assert (found.records, found.candidates, found.excluded) == ((), 0, ())
+
+
 def test_each_section_is_checked_against_its_own_total() -> None:
     """한 시트에 헤더를 되풀이한 두 구역이 있고, 구역마다 헤더 바로 아래에 계가 있다."""
     sheet = Table(

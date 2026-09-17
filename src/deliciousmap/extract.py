@@ -110,7 +110,9 @@ def extract(table: Table, mapping: HeaderMap, source: SourceRef) -> Extraction:
     }
     # 헤더를 되풀이한 시트는 구역마다 따로 합계를 갖는다. 첫 구역은 헤더 아래 요약 행부터 본다.
     sections: list[_Section] = [_Section()]
-    for row in range(max(mapping.header_rows, default=0) + 1, mapping.data_start_row):
+    # 배운 시작 위치가 표 끝을 넘을 수 있다(헤더만 있는 시트). 표 안의 행만 본다.
+    data_start = min(mapping.data_start_row, len(table.rows) + 1)
+    for row in range(max(mapping.header_rows, default=0) + 1, data_start):
         kind = _kind(table, mapping, headers, row)
         if kind == "candidate":
             # 다른 표에서 배운 시작 위치가 이 표의 첫 지출을 건너뛰게 두지 않는다.
