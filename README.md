@@ -407,7 +407,8 @@ closure는 4, build는 7, 나머지는 1), `city`, `org`, 입력 해시인
 게시판이 링크했지만 받지 못한 원본을 `missing`(기관·게시판·게시글 주소·파일 이름·사유)에,
 게시일이 대상 연도 밖이라 받지 않은 게시글 수를 `uncollected_postings`에, 본문을 열었더니
 게시판이 링크한 원본이 하나도 없던 게시글 수를 `unattached_postings`에 남긴다. 이 셋은 각각
-링크·기간·링크 없음으로 사유가 갈린다.
+링크·기간·링크 없음으로 사유가 갈린다. `unattached_postings`는 `sources`·`missing`과 같이
+장부에 쌓인 수이고, `uncollected_postings`·`filtered_postings`는 그 실행에서 본 수다.
 `sources`·`missing`의 각 줄은 게시판 목록이 밝힌 `posted`(게시일)와 `title`(제목)도 싣고,
 `sources`는 목록이 밝힌 작성 부서를 `department`에 싣는다. 원본 표에 부서 열이 없을 때 이 값이
 부서가 된다. 목록 구조를 읽지 않는 스크래퍼는 이 셋을 채우지 않는다. `parse.json`에는 레코드를 중복 저장하지 않는다.

@@ -254,9 +254,11 @@ class OfficialTableBoard:
                 self.filtered += 1
                 continue
             title = PurePosixPath(files[0][1]).stem.strip()
-            opened = not skipped(post_id, None)
+            # 묶음은 파일이 하나 이상이라 첨부 없는 게시글이 나오지 않는다. 주소를 싣지 않는다.
             attachments = (
-                tuple(
+                ()
+                if skipped(post_id, None)
+                else tuple(
                     boards.Attachment(
                         post_id,
                         str(index),
@@ -268,12 +270,8 @@ class OfficialTableBoard:
                     )
                     for index, (serial, filename) in enumerate(files, start=1)
                 )
-                if opened
-                else ()
             )
-            yield boards.Posting(
-                post_id, attachments, None, title, name, url=page_url if opened else ""
-            )
+            yield boards.Posting(post_id, attachments, None, title, name)
 
 
 class GunwiBoard:

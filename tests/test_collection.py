@@ -318,6 +318,34 @@ def test_a_posting_the_scraper_passed_over_is_not_counted_as_unattached(tmp_path
     assert not (paths.board_dir(target, "test-org", "expenses") / "collected.jsonl").exists()
 
 
+def test_a_ledger_written_before_the_column_existed_counts_nothing(tmp_path: Path) -> None:
+    """새 칸이 없던 시절의 장부에는 파일도 유실도 없는 줄이 없다. 그 장부를 읽어도 셈이
+    달라지지 않고, 그때 끝낸 게시글은 그대로 끝난 것으로 읽힌다."""
+    target, paths = _target(_PartlyAttachedScraper), _paths(tmp_path)
+    directory = paths.board_dir(target, "test-org", "expenses")
+    directory.mkdir(parents=True)
+    # 옛 줄 둘: 원본을 받은 게시글과 유실만 남은 게시글. 둘 다 그 시절이 쓰던 모양 그대로다.
+    old = [
+        {"post_id": "1", "url": "https://example.invalid/list/1", "files": ["1-1.html"]},
+        {
+            "post_id": "2",
+            "url": "https://example.invalid/list/2",
+            "files": [],
+            "gone": ["2-1.html"],
+        },
+    ]
+    (directory / "collected.jsonl").write_text(
+        "".join(json.dumps(entry) + "\n" for entry in old), encoding="utf-8"
+    )
+    (directory / "1-1.html").write_bytes(PAGE)
+    transport = _CountingTransport()
+    output = collect(target, paths, transport)
+    assert output.unattached_postings == 0
+    assert [item.reason for item in output.missing] == ["gone"]
+    assert [item.container for item in output.sources] == ["html"]
+    assert transport.urls == []
+
+
 def test_a_collection_written_before_the_column_existed_still_reads() -> None:
     """새 칸이 없던 시절의 산출물을 읽어도 실패하지 않는다. 그 값은 0이다."""
     payload = {"sources": [], "missing": [], "uncollected_postings": 3, "filtered_postings": 1}

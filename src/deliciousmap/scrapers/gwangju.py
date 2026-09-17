@@ -210,7 +210,12 @@ def _posted_on(parts: list[str]) -> date:
 
 
 def _with_attachments(listing: "_Listing") -> tuple[_Row, ...]:
-    """목록에 첨부 링크가 함께 실린 게시글만 고른다. 본문을 열어 보지 않는다."""
+    """목록에 첨부 링크가 함께 실린 게시글만 고른다. 본문을 열어 보지 않는다.
+
+    목록에서 떨군 줄은 첨부 없는 게시글 수(`FetchOutput.unattached_postings`)에도 들지 않는다.
+    본문을 열지 않으므로 첨부가 없다고 확인한 것이 아니고, 목록 색인에도 남지 않는다. 그 줄까지
+    세려면 본문을 열어야 하는데 그것은 이 게시판의 수집 비용을 바꾸는 별도 결정이다(#212).
+    """
     if not listing.rows and any(
         _parameter(href, VIEW_PATH, POST_PARAMETER) is not None for href, _ in listing.links
     ):

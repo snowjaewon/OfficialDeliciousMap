@@ -227,15 +227,13 @@ class CityExpenseBoard:
                         self.filtered += 1
                         continue
                     page_url = urllib.parse.urljoin(self.list_url, f"/expense/{post_id}")
-                    opened = not skipped(post_id, posted)
+                    # 상세 화면이 곧 원본이라 첨부 없는 게시글이 없다. 주소를 싣지 않는다.
                     attachments = (
-                        (boards.Attachment(post_id, "1", ".html", page_url, page_url),)
-                        if opened
-                        else ()
+                        ()
+                        if skipped(post_id, posted)
+                        else (boards.Attachment(post_id, "1", ".html", page_url, page_url),)
                     )
-                    yield boards.Posting(
-                        post_id, attachments, posted, title, url=page_url if opened else ""
-                    )
+                    yield boards.Posting(post_id, attachments, posted, title)
                 page += 1
 
     def _excluded(self, title: str) -> bool:
