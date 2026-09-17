@@ -981,6 +981,17 @@ class FetchOutput(Contract):
     # 업무추진비 집행기관이 아닌 줄이 섞인 게시판에서 걸러 낸 게시글 수. 섞인 게시판
     # (서울 시청·중구·강남 실측)이 무엇을 뺐는지 0건으로 숨기지 않으려고 싣는다.
     filtered_postings: int = Field(default=0, ge=0)
+    # 본문을 열었더니 게시판이 링크한 원본이 하나도 없던 게시글 수. 이것이 없으면 "그 기관은
+    # 그 기간에 게시글이 그만큼뿐이었다"와 "게시글은 있었는데 원본이 안 달려 있었다"가 같은
+    # 모양이 된다(#212). 대부분 집행이 없었다는 알림이다 — 인천 부평 실측(#174): 159건 중
+    # 146건이 제목에 `(해당없음)`을 달고 있다.
+    #
+    # 위의 세 칸과 뜻이 갈린다. `missing`은 게시판이 링크했지만 받지 못한 원본이라 링크가
+    # 있었고, `uncollected_postings`는 기간 밖이라 본문도 열지 않았으며,
+    # `filtered_postings`는 집행기관이 아니라서 뺀 줄이다.
+    #
+    # 장부에 쌓인 수라 `sources`·`missing`과 같이 이번 실행에서 새로 본 것만 세지 않는다.
+    unattached_postings: int = Field(default=0, ge=0)
 
 
 class HeaderMapInput(Contract):

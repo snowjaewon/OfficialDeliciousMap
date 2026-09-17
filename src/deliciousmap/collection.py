@@ -63,6 +63,7 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
     held: list[str] = []
     uncollected = 0
     filtered = 0
+    unattached = 0
     for organization in target.organizations:
         if organization.hold_reason is not None:
             held.append(f"{organization.slug}={organization.hold_reason}")
@@ -88,20 +89,21 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
             unmeasured.extend(walked.unmeasured)
             uncollected += walked.uncollected
             filtered += walked.filtered
-            collected, gone = _ledger(directory)
+            ledger = _ledger(directory)
             listed = _listed(directory)
             sources.extend(
                 _sources(
                     directory,
                     paths.raw_root,
-                    collected,
+                    ledger.collected,
                     listed,
                     organization.slug,
                     board.slug,
                     _html(board.scraper.published_suffixes),
                 )
             )
-            missing.extend(_missing(gone, listed, organization.slug, board.slug))
+            missing.extend(_missing(ledger.gone, listed, organization.slug, board.slug))
+            unattached += len(ledger.unattached)
     if not sources and outages:
         # 게시판을 모두 훑었는데 한 건도 거두지 못했고 그 원인이 장애다. 이것까지 경고로
         # 남기면 장애가 "첨부가 없는 기관"과 같은 모양이 된다. 실패는 실패로 알린다.
@@ -119,6 +121,7 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
             empty_reason=warning,
             uncollected_postings=uncollected,
             filtered_postings=filtered,
+            unattached_postings=unattached,
         )
     if not visited and not held:
         # 아직 게시판을 선언하지 않은 도시를 수집 완료로 표시하지 않는다.
@@ -129,6 +132,7 @@ def collect(target: Target, paths: Paths, transport: Transport) -> FetchOutput:
         empty_reason=_join_reasons(_empty_reason(visited, held), warning),
         uncollected_postings=uncollected,
         filtered_postings=filtered,
+        unattached_postings=unattached,
     )
 
 
@@ -164,8 +168,7 @@ def _walk(board: Board, directory: Path, transport: Transport) -> _Walked:
     목록은 끝까지 훑되 게시일이 대상 연도 밖인 게시글은 본문도 열지 않는다(`period.collects`).
     이미 받아 둔 원본은 그 규칙과 무관하게 장부에 남으며, 받지 않은 게시글은 수로 돌려준다.
     """
-    collected, gone = _ledger(directory)
-    done = set(collected) | set(gone)
+    done = _ledger(directory).done
     listed = _listed(directory)
     scraper: boards.BoardScraper = board.scraper(board, transport)
     unmeasured: list[dict[str, str]] = []
@@ -453,13 +456,34 @@ class Gone:
     files: tuple[tuple[str, str], ...]
 
 
-def _ledger(directory: Path) -> tuple[dict[str, Collected], dict[str, Gone]]:
-    """마지막 줄이 끊긴 기록은 버린다. 그 게시글은 아직 끝내지 못한 것으로 본다."""
+@dataclass(frozen=True)
+class _Ledger:
+    """게시판 하나의 수집 기록. 끝낸 게시글을 무엇이 남았는지로 가른다."""
+
+    collected: dict[str, Collected]
+    gone: dict[str, Gone]
+    # 첨부가 하나도 없던 게시글의 주소. 원본도 유실도 없어 출처에도 받지 못한 원본에도 들지
+    # 않지만 끝낸 게시글이라 본문을 다시 열지 않는다(#212).
+    unattached: dict[str, str]
+
+    @property
+    def done(self) -> set[str]:
+        """본문을 다시 열지 않을 게시글. 세 갈래를 합친 것이다."""
+        return set(self.collected) | set(self.gone) | set(self.unattached)
+
+
+def _ledger(directory: Path) -> _Ledger:
+    """마지막 줄이 끊긴 기록은 버린다. 그 게시글은 아직 끝내지 못한 것으로 본다.
+
+    파일도 유실도 없는 줄은 첨부가 하나도 없던 게시글이다. 새 칸이 없던 시절의 기록에는
+    그런 줄이 없으므로(그때는 아예 쓰지 않았다) 옛 기록을 읽어도 셈이 달라지지 않는다.
+    """
     path = directory / LEDGER
     collected: dict[str, Collected] = {}
     gone: dict[str, Gone] = {}
+    unattached: dict[str, str] = {}
     if not path.exists():
-        return collected, gone
+        return _Ledger(collected, gone, unattached)
     for line in path.read_text(encoding="utf-8").splitlines():
         try:
             entry = json.loads(line)
@@ -479,7 +503,9 @@ def _ledger(directory: Path) -> tuple[dict[str, Collected], dict[str, Gone]]:
             collected[post_id] = Collected(url, files)
         if lost:
             gone[post_id] = Gone(url, lost)
-    return collected, gone
+        if not files and not lost:
+            unattached[post_id] = url
+    return _Ledger(collected, gone, unattached)
 
 
 def _missing(
@@ -513,11 +539,16 @@ def _remember(
     stray: list[boards.Attachment],
     oversize: list[boards.Attachment],
 ) -> None:
-    if not posting.attachments:
+    """게시글 하나를 장부에 남긴다. 첨부가 하나도 없던 게시글도 남겨 다시 열지 않는다(#212).
+
+    주소는 첨부가 있으면 첫 첨부가, 없으면 게시글이 밝힌다. 둘 다 없으면 본문을 열지 않고
+    넘긴 게시글이라(`boards.Posting.url`) 끝낸 것으로 남기지 않는다.
+    """
+    if not posting.attachments and not posting.url:
         return
     entry = {
         "post_id": posting.post_id,
-        "url": posting.attachments[0].page_url,
+        "url": posting.attachments[0].page_url if posting.attachments else posting.url,
         "files": [item.name for item in stored],
         "gone": [item.name for item in lost],
         "empty": [item.name for item in empty],

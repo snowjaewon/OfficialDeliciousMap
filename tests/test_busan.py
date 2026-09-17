@@ -495,9 +495,10 @@ def test_collection_counts_drm_and_keeps_the_unlocked_attachments(tmp_path: Path
     _remember(
         directory, posting, [posting.attachments[0]], [], [], [posting.attachments[1]], [], []
     )
-    collected, gone = _ledger(directory)
-    assert collected["21481"].files == ("21481-2.xlsx",)
-    assert gone["21481"].files == (("21481-3.xlsx", "drm"),)
+    ledger = _ledger(directory)
+    assert ledger.collected["21481"].files == ("21481-2.xlsx",)
+    assert ledger.gone["21481"].files == (("21481-3.xlsx", "drm"),)
+    assert ledger.unattached == {}
 
 
 CITY_LIST = "https://www.busan.go.kr/ghopen12/list"
