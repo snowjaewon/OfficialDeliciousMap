@@ -60,6 +60,15 @@ class UnreadableBoard(Exception):
     """응답이 실측한 구조와 다르거나 온전히 받지 못했다. 형식 문제와 구별한다."""
 
 
+class OversizeOriginal(UnreadableBoard):
+    """한 번에 읽어 둘 수 있는 크기를 넘는 응답. 잘라 쓰면 원본이 아니므로 받지 못한 것으로 둔다.
+
+    목록·본문이 이만큼 크면 그 게시판을 읽지 못한 것이라 `UnreadableBoard`를 그대로 물려받고,
+    첨부일 때만 수집이 이 이름으로 가려 장부에 남긴다(인천시청 실측: 본청실국과장 게시글
+    3087017의 `.xlsx` 하나가 상한을 넘는다).
+    """
+
+
 class OriginalGone(Exception):
     """게시판이 링크한 원본이 기관 쪽에 없다. 다시 요청해도 달라지지 않는다."""
 
@@ -322,7 +331,7 @@ def request(transport: Transport, url: str, params: Mapping[str, str], referer: 
     except Exception:
         raise BoardUnavailable("board request failed") from None
     if len(body) > MAX_RESPONSE_BYTES:
-        raise UnreadableBoard("board response exceeds the size that can be read whole")
+        raise OversizeOriginal("board response exceeds the size that can be read whole")
     return body
 
 
@@ -361,6 +370,21 @@ def _is_document_package(names: set[str]) -> bool:
     return PACKAGE_ENTRY in names or any(name.startswith(PACKAGE_FOLDERS) for name in names)
 
 
+def reject_unusable(body: bytes) -> None:
+    """받을 것이 없는 응답을 가린다. 형식 판정보다 먼저 묻는, 형식과 무관한 세 가지다.
+
+    게시판이 내용으로 한 번 더 가리는 자리(`VerifiesOriginal`)보다도 먼저 물어야 한다. 빈
+    응답·잠긴 응답·부속 파일은 어느 게시판에서나 같은 뜻이고, 그 판정을 게시판에 맡기면
+    장부의 사유가 게시판마다 갈린다.
+    """
+    if not body:
+        raise EmptyOriginal("board served an empty attachment")
+    if is_protected(body):
+        raise ProtectedOriginal("organization serves this original under DRM")
+    if is_placeholder(body):
+        raise NotAnOriginal("board published an editor side file instead of an original")
+
+
 def container_of(body: bytes, *, html: bool = False) -> str:
     """매직 바이트로 컨테이너를 판정한다. 게시판이 밝힌 확장자는 믿지 않는다.
 
@@ -372,12 +396,7 @@ def container_of(body: bytes, *, html: bool = False) -> str:
     원본으로 받아들이게 되므로, 기본값은 끈 상태다. HTML 판정 자체는 표를 읽는 쪽과 같은
     `grid.is_html` 하나다(서울 화면 게시판, 울산 HTML 표 게시판 — ADR-0008).
     """
-    if not body:
-        raise EmptyOriginal("board served an empty attachment")
-    if is_protected(body):
-        raise ProtectedOriginal("organization serves this original under DRM")
-    if is_placeholder(body):
-        raise NotAnOriginal("board published an editor side file instead of an original")
+    reject_unusable(body)
     # BOM은 형식이 아니라 인코딩 표시다. XML 계열 원본이 그것 때문에 안 걸리지 않게 뗀다.
     body = body.removeprefix(BOM)
     # A ZIP archive shares the OOXML magic bytes.  Distinguish Office archives

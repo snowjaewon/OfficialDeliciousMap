@@ -47,7 +47,7 @@ class SyntheticAdapters:
         return FetchOutput(
             sources=(
                 SourceRef(
-                    path=context.paths.raw_root / "합성 원본.xlsx",
+                    path="합성 원본.xlsx",
                     source_hash="a" * 64,
                     organization="test-org",
                     board="expenses",

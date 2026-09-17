@@ -55,6 +55,7 @@ def run(
     model: FakeModel | None = None,
     board: FakeBoardTransport | None = None,
     org: str | None = None,
+    raw: str = "외부 원본",
 ) -> int:
     return main(
         [
@@ -63,7 +64,7 @@ def run(
             "gwangju",
             *(["--org", org] if org else []),
             "--raw-root",
-            str(root / "외부 원본"),
+            str(root / raw),
             "--data-root",
             str(root / DATA),
             "--output-root",
@@ -195,6 +196,28 @@ def test_verified_mappings_extract_every_candidate_and_reuse_the_header_cache(
     again = FakeModel()
     assert run(tmp_path, "headermap", again) == 0
     assert again.prompts == []
+
+
+def test_parse_reads_the_same_originals_from_another_raw_root(
+    tmp_path: Path, configured: None
+) -> None:
+    """원본 폴더를 옮겨도 그 자리를 `--raw-root`로 주면 같은 레코드가 나온다(#202).
+
+    수집 산출물이 수집 PC의 절대 경로를 담고 있으면 `--raw-root`가 버려져 옮긴 자리를 열지
+    못한다. 상대 도시의 원본을 넘겨받아 파싱하는 일이 이 성질에 걸려 있다.
+    """
+    record_spending(tmp_path)
+    publish(tmp_path, ("1분기.xls", workbook(QUARTER, [])))
+    assert run(tmp_path, "headermap", FakeModel(headers=[header_answer()])) == 0
+    assert run(tmp_path, "parse") == 0
+    first = records(tmp_path)
+    assert [row["merchant"] for row in first] == ["합성 식당", "합성 카페"]
+
+    (tmp_path / "외부 원본").rename(tmp_path / "옮긴 원본")
+    (tmp_path / DATA / "gwangju" / "parse.json").unlink()
+    (tmp_path / DATA / "gwangju" / "records.csv").unlink()
+    assert run(tmp_path, "parse", raw="옮긴 원본") == 0
+    assert records(tmp_path) == first
 
 
 def test_failed_cache_hit_is_asked_once_more_then_left_unresolved(

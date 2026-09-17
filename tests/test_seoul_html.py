@@ -203,7 +203,7 @@ def test_html_screens_are_stored_as_originals(tmp_path: Path) -> None:
     output = collect(target, paths, Screen())  # type: ignore[arg-type]
     assert len(output.sources) == 6
     assert {item.container for item in output.sources} == {"html"}
-    assert all(item.path.read_bytes() == page for item in output.sources)
+    assert all((paths.raw_root / item.path).read_bytes() == page for item in output.sources)
 
 
 def test_seoul_registry_declares_the_measured_html_organizations() -> None:

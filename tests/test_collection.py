@@ -66,9 +66,12 @@ def _paths(tmp_path: Path) -> Paths:
 
 
 def test_html_board_stores_the_page_it_received_as_the_original(tmp_path: Path) -> None:
-    output = collect(_target(_Scraper), _paths(tmp_path), _Transport())
+    paths = _paths(tmp_path)
+    output = collect(_target(_Scraper), paths, _Transport())
     assert [item.container for item in output.sources] == ["html"]
-    assert output.sources[0].path.read_bytes() == PAGE
+    # 산출물이 적는 자리는 raw-root 기준 상대 경로다(#202).
+    assert output.sources[0].path == Path("testcity/test-org/expenses/1-1.html")
+    assert (paths.raw_root / output.sources[0].path).read_bytes() == PAGE
     assert output.sources[0].source_hash == hashlib.sha256(PAGE).hexdigest()
 
 
@@ -200,3 +203,26 @@ def test_an_unmeasured_format_still_stops_the_collection(tmp_path: Path) -> None
 
     with pytest.raises(AdapterFailure):
         collect(_target(_PdfScraper), _paths(tmp_path), Unknown())  # type: ignore[arg-type]
+
+
+class _Big:
+    """상한을 넘는 원본을 주는 제공자. 인천시청 실측(33,016,108바이트)의 축소판이다."""
+
+    def fetch(self, url: str, params: dict[str, str], headers: dict[str, str]) -> bytes:
+        return b"%PDF-1.4 " + b"0" * 64
+
+
+def test_an_oversize_original_is_a_ledger_entry_not_a_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """한 번에 읽어 둘 수 없는 원본 하나가 기관 전체 수집을 실패로 만들지 않는다.
+
+    실측(2026-09-17 인천시청 3087017): `.xlsx` 하나가 33MB라 상한을 넘고, 그 하나 때문에
+    시청 다섯 게시판이 통째로 실패했다. 잘라 쓰지 않되 사유는 장부에 남긴다.
+    상한을 낮춰 같은 자리를 지나간다 — 테스트가 33MB를 만들지 않기 위해서다.
+    """
+    monkeypatch.setattr(boards, "MAX_RESPONSE_BYTES", 8)
+    output = collect(_target(_PdfScraper), _paths(tmp_path), _Big())  # type: ignore[arg-type]
+    assert output.sources == ()
+    assert [item.reason for item in output.missing] == ["too_large"]
+    assert output.missing[0].filename == "1-1.pdf"
