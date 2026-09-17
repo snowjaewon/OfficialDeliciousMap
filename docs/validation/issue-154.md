@@ -129,7 +129,7 @@ uv run python -m deliciousmap fetch --city seoul --org seoul-jungnang --raw-root
 | 실행 횟수 | 2회. 1회차가 264쪽에서 `service-unavailable`로 끊기고, 2회차가 265쪽부터 이어 853쪽까지 | 1회차 뒤 `listing-progress.json`의 `next_page` 265 |
 | 1회차 | 264쪽까지, 17:10:04 종료. 그때 목록 색인 2,640줄, `uncollected_postings` 2,091, `empty_reason`에 `collection failures` | 1회차가 쓴 `fetch.json`·`listing.jsonl`, 진행 기록 |
 | 2회차 | 남은 589쪽을 17:10~17:39:40에 약 29분(쪽당 약 3.0초)만에 마쳤다 | 1회차 종료 시각과 `listing.jsonl` 마지막 쓰기 시각 |
-| 전체 쪽 수 | 853쪽 — 목록 색인 8,530줄 ÷ 한 쪽 10줄 | `wc -l listing.jsonl` |
+| 전체 쪽 수 | 853쪽 | `issue-141.md`의 "실패한 게시판". 이 실행이 따로 센 값이 아니다 |
 | `empty_reason` | 없음 — `collection failures`가 남지 않았다 | 커밋한 `fetch.json` |
 | `uncollected_postings` | 7,981 | 같음 |
 | `filtered_postings` | 0 | 같음 |
@@ -142,16 +142,16 @@ uv run python -m deliciousmap fetch --city seoul --org seoul-jungnang --raw-root
   전에는 이 지점에서 다음 실행이 1쪽부터 다시 훑었다.
 - `uncollected_postings` 7,981은 위 Codex PC 실측과 같은 값이고 게시글 단위다. `issue-141.md`
   수집 장부 표의 중랑 줄과 합계에 반영했다.
-- 원본이 574건에서 581건으로 늘었다. 두 `fetch.json`의 `source_hash` 집합을 비교하면 574건은
-  전부 그대로 있고 7건이 더해졌다. 그 7건은 게시일이 2026-09-15~17인 새 게시글
-  (`167689`·`167698`·`167701`·`167702`·`167703`·`167705`·`167706`)이며, `period.collects`가
+- 원본이 574건에서 **원본** 581건으로 늘었다. 두 `fetch.json`의 `source_hash` 집합을 비교하면
+  574건은 전부 그대로 있고 **원본 7건**이 더해졌다. 그 원본 7건은 **게시글 7건**에 하나씩 달린
+  것이고(수집 기록도 540줄에서 547줄로 늘었다), 게시일이 2026-09-15~17인 새 게시글
+  (`167689`·`167698`·`167701`·`167702`·`167703`·`167705`·`167706`)이다. `period.collects`가
   게시일의 해로 자르므로 2026년 게시글은 받는다. 제목이 밝힌 지출 기간이 대상 기간 밖인지는
   `parse` 이후가 가른다.
 - **재시도 횟수·백오프·호스트 간격은 이 재수집에서도 바꾸지 않았다.** 그래서 그 값의 효과를
   측정한 수는 여전히 없다.
-
-### 한 번에 끝나지 않으면
-
-`empty_reason`에 `collection failures`가 남아 있으면 같은 명령을 다시 실행한다. 다음 실행은 끊긴
-쪽부터 잇는다. 끝난 표시는 두 가지다 — `empty_reason`에 `collection failures`가 없고,
-`<원본 루트>\seoul\seoul-jungnang\expenses\listing-progress.json`이 없다.
+- **1회차의 증거는 지금 다시 볼 수 없다.** 진행 기록은 순회를 마칠 때 지워지고 `fetch.json`은
+  2회차가 덮어쓰므로, 위 표의 1회차 줄(264쪽·`next_page` 265·2,091)은 그 실행 중에 읽은 값이고
+  커밋된 산출물로 되짚을 수 없다. 지금 커밋본에서 확인되는 것은 완주의 결과뿐이다 —
+  `empty_reason` 없음, `listing.jsonl` 8,530줄, `collected.jsonl` 547줄, 진행 기록 없음.
+  재개 경로 자체는 `tests/test_seoul.py`의 위 테스트들이 고정한다.
