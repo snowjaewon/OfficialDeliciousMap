@@ -177,6 +177,22 @@ def exclusion(
     return None if span.overlaps(REPORTING) else "declared_out_of_range"
 
 
+def hinted_year(posted: date | None, title: str | None, spent_on: date | None = None) -> int | None:
+    """날짜 칸에 연도가 없는 표를 읽을 때 쓸 연도 근거. 없으면 `None`.
+
+    모델에게 묻는 `year_hint`와 같은 근거를 코드로 읽는다 — 그 지시문도 "제목에서 읽은 연도"다
+    (`gemini.HEADER_INSTRUCTIONS`). 공용 서명 캐시는 원본마다 다른 이 값을 싣지 않으므로
+    (`CachedHeaderMap`), 캐시에 쌓인 판정을 다시 쓸 때 원본에서 다시 읽는다. 두 해에 걸친
+    기간은 어느 해인지 고르지 않는다.
+    """
+    if spent_on is not None:
+        return spent_on.year
+    span = declared(title) or (_yearless_month(title, posted) if posted is not None else None)
+    if span is None or span.start.year != span.end.year:
+        return None
+    return span.start.year
+
+
 def _yearless_month(title: str | None, posted: date) -> Span | None:
     """연도 없이 달만 적은 제목의 기간. 게시월을 포함해 게시일까지의 가장 가까운 그 달이다.
 

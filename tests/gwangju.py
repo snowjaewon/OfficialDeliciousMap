@@ -70,7 +70,13 @@ def bundle(*files: tuple[str, bytes]) -> bytes:
 
 
 def header_answer(
-    *, spent_on: int = 2, merchant: int = 3, purpose: int = 4, amount: int = 6, header: int = 3
+    *,
+    spent_on: int = 2,
+    merchant: int = 3,
+    purpose: int = 4,
+    amount: int = 6,
+    header: int = 3,
+    year_hint: int | None = None,
 ) -> dict[str, object]:
     """광주시청형 시트에 맞는 헤더 매핑 답변. 사용자·인원 열에는 역할을 주지 않는다."""
     return {
@@ -84,7 +90,7 @@ def header_answer(
             {"column": amount, "role": "amount_krw"},
         ],
         "amount_unit": "won",
-        "year_hint": None,
+        "year_hint": year_hint,
     }
 
 

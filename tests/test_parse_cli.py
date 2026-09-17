@@ -435,6 +435,28 @@ def test_same_header_at_different_rows_reuses_the_cache_without_churn(
     assert len(before.splitlines()) == 2
 
 
+def test_cached_mapping_reads_the_year_from_each_original_title(
+    tmp_path: Path, configured: None
+) -> None:
+    """연도 없는 날짜 칸의 원본은 캐시 판정을 다시 써도 게시글 제목의 해로 집행일을 읽는다.
+
+    공용 서명 캐시는 원본마다 다른 연도 근거를 싣지 않는다. 그 근거를 원본에서 다시 읽지
+    않으면 같은 서명의 두 번째 원본이 캐시를 못 쓰고 모델에 다시 묻는다(부산 남구 실측).
+    """
+    record_spending(tmp_path)
+    publish(
+        tmp_path,
+        ("3월.xls", workbook(sheet_a(("3. 23.(월)", "합성 식당", "현안 협의", 4.0, 78000.0)))),
+        ("4월.xls", workbook(sheet_a(("4. 2.(목)", "합성 국밥", "현안 협의", 3.0, 27000.0)))),
+    )
+    model = FakeModel(headers=[header_answer(year_hint=2026), header_answer(year_hint=2026)])
+    assert run(tmp_path, "headermap", model) == 0
+    assert len(model.calls("headermap")) == 1
+    assert payload(tmp_path, "headermap")["unresolved"] == []
+    assert run(tmp_path, "parse") == 0
+    assert sorted(row["spent_on"] for row in records(tmp_path)) == ["2026-03-23", "2026-04-02"]
+
+
 def test_recorded_answer_that_validates_is_used_without_a_model(
     tmp_path: Path, configured: None, monkeypatch: pytest.MonkeyPatch
 ) -> None:
