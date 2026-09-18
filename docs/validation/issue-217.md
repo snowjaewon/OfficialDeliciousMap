@@ -143,6 +143,7 @@ uv run python -c "import json, pathlib; from deliciousmap import storage; rows =
 - 대상 기간 원본이 7개 늘어(`시청` 5 · `부산진` 2) `parse.json`이 그 원본을 덮지 못한다.
   `storage._validate_reports`는 보고가 대상 기간 원본을 한 번씩 모두 덮기를 요구하므로
   `build --city busan`이 `invalid-artifact`로 거부된다. `parse` 이후 단계의 재실행 여부는
-  이슈의 「제외 범위」대로 사람이 정한다.
+  이슈의 「제외 범위」대로 사람이 정한다. 2026-09-18 결정으로 [#235](issue-235.md)가 헤더 매핑을
+  다시 내고 [#226](issue-226.md)이 `parse`부터 `build`까지 흘려 이 제한을 풀었다.
 - 제목 조건에서 걸린 616건은 `unattached_postings`에도 `filtered_postings`에도 들지 않는다.
   어느 수로도 세지 않는 게시글이 남는다는 사실만 여기 적는다.
